@@ -155,6 +155,7 @@ export default function ViewCourses() {
         .view-courses-container {
           padding-bottom: 2rem;
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          overflow-x: hidden;
         }
 
         /* Stats Card */
@@ -349,6 +350,17 @@ export default function ViewCourses() {
           animation: spin 8s linear infinite;
         }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+          .page-title-box { flex-direction: column !important; align-items: flex-start !important; gap: 12px; }
+          .page-title-box .d-flex.gap-2 { width: 100%; }
+          .btn-primary-premium { width: 100%; text-align: center; justify-content: center; display: flex; }
+          .page-title { font-size: 18px !important; }
+          .empty-state-card { padding: 2rem 1.5rem !important; }
+          .card-body { padding: 1.25rem !important; }
+          .stat-card { padding: 1rem !important; }
+          .course-title { font-size: 15px; height: auto; }
+        }
       `}</style>
     </div>
   );

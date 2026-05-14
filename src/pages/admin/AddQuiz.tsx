@@ -416,6 +416,17 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+          .minia-app-container { padding: 1rem; }
+          .minia-page-title { font-size: 1.1rem; }
+          .d-flex.justify-content-end.gap-3.mt-5 { flex-direction: column-reverse; }
+          .btn-minia-solid-distinct, .btn-minia-ghost-distinct { width: 100%; text-align: center; justify-content: center; display: flex; padding: 0.8rem 1.5rem; font-size: 14px; }
+          .minia-card-header-distinct { padding: 1rem; }
+          .card-body { padding: 1rem !important; }
+          .d-flex.gap-2 { flex-wrap: wrap; }
+          .minia-tax-btn { min-width: 90px; }
+        }
       `}</style>
     </div>
   );

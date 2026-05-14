@@ -512,6 +512,38 @@ export default function AdminLayout() {
           .lexa-sidebar-close {
             display: block;
           }
+          .lexa-navbar {
+            padding: 0 20px;
+          }
+          .lexa-content-wrapper {
+            padding: 20px 16px;
+          }
+          .lexa-nav-identity span {
+            font-size: 13px !important;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .lexa-navbar {
+            padding: 0 12px;
+            height: 60px;
+          }
+          .lexa-content-wrapper {
+            padding: 16px 10px;
+          }
+          .lexa-profile-name {
+            display: none;
+          }
+          .lexa-profile-pill {
+            padding: 6px;
+          }
+          .lexa-status-badge {
+            padding: 6px 12px;
+            font-size: 11px;
+          }
+          .lexa-nav-identity span {
+            display: none !important;
+          }
         }
 
         .lexa-mobile-backdrop {

@@ -175,6 +175,14 @@ export default function ViewQuizzes() {
         .btn-pri:hover { background: #374151; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+          .reg-top-bar { flex-direction: column; align-items: flex-start; gap: 16px; padding: 0 16px; }
+          .t-title { font-size: 24px; }
+          .btn-add { width: 100%; justify-content: center; }
+          .reg-grid-modern { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 0 16px; }
+          .modern-modal { width: 95vw !important; max-width: none !important; }
+        }
         `}</style>
     </div>
   );

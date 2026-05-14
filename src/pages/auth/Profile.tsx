@@ -91,10 +91,10 @@ export default function Profile() {
       : user.username;
 
   return (
-    <div className="animate-fade-in" style={{ padding: '10px 0 60px' }}>
+    <div className="animate-fade-in" style={{ padding: '10px 0 60px', overflowX: 'hidden' }}>
       <PageHeader title="Profile Intelligence" breadcrumbs={['Lexa', 'Account', 'Registry Profile']} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 30, alignItems: 'start' }}>
+      <div className="profile-container-grid" style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 30, alignItems: 'start' }}>
         
         {/* Left Column: User Brief */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 30 }}>
@@ -162,7 +162,7 @@ export default function Profile() {
               <button className="settings-btn"><Settings size={18} /></button>
             </div>
             <div className="card-body-premium">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+              <div className="info-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
                 <InfoRow icon={<Mail size={18}/>} label="Registry Email" value={user.email || 'N/A'} />
                 <InfoRow icon={<Phone size={18}/>} label="Contact Line" value={(user as any).phone || 'Not Synchronized'} />
                 <InfoRow icon={<BadgeCheck size={18}/>} label="Registry Identity" value={displayName} />
@@ -530,6 +530,21 @@ export default function Profile() {
           0% { box-shadow: 0 0 0 0 rgba(98, 110, 212, 0.4); }
           70% { box-shadow: 0 0 0 15px rgba(98, 110, 212, 0); }
           100% { box-shadow: 0 0 0 0 rgba(98, 110, 212, 0); }
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 992px) {
+          .profile-container-grid { grid-template-columns: 1fr !important; }
+        }
+
+        @media (max-width: 768px) {
+          .info-grid { grid-template-columns: 1fr !important; }
+          .metrics-grid { grid-template-columns: 1fr !important; }
+          .actions-grid { flex-direction: column; }
+          .card-header-premium { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .status-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .card-body-premium { padding: 15px 20px 25px; }
+          .card-header-premium { padding: 20px 20px; }
         }
       `}</style>
     </div>

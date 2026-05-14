@@ -294,6 +294,25 @@ export default function ViewCategories() {
         .animate-scale-up { animation: scaleUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes scaleUp { from { transform: scale(0.97); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .spin-ico { animation: spin 1s linear infinite; }
+
+        @media (max-width: 768px) {
+          .registry-compact-header { flex-direction: column; align-items: stretch; gap: 15px; padding: 15px; }
+          .compact-stats { justify-content: center; }
+          .compact-actions { flex-direction: column; align-items: stretch; width: 100%; }
+          .mini-search { width: 100%; }
+          .mini-add-btn { width: 100%; justify-content: center; }
+          .reg-row-premium {
+            grid-template-columns: 1fr;
+            position: relative;
+            padding: 15px;
+            gap: 10px;
+          }
+          .reg-col.code { position: absolute; top: 15px; right: 15px; }
+          .reg-col.lead { margin-top: 5px; }
+          .reg-col.acts { justify-content: flex-start; margin-top: 5px; }
+          .modal-lexa-container-compact { width: 95vw !important; max-width: none !important; }
+          .mini-level-grid { grid-template-columns: repeat(2, 1fr); }
+        }
       `}</style>
     </div>
   );

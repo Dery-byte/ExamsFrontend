@@ -349,6 +349,7 @@ export default function LectViewQuizzes() {
           font-family: 'Public Sans', sans-serif;
           background-color: #f5f6f8;
           min-height: 100vh;
+          overflow-x: hidden;
         }
 
         .minia-page-title { font-size: 1.2rem; font-weight: 700; color: #495057; }
@@ -413,6 +414,18 @@ export default function LectViewQuizzes() {
         .font-size-13 { font-size: 13px; }
         .font-size-14 { font-size: 14px; }
         .font-size-15 { font-size: 15px; }
+
+        @media (max-width: 768px) {
+          .minia-container { padding: 1rem; }
+          .minia-header .d-flex { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+          .btn-minia-primary { width: 100%; justify-content: center; }
+          .minia-modal { max-width: 95vw !important; }
+          .card-footer { flex-wrap: wrap; gap: 10px; padding: 1rem !important; }
+          .card-footer .d-flex.align-items-center { flex-wrap: wrap; gap: 6px; width: 100%; justify-content: space-between; }
+          .card-header { padding: 1rem 1rem 0 1rem !important; flex-direction: column; gap: 8px; }
+          .card-body { padding: 1rem !important; }
+          .minia-card-desc { height: auto; margin-bottom: 15px !important; }
+        }
       `}</style>
     </div>
   );

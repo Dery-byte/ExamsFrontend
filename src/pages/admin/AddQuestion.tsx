@@ -530,6 +530,22 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+          .aq-header-container { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .aq-btn-outline { width: 100%; justify-content: center; }
+          .aq-page-title { font-size: 20px; }
+          .aq-context-banner { padding: 16px; }
+          .aq-context-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .aq-context-icon { width: 44px; height: 44px; }
+          .aq-quiz-title { font-size: 16px; }
+          .aq-quiz-meta { flex-wrap: wrap; gap: 8px; }
+          .aq-card-body { padding: 1.25rem !important; }
+          .aq-dark-widget-body { padding: 16px; }
+          .aq-blueprint-body { padding: 16px; }
+          .aq-upload-zone { height: 120px; }
+          .aq-code-block pre { font-size: 11px; overflow-x: auto; }
+        }
       `}</style>
     </div>
   );

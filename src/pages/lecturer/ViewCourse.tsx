@@ -249,6 +249,13 @@ export default function ViewCourse() {
         @keyframes scaleUp { from { transform: scale(0.98); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
         .cursor-pointer { cursor: pointer; }
+
+        @media (max-width: 768px) {
+          .stock-header > div { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+          .btn-minimal-add { width: 100%; justify-content: center; }
+          .stock-table-card { overflow-x: auto; }
+          .stock-modal { width: 95vw !important; max-width: none !important; }
+        }
       `}</style>
     </div>
   );

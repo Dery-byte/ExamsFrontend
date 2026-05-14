@@ -1060,6 +1060,18 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+          .page-title-box { flex-direction: column !important; align-items: flex-start !important; gap: 12px; }
+          .page-title-box .d-flex.gap-2 { width: 100%; }
+          .page-title-box .d-flex.gap-2 > * { flex: 1; text-align: center; justify-content: center; }
+          .minia-modal-overlay > div { width: 95vw !important; max-width: none !important; }
+          .card-header { flex-direction: column !important; align-items: flex-start !important; gap: 10px; }
+          .card-header .d-flex.align-items-center.gap-3.bg-light-subtle { margin-top: 5px; }
+          .avatar-md { width: 44px; height: 44px; }
+          .font-size-20 { font-size: 16px !important; }
+          .btn-primary-custom, .btn-light-custom { padding: 10px 16px; font-size: 13px; }
+        }
       `}</style>
     </div>
   );

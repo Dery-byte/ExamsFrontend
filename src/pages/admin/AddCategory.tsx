@@ -183,6 +183,17 @@ export default function AddCategory() {
 
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+          .card-header-vibrant { flex-direction: column; align-items: flex-start; gap: 15px; padding: 20px; }
+          .card-body-compact { padding: 25px 20px; }
+          .compact-row { flex-direction: column; gap: 16px; }
+          .f-node-fixed { width: 100%; }
+          .pill-selector-box { grid-template-columns: repeat(2, 1fr); }
+          .course-footer-actions { flex-direction: column-reverse; }
+          .btn-register-premium { width: 100%; justify-content: center; }
+          .btn-cancel-ghost { text-align: center; }
+        }
       `}</style>
     </div>
   );

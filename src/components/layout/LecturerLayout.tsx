@@ -357,6 +357,15 @@ export default function LecturerLayout() {
           .sidebar-overlay { display: block; }
           .user-profile .name { display: none; }
           .header-right { gap: 4px; }
+          .page-content { padding: 16px; }
+        }
+
+        @media (max-width: 576px) {
+          .top-header { height: 56px; padding: 0 12px; }
+          .page-content { padding: 12px 8px; }
+          .header-icon.flag-icon,
+          .header-right button:nth-child(2),
+          .header-right button:nth-child(3) { display: none; }
         }
       `}</style>
     </div>

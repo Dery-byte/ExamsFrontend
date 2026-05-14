@@ -228,6 +228,14 @@ export default function AddCourse() {
         
         .animate-fade-in { animation: fadeIn 0.6s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 768px) {
+          .minia-form-page { padding: 1.5rem 1rem; }
+          .minia-header .d-flex { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+          .card-body { padding: 1.5rem !important; }
+          .d-flex.justify-content-end { flex-direction: column; }
+          .btn-minia-solid, .btn-minia-ghost { width: 100%; justify-content: center; }
+        }
       `}</style>
     </div>
   );
