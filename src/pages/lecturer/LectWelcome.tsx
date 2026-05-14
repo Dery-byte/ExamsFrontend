@@ -14,7 +14,7 @@ export default function LectWelcome() {
 
   const { data: cateGory = [] } = useQuery({ queryKey: ['lectCatReport'], queryFn: getUniqueCategoriesForLecturer });
   const { data: myQuizzes = [] } = useQuery({ queryKey: ['myQuizzes'], queryFn: loadQuizzesForUser });
-
+const [chartData, setChartData] = useState(null); // or whatever type fits
   const selectCategory = (cid: number | null) => {
     setSelCatId(cid);
     setSelQuizId(null);
