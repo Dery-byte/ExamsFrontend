@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 export const BASE_URL: string =
-  (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:9191/api/v1/auth';
+  (import.meta as any).env?.VITE_API_URL ?? ' https://examsbackend.onrender.com/api/v1/auth';
 
 const client = axios.create({
   baseURL: BASE_URL,
