@@ -429,7 +429,7 @@ html, body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: #fff;
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
 }
