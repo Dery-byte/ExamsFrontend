@@ -4,53 +4,53 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 
 // Layouts
-import AdminLayout    from './components/layout/AdminLayout';
+import AdminLayout from './components/layout/AdminLayout';
 import LecturerLayout from './components/layout/LecturerLayout';
-import UserLayout     from './components/layout/UserLayout';
+import UserLayout from './components/layout/UserLayout';
 
 // Auth
-import Home          from './pages/auth/Home';
-import Login         from './pages/auth/Login';
-import Signup        from './pages/auth/Signup';
+import Welcome from './pages/auth/Welcome';
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
 import ResetPassword from './pages/auth/ResetPassword';
-import Profile       from './pages/auth/Profile';
+import Profile from './pages/auth/Profile';
 
 // Admin
-import AdminWelcome        from './pages/admin/AdminWelcome';
-import ViewCategories      from './pages/admin/ViewCategories';
-import AddCategory         from './pages/admin/AddCategory';
-import ViewQuizzes         from './pages/admin/ViewQuizzes';
-import AddQuiz             from './pages/admin/AddQuiz';
-import ViewQuizQuestions   from './pages/admin/ViewQuizQuestions';
-import AddQuestion         from './pages/admin/AddQuestion';
-import Students            from './pages/admin/Students';
-import Lecturers           from './pages/admin/Lecturers';
+import AdminWelcome from './pages/admin/AdminWelcome';
+import ViewCategories from './pages/admin/ViewCategories';
+import AddCategory from './pages/admin/AddCategory';
+import ViewQuizzes from './pages/admin/ViewQuizzes';
+import AddQuiz from './pages/admin/AddQuiz';
+import ViewQuizQuestions from './pages/admin/ViewQuizQuestions';
+import AddQuestion from './pages/admin/AddQuestion';
+import Students from './pages/admin/Students';
+import Lecturers from './pages/admin/Lecturers';
 
 // Lecturer
-import LectWelcome           from './pages/lecturer/LectWelcome';
-import ViewCourse            from './pages/lecturer/ViewCourse';
-import AddCourse             from './pages/lecturer/AddCourse';
-import LectViewQuizzes       from './pages/lecturer/LectViewQuizzes';
-import LectAddQuiz           from './pages/lecturer/LectAddQuiz';
+import LectWelcome from './pages/lecturer/LectWelcome';
+import ViewCourse from './pages/lecturer/ViewCourse';
+import AddCourse from './pages/lecturer/AddCourse';
+import LectViewQuizzes from './pages/lecturer/LectViewQuizzes';
+import LectAddQuiz from './pages/lecturer/LectAddQuiz';
 import LectViewQuizQuestions from './pages/lecturer/LectViewQuizQuestions';
-import LectAddQuestion       from './pages/lecturer/LectAddQuestion';
+import LectAddQuestion from './pages/lecturer/LectAddQuestion';
 
 // User
-import UserDashboard    from './pages/user/UserDashboard';
-import RegisterCourses  from './pages/user/RegisterCourses';
+import UserDashboard from './pages/user/UserDashboard';
+import RegisterCourses from './pages/user/RegisterCourses';
 import CoursesRegistered from './pages/user/CoursesRegistered';
 import AvailableQuizzes from './pages/user/AvailableQuizzes';
-import LoadQuiz         from './pages/user/LoadQuiz';
-import Instructions     from './pages/user/Instructions';
-import StartQuiz        from './pages/user/StartQuiz';
-import PrintQuiz        from './pages/user/PrintQuiz';
+import LoadQuiz from './pages/user/LoadQuiz';
+import Instructions from './pages/user/Instructions';
+import StartQuiz from './pages/user/StartQuiz';
+import PrintQuiz from './pages/user/PrintQuiz';
 export default function App() {
   return (
     <AuthProvider>
-      <Toaster 
-        position="top-right" 
+      <Toaster
+        position="top-right"
         containerStyle={{ zIndex: 9999999 }}
-        toastOptions={{ 
+        toastOptions={{
           duration: 4000,
           style: {
             background: '#1e293b',
@@ -67,56 +67,56 @@ export default function App() {
           error: {
             iconTheme: { primary: '#f43f5e', secondary: '#fff' }
           }
-        }} 
+        }}
       />
       <Routes>
         {/* Public */}
-        <Route path="/"        element={<Home />} />
-        <Route path="/login"   element={<Login />} />
-        <Route path="/signup"  element={<Signup />} />
+        <Route path="/" element={<Welcome />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Admin */}
         <Route path="/admin" element={<ProtectedRoute role="ADMIN"><AdminLayout /></ProtectedRoute>}>
-          <Route index                        element={<AdminWelcome />} />
-          <Route path="profile"               element={<Profile />} />
-          <Route path="courses"               element={<ViewCategories />} />
-          <Route path="add-course"            element={<AddCategory />} />
-          <Route path="quizzes"               element={<ViewQuizzes />} />
-          <Route path="add-quiz"              element={<AddQuiz />} />
+          <Route index element={<AdminWelcome />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="courses" element={<ViewCategories />} />
+          <Route path="add-course" element={<AddCategory />} />
+          <Route path="quizzes" element={<ViewQuizzes />} />
+          <Route path="add-quiz" element={<AddQuiz />} />
           <Route path="view-questions/:qId/:qTitle" element={<ViewQuizQuestions />} />
-          <Route path="add-question/:qId/:title"   element={<AddQuestion />} />
-          <Route path="students"              element={<Students />} />
-          <Route path="lecturers"             element={<Lecturers />} />
+          <Route path="add-question/:qId/:title" element={<AddQuestion />} />
+          <Route path="students" element={<Students />} />
+          <Route path="lecturers" element={<Lecturers />} />
         </Route>
 
         {/* Lecturer */}
         <Route path="/lect" element={<ProtectedRoute role="LECTURER"><LecturerLayout /></ProtectedRoute>}>
-          <Route index                        element={<LectWelcome />} />
-          <Route path="profile"               element={<Profile />} />
-          <Route path="courses"               element={<ViewCourse />} />
-          <Route path="add-course"            element={<AddCourse />} />
-          <Route path="quizes"                element={<LectViewQuizzes />} />
-          <Route path="add-quizes"            element={<LectAddQuiz />} />
+          <Route index element={<LectWelcome />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="courses" element={<ViewCourse />} />
+          <Route path="add-course" element={<AddCourse />} />
+          <Route path="quizes" element={<LectViewQuizzes />} />
+          <Route path="add-quizes" element={<LectAddQuiz />} />
           <Route path="view-quetions/:qId/:qTitle" element={<LectViewQuizQuestions />} />
-          <Route path="add-question/:qId/:title"   element={<LectAddQuestion />} />
+          <Route path="add-question/:qId/:title" element={<LectAddQuestion />} />
         </Route>
 
         {/* Student */}
         <Route path="/user-dashboard" element={<ProtectedRoute role="NORMAL"><UserLayout /></ProtectedRoute>}>
-          <Route index                       element={<Navigate to="user-dashboard" replace />} />
-          <Route path="user-dashboard"       element={<UserDashboard />} />
-          <Route path="profile"              element={<Profile />} />
-          <Route path="register"             element={<RegisterCourses />} />
-          <Route path="courses"              element={<CoursesRegistered />} />
-          <Route path="quizzes"              element={<AvailableQuizzes />} />
-          <Route path="history"               element={<LoadQuiz />} />
+          <Route index element={<Navigate to="user-dashboard" replace />} />
+          <Route path="user-dashboard" element={<UserDashboard />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="register" element={<RegisterCourses />} />
+          <Route path="courses" element={<CoursesRegistered />} />
+          <Route path="quizzes" element={<AvailableQuizzes />} />
+          <Route path="history" element={<LoadQuiz />} />
 
-          <Route path="instructions/:qid"    element={<Instructions />} />
+          <Route path="instructions/:qid" element={<Instructions />} />
         </Route>
 
         {/* Standalone exam pages */}
-        <Route path="/start/:qid"      element={<ProtectedRoute role="NORMAL"><StartQuiz /></ProtectedRoute>} />
+        <Route path="/start/:qid" element={<ProtectedRoute role="NORMAL"><StartQuiz /></ProtectedRoute>} />
         <Route path="/print_quiz/:qid" element={<ProtectedRoute role="NORMAL"><PrintQuiz /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
