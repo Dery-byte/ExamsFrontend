@@ -101,7 +101,7 @@ export const deleteQuestion = (id: number) => client.delete(`/question/${id}`).t
 export const uploadQuestions = (qid: number | string, questions: object[]) =>
   client.post(`/upload/${qid}`, questions).then(r => r.data);
 export const evalQuiz = (qid: number | string, answers: object[]) =>
-  client.post(`/question/eval-quiz/${qid}`, answers).then(r => r.data);
+  client.post(`/eval-quiz/${qid}`, answers).then(r => r.data);
 
 // ── Theory Questions ──────────────────────────────────────────────────────
 export const getTheoryQuestions = (qid: number | string) =>

@@ -336,93 +336,94 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                 </div>
               </div>
               
-              <div className="d-flex flex-column gap-3">
+              <div className="row g-4">
                 {questions.map((q, i) => {
                   const isMatching = (q.questionType || '').toUpperCase() === 'MATCHING';
                   const isTF = (q.questionType || '').toUpperCase() === 'TRUE_FALSE';
                   const typeColor = isMatching ? '#5156be' : isTF ? '#2ab57d' : '#4ba3ff';
-                  const bgGradient = isMatching ? 'linear-gradient(90deg, #f0f1fa 0%, #ffffff 20%)' : isTF ? 'linear-gradient(90deg, #ebf7f2 0%, #ffffff 20%)' : 'linear-gradient(90deg, #eff6ff 0%, #ffffff 20%)';
+                  const bgGradient = isMatching ? 'linear-gradient(145deg, #ffffff 0%, #f4f5fa 100%)' : isTF ? 'linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%)' : 'linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%)';
                   const correctAnswers = q.correctAnswer ?? q.correct_answer ?? [];
 
                   return (
-                    <div key={q.quesId} className="minia-card border-0 shadow-sm standout-row" style={{ background: bgGradient, borderLeft: `4px solid ${typeColor}` }}>
-                        <div className="d-flex flex-column flex-md-row align-items-stretch h-100">
-                          
-                          {/* LEFT: Badges */}
-                          <div className="p-3 d-flex flex-row flex-md-column align-items-center justify-content-center gap-2 border-end border-light" style={{ minWidth: '120px' }}>
-                            <span className="badge bg-soft-primary text-primary font-size-14 fw-bold px-3 py-2 rounded-pill shadow-sm">
-                              #{i + 1}
-                            </span>
-                            <span className="badge font-size-9 px-2 py-1 text-uppercase fw-bold text-wrap text-center" style={{ backgroundColor: `${typeColor}15`, color: typeColor, letterSpacing: '0.5px' }}>
-                              {isMatching ? 'Matching' : isTF ? 'True/False' : 'MCQ'}
-                            </span>
-                          </div>
+                    <div key={q.quesId} className="col-12 col-md-6">
+                      <div className="minia-card border-0 shadow-sm h-100 d-flex flex-column transition-2 hover-scale" style={{ background: bgGradient, borderTop: `4px solid ${typeColor}`, borderRadius: '16px', overflow: 'hidden' }}>
+                        
+                        {/* Header */}
+                        <div className="p-3 d-flex justify-content-between align-items-center bg-white bg-opacity-75 border-bottom border-light">
+                           <div className="d-flex align-items-center gap-2">
+                             <span className="badge font-size-13 fw-bold px-3 py-1 rounded-pill shadow-sm" style={{ backgroundColor: typeColor, color: '#fff' }}>#{i + 1}</span>
+                             <span className="badge font-size-10 px-2 py-1 text-uppercase fw-bold rounded-pill" style={{ backgroundColor: `${typeColor}15`, color: typeColor, letterSpacing: '0.5px' }}>
+                               {isMatching ? 'Matching' : isTF ? 'True/False' : 'MCQ'}
+                             </span>
+                           </div>
+                           <div className="d-flex align-items-center gap-3">
+                             <div className="text-end">
+                               <span className="d-inline-block font-size-16 fw-bold text-dark lh-1 me-1">{q.marks}</span>
+                               <span className="font-size-9 text-muted fw-bold text-uppercase tracking-wider">PTS</span>
+                             </div>
+                             <div className="d-flex gap-2">
+                               <button className="btn-icon-xs bg-white border shadow-sm text-info hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }} onClick={() => openUpdateObj(q.quesId || q.id || q.qId, q.questionType)}><Edit size={13} /></button>
+                               <button className="btn-icon-xs bg-white border shadow-sm text-danger hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }} onClick={() => doDeleteQuestion(q.quesId || q.id || q.qId)}><Trash2 size={13} /></button>
+                             </div>
+                           </div>
+                        </div>
 
-                          {/* MIDDLE: Content & Options */}
-                          <div className="p-4 flex-grow-1">
-                            <div className="font-size-15 fw-bold text-dark mb-3 lh-base" dangerouslySetInnerHTML={{ __html: q.content }} />
+                        {/* Content */}
+                        <div className="p-4 flex-grow-1 d-flex flex-column">
+                           <div className="font-size-15 fw-bold text-dark mb-4 lh-base" dangerouslySetInnerHTML={{ __html: q.content }} />
+                           
+                           <div className="mt-auto">
+                             {/* MCQ Options */}
+                             {!isMatching && !isTF && (
+                               <div className="d-flex flex-column gap-2">
+                                 {['option1', 'option2', 'option3', 'option4'].map((optKey, idx) => {
+                                   const optVal = q[optKey];
+                                   if (!optVal) return null;
+                                   const isCorrect = correctAnswers.includes(optVal);
+                                   return (
+                                     <div key={idx} className={`px-3 py-2 rounded-3 border font-size-13 transition-2 d-flex align-items-center gap-3 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold shadow-sm' : 'bg-white border-light text-muted'}`}>
+                                       <span className={`fw-bold ${isCorrect ? 'text-success' : 'text-primary'}`} style={{ width: 20 }}>{String.fromCharCode(65 + idx)}.</span>
+                                       <span className="text-truncate flex-grow-1">{optVal}</span>
+                                       {isCorrect && <CheckCircle size={16} className="flex-shrink-0" />}
+                                     </div>
+                                   );
+                                 })}
+                               </div>
+                             )}
 
-                            {/* MCQ Options */}
-                            {!isMatching && !isTF && (
-                              <div className="d-flex flex-wrap gap-2">
-                                {['option1', 'option2', 'option3', 'option4'].map((optKey, idx) => {
-                                  const optVal = q[optKey];
-                                  if (!optVal) return null;
-                                  const isCorrect = correctAnswers.includes(optVal);
-                                  return (
-                                    <div key={idx} className={`px-3 py-2 rounded-pill border font-size-12 transition-2 d-flex align-items-center gap-2 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold' : 'bg-light-subtle border-light text-muted'}`} style={{ flex: '1 1 calc(50% - 0.5rem)', minWidth: '200px' }}>
-                                      <span className={`fw-bold ${isCorrect ? 'text-success' : 'text-primary'}`}>{String.fromCharCode(65 + idx)}.</span>
-                                      <span className="text-truncate">{optVal}</span>
-                                      {isCorrect && <CheckCircle size={14} className="ms-auto flex-shrink-0" />}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
+                             {/* True/False Options */}
+                             {isTF && (
+                               <div className="d-flex gap-3">
+                                 {['True', 'False'].map((val, idx) => {
+                                   const isCorrect = correctAnswers.includes(val);
+                                   return (
+                                     <div key={idx} className={`flex-fill px-4 py-3 rounded-3 border font-size-14 transition-2 d-flex align-items-center justify-content-center gap-2 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold shadow-sm' : 'bg-white border-light text-muted'}`}>
+                                       {isCorrect && <CheckCircle size={16} />}
+                                       <span>{val}</span>
+                                     </div>
+                                   );
+                                 })}
+                               </div>
+                             )}
 
-                            {/* True/False Options */}
-                            {isTF && (
-                              <div className="d-flex gap-3">
-                                {['True', 'False'].map((val, idx) => {
-                                  const isCorrect = correctAnswers.includes(val);
-                                  return (
-                                    <div key={idx} className={`px-4 py-2 rounded-pill border font-size-12 transition-2 d-flex align-items-center gap-2 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold' : 'bg-light-subtle border-light text-muted'}`}>
-                                      {isCorrect && <CheckCircle size={14} />}
-                                      <span>{val}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-
-                            {/* Matching Pairs - Inline Layout */}
-                            {isMatching && q.matchingPairs && q.matchingPairs.length > 0 && (
-                              <div className="d-flex flex-wrap gap-2">
-                                {q.matchingPairs.map((pair: any, idx: number) => (
-                                  <div key={idx} className="bg-white border rounded-pill px-3 py-1 d-flex align-items-center gap-2 shadow-sm font-size-12">
-                                    <span className="text-dark fw-medium">{pair.prompt}</span>
-                                    <span className="text-muted opacity-50 mx-1">→</span>
-                                    <span className="text-primary fw-bold">{pair.answer}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* RIGHT: Actions & Meta */}
-                          <div className="p-3 d-flex flex-row flex-md-column align-items-center justify-content-center gap-3 border-start border-light bg-light-subtle" style={{ minWidth: '100px' }}>
-                            <div className="text-center">
-                              <span className="d-block font-size-18 fw-bold text-dark lh-1">{q.marks}</span>
-                              <span className="font-size-10 text-muted fw-bold text-uppercase tracking-wider">PTS</span>
-                            </div>
-                            <div className="d-flex gap-2">
-                              <button className="btn-icon-sm bg-white border shadow-sm text-info hover-scale rounded-circle" onClick={() => openUpdateObj(q.quesId || q.id || q.qId, q.questionType)}><Edit size={14} /></button>
-                              <button className="btn-icon-sm bg-white border shadow-sm text-danger hover-scale rounded-circle" onClick={() => doDeleteQuestion(q.quesId || q.id || q.qId)}><Trash2 size={14} /></button>
-                            </div>
-                          </div>
-
+                             {/* Matching Pairs */}
+                             {isMatching && q.matchingPairs && q.matchingPairs.length > 0 && (
+                               <div className="d-flex flex-column gap-2">
+                                 {q.matchingPairs.map((pair: any, idx: number) => (
+                                   <div key={idx} className="bg-white border rounded-3 px-3 py-2 d-flex align-items-center justify-content-between shadow-sm font-size-13">
+                                     <span className="text-dark fw-medium text-truncate w-50">{pair.prompt}</span>
+                                     <div className="d-flex align-items-center gap-2 w-50 justify-content-end">
+                                       <span className="text-muted opacity-50"><ChevronRight size={14}/></span>
+                                       <span className="text-primary fw-bold text-truncate text-end" style={{ maxWidth: '80%' }}>{pair.answer}</span>
+                                     </div>
+                                   </div>
+                                 ))}
+                               </div>
+                             )}
+                           </div>
                         </div>
                       </div>
+                    </div>
                   );
                 })}
               </div>
@@ -478,68 +479,68 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
               <div className="d-flex flex-column gap-4 mt-2">
                 {getPrefixes().map(prefix => (
-                  <div key={prefix} className="minia-card shadow-sm border-0 overflow-hidden standout-row">
+                  <div key={prefix} className="minia-card shadow-lg border-0 overflow-hidden" style={{ borderRadius: '16px' }}>
                     {/* Group Header */}
                     <div className="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom border-light">
                       <div className="d-flex align-items-center gap-3">
-                        <div className="avatar-xs rounded bg-success text-white d-flex align-items-center justify-content-center shadow-sm">
-                          <span className="font-size-13 fw-bold">{prefix}</span>
+                        <div className="avatar-sm rounded-circle bg-success bg-gradient text-white d-flex align-items-center justify-content-center shadow-sm">
+                          <span className="font-size-16 fw-bold">{prefix}</span>
                         </div>
                         <div>
-                          <h6 className="mb-0 font-size-14 fw-bold text-dark">Group Protocol {prefix}</h6>
+                          <h6 className="mb-0 font-size-16 fw-bold text-dark">Group Protocol {prefix}</h6>
                           <span className="text-muted font-size-11 text-uppercase tracking-wider fw-medium">Instructional Assessment Set</span>
                         </div>
                       </div>
-                      <div className="d-flex align-items-center gap-3 bg-light-subtle px-3 py-1 rounded-pill border">
-                        <div className="d-flex flex-column align-items-end me-1">
-                          <span className="font-size-9 fw-bold text-muted text-uppercase tracking-wider">Status</span>
-                          <span className={`font-size-10 fw-bold ${compulsoryPrefixes[prefix] ? 'text-primary' : 'text-muted'}`}>{compulsoryPrefixes[prefix] ? 'MANDATORY' : 'OPTIONAL'}</span>
+                      <div className="d-flex align-items-center gap-3 bg-light-subtle px-4 py-2 rounded-pill border">
+                        <div className="d-flex flex-column align-items-end me-2">
+                          <span className="font-size-9 fw-bold text-muted text-uppercase tracking-wider">Group Status</span>
+                          <span className={`font-size-11 fw-bold ${compulsoryPrefixes[prefix] ? 'text-primary' : 'text-muted'}`}>{compulsoryPrefixes[prefix] ? 'MANDATORY' : 'OPTIONAL'}</span>
                         </div>
                         <div
                           onClick={() => !isUpdatingCompulsory[prefix] && onCompulsoryChange(prefix, !compulsoryPrefixes[prefix])}
                           className={`minia-switch ${compulsoryPrefixes[prefix] ? 'on' : ''}`}
-                          style={{ transform: 'scale(0.85)' }}
+                          style={{ transform: 'scale(0.9)', cursor: 'pointer' }}
                         >
                           <div className="switch-dot" />
                         </div>
                       </div>
                     </div>
                     
-                    {/* Horizontal Rows */}
-                    <div className="d-flex flex-column bg-light-subtle">
+                    {/* Vertical Rows */}
+                    <div className="d-flex flex-column bg-light-subtle p-3 gap-3">
                       {getGrouped(prefix).map((q: any, idx: number, arr: any[]) => (
-                        <div key={q.tqId} className={`d-flex flex-column flex-lg-row align-items-stretch bg-white ${idx !== arr.length - 1 ? 'border-bottom border-light' : ''}`}>
+                        <div key={q.tqId} className="bg-white rounded-3 shadow-sm border border-light p-4 d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-4 transition-2 hover-scale">
                           
                           {/* LEFT: Badges */}
-                          <div className="p-3 d-flex flex-row flex-lg-column align-items-center justify-content-center gap-2 border-end border-light" style={{ minWidth: '100px' }}>
-                            <span className="badge bg-soft-primary text-primary font-size-13 fw-bold px-3 py-2 rounded shadow-sm">
+                          <div className="d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '60px' }}>
+                            <span className="badge bg-soft-success text-success font-size-15 fw-bold px-3 py-2 rounded-circle shadow-sm" style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               {q.quesNo}
                             </span>
                           </div>
 
                           {/* MIDDLE: Content */}
-                          <div className="p-4 flex-grow-1 d-flex flex-column gap-3 justify-content-center">
-                            <div className="font-size-14 fw-bold text-dark lh-base" dangerouslySetInnerHTML={{ __html: q.question }} />
+                          <div className="flex-grow-1 d-flex flex-column gap-3">
+                            <div className="font-size-15 fw-bold text-dark lh-base" dangerouslySetInnerHTML={{ __html: q.question }} />
                             {q.evaluationCriteria && (
-                              <div className="bg-light-subtle rounded px-3 py-2 border-start border-3 border-success">
-                                <div className="d-flex align-items-center gap-2 text-success mb-1">
-                                  <Target size={12} />
-                                  <span className="font-size-10 fw-bold text-uppercase letter-spacing-1">Evaluation KPI</span>
+                              <div className="bg-light-subtle rounded-3 px-4 py-3 border-start border-4 border-success mt-1">
+                                <div className="d-flex align-items-center gap-2 text-success mb-2">
+                                  <Target size={14} />
+                                  <span className="font-size-11 fw-bold text-uppercase letter-spacing-1">Evaluation KPI</span>
                                 </div>
-                                <p className="font-size-12 text-muted mb-0 font-italic">"{q.evaluationCriteria}"</p>
+                                <p className="font-size-13 text-muted mb-0 fw-medium">"{q.evaluationCriteria}"</p>
                               </div>
                             )}
                           </div>
 
                           {/* RIGHT: Actions */}
-                          <div className="p-3 d-flex flex-row flex-lg-column align-items-center justify-content-center gap-3 border-start border-light bg-light-subtle" style={{ minWidth: '100px' }}>
-                            <div className="text-center">
-                              <span className="d-block font-size-18 fw-bold text-dark lh-1">{q.marks}</span>
+                          <div className="d-flex flex-column align-items-center justify-content-center gap-3 flex-shrink-0" style={{ width: '100px' }}>
+                            <div className="text-center bg-light-subtle rounded-3 py-2 px-3 border w-100">
+                              <span className="d-block font-size-20 fw-bold text-dark lh-1 mb-1">{q.marks}</span>
                               <span className="font-size-10 text-muted fw-bold text-uppercase tracking-wider">PTS</span>
                             </div>
-                            <div className="d-flex gap-2">
-                              <button className="btn-icon-sm bg-white border shadow-sm text-info hover-scale rounded-circle" onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}><Edit size={14} /></button>
-                              <button className="btn-icon-sm bg-white border shadow-sm text-danger hover-scale rounded-circle" onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}><Trash2 size={14} /></button>
+                            <div className="d-flex gap-2 w-100 justify-content-center">
+                              <button className="btn-icon-sm bg-white border shadow-sm text-info hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}><Edit size={14} /></button>
+                              <button className="btn-icon-sm bg-white border shadow-sm text-danger hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}><Trash2 size={14} /></button>
                             </div>
                           </div>
                         </div>

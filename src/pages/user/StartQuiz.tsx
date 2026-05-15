@@ -363,10 +363,13 @@ export default function StartQuiz() {
         await saveTheory();
         const selQs: any[] = [];
         Object.entries(selectedPfx).forEach(([pfx, sel]) => { if (sel) selQs.push(...sectionBAll.filter(q => q.quesNo?.startsWith(pfx))); });
-        const theoryResult: any = await evalTheory({ contents: [{ parts: selQs.map(item => ({ text: `ID:${item.quesId} NO:${item.quesNo} Q:${item.question} A:${item.givenAnswer || ''}` })) }] }).catch(() => null);
-        if (Array.isArray(theoryResult)) {
-          const totalMarks = theoryResult.reduce((s: number, r: any) => s + (r.score || 0), 0);
-          await addSectionBMarks({ marksB: totalMarks, quiz: { qId: qid } }).catch(() => { });
+        
+        if (selQs.length > 0) {
+          const theoryResult: any = await evalTheory({ contents: [{ parts: selQs.map(item => ({ text: `quizId ${qid}: tqid ${item.tqId || item.tqid || item.quesId}: Question Number ${item.quesNo}: ${item.question} Answer: ${item.givenAnswer || 'No answer provided'} Marks: ${item.marks || 10} Criteria: ${item.evaluationCriteria || item.criteria || 'Standard evaluation'}` })) }] }).catch((e) => { console.error('evalTheory failed:', e); return null; });
+          if (Array.isArray(theoryResult)) {
+            const totalMarks = theoryResult.reduce((s: number, r: any) => s + (r.score || 0), 0);
+            await addSectionBMarks({ marksB: totalMarks, quiz: { qId: qid } }).catch(() => { });
+          }
         }
       }
       await deleteQuizTimer(qid!).catch(() => { });
@@ -379,7 +382,7 @@ export default function StartQuiz() {
         icon: 'success',
         confirmButtonColor: '#7a6fbe',
       });
-      window.close();
+      window.location.reload();
     } catch (e) {
       setSubmitting(false);
       Swal.fire({ title: 'Error', text: 'Connection lost. Please try again.', icon: 'error' });
