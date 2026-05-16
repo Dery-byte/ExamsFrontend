@@ -98,6 +98,7 @@ export default function StartQuiz() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [submitLogs, setSubmitLogs] = useState<Array<{ msg: string; type: 'info'|'ok'|'warn'|'err' }>>([]);
   const [quiz, setQuiz] = useState<any>(null);
   const [quizType, setQuizType] = useState<QuizType>('OBJ');
   const [section, setSection] = useState<Section>('A');
@@ -338,6 +339,9 @@ export default function StartQuiz() {
     }));
   };
 
+  const addLog = (msg: string, type: 'info'|'ok'|'warn'|'err' = 'info') =>
+    setSubmitLogs(prev => [...prev, { msg, type }]);
+
   const submitAll = useCallback(async (auto = false) => {
     if (submitting) return;
     if (!auto) {
@@ -355,37 +359,92 @@ export default function StartQuiz() {
       if (!result.isConfirmed) return;
     }
     setSubmitting(true);
+    setSubmitLogs([]);
+
     try {
+      // ── Section A: Objective ──────────────────────────────────────────────
       if ((quizType === 'OBJ' || quizType === 'BOTH') && questions.length > 0) {
-        await evalQuiz(qid!, questions.map(q => ({ ...q, givenAnswer: Array.isArray(q.givenAnswer) ? q.givenAnswer : [q.givenAnswer ?? ''] }))).catch(() => { });
+        addLog(`Submitting ${questions.length} objective question(s)…`, 'info');
+        await evalQuiz(qid!, questions.map(q => ({
+          ...q,
+          givenAnswer: Array.isArray(q.givenAnswer) ? q.givenAnswer : [q.givenAnswer ?? ''],
+        }))).catch((e: any) => {
+          const errMsg = e.response?.data?.error || e.response?.data?.message || e.message || 'Unknown error';
+          addLog(`Objective evaluation error: ${errMsg}`, 'err');
+          Swal.fire({ title: 'Objective Error', text: errMsg, icon: 'error' });
+          throw new Error(errMsg);
+        });
+        addLog('Objective answers submitted ✓', 'ok');
       }
+
+      // ── Section B: Theory ─────────────────────────────────────────────────
       if ((quizType === 'THEORY' || quizType === 'BOTH') && sectionBAll.length > 0) {
+        addLog('Saving theory draft…', 'info');
         await saveTheory();
+        addLog('Theory draft saved ✓', 'ok');
+
         const selQs: any[] = [];
-        Object.entries(selectedPfx).forEach(([pfx, sel]) => { if (sel) selQs.push(...sectionBAll.filter(q => q.quesNo?.startsWith(pfx))); });
-        
+        Object.entries(selectedPfx).forEach(([pfx, sel]) => {
+          if (sel) selQs.push(...sectionBAll.filter(q => q.quesNo?.startsWith(pfx)));
+        });
+
         if (selQs.length > 0) {
-          const theoryResult: any = await evalTheory({ contents: [{ parts: selQs.map(item => ({ text: `quizId ${qid}: tqid ${item.tqId || item.tqid || item.quesId}: Question Number ${item.quesNo}: ${item.question} Answer: ${item.givenAnswer || 'No answer provided'} Marks: ${item.marks || 10} Criteria: ${item.evaluationCriteria || item.criteria || 'Standard evaluation'}` })) }] }).catch((e) => { console.error('evalTheory failed:', e); return null; });
-          if (Array.isArray(theoryResult)) {
-            const totalMarks = theoryResult.reduce((s: number, r: any) => s + (r.score || 0), 0);
-            await addSectionBMarks({ marksB: totalMarks, quiz: { qId: qid } }).catch(() => { });
+          addLog(`Sending ${selQs.length} theory question(s) to AI evaluation…`, 'info');
+          selQs.forEach((q, i) =>
+            addLog(`  [${i + 1}/${selQs.length}] Evaluating: ${q.quesNo} — "${(q.question ?? '').slice(0, 60)}…"`, 'info')
+          );
+
+          const theoryResult: any = await evalTheory({
+            contents: [{
+              parts: selQs.map(item => ({
+                text: `quizId ${qid}: tqid ${item.tqId || item.tqid || item.quesId}: Question Number ${item.quesNo}: ${item.question} Answer: ${item.givenAnswer || 'No answer provided'} Marks: ${item.marks || 10} Criteria: ${item.evaluationCriteria || item.criteria || 'Standard evaluation'}`,
+              })),
+            }],
+          }).catch((e: any) => {
+            const errMsg = e.response?.data?.error || e.response?.data?.message || e.message || 'Unknown error';
+            addLog(`AI evaluation failed: ${errMsg}`, 'err');
+            Swal.fire({ title: 'AI Evaluation Error', text: errMsg, icon: 'error' });
+            throw new Error(errMsg);
+          });
+
+          // Backend returns QuizEvaluationResponse (object), not an array
+          if (theoryResult && typeof theoryResult === 'object' && theoryResult.summary) {
+            const s = theoryResult.summary;
+            addLog(`AI evaluation complete ✓  Score: ${s.totalScore}/${s.totalMaxMarks} (${s.percentage?.toFixed(1)}%)`, 'ok');
+            if (theoryResult.results?.length) {
+              theoryResult.results.forEach((r: any) => {
+                const icon = r.score > 0 ? '✓' : '✗';
+                addLog(`  ${icon} Q${r.questionNumber}: ${r.score}/${r.maxMarks} — ${(r.feedback ?? '').slice(0, 80)}`, r.score > 0 ? 'ok' : 'warn');
+              });
+            }
+          } else if (theoryResult) {
+            addLog('Theory evaluation received (no summary data)', 'warn');
           }
+        } else {
+          addLog('No theory question groups selected — skipped.', 'warn');
         }
       }
+
+      // ── Cleanup ───────────────────────────────────────────────────────────
+      addLog('Cleaning up session data…', 'info');
       await deleteQuizTimer(qid!).catch(() => { });
       clearQuizAnswers(qid!).catch(() => { });
       clearTheoryAnswers(qid!).catch(() => { });
+      addLog('Session finalised ✓', 'ok');
+
+      // Brief pause so student can see final log
+      await new Promise(r => setTimeout(r, 1500));
 
       await Swal.fire({
-        title: 'Success!',
-        text: 'Assessment submitted successfully.',
+        title: 'Submitted!',
+        text: 'Your assessment has been successfully submitted for grading.',
         icon: 'success',
         confirmButtonColor: '#7a6fbe',
       });
       window.location.reload();
-    } catch (e) {
+    } catch (e: any) {
       setSubmitting(false);
-      Swal.fire({ title: 'Error', text: 'Connection lost. Please try again.', icon: 'error' });
+      // We don't clear logs here so the user can see what failed
     }
   }, [quizType, questions, sectionBAll, selectedPfx, qid, saveTheory, submitting]);
   submitAllRef.current = submitAll;
