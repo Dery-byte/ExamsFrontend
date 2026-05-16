@@ -358,11 +358,11 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                     <div key={q.quesId} className="vqq-obj-card">
                       {/* Colored Header */}
                       <div className="vqq-obj-header" style={{ background: headerGrad }}>
-                        <div className="d-flex align-items-center gap-2">
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                           <span className="vqq-obj-num">#{i + 1}</span>
                           <span className="vqq-obj-type">{typeLabel}</span>
                         </div>
-                        <div className="d-flex align-items-center gap-2">
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                           <button className="vqq-hdr-btn" title="Edit" onClick={() => openUpdateObj(q.quesId || q.id || q.qId, q.questionType)}>
                             <Edit size={14} />
                           </button>
@@ -532,14 +532,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                               </div>
                             )}
                           </div>
-                          <div className="vqq-q-actions">
-                            <div className="vqq-marks-chip">
-                              <span className="d-block font-size-18 fw-bold text-dark lh-1">{q.marks}</span>
-                              <span className="font-size-9 text-muted fw-bold text-uppercase">PTS</span>
+                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                            <div style={{ textAlign: 'center', background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '8px', padding: '6px 10px', minWidth: '52px' }}>
+                              <span style={{ display: 'block', fontSize: '16px', fontWeight: 700, color: '#2a3142', lineHeight: 1 }}>{q.marks}</span>
+                              <span style={{ fontSize: '9px', color: '#74788d', fontWeight: 700, textTransform: 'uppercase' }}>PTS</span>
                             </div>
-                            <div className="d-flex gap-2">
-                              <button className="vqq-act-btn" style={{ color: '#4ba3ff' }} onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}><Edit size={14} /></button>
-                              <button className="vqq-act-btn" style={{ color: '#fd625e' }} onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}><Trash2 size={14} /></button>
+                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px' }}>
+                              <button style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #e9ecef', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4ba3ff', transition: 'all 0.2s', flexShrink: 0 }} onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}><Edit size={14} /></button>
+                              <button style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #e9ecef', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fd625e', transition: 'all 0.2s', flexShrink: 0 }} onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}><Trash2 size={14} /></button>
                             </div>
                           </div>
                         </div>
@@ -924,7 +924,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .vqq-q-num { width: 42px; height: 42px; border-radius: 10px; background: rgba(42,181,125,0.1); display: flex; align-items: center; justify-content: center; color: #2ab57d; font-size: 12px; font-weight: 800; flex-shrink: 0; }
         .vqq-q-content { flex: 1; min-width: 0; }
         .vqq-eval-box { background: #f0faf5; border-left: 3px solid #2ab57d; border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 8px; }
-        .vqq-q-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
+        .vqq-q-actions { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
         .vqq-marks-chip { text-align: center; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 8px 12px; min-width: 56px; }
         .vqq-act-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e9ecef; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.06); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .vqq-act-btn:hover { transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
@@ -934,7 +934,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
           .vqq-header-actions { width: 100%; }
           .vqq-obj-grid { grid-template-columns: 1fr; }
           .vqq-theory-row { flex-wrap: wrap; }
-          .vqq-q-actions { flex-direction: row; width: 100%; justify-content: flex-end; padding-top: 8px; }
+          .vqq-q-actions { justify-content: flex-end; padding-top: 4px; }
           .vqq-theory-header { flex-direction: column; align-items: flex-start; }
           .minia-modal-overlay > div { width: 95vw !important; max-width: none !important; }
         }
