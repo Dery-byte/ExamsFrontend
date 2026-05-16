@@ -100,36 +100,36 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   const openUpdateObj = async (idParam: any, fallbackType?: string) => {
     const idToUse = idParam;
     console.log("Immediate Modal Trigger for ID:", idToUse);
-    
+
     // Clear previous and open immediately
     setSpecificObj({ questionType: (fallbackType || 'MCQ').toUpperCase(), correctAnswer: [], matchingPairs: [] });
     setEditObjModal(true);
     setIsModalLoading(true);
 
     if (!idToUse) {
-       toast.error("Invalid item identifier - missing ID");
-       setIsModalLoading(false);
-       return;
+      toast.error("Invalid item identifier - missing ID");
+      setIsModalLoading(false);
+      return;
     }
 
     try {
       const data = await getQuestion(idToUse);
       console.log("API Response received:", data);
       if (!data) throw new Error("No data returned");
-      
+
       const cAns = data.correctAnswer || data.correct_answer || [];
       const rawType = data.questionType || data.question_type || fallbackType || 'MCQ';
       const qType = String(rawType).toUpperCase();
-      
-      setSpecificObj({ 
-        ...data, 
-        questionType: qType, 
+
+      setSpecificObj({
+        ...data,
+        questionType: qType,
         correctAnswer: Array.isArray(cAns) ? cAns : (cAns ? [cAns] : []),
-        matchingPairs: Array.isArray(data.matchingPairs) ? data.matchingPairs.map((p: any) => ({ ...p })) : [] 
+        matchingPairs: Array.isArray(data.matchingPairs) ? data.matchingPairs.map((p: any) => ({ ...p })) : []
       });
-    } catch (err) { 
+    } catch (err) {
       console.error("Fetch failure:", err);
-      toast.error('Could not sync with registry'); 
+      toast.error('Could not sync with registry');
       setEditObjModal(false);
     } finally {
       setIsModalLoading(false);
@@ -182,7 +182,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   const openUpdateTheory = async (idParam: any) => {
     const idToUse = idParam;
     console.log("Immediate Theory Modal Trigger for ID:", idToUse);
-    
+
     setTheory({});
     setEditTheoryModal(true);
     setIsModalLoading(true);
@@ -201,18 +201,18 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
       // Validate data structure. If empty, force fallback to local.
       if (!data || typeof data !== 'object' || !data.quesNo) {
-         throw new Error("Invalid or empty data from API");
+        throw new Error("Invalid or empty data from API");
       }
-      
+
       setTheory({ ...data, marks: data.marks ?? 0 });
     } catch (err) {
       console.warn("Falling back to local theory data:", err);
       const local = sectionB.find(q => String(q.tqId || q.id || q.quesId || q.theoryId) === String(idToUse));
-      if (local) { 
-        setTheory({ ...local, marks: local.marks ?? 0 }); 
-      } else { 
-        toast.error("Failed to sync protocol"); 
-        setEditTheoryModal(false); 
+      if (local) {
+        setTheory({ ...local, marks: local.marks ?? 0 });
+      } else {
+        toast.error("Failed to sync protocol");
+        setEditTheoryModal(false);
       }
     } finally {
       setIsModalLoading(false);
@@ -264,7 +264,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   };
 
   return (
-    <div className="minia-page animate-fade-in">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', overflowX: 'hidden' }} className="minia-page animate-fade-in">
       <Toaster position="top-right" />
 
       <div className="page-title-box d-flex align-items-center justify-content-between mb-4">
@@ -335,8 +335,8 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                   <span className="text-muted font-size-12 fw-medium">{questions.length} Active Items</span>
                 </div>
               </div>
-              
-              <div className="row g-4">
+
+              <div className="vqq-obj-grid">
                 {questions.map((q, i) => {
                   const isMatching = (q.questionType || '').toUpperCase() === 'MATCHING';
                   const isTF = (q.questionType || '').toUpperCase() === 'TRUE_FALSE';
@@ -345,82 +345,82 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                   const correctAnswers = q.correctAnswer ?? q.correct_answer ?? [];
 
                   return (
-                    <div key={q.quesId} className="col-12 col-md-6">
+                    <div key={q.quesId}>
                       <div className="minia-card border-0 shadow-sm h-100 d-flex flex-column transition-2 hover-scale" style={{ background: bgGradient, borderTop: `4px solid ${typeColor}`, borderRadius: '16px', overflow: 'hidden' }}>
                         
                         {/* Header */}
                         <div className="p-3 d-flex justify-content-between align-items-center bg-white bg-opacity-75 border-bottom border-light">
-                           <div className="d-flex align-items-center gap-2">
-                             <span className="badge font-size-13 fw-bold px-3 py-1 rounded-pill shadow-sm" style={{ backgroundColor: typeColor, color: '#fff' }}>#{i + 1}</span>
-                             <span className="badge font-size-10 px-2 py-1 text-uppercase fw-bold rounded-pill" style={{ backgroundColor: `${typeColor}15`, color: typeColor, letterSpacing: '0.5px' }}>
-                               {isMatching ? 'Matching' : isTF ? 'True/False' : 'MCQ'}
-                             </span>
-                           </div>
-                           <div className="d-flex align-items-center gap-3">
-                             <div className="text-end">
-                               <span className="d-inline-block font-size-16 fw-bold text-dark lh-1 me-1">{q.marks}</span>
-                               <span className="font-size-9 text-muted fw-bold text-uppercase tracking-wider">PTS</span>
-                             </div>
-                             <div className="d-flex gap-2">
-                               <button className="btn-icon-xs bg-white border shadow-sm text-info hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }} onClick={() => openUpdateObj(q.quesId || q.id || q.qId, q.questionType)}><Edit size={13} /></button>
-                               <button className="btn-icon-xs bg-white border shadow-sm text-danger hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }} onClick={() => doDeleteQuestion(q.quesId || q.id || q.qId)}><Trash2 size={13} /></button>
-                             </div>
-                           </div>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className="badge font-size-13 fw-bold px-3 py-1 rounded-pill shadow-sm" style={{ backgroundColor: typeColor, color: '#fff' }}>#{i + 1}</span>
+                            <span className="badge font-size-10 px-2 py-1 text-uppercase fw-bold rounded-pill" style={{ backgroundColor: `${typeColor}15`, color: typeColor, letterSpacing: '0.5px' }}>
+                              {isMatching ? 'Matching' : isTF ? 'True/False' : 'MCQ'}
+                            </span>
+                          </div>
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="text-end">
+                              <span className="d-inline-block font-size-16 fw-bold text-dark lh-1 me-1">{q.marks}</span>
+                              <span className="font-size-9 text-muted fw-bold text-uppercase tracking-wider">PTS</span>
+                            </div>
+                            <div className="d-flex gap-2">
+                              <button className="btn-icon-xs bg-white border shadow-sm text-info hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }} onClick={() => openUpdateObj(q.quesId || q.id || q.qId, q.questionType)}><Edit size={13} /></button>
+                              <button className="btn-icon-xs bg-white border shadow-sm text-danger hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }} onClick={() => doDeleteQuestion(q.quesId || q.id || q.qId)}><Trash2 size={13} /></button>
+                            </div>
+                          </div>
                         </div>
 
                         {/* Content */}
                         <div className="p-4 flex-grow-1 d-flex flex-column">
-                           <div className="font-size-15 fw-bold text-dark mb-4 lh-base" dangerouslySetInnerHTML={{ __html: q.content }} />
-                           
-                           <div className="mt-auto">
-                             {/* MCQ Options */}
-                             {!isMatching && !isTF && (
-                               <div className="d-flex flex-column gap-2">
-                                 {['option1', 'option2', 'option3', 'option4'].map((optKey, idx) => {
-                                   const optVal = q[optKey];
-                                   if (!optVal) return null;
-                                   const isCorrect = correctAnswers.includes(optVal);
-                                   return (
-                                     <div key={idx} className={`px-3 py-2 rounded-3 border font-size-13 transition-2 d-flex align-items-center gap-3 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold shadow-sm' : 'bg-white border-light text-muted'}`}>
-                                       <span className={`fw-bold ${isCorrect ? 'text-success' : 'text-primary'}`} style={{ width: 20 }}>{String.fromCharCode(65 + idx)}.</span>
-                                       <span className="text-truncate flex-grow-1">{optVal}</span>
-                                       {isCorrect && <CheckCircle size={16} className="flex-shrink-0" />}
-                                     </div>
-                                   );
-                                 })}
-                               </div>
-                             )}
+                          <div className="font-size-15 fw-bold text-dark mb-4 lh-base" dangerouslySetInnerHTML={{ __html: q.content }} />
 
-                             {/* True/False Options */}
-                             {isTF && (
-                               <div className="d-flex gap-3">
-                                 {['True', 'False'].map((val, idx) => {
-                                   const isCorrect = correctAnswers.includes(val);
-                                   return (
-                                     <div key={idx} className={`flex-fill px-4 py-3 rounded-3 border font-size-14 transition-2 d-flex align-items-center justify-content-center gap-2 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold shadow-sm' : 'bg-white border-light text-muted'}`}>
-                                       {isCorrect && <CheckCircle size={16} />}
-                                       <span>{val}</span>
-                                     </div>
-                                   );
-                                 })}
-                               </div>
-                             )}
+                          <div className="mt-auto">
+                            {/* MCQ Options */}
+                            {!isMatching && !isTF && (
+                              <div className="d-flex flex-column gap-2">
+                                {['option1', 'option2', 'option3', 'option4'].map((optKey, idx) => {
+                                  const optVal = q[optKey];
+                                  if (!optVal) return null;
+                                  const isCorrect = correctAnswers.includes(optVal);
+                                  return (
+                                    <div key={idx} className={`px-3 py-2 rounded-3 border font-size-13 transition-2 d-flex align-items-center gap-3 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold shadow-sm' : 'bg-white border-light text-muted'}`}>
+                                      <span className={`fw-bold ${isCorrect ? 'text-success' : 'text-primary'}`} style={{ width: 20 }}>{String.fromCharCode(65 + idx)}.</span>
+                                      <span className="text-truncate flex-grow-1">{optVal}</span>
+                                      {isCorrect && <CheckCircle size={16} className="flex-shrink-0" />}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
 
-                             {/* Matching Pairs */}
-                             {isMatching && q.matchingPairs && q.matchingPairs.length > 0 && (
-                               <div className="d-flex flex-column gap-2">
-                                 {q.matchingPairs.map((pair: any, idx: number) => (
-                                   <div key={idx} className="bg-white border rounded-3 px-3 py-2 d-flex align-items-center justify-content-between shadow-sm font-size-13">
-                                     <span className="text-dark fw-medium text-truncate w-50">{pair.prompt}</span>
-                                     <div className="d-flex align-items-center gap-2 w-50 justify-content-end">
-                                       <span className="text-muted opacity-50"><ChevronRight size={14}/></span>
-                                       <span className="text-primary fw-bold text-truncate text-end" style={{ maxWidth: '80%' }}>{pair.answer}</span>
-                                     </div>
-                                   </div>
-                                 ))}
-                               </div>
-                             )}
-                           </div>
+                            {/* True/False Options */}
+                            {isTF && (
+                              <div className="d-flex gap-3">
+                                {['True', 'False'].map((val, idx) => {
+                                  const isCorrect = correctAnswers.includes(val);
+                                  return (
+                                    <div key={idx} className={`flex-fill px-4 py-3 rounded-3 border font-size-14 transition-2 d-flex align-items-center justify-content-center gap-2 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold shadow-sm' : 'bg-white border-light text-muted'}`}>
+                                      {isCorrect && <CheckCircle size={16} />}
+                                      <span>{val}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Matching Pairs */}
+                            {isMatching && q.matchingPairs && q.matchingPairs.length > 0 && (
+                              <div className="d-flex flex-column gap-2">
+                                {q.matchingPairs.map((pair: any, idx: number) => (
+                                  <div key={idx} className="bg-white border rounded-3 px-3 py-2 d-flex align-items-center justify-content-between shadow-sm font-size-13">
+                                    <span className="text-dark fw-medium text-truncate w-50">{pair.prompt}</span>
+                                    <div className="d-flex align-items-center gap-2 w-50 justify-content-end">
+                                      <span className="text-muted opacity-50"><ChevronRight size={14} /></span>
+                                      <span className="text-primary fw-bold text-truncate text-end" style={{ maxWidth: '80%' }}>{pair.answer}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -505,12 +505,12 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Vertical Rows */}
                     <div className="d-flex flex-column bg-light-subtle p-3 gap-3">
                       {getGrouped(prefix).map((q: any, idx: number, arr: any[]) => (
                         <div key={q.tqId} className="bg-white rounded-3 shadow-sm border border-light p-4 d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-4 transition-2 hover-scale">
-                          
+
                           {/* LEFT: Badges */}
                           <div className="d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '60px' }}>
                             <span className="badge bg-soft-success text-success font-size-15 fw-bold px-3 py-2 rounded-circle shadow-sm" style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -556,277 +556,135 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
       {/* MODALS */}
       {editObjModal && createPortal(
-        <div className="minia-modal-overlay">
-          <div
-            className="animate-scale-up"
-            style={{
-              background: '#fff', borderRadius: '0.5rem',
-              width: '100%', maxWidth: '540px',
-              maxHeight: '95vh',
-              display: 'flex', flexDirection: 'column',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
-              overflow: 'hidden'
-            }}
-          >
-            {/* MODAL HEADER */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '0.75rem 1.25rem', borderBottom: '1px solid #eff0f2', flexShrink: 0,
-              background: 'linear-gradient(to right, #ffffff, #fbfbfd)'
-            }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ background: '#fff', borderRadius: '14px', width: '100%', maxWidth: '520px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+
+            {/* HEADER */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
               {isModalLoading ? (
-                <div className="d-flex align-items-center gap-3">
-                   <div className="spinner-border spinner-border-sm text-primary" role="status" />
-                   <h5 className="mb-0 fw-bold font-size-15 text-dark">Synchronizing Registry...</h5>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Loader2 style={{ animation: 'spin 1s linear infinite', color: '#5156be' }} size={18} />
+                  <span style={{ fontWeight: 700, fontSize: '15px', color: '#2a3142' }}>Synchronizing...</span>
                 </div>
               ) : (
-                <div className="d-flex align-items-center gap-2">
-                  <div>
-                    <h5 className="mb-0 fw-bold font-size-15 text-dark">Edit Objective Question</h5>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(81,86,190,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5156be' }}><Edit size={16} /></div>
+                  <h5 style={{ margin: 0, fontWeight: 800, fontSize: '15px', color: '#2a3142' }}>Edit Objective Question</h5>
+                </div>
+              )}
+              <button onClick={() => setEditObjModal(false)} style={{ width: 32, height: 32, borderRadius: '8px', border: '1px solid #e9ecef', background: '#f8f9fa', color: '#74788d', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
+            </div>
+
+            {/* BODY */}
+            <div style={{ padding: '16px 20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+              {/* Type + Marks */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 3, minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Question Type</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#f8f9fa', height: '38px' }}>
+                    <span style={{ background: '#5156be', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>{specificObj.questionType}</span>
+                    <span style={{ fontSize: '12px', color: '#495057', fontWeight: 600 }}>
+                      {(specificObj.questionType || '').toUpperCase() === 'MCQ' && 'Multiple Choice'}
+                      {(specificObj.questionType || '').toUpperCase() === 'TRUE_FALSE' && 'True / False'}
+                      {(specificObj.questionType || '').toUpperCase() === 'MATCHING' && 'Matching'}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ flex: 1, minWidth: '80px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Marks</label>
+                  <input type="number" style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '14px', fontWeight: 700, color: '#5156be', textAlign: 'center', height: '38px', boxSizing: 'border-box' }}
+                    value={specificObj.marks || ''} onChange={e => setSpecificObj({ ...specificObj, marks: Number(e.target.value) })} placeholder="0" />
+                </div>
+              </div>
+
+              {/* Question Text */}
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Question Text</label>
+                <textarea style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '13px', resize: 'vertical', minHeight: '70px', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fafbff' }}
+                  value={specificObj.content || ''} onChange={e => setSpecificObj({ ...specificObj, content: e.target.value })} placeholder="Enter the question text..." />
+              </div>
+
+              {/* MCQ Options */}
+              {(specificObj.questionType || '').toUpperCase() === 'MCQ' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Options <span style={{ fontSize: '10px', fontWeight: 400, textTransform: 'none', color: '#adb5bd' }}>(click circle to mark correct)</span></label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {['option1', 'option2', 'option3', 'option4'].map((opt, i) => {
+                      const optVal = specificObj[opt];
+                      const isSel = (specificObj.correctAnswer || []).includes(optVal);
+                      return (
+                        <div key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '8px', border: `1px solid ${isSel ? '#5156be' : '#e9ecef'}`, background: isSel ? 'rgba(81,86,190,0.06)' : '#fff' }}>
+                          <button type="button" onClick={() => { if (!optVal) return; const cur = specificObj.correctAnswer || []; setSpecificObj({ ...specificObj, correctAnswer: isSel ? cur.filter((v: any) => v !== optVal) : [...cur, optVal] }); }}
+                            style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: isSel ? '#5156be' : '#f1f3fa', color: isSel ? '#fff' : '#74788d', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {isSel ? <Check size={12} strokeWidth={3} /> : <span style={{ fontSize: '9px', fontWeight: 700 }}>{String.fromCharCode(65 + i)}</span>}
+                          </button>
+                          <input style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 500, outline: 'none', minWidth: 0 }}
+                            value={optVal || ''} onChange={e => setSpecificObj({ ...specificObj, [opt]: e.target.value })} placeholder={`Option ${String.fromCharCode(65 + i)}...`} />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
-              <button
-                onClick={() => setEditObjModal(false)}
-                className="btn-icon-sm rounded-circle"
-                style={{ background: '#f8f9fa', border: '1px solid #eff0f2', color: '#878a99' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            {/* MODAL BODY */}
-            <div style={{ padding: '0.5rem 1rem', overflow: 'hidden', flex: 1, background: '#fff' }}>
-
-              {/* Meta Section */}
-              <div className="row g-2 mb-1">
-                <div className="col-md-9">
-                  <label className="form-label-custom">Question Classification</label>
-                  <div className="d-flex align-items-center gap-2 p-1 rounded-2 border bg-light-subtle" style={{ height: '36px' }}>
-                    <span className="badge bg-primary text-white font-size-10 px-2 py-0.5 rounded fw-bold">
-                      {specificObj.questionType}
-                    </span>
-                    <span className="text-dark font-size-11 fw-semibold opacity-75">
-                      {(specificObj.questionType || '').toUpperCase() === 'MCQ' && 'Multiple Choice'}
-                      {(specificObj.questionType || '').toUpperCase() === 'TRUE_FALSE' && 'Boolean Polarity'}
-                      {(specificObj.questionType || '').toUpperCase() === 'MATCHING' && 'Associative Matching'}
-                    </span>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <label className="form-label-custom text-center">Marks</label>
-                  <div className="input-group">
-                    <input
-                      type="number"
-                      className="form-control-custom fw-bold font-size-13 text-primary text-center"
-                      style={{ height: '36px', padding: '4px' }}
-                      value={specificObj.marks || ''}
-                      onChange={e => setSpecificObj({ ...specificObj, marks: Number(e.target.value) })}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Content Section */}
-              <div className="mb-2">
-                <label className="form-label-custom">Instructional Prompt</label>
-                <textarea
-                  className="form-control-custom"
-                  style={{ resize: 'none', height: '45px', lineHeight: 1.3, fontSize: '12px', background: '#fbfbfd', padding: '6px 10px' }}
-                  value={specificObj.content || ''}
-                  onChange={e => setSpecificObj({ ...specificObj, content: e.target.value })}
-                  placeholder="Enter the question text..."
-                />
-              </div>
-
-              {/* Options Section */}
-              <div className="mb-1">
-                {/* MCQ INTERFACE */}
-                {(specificObj.questionType || '').toUpperCase() === 'MCQ' && (
-                  <div>
-                    <label className="form-label-custom mb-2">Response Inventory <span className="text-muted fw-normal ms-1 font-size-10">(Toggle circle for correct)</span></label>
-                    <div className="row g-2">
-                      {['option1', 'option2', 'option3', 'option4'].map((opt, i) => {
-                        const optVal = specificObj[opt];
-                        const isSel = (specificObj.correctAnswer || []).includes(optVal);
-                        return (
-                          <div key={opt} className="col-6">
-                            <div className={`d-flex align-items-center gap-2 p-1 rounded-3 border transition-2 ${isSel ? 'border-primary bg-soft-primary' : 'border-light bg-white'}`}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!optVal) return;
-                                  const cur = specificObj.correctAnswer || [];
-                                  setSpecificObj({ ...specificObj, correctAnswer: isSel ? cur.filter((v: any) => v !== optVal) : [...cur, optVal] });
-                                }}
-                                className={`btn-icon-xs rounded-circle ms-1 d-flex align-items-center justify-content-center shadow-sm ${isSel ? 'bg-primary text-white' : 'bg-light text-muted'}`}
-                                style={{ width: '22px', height: '22px', border: 'none' }}
-                              >
-                                {isSel ? <Check size={12} strokeWidth={3} /> : <span className="font-size-9 fw-bold">{String.fromCharCode(65 + i)}</span>}
-                              </button>
-                              <input
-                                className="form-control form-control-sm border-0 bg-transparent shadow-none font-size-12 fw-medium"
-                                style={{ padding: '2px 4px' }}
-                                value={optVal || ''}
-                                onChange={e => setSpecificObj({ ...specificObj, [opt]: e.target.value })}
-                                placeholder={`Option ${String.fromCharCode(65 + i)}...`}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* TRUE / FALSE INTERFACE */}
-                {(specificObj.questionType || '').toUpperCase() === 'TRUE_FALSE' && (
-                  <div>
-                    <label className="form-label-custom mb-2 text-center d-block">Validation Logic</label>
-                    <div className="d-flex flex-row gap-3">
-                      {['True', 'False'].map((val) => {
-                        const isSel = (specificObj.correctAnswer || []).includes(val);
-                        const color = val === 'True' ? '#2ab57d' : '#fd625e';
-                        return (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => setSpecificObj({ ...specificObj, correctAnswer: [val] })}
-                            className="flex-fill d-flex align-items-center justify-content-center gap-2 transition-2 border-2"
-                            style={{
-                              padding: '0.6rem',
-                              borderStyle: 'solid',
-                              borderColor: isSel ? color : '#eff0f2',
-                              borderRadius: '10px',
-                              background: isSel ? `${color}10` : '#fff',
-                              color: isSel ? color : '#74788d',
-                              boxShadow: isSel ? `0 2px 8px ${color}10` : 'none'
-                            }}
-                          >
-                            {isSel ? (val === 'True' ? <CheckCircle size={18} /> : <X size={18} />) : <div className="border border-2 rounded-circle" style={{ width: 18, height: 18 }} />}
-                            <span className="font-size-14 fw-bold letter-spacing-1">{val.toUpperCase()}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* MATCHING INTERFACE */}
-                {(specificObj.questionType || '').toUpperCase() === 'MATCHING' && (
-                  <div className="matching-overhaul">
-                    <div className="d-flex align-items-center justify-content-between mb-2">
-                       <label className="form-label-custom mb-0">Association Protocol</label>
-                       <span className="badge bg-soft-secondary text-secondary font-size-10 fw-bold">{specificObj.matchingPairs?.length || 0} PAIRS</span>
-                    </div>
-                    
-                    <div className="bg-light-subtle rounded-3 border p-1 mb-1">
-                      {/* List */}
-                      <div className="d-flex flex-column gap-1 mb-1" style={{ maxHeight: '142px', overflowY: 'auto', paddingRight: '12px', overflowX: 'hidden' }}>
-                        {(specificObj.matchingPairs || []).map((pair: any, idx: number) => (
-                          <div key={idx} style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'minmax(0, 1fr) 10px minmax(0, 1fr) 24px', 
-                            alignItems: 'center', 
-                            gap: '2px', 
-                            background: '#fff', 
-                            padding: '4px 4px', 
-                            borderRadius: '6px', 
-                            border: '1px solid #eff0f2',
-                            marginBottom: '2px',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                            width: '100%'
-                          }}>
-                            <input
-                              className="form-control form-control-sm border-0 font-size-10 fw-semibold text-dark"
-                              style={{ padding: '2px', height: '24px', background: 'transparent', minWidth: 0 }}
-                              value={pair.prompt}
-                              onChange={(e) => {
-                                const newPairs = [...specificObj.matchingPairs];
-                                newPairs[idx].prompt = e.target.value;
-                                setSpecificObj({ ...specificObj, matchingPairs: newPairs });
-                              }}
-                              placeholder="Prompt..."
-                            />
-                            <div className="text-muted opacity-25 fw-bold" style={{ fontSize: '10px', textAlign: 'center' }}>:</div>
-                            <input
-                              className="form-control form-control-sm border-0 font-size-10 fw-bold text-primary"
-                              style={{ padding: '2px', height: '24px', background: 'transparent', minWidth: 0 }}
-                              value={pair.answer}
-                              onChange={(e) => {
-                                const newPairs = [...specificObj.matchingPairs];
-                                newPairs[idx].answer = e.target.value;
-                                setSpecificObj({ ...specificObj, matchingPairs: newPairs });
-                              }}
-                              placeholder="Match..."
-                            />
-                            <button
-                              type="button"
-                              className="btn btn-soft-danger btn-sm p-0 d-flex align-items-center justify-content-center rounded-circle"
-                              style={{ width: '22px', height: '22px' }}
-                              onClick={() => {
-                                const newPairs = specificObj.matchingPairs.filter((_: any, i: number) => i !== idx);
-                                setSpecificObj({ ...specificObj, matchingPairs: newPairs });
-                              }}
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        ))}
-                        {(!specificObj.matchingPairs || specificObj.matchingPairs.length === 0) && (
-                          <div className="text-center py-3 text-muted font-size-12 opacity-50 border border-dashed rounded-2">No associative pairs established</div>
-                        )}
-                      </div>
-
-                      {/* Add Form Simplified */}
-                      <div className="d-flex justify-content-center pt-1 border-top border-dashed mt-1">
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm px-4 d-flex align-items-center gap-2 fw-bold font-size-11"
-                          style={{ 
-                            height: '32px', 
-                            borderRadius: '8px',
-                            background: 'linear-gradient(135deg, #5156be 0%, #3b3f8c 100%)',
-                            border: 'none',
-                            boxShadow: '0 4px 10px rgba(81, 86, 190, 0.2)'
-                          }}
-                          onClick={() => {
-                            const newPairs = [...(specificObj.matchingPairs || []), { prompt: '', answer: '' }];
-                            setSpecificObj({ ...specificObj, matchingPairs: newPairs });
-                          }}
-                        >
-                          <PlusCircle size={14} /> ADD NEW PAIR
+              {/* True/False */}
+              {(specificObj.questionType || '').toUpperCase() === 'TRUE_FALSE' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Correct Answer</label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    {['True', 'False'].map(val => {
+                      const isSel = (specificObj.correctAnswer || []).includes(val);
+                      const color = val === 'True' ? '#2ab57d' : '#fd625e';
+                      return (
+                        <button key={val} type="button" onClick={() => setSpecificObj({ ...specificObj, correctAnswer: [val] })}
+                          style={{ flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${isSel ? color : '#e9ecef'}`, background: isSel ? `${color}10` : '#fff', color: isSel ? color : '#74788d', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}>
+                          {isSel ? (val === 'True' ? <CheckCircle size={18} /> : <X size={18} />) : <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid #ced4da' }} />}
+                          {val.toUpperCase()}
                         </button>
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Matching */}
+              {(specificObj.questionType || '').toUpperCase() === 'MATCHING' && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Matching Pairs</label>
+                    <span style={{ background: '#f1f3fa', color: '#5156be', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>{specificObj.matchingPairs?.length || 0} PAIRS</span>
+                  </div>
+                  <div style={{ background: '#f8f9fa', borderRadius: '10px', border: '1px solid #e9ecef', padding: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto', marginBottom: '8px' }}>
+                      {(specificObj.matchingPairs || []).map((pair: any, idx: number) => (
+                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 16px 1fr 28px', gap: '4px', alignItems: 'center', background: '#fff', padding: '6px 8px', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+                          <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 500, outline: 'none', minWidth: 0 }} value={pair.prompt} onChange={e => { const p = [...specificObj.matchingPairs]; p[idx].prompt = e.target.value; setSpecificObj({ ...specificObj, matchingPairs: p }); }} placeholder="Prompt..." />
+                          <span style={{ color: '#adb5bd', fontSize: '10px', textAlign: 'center' }}>→</span>
+                          <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 600, color: '#5156be', outline: 'none', minWidth: 0 }} value={pair.answer} onChange={e => { const p = [...specificObj.matchingPairs]; p[idx].answer = e.target.value; setSpecificObj({ ...specificObj, matchingPairs: p }); }} placeholder="Match..." />
+                          <button type="button" onClick={() => setSpecificObj({ ...specificObj, matchingPairs: specificObj.matchingPairs.filter((_: any, i: number) => i !== idx) })}
+                            style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'rgba(236,69,97,0.1)', color: '#ec4561', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={11} /></button>
+                        </div>
+                      ))}
+                      {(!specificObj.matchingPairs || specificObj.matchingPairs.length === 0) && (
+                        <div style={{ textAlign: 'center', padding: '16px', color: '#adb5bd', fontSize: '12px', border: '1px dashed #e9ecef', borderRadius: '8px' }}>No pairs yet</div>
+                      )}
+                    </div>
+                    <button type="button" onClick={() => setSpecificObj({ ...specificObj, matchingPairs: [...(specificObj.matchingPairs || []), { prompt: '', answer: '' }] })}
+                      style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px dashed #5156be', background: 'rgba(81,86,190,0.04)', color: '#5156be', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <PlusCircle size={14} /> Add Pair
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* MODAL FOOTER */}
-            <div style={{
-              display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem',
-              padding: '0.6rem 1.25rem', borderTop: '1px solid #eff0f2', flexShrink: 0, background: '#fbfbfd',
-              borderRadius: '0 0 0.5rem 0.5rem'
-            }}>
-              <button
-                type="button"
-                onClick={() => setEditObjModal(false)}
-                className="btn btn-link text-muted fw-semibold text-decoration-none px-2 font-size-12"
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                onClick={updateObjQuestion}
-                disabled={saving}
-                className="btn btn-primary shadow-sm"
-                style={{ borderRadius: '6px', padding: '6px 18px', fontWeight: 600, fontSize: '13px' }}
-              >
-                {saving ? <div className="spinner-border spinner-border-sm me-1" /> : <Save size={14} className="me-1" />}
-                {saving ? 'Syncing' : 'Commit'}
+            {/* FOOTER */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '14px 20px', borderTop: '1px solid #f1f5f9', flexShrink: 0 }}>
+              <button type="button" onClick={() => setEditObjModal(false)} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#fff', color: '#74788d', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Discard</button>
+              <button type="button" onClick={updateObjQuestion} disabled={saving} style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: '#5156be', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: saving ? 0.7 : 1 }}>
+                {saving ? <Loader2 style={{ animation: 'spin 1s linear infinite' }} size={14} /> : <Save size={14} />}
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -835,124 +693,77 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
 
       {editTheoryModal && createPortal(
-        <div className="minia-modal-overlay">
-          <div
-            className="animate-scale-up"
-            style={{
-              background: '#fff', borderRadius: '0.5rem',
-              width: '100%', maxWidth: '540px',
-              display: 'flex', flexDirection: 'column',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
-              overflow: 'hidden'
-            }}
-          >
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}>
+          <div className="animate-scale-up" style={{ background: '#fff', borderRadius: '14px', width: '100%', maxWidth: '520px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+
             {/* HEADER */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '0.5rem 1rem', borderBottom: '1px solid #eff0f2', flexShrink: 0,
-              background: 'linear-gradient(to right, #ffffff, #fbfbfd)'
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
               {isModalLoading ? (
-                <div className="d-flex align-items-center gap-3">
-                   <div className="spinner-border spinner-border-sm text-primary" />
-                   <h5 className="mb-0 fw-bold font-size-14 text-dark">Synchronizing Protocol...</h5>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Loader2 style={{ animation: 'spin 1s linear infinite', color: '#2ab57d' }} size={18} />
+                  <span style={{ fontWeight: 700, fontSize: '15px', color: '#2a3142' }}>Synchronizing...</span>
                 </div>
               ) : (
-                <div className="d-flex align-items-center gap-2">
-                  <h5 className="mb-0 fw-bold font-size-14 text-dark">Edit Theory Question</h5>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(42,181,125,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2ab57d' }}><FileText size={16} /></div>
+                  <h5 style={{ margin: 0, fontWeight: 800, fontSize: '15px', color: '#2a3142' }}>Edit Theory Question</h5>
                 </div>
               )}
-              <button
-                onClick={() => setEditTheoryModal(false)}
-                className="btn-icon-sm rounded-circle"
-                style={{ background: '#f8f9fa', border: '1px solid #eff0f2', color: '#878a99', width: '28px', height: '28px' }}
-              >
-                <X size={16} />
-              </button>
+              <button onClick={() => setEditTheoryModal(false)} style={{ width: 32, height: 32, borderRadius: '8px', border: '1px solid #e9ecef', background: '#f8f9fa', color: '#74788d', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
             </div>
 
             {/* BODY */}
-            <div style={{ padding: '0.75rem 1rem', overflow: 'hidden', flex: 1 }}>
-              {/* Meta row */}
-              <div className="row g-2 mb-2">
-                <div className="col-md-7">
-                  <label className="form-label-custom mb-1">Question Number / Index</label>
-                  <div className="input-group input-group-sm">
-                    <span className="input-group-text bg-light border-end-0 text-muted font-size-11 fw-bold">#</span>
-                    <input
-                      className="form-control border-start-0 fw-bold font-size-12"
-                      style={{ borderRadius: '0 0.375rem 0.375rem 0' }}
-                      value={theory.quesNo || ''}
-                      onChange={e => setTheory({ ...theory, quesNo: e.target.value })}
-                      placeholder="e.g. Q1, Q2"
-                    />
+            <div style={{ padding: '16px 20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+              {/* Question No + Marks */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 2, minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Question Number</label>
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e9ecef', borderRadius: '8px', overflow: 'hidden' }}>
+                    <span style={{ padding: '8px 12px', background: '#f8f9fa', color: '#74788d', fontWeight: 700, fontSize: '13px', borderRight: '1px solid #e9ecef', flexShrink: 0 }}>#</span>
+                    <input style={{ flex: 1, padding: '8px 12px', border: 'none', outline: 'none', fontSize: '13px', fontWeight: 600, minWidth: 0 }}
+                      value={theory.quesNo || ''} onChange={e => setTheory({ ...theory, quesNo: e.target.value })} placeholder="e.g. Q1, Q2" />
                   </div>
                 </div>
-                <div className="col-md-5">
-                  <label className="form-label-custom mb-1">Marks</label>
-                  <div className="input-group input-group-sm">
-                    <span className="input-group-text bg-light border-end-0 text-muted"><Award size={12} /></span>
-                    <input
-                      type="number"
-                      className="form-control border-start-0 fw-bold font-size-12 text-primary"
-                      style={{ borderRadius: '0 0.375rem 0.375rem 0' }}
-                      value={theory.marks || 0}
-                      onChange={e => setTheory({ ...theory, marks: Number(e.target.value) })}
-                      placeholder="0"
-                    />
+                <div style={{ flex: 1, minWidth: '90px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Marks</label>
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e9ecef', borderRadius: '8px', overflow: 'hidden' }}>
+                    <span style={{ padding: '8px 10px', background: '#f8f9fa', color: '#74788d', borderRight: '1px solid #e9ecef', display: 'flex', alignItems: 'center', flexShrink: 0 }}><Award size={13} /></span>
+                    <input type="number" style={{ flex: 1, padding: '8px 10px', border: 'none', outline: 'none', fontSize: '14px', fontWeight: 700, color: '#2ab57d', textAlign: 'center', minWidth: 0 }}
+                      value={theory.marks || 0} onChange={e => setTheory({ ...theory, marks: Number(e.target.value) })} placeholder="0" />
                   </div>
                 </div>
               </div>
 
-              {/* Two-column content */}
-              <div className="row g-2">
-                <div className="col-md-6">
-                  <label className="form-label-custom mb-1">Theoretical Prompt</label>
-                  <textarea
-                    className="form-control-custom form-control-sm"
-                    style={{ resize: 'none', height: '80px', lineHeight: 1.3, borderRadius: '0.375rem', background: '#fbfbfd', fontSize: '12px', padding: '6px' }}
-                    value={theory.question || ''}
-                    onChange={e => setTheory({ ...theory, question: e.target.value })}
-                    placeholder="Enter question text..."
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label-custom d-flex align-items-center gap-1 mb-1">
-                    <Target size={10} className="text-primary" />
-                    Evaluation Rubric
-                  </label>
-                  <textarea
-                    className="form-control-custom form-control-sm"
-                    style={{ resize: 'none', height: '80px', lineHeight: 1.3, borderRadius: '0.375rem', borderStyle: 'dashed', background: '#fff', fontSize: '12px', padding: '6px' }}
-                    value={theory.evaluationCriteria || ''}
-                    onChange={e => setTheory({ ...theory, evaluationCriteria: e.target.value })}
-                    placeholder="Grading key points..."
-                  />
-                </div>
+              {/* Question Text */}
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Theoretical Prompt</label>
+                <textarea style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '13px', resize: 'vertical', minHeight: '90px', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fafbff', lineHeight: 1.6 }}
+                  value={theory.question || ''} onChange={e => setTheory({ ...theory, question: e.target.value })} placeholder="Enter the question text..." />
+              </div>
+
+              {/* Evaluation Criteria */}
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                  <Target size={12} style={{ color: '#2ab57d' }} /> Evaluation Rubric
+                </label>
+                <textarea style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px dashed #c3e6cb', fontSize: '13px', resize: 'vertical', minHeight: '80px', boxSizing: 'border-box', fontFamily: 'inherit', background: '#f0faf5', lineHeight: 1.6 }}
+                  value={theory.evaluationCriteria || ''} onChange={e => setTheory({ ...theory, evaluationCriteria: e.target.value })} placeholder="Key grading points..." />
               </div>
             </div>
 
             {/* FOOTER */}
-            <div style={{
-              display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem',
-              padding: '0.5rem 1rem', borderTop: '1px solid #eff0f2', flexShrink: 0,
-              background: '#fbfbfd', borderRadius: '0 0 0.5rem 0.5rem'
-            }}>
-              <button type="button" onClick={() => setEditTheoryModal(false)} className="btn btn-link text-muted fw-semibold text-decoration-none px-2 font-size-11">Discard</button>
-              <button
-                type="button"
-                onClick={updateTheoryAction}
-                disabled={saving}
-                className="btn btn-primary shadow-sm"
-                style={{ borderRadius: '4px', padding: '4px 12px', fontWeight: 600, fontSize: '12px' }}
-              >
-                {saving ? <div className="spinner-border spinner-border-sm me-1" /> : <Save size={12} className="me-1" />}
-                {saving ? 'Syncing' : 'Commit'}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '14px 20px', borderTop: '1px solid #f1f5f9', flexShrink: 0 }}>
+              <button type="button" onClick={() => setEditTheoryModal(false)} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#fff', color: '#74788d', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Discard</button>
+              <button type="button" onClick={updateTheoryAction} disabled={saving} style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: '#2ab57d', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: saving ? 0.7 : 1 }}>
+                {saving ? <Loader2 style={{ animation: 'spin 1s linear infinite' }} size={14} /> : <Save size={14} />}
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
         </div>, document.body
       )}
+
 
       {editCountModal && createPortal(
         <div className="minia-modal-overlay">
@@ -1062,16 +873,16 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        @media (max-width: 768px) {
-          .page-title-box { flex-direction: column !important; align-items: flex-start !important; gap: 12px; }
-          .page-title-box .d-flex.gap-2 { width: 100%; }
-          .page-title-box .d-flex.gap-2 > * { flex: 1; text-align: center; justify-content: center; }
+        /* Objective Inventory responsive grid */
+        .vqq-obj-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        @media (max-width: 640px) {
+          .vqq-obj-grid { grid-template-columns: 1fr; }
           .minia-modal-overlay > div { width: 95vw !important; max-width: none !important; }
-          .card-header { flex-direction: column !important; align-items: flex-start !important; gap: 10px; }
-          .card-header .d-flex.align-items-center.gap-3.bg-light-subtle { margin-top: 5px; }
-          .avatar-md { width: 44px; height: 44px; }
-          .font-size-20 { font-size: 16px !important; }
-          .btn-primary-custom, .btn-light-custom { padding: 10px 16px; font-size: 13px; }
         }
       `}</style>
     </div>
