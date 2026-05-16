@@ -4,184 +4,118 @@ import { useNavigate, Link } from 'react-router-dom';
 import { loadQuizzesForUser, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
-import { 
-  Plus, 
-  X, 
-  Save, 
-  Loader2,
-  Database,
-  Settings,
-  Trash2,
-  Eye,
-  EyeOff,
-  ShieldCheck,
-  Clock,
-  Calendar,
-  Layers,
-  FileText,
-  BookOpen,
-  ChevronRight,
-  MoreVertical,
-  Activity,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
+import { Plus, X, Save, Loader2, Database, Settings, Trash2, Eye, EyeOff, ShieldCheck, Clock, Calendar, Layers, ChevronRight, CheckCircle, Edit } from 'lucide-react';
 
 const VIOLATION_OPTIONS = [
   { v:'NONE', l:'None' }, { v:'DELAY_ONLY', l:'Delay Student' },
   { v:'AUTOSUBMIT_ONLY', l:'Auto Submit' }, { v:'DELAY_AND_AUTOSUBMIT', l:'Delay + Auto' },
 ];
 
+const inp: React.CSSProperties = { width:'100%', padding:'9px 12px', borderRadius:'8px', border:'1px solid #e2e8f0', fontSize:'13px', color:'#2a3142', outline:'none', boxSizing:'border-box', fontFamily:'inherit', background:'#fafbff' };
+const lbl: React.CSSProperties = { display:'block', fontSize:'11px', fontWeight:700, color:'#74788d', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'6px' };
+
 function QuizEditModal({ qId, onClose, onSave, categories }: any) {
   const [quiz, setQuiz] = useState<any>(null);
   const [hide, setHide] = useState(true);
-
-  useEffect(() => {
-    getQuiz(qId).then(data => setQuiz({ ...data, selectedStatus: data.status }));
-  }, [qId]);
+  useEffect(() => { getQuiz(qId).then(d => setQuiz({ ...d, selectedStatus: d.status })); }, [qId]);
 
   if (!quiz) return (
-    <div className="minia-modal-overlay">
-      <div className="minia-modal p-5 text-center" style={{ maxWidth: 350 }}>
-        <Loader2 className="animate-spin text-primary mx-auto" size={32} />
-        <p className="text-muted mt-3 font-size-14">Fetching configuration...</p>
+    <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999 }}>
+      <div style={{ background:'#fff', borderRadius:'16px', padding:'40px', textAlign:'center' }}>
+        <Loader2 style={{ animation:'spin 1s linear infinite', color:'#5156be', margin:'0 auto 12px' }} size={32} />
+        <p style={{ color:'#74788d', fontSize:'14px', margin:0 }}>Fetching configuration...</p>
       </div>
     </div>
   );
 
   const set = (k: string, v: any) => setQuiz((q: any) => ({ ...q, [k]: v }));
+  const save = async () => { try { await updateQuiz(quiz); toast.success('Quiz updated'); onSave(); onClose(); } catch { toast.error('Failed to sync'); } };
 
-  const save = async () => {
-    try { 
-      await updateQuiz(quiz); 
-      toast.success('Quiz updated successfully'); 
-      onSave(); 
-      onClose(); 
-    } catch { 
-      toast.error("Failed to sync changes"); 
-    }
-  };
-
-  const ToggleItem = ({ label, icon, k }: { label: string; icon: React.ReactNode; k: string }) => (
-    <div className="d-flex align-items-center justify-content-between p-3 border rounded mb-2 bg-white">
-      <div className="d-flex align-items-center gap-2">
-        <span className="text-primary">{icon}</span>
-        <span className="font-size-13 fw-medium text-dark">{label}</span>
+  const Toggle = ({ label, icon, k }: any) => (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderRadius:'10px', border:'1px solid #eff0f2', background:'#fff' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+        <div style={{ width:28, height:28, borderRadius:'8px', background:'rgba(81,86,190,0.08)', display:'flex', alignItems:'center', justifyContent:'center', color:'#5156be' }}>{icon}</div>
+        <span style={{ fontSize:'13px', fontWeight:600, color:'#2a3142' }}>{label}</span>
       </div>
-      <div className="form-check form-switch" onClick={() => set(k, !quiz[k])} style={{ cursor: 'pointer' }}>
-        <input className="form-check-input" type="checkbox" checked={quiz[k]||false} readOnly />
+      <div onClick={() => set(k, !quiz[k])} style={{ cursor:'pointer', width:40, height:22, borderRadius:12, background:quiz[k]?'#5156be':'#e2e8f0', position:'relative', transition:'0.3s', flexShrink:0 }}>
+        <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', position:'absolute', top:3, left:quiz[k]?21:3, transition:'0.3s', boxShadow:'0 2px 4px rgba(0,0,0,0.15)' }} />
       </div>
     </div>
   );
 
   return (
-    <div className="minia-modal-overlay">
-      <div className="minia-modal shadow-lg animate-fade-in" style={{ maxWidth: 700 }}>
-        <div className="minia-modal-header p-3 border-bottom d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-2">
-             <Settings size={18} className="text-primary" />
-             <h6 className="mb-0 fw-bold font-size-15">Configure Assessment</h6>
+    <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999, padding:'16px' }}>
+      <div style={{ background:'#fff', borderRadius:'16px', width:'100%', maxWidth:'640px', maxHeight:'92vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}>
+
+        <div style={{ background:'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)', padding:'18px 24px', borderRadius:'16px 16px 0 0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+            <div style={{ width:36, height:36, borderRadius:'10px', background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}><Settings size={18}/></div>
+            <div>
+              <h5 style={{ margin:0, fontWeight:800, fontSize:'15px', color:'#fff' }}>Configure Assessment</h5>
+              <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)' }}>Update quiz settings and schedule</span>
+            </div>
           </div>
-          <X className="cursor-pointer text-muted" onClick={onClose} size={20}/>
+          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'8px', border:'none', background:'rgba(255,255,255,0.15)', color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><X size={16}/></button>
         </div>
-        
-        <div className="p-4 bg-light-subtle" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
-          <div className="row g-3">
-            <div className="col-md-8">
-              <label className="minia-label">Quiz Title</label>
-              <input className="minia-input" value={quiz.title||''} onChange={e=>set('title',e.target.value)}/>
-            </div>
-            <div className="col-md-4">
-              <label className="minia-label">Category</label>
-              <select className="minia-input" value={quiz.category?.cid||''} onChange={e=>set('category',{...quiz.category,cid:Number(e.target.value)})}>
-                {categories.map((c:any)=><option key={c.cid} value={c.cid}>{c.title}</option>)}
-              </select>
-            </div>
 
-            <div className="col-12">
-              <label className="minia-label">Description / Instructions</label>
-              <textarea className="minia-input" rows={3} value={quiz.description||''} onChange={e=>set('description',e.target.value)}/>
-            </div>
+        <div style={{ padding:'20px 24px', overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:'14px' }}>
 
-            <div className="col-md-6">
-              <label className="minia-label">Quiz Mode</label>
-              <div className="d-flex gap-2">
+          <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'12px' }}>
+            <div><label style={lbl}>Quiz Title</label><input style={inp} value={quiz.title||''} onChange={e=>set('title',e.target.value)}/></div>
+            <div><label style={lbl}>Category</label><select style={{...inp,minWidth:'130px'}} value={quiz.category?.cid||''} onChange={e=>set('category',{...quiz.category,cid:Number(e.target.value)})}>{categories.map((c:any)=><option key={c.cid} value={c.cid}>{c.title}</option>)}</select></div>
+          </div>
+
+          <div><label style={lbl}>Description / Instructions</label><textarea style={{...inp,resize:'vertical',minHeight:'65px',lineHeight:'1.6'}} value={quiz.description||''} onChange={e=>set('description',e.target.value)}/></div>
+
+          <div style={{ display:'grid', gridTemplateColumns: quiz.quizType==='THEORY'?'1fr':'1fr 1fr', gap:'12px' }}>
+            <div>
+              <label style={lbl}>Quiz Mode</label>
+              <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginTop:'2px' }}>
                 {['THEORY','OBJ','BOTH'].map(t=>(
-                  <button key={t} className={`minia-btn-pill ${quiz.quizType===t ? 'active' : ''}`} onClick={()=>set('quizType',t)}>{t}</button>
+                  <button key={t} onClick={()=>set('quizType',t)} style={{ padding:'6px 14px', borderRadius:'20px', border:`1.5px solid ${quiz.quizType===t?'#5156be':'#e2e8f0'}`, background:quiz.quizType===t?'#5156be':'#fff', color:quiz.quizType===t?'#fff':'#74788d', fontSize:'11px', fontWeight:700, cursor:'pointer', transition:'0.2s' }}>{t}</button>
                 ))}
               </div>
             </div>
+            {quiz.quizType!=='THEORY'&&(
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px' }}>
+                <div><label style={lbl}>Marks</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.maxMarks||''} onChange={e=>set('maxMarks',e.target.value)}/></div>
+                <div><label style={lbl}>Items</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.numberOfQuestions||''} onChange={e=>set('numberOfQuestions',e.target.value)}/></div>
+                <div><label style={lbl}>Time (m)</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.quizTime||''} onChange={e=>set('quizTime',e.target.value)}/></div>
+              </div>
+            )}
+          </div>
 
-            <div className="col-md-6">
-               <div className="row g-2">
-                 {quiz.quizType !== 'THEORY' && (
-                   <>
-                    <div className="col-4">
-                      <label className="minia-label text-center">Marks</label>
-                      <input className="minia-input text-center" type="number" value={quiz.maxMarks||''} onChange={e=>set('maxMarks',e.target.value)}/>
-                    </div>
-                    <div className="col-4">
-                      <label className="minia-label text-center">Items</label>
-                      <input className="minia-input text-center" type="number" value={quiz.numberOfQuestions||''} onChange={e=>set('numberOfQuestions',e.target.value)}/>
-                    </div>
-                    <div className="col-4">
-                      <label className="minia-label text-center">Time (m)</label>
-                      <input className="minia-input text-center" type="number" value={quiz.quizTime||''} onChange={e=>set('quizTime',e.target.value)}/>
-                    </div>
-                   </>
-                 )}
-               </div>
-            </div>
-
-            <div className="col-md-4">
-              <label className="minia-label">Scheduled Date</label>
-              <input className="minia-input" type="date" value={quiz.quizDate||''} onChange={e=>set('quizDate',e.target.value)}/>
-            </div>
-            <div className="col-md-4">
-              <label className="minia-label">Start Time</label>
-              <input className="minia-input" type="time" value={quiz.startTime||''} onChange={e=>set('startTime',e.target.value)}/>
-            </div>
-            <div className="col-md-4">
-              <label className="minia-label">Quiz Password</label>
-              <div className="input-group-minia">
-                <input className="minia-input" type={hide?'password':'text'} value={quiz.quizpassword||''} onChange={e=>set('quizpassword',e.target.value)} />
-                <button type="button" onClick={()=>setHide(h=>!h)} className="input-action-btn">{hide ? <Eye size={16}/> : <EyeOff size={16}/>}</button>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'12px' }}>
+            <div><label style={lbl}>Scheduled Date</label><input style={inp} type="date" value={quiz.quizDate||''} onChange={e=>set('quizDate',e.target.value)}/></div>
+            <div><label style={lbl}>Start Time</label><input style={inp} type="time" value={quiz.startTime||''} onChange={e=>set('startTime',e.target.value)}/></div>
+            <div>
+              <label style={lbl}>Password</label>
+              <div style={{ position:'relative' }}>
+                <input style={{...inp,paddingRight:'36px'}} type={hide?'password':'text'} value={quiz.quizpassword||''} onChange={e=>set('quizpassword',e.target.value)}/>
+                <button type="button" onClick={()=>setHide(h=>!h)} style={{ position:'absolute', right:'8px', top:'50%', transform:'translateY(-50%)', border:'none', background:'transparent', color:'#74788d', cursor:'pointer', display:'flex', alignItems:'center' }}>{hide?<Eye size={15}/>:<EyeOff size={15}/>}</button>
               </div>
             </div>
+          </div>
 
-            <div className="col-12 mt-3">
-               <div className="p-3 border rounded bg-white shadow-sm">
-                  <div className="d-flex align-items-center gap-2 mb-3">
-                    <ShieldCheck size={18} className="text-primary"/>
-                    <span className="font-size-12 fw-bold text-uppercase">Security & Integrity</span>
-                  </div>
-                  <div className="row g-2">
-                    <div className="col-md-8">
-                      <label className="minia-label">Violation Action</label>
-                      <select className="minia-input" value={quiz.violationAction||'NONE'} onChange={e=>set('violationAction',e.target.value)}>
-                        {VIOLATION_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="minia-label">Max Violations</label>
-                      <input className="minia-input text-center" type="number" value={quiz.maxViolations||''} onChange={e=>set('maxViolations',e.target.value)}/>
-                    </div>
-                    
-                    <div className="col-12 mt-2">
-                       <div className="row g-2">
-                         <div className="col-md-6"><ToggleItem label="Fullscreen Lock" icon={<Layers size={14}/>} k="enableFullscreenLock"/></div>
-                         <div className="col-md-6"><ToggleItem label="Security Watermark" icon={<Save size={14}/>} k="enableWatermark"/></div>
-                       </div>
-                    </div>
-                  </div>
-               </div>
+          <div style={{ background:'#f8f9ff', borderRadius:'12px', border:'1px solid #eff0f2', padding:'16px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'14px' }}>
+              <ShieldCheck size={16} style={{ color:'#5156be' }}/>
+              <span style={{ fontSize:'12px', fontWeight:700, color:'#2a3142', textTransform:'uppercase', letterSpacing:'0.8px' }}>Security & Integrity</span>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
+              <div><label style={lbl}>Violation Action</label><select style={inp} value={quiz.violationAction||'NONE'} onChange={e=>set('violationAction',e.target.value)}>{VIOLATION_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select></div>
+              <div><label style={lbl}>Max Violations</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.maxViolations||''} onChange={e=>set('maxViolations',e.target.value)}/></div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
+              <Toggle label="Fullscreen Lock" icon={<Layers size={14}/>} k="enableFullscreenLock"/>
+              <Toggle label="Security Watermark" icon={<CheckCircle size={14}/>} k="enableWatermark"/>
             </div>
           </div>
         </div>
 
-        <div className="p-3 border-top d-flex justify-content-end gap-2 bg-white">
-          <button className="minia-btn-plain" onClick={onClose}>Cancel</button>
-          <button className="minia-btn-solid" onClick={save}>Save Changes</button>
+        <div style={{ padding:'14px 24px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', gap:'10px', flexShrink:0 }}>
+          <button onClick={onClose} style={{ padding:'9px 20px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'#fff', color:'#74788d', fontWeight:600, fontSize:'13px', cursor:'pointer' }}>Cancel</button>
+          <button onClick={save} style={{ padding:'9px 22px', borderRadius:'8px', border:'none', background:'linear-gradient(135deg,#5156be,#3d41a8)', color:'#fff', fontWeight:700, fontSize:'13px', cursor:'pointer', display:'flex', alignItems:'center', gap:'7px' }}><Save size={14}/> Save Changes</button>
         </div>
       </div>
     </div>
@@ -194,7 +128,7 @@ export default function LectViewQuizzes() {
   const { data: quizzes = [], isLoading } = useQuery({ queryKey: ['lectQuizzes'], queryFn: loadQuizzesForUser });
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
   const [editQuizId, setEditQuizId] = useState<number|null>(null);
-  const [statusMap, setStatusMap]   = useState<Record<number,string>>({});
+  const [statusMap, setStatusMap] = useState<Record<number,string>>({});
   const [updatingMap, setUpdatingMap] = useState<Record<number,boolean>>({});
 
   useEffect(() => {
@@ -204,139 +138,109 @@ export default function LectViewQuizzes() {
   }, [editQuizId]);
 
   const doDelete = (qId: number) => {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#5156be',
-      cancelButtonColor: '#74788d',
-      confirmButtonText: 'Yes, delete it!'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      deleteQuiz(qId).then(()=>{ 
-        toast.success('Quiz deleted'); 
-        qc.invalidateQueries({queryKey:['lectQuizzes']}); 
-      }).catch(()=>toast.error('Deletion failed'));
-    });
+    Swal.fire({ title:'Are you sure?', text:"You won't be able to revert this!", icon:'warning', showCancelButton:true, confirmButtonColor:'#5156be', cancelButtonColor:'#74788d', confirmButtonText:'Yes, delete it!' })
+      .then(r => { if (!r.isConfirmed) return; deleteQuiz(qId).then(()=>{ toast.success('Quiz deleted'); qc.invalidateQueries({queryKey:['lectQuizzes']}); }).catch(()=>toast.error('Deletion failed')); });
   };
 
   const doUpdateStatus = (q: any) => {
     const sel = statusMap[q.qId] ?? q.status;
     setUpdatingMap(m=>({...m,[q.qId]:true}));
-    updateQuizStatus(q.qId, sel).then(()=>{
-      toast.success(`Status updated: ${sel}`);
-      qc.invalidateQueries({queryKey:['lectQuizzes']});
-    }).catch(()=>toast.error('Sync failed'))
-      .finally(()=>setUpdatingMap(m=>({...m,[q.qId]:false})));
+    updateQuizStatus(q.qId, sel).then(()=>{ toast.success(`Status updated: ${sel}`); qc.invalidateQueries({queryKey:['lectQuizzes']}); })
+      .catch(()=>toast.error('Sync failed')).finally(()=>setUpdatingMap(m=>({...m,[q.qId]:false})));
   };
 
   return (
-    <div className="minia-container animate-fade-in">
+    <div className="lvq-wrap">
       <Toaster position="top-right"/>
-      
-      {/* Page Header */}
-      <div className="minia-header mb-4">
-        <div className="d-flex align-items-center justify-content-between">
-          <div>
-            <h4 className="minia-page-title mb-1">Assessment Portfolio</h4>
-            <div className="d-flex align-items-center gap-2 text-muted font-size-13">
-              <span>Home</span> <ChevronRight size={12}/> <span>Quizzes</span>
-            </div>
+
+      <div className="lvq-header">
+        <div>
+          <h4 className="lvq-title">Assessment Portfolio</h4>
+          <div style={{ display:'flex', alignItems:'center', gap:'6px', color:'#74788d', fontSize:'13px', marginTop:'2px' }}>
+            <span>Home</span><ChevronRight size={12}/><span>Quizzes</span>
           </div>
-          <button className="btn-minia-primary" onClick={()=>navigate('/lect/add-quizes')}>
-            <Plus size={16} className="me-1" />
-            Create Quiz
-          </button>
         </div>
+        <button className="lvq-create-btn" onClick={()=>navigate('/lect/add-quizes')}>
+          <Plus size={16}/> Create Quiz
+        </button>
       </div>
 
-      {/* Grid Layout - 3 per row enforced */}
-      <div className="row">
+      <div className="lvq-grid">
         {isLoading ? (
-          <div className="col-12 text-center py-5">
-            <Loader2 className="animate-spin text-primary" size={32} />
-            <p className="text-muted mt-3">Synchronizing Portfolio...</p>
+          <div style={{ gridColumn:'1/-1', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'320px', gap:'16px' }}>
+            <div style={{ width:68, height:68, borderRadius:'50%', background:'rgba(81,86,190,0.08)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Loader2 style={{ animation:'spin 1s linear infinite', color:'#5156be' }} size={32}/>
+            </div>
+            <p style={{ color:'#74788d', fontWeight:600, fontSize:'14px', margin:0 }}>Synchronizing Portfolio...</p>
           </div>
         ) : quizzes.length === 0 ? (
-          <div className="col-12 text-center py-5">
-            <Database size={48} className="text-muted opacity-25 mb-3" />
-            <p className="text-muted font-size-14">No quizzes found in your registry.</p>
+          <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'60px 20px' }}>
+            <Database size={48} style={{ color:'#adb5bd', marginBottom:'16px' }}/>
+            <p style={{ color:'#74788d', fontSize:'14px' }}>No quizzes found in your registry.</p>
           </div>
-        ) : (
-          quizzes.map((q: any) => {
-            const isLive = q.status === 'OPEN';
-            const accentColor = q.quizType === 'OBJ' ? '#5156be' : q.quizType === 'THEORY' ? '#fd625e' : '#ffbf53';
-            
-            return (
-              <div key={q.qId} className="col-lg-4 col-md-6 mb-4">
-                <div className="minia-card" style={{ borderTop: `3px solid ${accentColor}` }}>
-                  <div className="card-header border-0 bg-transparent p-4 pb-0 d-flex justify-content-between align-items-start">
-                     <div>
-                        <span className="text-muted font-size-11 fw-bold text-uppercase ls-1">{q.category?.title}</span>
-                        <h5 className="minia-card-title mt-1 mb-0 text-truncate" title={q.title}>{q.title}</h5>
-                     </div>
-                     <span className={`minia-badge ${isLive ? 'bg-soft-success text-success' : 'bg-soft-danger text-danger'}`}>
-                        {q.status}
-                     </span>
+        ) : quizzes.map((q: any) => {
+          const isLive = q.status === 'OPEN';
+          const grad = q.quizType==='OBJ' ? 'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)' : q.quizType==='THEORY' ? 'linear-gradient(135deg,#fd625e 0%,#d94f4b 100%)' : 'linear-gradient(135deg,#ffbf53 0%,#e6a832 100%)';
+          const accent = q.quizType==='OBJ' ? '#5156be' : q.quizType==='THEORY' ? '#fd625e' : '#ffbf53';
+          const typeLabel = q.quizType==='OBJ' ? 'Objective' : q.quizType==='THEORY' ? 'Theory' : 'Combined';
+
+          return (
+            <div key={q.qId} className="lvq-card">
+              {/* Colored Header */}
+              <div style={{ background:grad, padding:'16px 18px', display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'10px' }}>
+                <div style={{ minWidth:0, flex:1 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px' }}>
+                    <span style={{ background:'rgba(255,255,255,0.2)', color:'#fff', fontSize:'10px', fontWeight:700, padding:'3px 9px', borderRadius:'20px', textTransform:'uppercase', letterSpacing:'0.8px' }}>{typeLabel}</span>
+                    <span style={{ background: isLive?'rgba(42,181,125,0.25)':'rgba(253,98,94,0.25)', color:'#fff', fontSize:'10px', fontWeight:700, padding:'3px 9px', borderRadius:'20px', textTransform:'uppercase' }}>{q.status}</span>
                   </div>
-
-                  <div className="card-body p-4">
-                     <p className="minia-card-desc mb-4">
-                        {q.description || "Standard academic assessment for student proficiency evaluation."}
-                     </p>
-
-                     <div className="row g-0 border rounded overflow-hidden">
-                        <div className="col-4 border-end p-2 text-center bg-light-subtle">
-                           <span className="d-block font-size-11 text-muted text-uppercase fw-bold">Items</span>
-                           <span className="fw-bold text-dark font-size-14">{q.numberOfQuestions}</span>
-                        </div>
-                        <div className="col-4 border-end p-2 text-center bg-light-subtle">
-                           <span className="d-block font-size-11 text-muted text-uppercase fw-bold">Marks</span>
-                           <span className="fw-bold text-dark font-size-14">{q.maxMarks}</span>
-                        </div>
-                        <div className="col-4 p-2 text-center bg-light-subtle">
-                           <span className="d-block font-size-11 text-muted text-uppercase fw-bold">Time</span>
-                           <span className="fw-bold text-dark font-size-14">{q.quizTime}m</span>
-                        </div>
-                     </div>
-
-                     <div className="mt-4 pt-2 d-flex align-items-center justify-content-between text-muted font-size-12 fw-medium border-top pt-3">
-                        <div className="d-flex align-items-center gap-1">
-                           <Calendar size={13} /> <span>{q.quizDate}</span>
-                        </div>
-                        <div className="d-flex align-items-center gap-1">
-                           <Clock size={13} /> <span>{q.startTime}</span>
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="card-footer bg-transparent border-top p-3 px-4 d-flex justify-content-between align-items-center">
-                     <div className="d-flex gap-3">
-                        <Link to={`/lect/view-quetions/${q.qId}/${q.title}`} className="minia-footer-link" title="Manage Questions">Questions</Link>
-                        <button className="minia-footer-link" onClick={()=>setEditQuizId(q.qId)}>Edit</button>
-                     </div>
-                     <div className="d-flex align-items-center">
-                        <select 
-                           className="minia-status-select me-2" 
-                           value={statusMap[q.qId]??q.status??''} 
-                           onChange={e=>setStatusMap(m=>({...m,[q.qId]:e.target.value}))}
-                         >
-                           <option value="CLOSED">CLOSE</option>
-                           <option value="OPEN">OPEN</option>
-                         </select>
-                         <button className="save-btn-minia" onClick={()=>doUpdateStatus(q)} disabled={updatingMap[q.qId]}>
-                            {updatingMap[q.qId] ? <Loader2 className="animate-spin" size={12}/> : <Save size={14}/>}
-                         </button>
-                         <div className="vr mx-2 my-1"></div>
-                         <button className="delete-btn-minia" onClick={()=>doDelete(q.qId)}><Trash2 size={16}/></button>
-                     </div>
-                  </div>
+                  <h5 style={{ margin:0, fontWeight:800, fontSize:'15px', color:'#fff', lineHeight:1.3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={q.title}>{q.title}</h5>
+                  {q.category?.title && <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.72)', marginTop:'3px', display:'block' }}>{q.category.title}</span>}
+                </div>
+                <div style={{ display:'flex', flexDirection:'row', alignItems:'center', gap:'6px', flexShrink:0 }}>
+                  <button style={{ width:30, height:30, borderRadius:'8px', border:'none', background:'rgba(255,255,255,0.2)', color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.2s' }}
+                    title="Configure" onClick={()=>setEditQuizId(q.qId)} onMouseOver={e=>(e.currentTarget.style.background='rgba(255,255,255,0.35)')} onMouseOut={e=>(e.currentTarget.style.background='rgba(255,255,255,0.2)')}><Settings size={14}/></button>
+                  <button style={{ width:30, height:30, borderRadius:'8px', border:'none', background:'rgba(253,98,94,0.35)', color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.2s' }}
+                    title="Delete" onClick={()=>doDelete(q.qId)} onMouseOver={e=>(e.currentTarget.style.background='rgba(253,98,94,0.6)')} onMouseOut={e=>(e.currentTarget.style.background='rgba(253,98,94,0.35)')}><Trash2 size={14}/></button>
                 </div>
               </div>
-            );
-          })
-        )}
+
+              {/* Body */}
+              <div style={{ padding:'16px 18px', flex:1 }}>
+                <p style={{ fontSize:'13px', color:'#74788d', lineHeight:1.6, margin:'0 0 14px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                  {q.description || 'Standard academic assessment for student proficiency evaluation.'}
+                </p>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', border:'1px solid #eff0f2', borderRadius:'10px', overflow:'hidden' }}>
+                  {[['Items', q.numberOfQuestions||'—'], ['Marks', q.maxMarks||'—'], ['Time', q.quizTime ? `${q.quizTime}m` : '—']].map(([k,v])=>(
+                    <div key={k} style={{ padding:'10px 8px', textAlign:'center', borderRight:'1px solid #eff0f2' }}>
+                      <span style={{ display:'block', fontSize:'10px', color:'#adb5bd', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.6px' }}>{k}</span>
+                      <span style={{ display:'block', fontSize:'15px', fontWeight:800, color:'#2a3142', marginTop:'2px' }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{ padding:'12px 18px', borderTop:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                  {q.quizDate && <div style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', color:'#74788d', fontWeight:500 }}><Calendar size={12}/> {q.quizDate}</div>}
+                  {q.startTime && <div style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', color:'#74788d', fontWeight:500 }}><Clock size={12}/> {q.startTime}</div>}
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                  <Link to={`/lect/view-quetions/${q.qId}/${q.title}`} style={{ fontSize:'12px', fontWeight:700, color:accent, textDecoration:'none', padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${accent}20`, background:`${accent}10`, transition:'0.2s' }}>Questions</Link>
+                  <select style={{ fontSize:'11px', fontWeight:700, color:'#495057', border:'1px solid #e9ecef', borderRadius:'6px', padding:'5px 8px', background:'#f8f9fa', cursor:'pointer', outline:'none' }}
+                    value={statusMap[q.qId]??q.status??''} onChange={e=>setStatusMap(m=>({...m,[q.qId]:e.target.value}))}>
+                    <option value="CLOSED">CLOSE</option>
+                    <option value="OPEN">OPEN</option>
+                  </select>
+                  <button style={{ padding:'5px 12px', borderRadius:'6px', border:'none', background:'#5156be', color:'#fff', fontSize:'12px', fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:'5px' }}
+                    onClick={()=>doUpdateStatus(q)} disabled={updatingMap[q.qId]}>
+                    {updatingMap[q.qId]?<Loader2 style={{ animation:'spin 1s linear infinite' }} size={12}/>:<Save size={12}/>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {editQuizId !== null && (
@@ -344,87 +248,22 @@ export default function LectViewQuizzes() {
       )}
 
       <style>{`
-        .minia-container {
-          padding: 1.5rem;
-          font-family: 'Public Sans', sans-serif;
-          background-color: #f5f6f8;
-          min-height: 100vh;
-          overflow-x: hidden;
-        }
-
-        .minia-page-title { font-size: 1.2rem; font-weight: 700; color: #495057; }
-        
-        .btn-minia-primary {
-          background-color: #5156be; border-color: #5156be; color: #fff;
-          padding: 0.5rem 1rem; border-radius: 0.25rem; font-weight: 500; font-size: 13px;
-          transition: all 0.2s; border: 1px solid transparent; cursor: pointer;
-          display: flex; align-items: center;
-        }
-        .btn-minia-primary:hover { background-color: #4549a2; transform: translateY(-1px); }
-
-        /* Minia Card Styling */
-        .minia-card {
-          background-color: #fff; border: 1px solid #eff2f7; border-radius: 0.4rem;
-          box-shadow: 0 0.75rem 1.5rem rgba(18, 38, 63, 0.03);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          height: 100%; display: flex; flex-direction: column;
-        }
-        .minia-card:hover { transform: translateY(-4px); box-shadow: 0 1rem 3rem rgba(18, 38, 63, 0.125); }
-
-        .minia-card-title { font-size: 16px; font-weight: 600; color: #495057; }
-        .minia-card-desc { font-size: 13px; color: #74788d; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 39px; }
-        
-        .minia-badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .bg-soft-success { background-color: rgba(40, 167, 69, 0.1); }
-        .bg-soft-danger { background-color: rgba(244, 102, 102, 0.1); }
-
-        .minia-footer-link { font-size: 13px; font-weight: 600; color: #5156be; text-decoration: none; border: none; background: transparent; padding: 0; cursor: pointer; }
-        .minia-footer-link:hover { color: #4549a2; text-decoration: underline; }
-
-        .minia-status-select { border: none; background: transparent; font-size: 11px; font-weight: 700; color: #495057; cursor: pointer; outline: none; }
-        .save-btn-minia { background: transparent; border: none; padding: 0; color: #5156be; transition: 0.2s; }
-        .save-btn-minia:hover { opacity: 0.8; }
-        .delete-btn-minia { background: transparent; border: none; padding: 0; color: #f46666; transition: 0.2s; }
-        .delete-btn-minia:hover { transform: scale(1.1); }
-
-        /* Minia Modal */
-        .minia-modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-          display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;
-        }
-        .minia-modal { background: #fff; border-radius: 0.4rem; width: 100%; overflow: hidden; }
-        .minia-label { display: block; font-size: 12px; font-weight: 600; color: #495057; margin-bottom: 6px; }
-        .minia-input {
-          width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #ced4da; border-radius: 0.25rem;
-          font-size: 14px; color: #495057; outline: none; transition: border-color 0.15s;
-        }
-        .minia-input:focus { border-color: #5156be; }
-        
-        .minia-btn-pill { background: #f5f6f8; border: 1px solid #eff2f7; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #74788d; transition: 0.2s; border: 1px solid transparent; }
-        .minia-btn-pill.active { background: #5156be; color: #fff; }
-
-        .minia-btn-plain { background: transparent; border: 1px solid #eff2f7; padding: 8px 20px; border-radius: 4px; font-size: 13px; font-weight: 500; color: #495057; }
-        .minia-btn-solid { background: #5156be; border: 1px solid #5156be; padding: 8px 20px; border-radius: 4px; font-size: 13px; font-weight: 500; color: #fff; }
-
-        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .ls-1 { letter-spacing: 0.5px; }
-        .font-size-11 { font-size: 11px; }
-        .font-size-13 { font-size: 13px; }
-        .font-size-14 { font-size: 14px; }
-        .font-size-15 { font-size: 15px; }
-
-        @media (max-width: 768px) {
-          .minia-container { padding: 1rem; }
-          .minia-header .d-flex { flex-direction: column; align-items: flex-start !important; gap: 12px; }
-          .btn-minia-primary { width: 100%; justify-content: center; }
-          .minia-modal { max-width: 95vw !important; }
-          .card-footer { flex-wrap: wrap; gap: 10px; padding: 1rem !important; }
-          .card-footer .d-flex.align-items-center { flex-wrap: wrap; gap: 6px; width: 100%; justify-content: space-between; }
-          .card-header { padding: 1rem 1rem 0 1rem !important; flex-direction: column; gap: 8px; }
-          .card-body { padding: 1rem !important; }
-          .minia-card-desc { height: auto; margin-bottom: 15px !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .lvq-wrap { padding: 24px; font-family: 'Inter', sans-serif; background: #f5f6f8; min-height: 100vh; overflow-x: hidden; }
+        .lvq-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+        .lvq-title { font-size: 20px; font-weight: 800; color: #2a3142; margin: 0; }
+        .lvq-create-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg,#5156be,#3d41a8); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(81,86,190,0.3); }
+        .lvq-create-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(81,86,190,0.4); }
+        .lvq-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .lvq-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(18,38,63,0.07); border: 1px solid #eff0f2; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
+        .lvq-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(18,38,63,0.12); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 1100px) { .lvq-grid { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width: 640px) {
+          .lvq-wrap { padding: 16px; }
+          .lvq-grid { grid-template-columns: 1fr; }
+          .lvq-header { flex-direction: column; align-items: flex-start; }
+          .lvq-create-btn { width: 100%; justify-content: center; }
         }
       `}</style>
     </div>

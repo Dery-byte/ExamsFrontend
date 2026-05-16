@@ -4,258 +4,191 @@ import { useNavigate } from 'react-router-dom';
 import { getCategoriesForUser, getCategory, updateCategory, deleteCategory } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
-import { 
-  Plus, 
-  X, 
-  Save, 
-  Loader2,
-  Database
-} from 'lucide-react';
+import { Plus, X, Save, Loader2, Database, BookOpen, Layers, Edit, Trash2, ChevronRight, GraduationCap } from 'lucide-react';
 
 const LEVELS = ['Level 100','Level 200','Level 300','Level 400'];
+
+const CARD_GRADS = [
+  'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)',
+  'linear-gradient(135deg,#2ab57d 0%,#1a9666 100%)',
+  'linear-gradient(135deg,#fd625e 0%,#d94f4b 100%)',
+  'linear-gradient(135deg,#ffbf53 0%,#e6a832 100%)',
+  'linear-gradient(135deg,#4ba3ff 0%,#2b7de9 100%)',
+  'linear-gradient(135deg,#a55eea 0%,#8843d4 100%)',
+];
+
+const inp: React.CSSProperties = { width:'100%', padding:'9px 12px', borderRadius:'8px', border:'1px solid #e2e8f0', fontSize:'13px', color:'#2a3142', outline:'none', boxSizing:'border-box', fontFamily:'inherit', background:'#fafbff' };
+const lbl: React.CSSProperties = { display:'block', fontSize:'11px', fontWeight:700, color:'#74788d', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'6px' };
 
 export default function ViewCourse() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { data: categories = [], isLoading } = useQuery({ queryKey: ['lectCats'], queryFn: getCategoriesForUser });
-  const [editModal, setEditModal]   = useState(false);
-  const [categoryEdit, setCatEdit]  = useState<any>({});
-  const [saving, setSaving]         = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [categoryEdit, setCatEdit] = useState<any>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (editModal) { document.body.style.overflow = 'hidden'; }
-    else { document.body.style.overflow = 'unset'; }
+    document.body.style.overflow = editModal ? 'hidden' : 'unset';
     return () => { document.body.style.overflow = 'unset'; };
   }, [editModal]);
 
   const openEdit = async (cid: number) => {
-    try { 
-      const cat = await getCategory(cid); 
-      setCatEdit(cat); 
-      setEditModal(true); 
-    } catch {
-      toast.error('Failed to load course details');
-    }
+    try { const cat = await getCategory(cid); setCatEdit(cat); setEditModal(true); }
+    catch { toast.error('Failed to load course details'); }
   };
 
   const doUpdate = async () => {
-    if (!categoryEdit.title || !categoryEdit.courseCode) {
-      toast.error('Title and Code are required');
-      return;
-    }
+    if (!categoryEdit.title || !categoryEdit.courseCode) { toast.error('Title and Code are required'); return; }
     setSaving(true);
-    try { 
-      await updateCategory(categoryEdit); 
-      toast.success('Course updated successfully!'); 
-      qc.invalidateQueries({queryKey:['lectCats']}); 
-      setEditModal(false); 
-    } catch { 
-      toast.error("Failed to synchronize changes"); 
-    }
+    try { await updateCategory(categoryEdit); toast.success('Course updated!'); qc.invalidateQueries({queryKey:['lectCats']}); setEditModal(false); }
+    catch { toast.error('Failed to synchronize changes'); }
     setSaving(false);
   };
 
   const doDelete = (cid: number) => {
-    Swal.fire({
-      title: 'Remove Course?',
-      text: "This action is irreversible and will purge all linked assessments.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#1a1b1e',
-      cancelButtonColor: '#f3f3f9',
-      confirmButtonText: 'Confirm',
-      cancelButtonText: 'Cancel'
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      deleteCategory(cid).then(()=>{ 
-        toast.success('Course removed'); 
-        qc.invalidateQueries({queryKey:['lectCats']}); 
-      }).catch(()=>toast.error('Failed to purge course'));
-    });
+    Swal.fire({ title:'Remove Course?', text:'This will purge all linked assessments.', icon:'warning', showCancelButton:true, confirmButtonColor:'#fd625e', cancelButtonColor:'#f8f9fa', confirmButtonText:'Yes, Remove', cancelButtonText:'Cancel' })
+      .then(r => { if (!r.isConfirmed) return; deleteCategory(cid).then(()=>{ toast.success('Course removed'); qc.invalidateQueries({queryKey:['lectCats']}); }).catch(()=>toast.error('Failed to purge')); });
   };
 
+  const cats = categories as any[];
+
   return (
-    <div className="course-stock-container animate-fade-in">
+    <div style={{ padding:'24px', fontFamily:"'Inter',sans-serif", background:'#f5f6f8', minHeight:'100vh', overflowX:'hidden' }}>
       <Toaster position="top-right"/>
-      
-      {/* Page Header */}
-      <div className="stock-header mb-3">
-        <div className="d-flex align-items-center justify-content-between">
-          <div>
-            <h4 className="stock-title mb-0 fw-bold">Academic Portfolio</h4>
+
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'12px', marginBottom:'28px' }}>
+        <div>
+          <h4 style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#2a3142' }}>Academic Portfolio</h4>
+          <div style={{ display:'flex', alignItems:'center', gap:'6px', color:'#74788d', fontSize:'13px', marginTop:'3px' }}>
+            <span>Lecturer</span><ChevronRight size={12}/><span style={{ color:'#5156be', fontWeight:600 }}>Courses</span>
           </div>
-          <button className="btn-minimal-add" onClick={()=>navigate('/lect/add-course')}>
-            <Plus size={16} />
-            <span>New Registry</span>
-          </button>
         </div>
+        <button onClick={()=>navigate('/lect/add-course')} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'10px 20px', background:'linear-gradient(135deg,#5156be,#3d41a8)', color:'#fff', border:'none', borderRadius:'10px', fontSize:'13px', fontWeight:700, cursor:'pointer', boxShadow:'0 4px 12px rgba(81,86,190,0.3)', transition:'0.2s' }}>
+          <Plus size={16}/> New Course
+        </button>
       </div>
 
-      {/* Stock Style Table */}
-      <div className="stock-table-card">
-        <div className="table-responsive">
-          <table className="stock-table">
-            <thead>
-              <tr>
-                <th>Course</th>
-                <th>Level</th>
-                <th>Status</th>
-                <th className="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-5">
-                    <Loader2 className="animate-spin text-muted" size={24} />
-                    <p className="text-muted mt-2 font-size-12">Loading Registry...</p>
-                  </td>
-                </tr>
-              ) : categories.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-5">
-                    <Database size={48} className="text-muted opacity-25 mb-2" />
-                    <p className="text-muted font-size-13">No courses registered in your portfolio.</p>
-                  </td>
-                </tr>
-              ) : (
-                categories.map((el:any)=>(
-                  <tr key={el.cid}>
-                    <td className="course-identity-cell">
-                      <span className="stock-ticker">{el.courseCode}</span>
-                      <span className="stock-name">{el.title}</span>
-                    </td>
-                    <td className="stock-level">{el.level}</td>
-                    <td className="stock-status">ACTIVE</td>
-                    <td className="text-end">
-                      <div className="stock-actions">
-                        <button className="stock-btn" onClick={()=>openEdit(el.cid)}>Edit</button>
-                        <span className="mx-1 opacity-25">|</span>
-                        <button className="stock-btn text-danger" onClick={()=>doDelete(el.cid)}>Delete</button>
+      {/* Cards Grid */}
+      {isLoading ? (
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'320px', gap:'16px' }}>
+          <div style={{ width:68, height:68, borderRadius:'50%', background:'rgba(81,86,190,0.08)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Loader2 style={{ animation:'spin 1s linear infinite', color:'#5156be' }} size={32}/>
+          </div>
+          <p style={{ color:'#74788d', fontWeight:600, fontSize:'14px', margin:0 }}>Loading courses...</p>
+        </div>
+      ) : cats.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:'16px', border:'1px solid #eff0f2' }}>
+          <GraduationCap size={52} style={{ color:'#adb5bd', marginBottom:'16px' }}/>
+          <h5 style={{ color:'#2a3142', fontWeight:700, marginBottom:'8px' }}>No Courses Yet</h5>
+          <p style={{ color:'#74788d', fontSize:'14px', marginBottom:'20px' }}>You haven't been assigned to any courses. Start by adding a new one.</p>
+          <button onClick={()=>navigate('/lect/add-course')} style={{ padding:'10px 24px', background:'#5156be', color:'#fff', border:'none', borderRadius:'10px', fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Add First Course</button>
+        </div>
+      ) : (
+        <div className="vc-grid">
+          {cats.map((c: any, idx: number) => {
+            const grad = CARD_GRADS[idx % CARD_GRADS.length];
+            return (
+              <div key={c.cid} className="vc-card">
+                {/* Gradient Header */}
+                <div style={{ background:grad, padding:'18px 18px 16px', position:'relative', overflow:'hidden' }}>
+                  <div style={{ position:'absolute', top:'-20px', right:'-20px', width:'90px', height:'90px', borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
+                  <div style={{ position:'absolute', bottom:'-30px', left:'60px', width:'70px', height:'70px', borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
+                  <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'10px', position:'relative', zIndex:1 }}>
+                    <div style={{ minWidth:0, flex:1 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
+                        <span style={{ background:'rgba(255,255,255,0.2)', color:'#fff', fontSize:'10px', fontWeight:700, padding:'3px 9px', borderRadius:'20px', letterSpacing:'0.6px' }}>{c.courseCode || 'N/A'}</span>
+                        {c.level && <span style={{ background:'rgba(255,255,255,0.15)', color:'#fff', fontSize:'10px', fontWeight:600, padding:'3px 9px', borderRadius:'20px' }}>{c.level}</span>}
                       </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modal - Keeping it simple but functional */}
-      {editModal && (
-        <div className="stock-modal-overlay">
-          <div className="stock-modal shadow-lg animate-scale-up" style={{ maxWidth: 500 }}>
-            <div className="stock-modal-header p-3 border-bottom d-flex justify-content-between align-items-center">
-              <h6 className="mb-0 fw-bold">Update Registry: {categoryEdit.courseCode}</h6>
-              <X className="cursor-pointer opacity-50" onClick={()=>setEditModal(false)} size={18}/>
-            </div>
-            <div className="p-3">
-              <div className="mb-3">
-                <label className="stock-label">Title</label>
-                <input className="stock-input" value={categoryEdit.title||''} onChange={e=>setCatEdit({...categoryEdit,title:e.target.value})}/>
-              </div>
-              <div className="row g-3 mb-3">
-                <div className="col-6">
-                  <label className="stock-label">Code</label>
-                  <input className="stock-input" value={categoryEdit.courseCode||''} onChange={e=>setCatEdit({...categoryEdit,courseCode:e.target.value})}/>
+                      <h5 style={{ margin:0, fontWeight:800, fontSize:'15px', color:'#fff', lineHeight:1.35, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{c.title}</h5>
+                    </div>
+                    {/* Inline action buttons */}
+                    <div style={{ display:'flex', flexDirection:'row', alignItems:'center', gap:'6px', flexShrink:0 }}>
+                      <button onClick={()=>openEdit(c.cid)} title="Edit" style={{ width:30, height:30, borderRadius:'8px', border:'none', background:'rgba(255,255,255,0.2)', color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.2s' }} onMouseOver={e=>(e.currentTarget.style.background='rgba(255,255,255,0.35)')} onMouseOut={e=>(e.currentTarget.style.background='rgba(255,255,255,0.2)')}><Edit size={14}/></button>
+                      <button onClick={()=>doDelete(c.cid)} title="Delete" style={{ width:30, height:30, borderRadius:'8px', border:'none', background:'rgba(253,98,94,0.3)', color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.2s' }} onMouseOver={e=>(e.currentTarget.style.background='rgba(253,98,94,0.6)')} onMouseOut={e=>(e.currentTarget.style.background='rgba(253,98,94,0.3)')}><Trash2 size={14}/></button>
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:'5px', marginTop:'10px', position:'relative', zIndex:1 }}>
+                    <span style={{ width:7, height:7, borderRadius:'50%', background:'#a8f0d3', boxShadow:'0 0 0 3px rgba(168,240,211,0.25)', display:'inline-block' }}/>
+                    <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.8)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px' }}>Session Active</span>
+                  </div>
                 </div>
-                <div className="col-6">
-                  <label className="stock-label">Level</label>
-                  <select className="stock-input" value={categoryEdit.level||''} onChange={e=>setCatEdit({...categoryEdit,level:e.target.value})}>
-                    <option value="">Select</option>{LEVELS.map(l=><option key={l} value={l}>{l}</option>)}
+
+                {/* Body */}
+                <div style={{ padding:'16px 18px', flex:1 }}>
+                  <p style={{ fontSize:'13px', color:'#74788d', lineHeight:1.6, margin:'0 0 16px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                    {c.description || 'Comprehensive course module covering core fundamental concepts and advanced learning methodologies.'}
+                  </p>
+                  <div style={{ display:'flex', alignItems:'center', gap:'16px', fontSize:'12px', color:'#74788d', fontWeight:500 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'5px' }}><Layers size={13}/><span>{c.level || '—'}</span></div>
+                    <div style={{ display:'flex', alignItems:'center', gap:'5px' }}><BookOpen size={13}/><span>{c.courseCode || '—'}</span></div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div style={{ padding:'12px 18px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end' }}>
+                  <button onClick={()=>navigate(`/lecturer/view-course/${c.cid}`)} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 16px', borderRadius:'20px', border:'1.5px solid rgba(81,86,190,0.2)', background:'rgba(81,86,190,0.06)', color:'#5156be', fontSize:'12px', fontWeight:700, cursor:'pointer', transition:'0.2s' }}>
+                    Manage <ChevronRight size={13}/>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Update Registry Modal */}
+      {editModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999, padding:'16px' }}>
+          <div style={{ background:'#fff', borderRadius:'16px', width:'100%', maxWidth:'480px', maxHeight:'92vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}>
+
+            {/* Modal Header */}
+            <div style={{ background:'linear-gradient(135deg,#2ab57d 0%,#1a9666 100%)', padding:'18px 24px', borderRadius:'16px 16px 0 0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                <div style={{ width:36, height:36, borderRadius:'10px', background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}><BookOpen size={18}/></div>
+                <div>
+                  <h5 style={{ margin:0, fontWeight:800, fontSize:'15px', color:'#fff' }}>Update Registry</h5>
+                  <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>{categoryEdit.courseCode || 'Course Details'}</span>
+                </div>
+              </div>
+              <button onClick={()=>setEditModal(false)} style={{ width:32, height:32, borderRadius:'8px', border:'none', background:'rgba(255,255,255,0.15)', color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><X size={16}/></button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding:'20px 24px', overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:'14px' }}>
+              <div><label style={lbl}>Course Title</label><input style={inp} value={categoryEdit.title||''} onChange={e=>setCatEdit({...categoryEdit,title:e.target.value})} placeholder="e.g. Introduction to Computer Science"/></div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
+                <div><label style={lbl}>Course Code</label><input style={inp} value={categoryEdit.courseCode||''} onChange={e=>setCatEdit({...categoryEdit,courseCode:e.target.value})} placeholder="e.g. CSC 101"/></div>
+                <div><label style={lbl}>Level</label>
+                  <select style={inp} value={categoryEdit.level||''} onChange={e=>setCatEdit({...categoryEdit,level:e.target.value})}>
+                    <option value="">Select Level</option>
+                    {LEVELS.map(l=><option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="mb-4">
-                <label className="stock-label">Description</label>
-                <textarea className="stock-input" rows={3} value={categoryEdit.description||''} onChange={e=>setCatEdit({...categoryEdit,description:e.target.value})}/>
-              </div>
-              <div className="d-flex justify-content-end gap-2 border-top pt-3">
-                <button className="stock-btn-plain" onClick={()=>setEditModal(false)}>Cancel</button>
-                <button className="stock-btn-solid" onClick={doUpdate} disabled={saving}>
-                  {saving ? 'Saving...' : 'Update Registry'}
-                </button>
-              </div>
+              <div><label style={lbl}>Description</label><textarea style={{...inp,resize:'vertical',minHeight:'80px',lineHeight:'1.6'}} value={categoryEdit.description||''} onChange={e=>setCatEdit({...categoryEdit,description:e.target.value})} placeholder="Brief course description..."/></div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding:'14px 24px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', gap:'10px', flexShrink:0 }}>
+              <button onClick={()=>setEditModal(false)} style={{ padding:'9px 20px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'#fff', color:'#74788d', fontWeight:600, fontSize:'13px', cursor:'pointer' }}>Cancel</button>
+              <button onClick={doUpdate} disabled={saving} style={{ padding:'9px 22px', borderRadius:'8px', border:'none', background:'linear-gradient(135deg,#2ab57d,#1a9666)', color:'#fff', fontWeight:700, fontSize:'13px', cursor:'pointer', display:'flex', alignItems:'center', gap:'7px', opacity:saving?0.7:1 }}>
+                {saving?<Loader2 style={{ animation:'spin 1s linear infinite' }} size={14}/>:<Save size={14}/>}
+                {saving?'Saving...':'Update Registry'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
       <style>{`
-        .course-stock-container {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-          color: #333;
-          padding: 10px;
-        }
-
-        .stock-title { font-size: 18px; color: #333; }
-        
-        .btn-minimal-add {
-          background: transparent; border: 1px solid #ddd; padding: 6px 12px; border-radius: 4px;
-          display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-          transition: all 0.2s; cursor: pointer; color: #555;
-        }
-        .btn-minimal-add:hover { background: #f8f9fa; border-color: #333; color: #111; }
-
-        .stock-table-card { background: #fff; }
-        
-        .stock-table { width: 100%; border-collapse: collapse; }
-        .stock-table th {
-          text-align: left; padding: 12px 8px; font-size: 13px; font-weight: 700;
-          color: #333; border-bottom: 2px solid #f1f1f1;
-        }
-        .stock-table td {
-          padding: 10px 8px; font-size: 13px; color: #555; border-bottom: 1px solid #f9f9f9;
-          vertical-align: middle; white-space: nowrap;
-        }
-        .stock-table tbody tr:hover { background: #fafafa; }
-
-        .course-identity-cell { display: flex; align-items: center; gap: 12px; }
-        .stock-ticker { font-weight: 700; color: #111; min-width: 80px; }
-        .stock-name { color: #555; }
-
-        .stock-level { font-weight: 500; }
-        .stock-status { color: #2ab57d; font-weight: 700; font-size: 11px; }
-
-        .stock-actions { font-size: 12px; }
-        .stock-btn { 
-          background: transparent; border: none; padding: 0; color: #5156be; 
-          font-weight: 600; cursor: pointer; transition: opacity 0.2s; 
-        }
-        .stock-btn:hover { text-decoration: underline; }
-        .stock-btn.text-danger { color: #fd625e; }
-
-        /* Modal */
-        .stock-modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.2); backdrop-filter: blur(2px);
-          display: flex; align-items: center; justify-content: center; z-index: 10000;
-        }
-        .stock-modal { background: #fff; border-radius: 8px; width: 100%; overflow: hidden; }
-        .stock-label { display: block; font-size: 11px; font-weight: 700; color: #777; text-transform: uppercase; margin-bottom: 4px; }
-        .stock-input {
-          width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;
-          font-size: 13px; outline: none; transition: border-color 0.2s;
-        }
-        .stock-input:focus { border-color: #333; }
-        
-        .stock-btn-plain { background: transparent; border: 1px solid #ddd; padding: 6px 15px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .stock-btn-solid { background: #1a1b1e; color: #fff; border: none; padding: 6px 15px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .stock-btn-solid:disabled { opacity: 0.5; }
-
-        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate-scale-up { animation: scaleUp 0.2s ease-out; }
-        @keyframes scaleUp { from { transform: scale(0.98); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        .cursor-pointer { cursor: pointer; }
-
-        @media (max-width: 768px) {
-          .stock-header > div { flex-direction: column; align-items: flex-start !important; gap: 12px; }
-          .btn-minimal-add { width: 100%; justify-content: center; }
-          .stock-table-card { overflow-x: auto; }
-          .stock-modal { width: 95vw !important; max-width: none !important; }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .vc-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+        .vc-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(18,38,63,0.07); border: 1px solid #eff0f2; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
+        .vc-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(18,38,63,0.12); }
+        @media (max-width: 1100px) { .vc-grid { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width: 640px) { .vc-grid { grid-template-columns: 1fr; } }
       `}</style>
     </div>
   );
