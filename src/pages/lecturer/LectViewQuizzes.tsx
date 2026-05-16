@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { loadQuizzesForUser, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
-import { Plus, X, Save, Loader2, Database, Settings, Trash2, Eye, EyeOff, ShieldCheck, Clock, Calendar, Layers, ChevronRight, CheckCircle, Edit } from 'lucide-react';
+import { Plus, X, Save, Loader2, Database, Settings, Trash2, Eye, EyeOff, ShieldCheck, Clock, Calendar, Layers, ChevronRight, CheckCircle, Edit, Smartphone, Terminal } from 'lucide-react';
 
 const VIOLATION_OPTIONS = [
   { v:'NONE', l:'None' }, { v:'DELAY_ONLY', l:'Delay Student' },
@@ -106,9 +106,11 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
               <div><label style={lbl}>Violation Action</label><select style={inp} value={quiz.violationAction||'NONE'} onChange={e=>set('violationAction',e.target.value)}>{VIOLATION_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select></div>
               <div><label style={lbl}>Max Violations</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.maxViolations||''} onChange={e=>set('maxViolations',e.target.value)}/></div>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
-              <Toggle label="Fullscreen Lock" icon={<Layers size={14}/>} k="enableFullscreenLock"/>
-              <Toggle label="Security Watermark" icon={<CheckCircle size={14}/>} k="enableWatermark"/>
+            <div className="qem-toggle-grid">
+              <Toggle label="Focus Lock" icon={<Layers size={14}/>} k="enableFullscreenLock"/>
+              <Toggle label="Watermark" icon={<CheckCircle size={14}/>} k="enableWatermark"/>
+              <Toggle label="Media Shield" icon={<Smartphone size={14}/>} k="enableScreenshotBlocking"/>
+              <Toggle label="Tech Shield" icon={<Terminal size={14}/>} k="enableDevToolsBlocking"/>
             </div>
           </div>
         </div>
@@ -264,6 +266,10 @@ export default function LectViewQuizzes() {
           .lvq-grid { grid-template-columns: 1fr; }
           .lvq-header { flex-direction: column; align-items: flex-start; }
           .lvq-create-btn { width: 100%; justify-content: center; }
+        }
+        .qem-toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        @media (max-width: 480px) {
+          .qem-toggle-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>

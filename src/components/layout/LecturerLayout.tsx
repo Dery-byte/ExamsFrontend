@@ -64,6 +64,7 @@ export default function LecturerLayout() {
               onClick={() => setMobileOpen(false)}
             >
               {item.icon}
+              <span className="sidebar-label">{item.title}</span>
             </NavLink>
           ))}
         </nav>
@@ -122,14 +123,14 @@ export default function LecturerLayout() {
           color: #495057;
         }
 
-        /* Slim Sidebar */
+        /* Sidebar */
         .slim-sidebar {
-          width: 70px;
+          width: 220px;
           background: #ffffff;
           border-right: 1px solid #e9e9ef;
           display: flex;
           flex-direction: column;
-          align-items: center;
+          align-items: stretch;
           position: fixed;
           top: 0;
           bottom: 0;
@@ -144,6 +145,7 @@ export default function LecturerLayout() {
           display: flex;
           align-items: center;
           justify-content: center;
+          border-bottom: 1px solid #f1f5f9;
         }
 
         .logo-box {
@@ -156,24 +158,33 @@ export default function LecturerLayout() {
           width: 100%;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          padding: 10px 0;
-          gap: 8px;
+          align-items: stretch;
+          padding: 12px 10px;
+          gap: 4px;
           overflow-y: auto;
         }
 
         .sidebar-menu::-webkit-scrollbar { display: none; }
 
         .sidebar-item {
-          width: 48px;
-          height: 48px;
           display: flex;
           align-items: center;
-          justify-content: center;
+          gap: 12px;
+          padding: 10px 14px;
           color: #74788d;
           border-radius: 8px;
           transition: all 0.2s;
-          margin: 4px 0;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+
+        .sidebar-label {
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .sidebar-item:hover {
@@ -190,7 +201,7 @@ export default function LecturerLayout() {
         /* Main Wrapper */
         .main-wrapper {
           flex: 1;
-          margin-left: 70px;
+          margin-left: 220px;
           display: flex;
           flex-direction: column;
         }
@@ -350,7 +361,7 @@ export default function LecturerLayout() {
         }
 
         @media (max-width: 768px) {
-          .slim-sidebar { transform: translateX(-100%); width: 70px; }
+          .slim-sidebar { transform: translateX(-100%); width: 220px; }
           .slim-sidebar.open { transform: translateX(0); }
           .main-wrapper { margin-left: 0; }
           .search-box { display: none; }
