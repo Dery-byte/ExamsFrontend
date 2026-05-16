@@ -267,14 +267,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
     <div style={{ maxWidth: '1200px', margin: '0 auto', overflowX: 'hidden' }} className="minia-page animate-fade-in">
       <Toaster position="top-right" />
 
-      <div className="page-title-box d-flex align-items-center justify-content-between mb-4">
+      <div className="vqq-page-header mb-4">
         <div>
           <h4 className="page-title mb-0 font-size-18 fw-bold">Assessment Registry Console</h4>
           <div className="breadcrumb m-0 font-size-13 text-muted">
             <span>{roleName} Portal</span> <ChevronRight size={12} className="mx-1" /> <span>Registry</span>
           </div>
         </div>
-        <div className="d-flex gap-2">
+        <div className="vqq-header-actions">
           <Link to={`${basePath}/quizzes`} className="btn-light-custom d-flex align-items-center gap-2">
             <ArrowLeft size={16} /> <span>Registry</span>
           </Link>
@@ -304,9 +304,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
       </div>
 
       {isLoading ? (
-        <div className="text-center py-5">
-          <Loader2 className="animate-spin text-primary mx-auto" size={40} />
-          <p className="text-muted mt-3">Retrieving Assessment Bank...</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '380px', gap: '20px' }}>
+          <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(81,86,190,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Loader2 style={{ animation: 'spin 1s linear infinite', color: '#5156be' }} size={36} />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: '#2a3142', fontWeight: 700, fontSize: '15px', margin: '0 0 4px' }}>Retrieving Assessment Bank...</p>
+            <p style={{ color: '#74788d', fontSize: '13px', margin: 0 }}>Please wait while we load the questions</p>
+          </div>
         </div>
       ) : questions.length === 0 && getPrefixes().length === 0 ? (
         <div className="minia-card text-center py-5">
@@ -340,87 +345,91 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                 {questions.map((q, i) => {
                   const isMatching = (q.questionType || '').toUpperCase() === 'MATCHING';
                   const isTF = (q.questionType || '').toUpperCase() === 'TRUE_FALSE';
-                  const typeColor = isMatching ? '#5156be' : isTF ? '#2ab57d' : '#4ba3ff';
-                  const bgGradient = isMatching ? 'linear-gradient(145deg, #ffffff 0%, #f4f5fa 100%)' : isTF ? 'linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%)' : 'linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%)';
+                  const typeLabel = isMatching ? 'Matching' : isTF ? 'True / False' : 'MCQ';
+                  const headerGrad = isMatching
+                    ? 'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)'
+                    : isTF
+                    ? 'linear-gradient(135deg,#2ab57d 0%,#1a9666 100%)'
+                    : 'linear-gradient(135deg,#4ba3ff 0%,#2b7de9 100%)';
+                  const accentColor = isMatching ? '#5156be' : isTF ? '#2ab57d' : '#4ba3ff';
                   const correctAnswers = q.correctAnswer ?? q.correct_answer ?? [];
 
                   return (
-                    <div key={q.quesId}>
-                      <div className="minia-card border-0 shadow-sm h-100 d-flex flex-column transition-2 hover-scale" style={{ background: bgGradient, borderTop: `4px solid ${typeColor}`, borderRadius: '16px', overflow: 'hidden' }}>
-                        
-                        {/* Header */}
-                        <div className="p-3 d-flex justify-content-between align-items-center bg-white bg-opacity-75 border-bottom border-light">
-                          <div className="d-flex align-items-center gap-2">
-                            <span className="badge font-size-13 fw-bold px-3 py-1 rounded-pill shadow-sm" style={{ backgroundColor: typeColor, color: '#fff' }}>#{i + 1}</span>
-                            <span className="badge font-size-10 px-2 py-1 text-uppercase fw-bold rounded-pill" style={{ backgroundColor: `${typeColor}15`, color: typeColor, letterSpacing: '0.5px' }}>
-                              {isMatching ? 'Matching' : isTF ? 'True/False' : 'MCQ'}
-                            </span>
-                          </div>
-                          <div className="d-flex align-items-center gap-3">
-                            <div className="text-end">
-                              <span className="d-inline-block font-size-16 fw-bold text-dark lh-1 me-1">{q.marks}</span>
-                              <span className="font-size-9 text-muted fw-bold text-uppercase tracking-wider">PTS</span>
-                            </div>
-                            <div className="d-flex gap-2">
-                              <button className="btn-icon-xs bg-white border shadow-sm text-info hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }} onClick={() => openUpdateObj(q.quesId || q.id || q.qId, q.questionType)}><Edit size={13} /></button>
-                              <button className="btn-icon-xs bg-white border shadow-sm text-danger hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }} onClick={() => doDeleteQuestion(q.quesId || q.id || q.qId)}><Trash2 size={13} /></button>
-                            </div>
-                          </div>
+                    <div key={q.quesId} className="vqq-obj-card">
+                      {/* Colored Header */}
+                      <div className="vqq-obj-header" style={{ background: headerGrad }}>
+                        <div className="d-flex align-items-center gap-2">
+                          <span className="vqq-obj-num">#{i + 1}</span>
+                          <span className="vqq-obj-type">{typeLabel}</span>
                         </div>
+                        <div className="d-flex align-items-center gap-2">
+                          <button className="vqq-hdr-btn" title="Edit" onClick={() => openUpdateObj(q.quesId || q.id || q.qId, q.questionType)}>
+                            <Edit size={14} />
+                          </button>
+                          <button className="vqq-hdr-btn vqq-hdr-btn-danger" title="Delete" onClick={() => doDeleteQuestion(q.quesId || q.id || q.qId)}>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
 
-                        {/* Content */}
-                        <div className="p-4 flex-grow-1 d-flex flex-column">
-                          <div className="font-size-15 fw-bold text-dark mb-4 lh-base" dangerouslySetInnerHTML={{ __html: q.content }} />
+                      {/* Body: Question */}
+                      <div className="vqq-obj-body">
+                        <p className="vqq-obj-question" dangerouslySetInnerHTML={{ __html: q.content }} />
 
-                          <div className="mt-auto">
-                            {/* MCQ Options */}
-                            {!isMatching && !isTF && (
-                              <div className="d-flex flex-column gap-2">
-                                {['option1', 'option2', 'option3', 'option4'].map((optKey, idx) => {
-                                  const optVal = q[optKey];
-                                  if (!optVal) return null;
-                                  const isCorrect = correctAnswers.includes(optVal);
-                                  return (
-                                    <div key={idx} className={`px-3 py-2 rounded-3 border font-size-13 transition-2 d-flex align-items-center gap-3 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold shadow-sm' : 'bg-white border-light text-muted'}`}>
-                                      <span className={`fw-bold ${isCorrect ? 'text-success' : 'text-primary'}`} style={{ width: 20 }}>{String.fromCharCode(65 + idx)}.</span>
-                                      <span className="text-truncate flex-grow-1">{optVal}</span>
-                                      {isCorrect && <CheckCircle size={16} className="flex-shrink-0" />}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-
-                            {/* True/False Options */}
-                            {isTF && (
-                              <div className="d-flex gap-3">
-                                {['True', 'False'].map((val, idx) => {
-                                  const isCorrect = correctAnswers.includes(val);
-                                  return (
-                                    <div key={idx} className={`flex-fill px-4 py-3 rounded-3 border font-size-14 transition-2 d-flex align-items-center justify-content-center gap-2 ${isCorrect ? 'bg-soft-success border-success text-success fw-bold shadow-sm' : 'bg-white border-light text-muted'}`}>
-                                      {isCorrect && <CheckCircle size={16} />}
-                                      <span>{val}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-
-                            {/* Matching Pairs */}
-                            {isMatching && q.matchingPairs && q.matchingPairs.length > 0 && (
-                              <div className="d-flex flex-column gap-2">
-                                {q.matchingPairs.map((pair: any, idx: number) => (
-                                  <div key={idx} className="bg-white border rounded-3 px-3 py-2 d-flex align-items-center justify-content-between shadow-sm font-size-13">
-                                    <span className="text-dark fw-medium text-truncate w-50">{pair.prompt}</span>
-                                    <div className="d-flex align-items-center gap-2 w-50 justify-content-end">
-                                      <span className="text-muted opacity-50"><ChevronRight size={14} /></span>
-                                      <span className="text-primary fw-bold text-truncate text-end" style={{ maxWidth: '80%' }}>{pair.answer}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                        {/* MCQ Options */}
+                        {!isMatching && !isTF && (
+                          <div className="vqq-opts-list">
+                            {['option1','option2','option3','option4'].map((optKey, idx) => {
+                              const optVal = q[optKey];
+                              if (!optVal) return null;
+                              const isCorrect = correctAnswers.includes(optVal);
+                              return (
+                                <div key={idx} className={`vqq-opt ${isCorrect ? 'vqq-opt-correct' : ''}`} style={isCorrect ? { borderColor: accentColor, background: `${accentColor}12` } : {}}>
+                                  <span className="vqq-opt-letter" style={isCorrect ? { background: accentColor, color: '#fff' } : { background: `${accentColor}18`, color: accentColor }}>{String.fromCharCode(65 + idx)}</span>
+                                  <span className="vqq-opt-text">{optVal}</span>
+                                  {isCorrect && <CheckCircle size={14} style={{ color: accentColor, flexShrink: 0 }} />}
+                                </div>
+                              );
+                            })}
                           </div>
+                        )}
+
+                        {/* True/False */}
+                        {isTF && (
+                          <div className="vqq-tf-row">
+                            {['True','False'].map((val, idx) => {
+                              const isCorrect = correctAnswers.includes(val);
+                              const tfColor = val === 'True' ? '#2ab57d' : '#fd625e';
+                              return (
+                                <div key={idx} className="vqq-tf-btn" style={isCorrect ? { background: tfColor, color: '#fff', borderColor: tfColor } : { borderColor: '#e9ecef', color: '#74788d' }}>
+                                  {isCorrect && <CheckCircle size={14} />}
+                                  <span>{val}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Matching */}
+                        {isMatching && q.matchingPairs && q.matchingPairs.length > 0 && (
+                          <div className="vqq-match-list">
+                            {q.matchingPairs.map((pair: any, idx: number) => (
+                              <div key={idx} className="vqq-match-row">
+                                <span className="vqq-match-prompt">{pair.prompt}</span>
+                                <ChevronRight size={12} style={{ color: '#adb5bd', flexShrink: 0 }} />
+                                <span className="vqq-match-answer" style={{ color: accentColor }}>{pair.answer}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer: Marks */}
+                      <div className="vqq-obj-footer">
+                        <div className="vqq-marks-pill" style={{ background: `${accentColor}15`, color: accentColor }}>
+                          <Award size={13} />
+                          <span className="fw-bold">{q.marks}</span>
+                          <span className="font-size-10 fw-medium">pts</span>
                         </div>
                       </div>
                     </div>
@@ -477,70 +486,60 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                 </div>
               )}
 
-              <div className="d-flex flex-column gap-4 mt-2">
+              <div className="vqq-theory-col">
                 {getPrefixes().map(prefix => (
-                  <div key={prefix} className="minia-card shadow-lg border-0 overflow-hidden" style={{ borderRadius: '16px' }}>
-                    {/* Group Header */}
-                    <div className="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom border-light">
+                  <div key={prefix} className="vqq-theory-card">
+                    {/* Card Header */}
+                    <div className="vqq-theory-header">
                       <div className="d-flex align-items-center gap-3">
-                        <div className="avatar-sm rounded-circle bg-success bg-gradient text-white d-flex align-items-center justify-content-center shadow-sm">
-                          <span className="font-size-16 fw-bold">{prefix}</span>
-                        </div>
+                        <div className="vqq-group-badge">{prefix}</div>
                         <div>
-                          <h6 className="mb-0 font-size-16 fw-bold text-dark">Group Protocol {prefix}</h6>
-                          <span className="text-muted font-size-11 text-uppercase tracking-wider fw-medium">Instructional Assessment Set</span>
+                          <h6 className="mb-0 fw-bold text-white font-size-16">Group Protocol {prefix}</h6>
+                          <span className="font-size-11 fw-medium text-uppercase" style={{ color: 'rgba(255,255,255,0.7)' }}>Theoretical Assessment Set &bull; {getGrouped(prefix).length} Questions</span>
                         </div>
                       </div>
-                      <div className="d-flex align-items-center gap-3 bg-light-subtle px-4 py-2 rounded-pill border">
-                        <div className="d-flex flex-column align-items-end me-2">
-                          <span className="font-size-9 fw-bold text-muted text-uppercase tracking-wider">Group Status</span>
-                          <span className={`font-size-11 fw-bold ${compulsoryPrefixes[prefix] ? 'text-primary' : 'text-muted'}`}>{compulsoryPrefixes[prefix] ? 'MANDATORY' : 'OPTIONAL'}</span>
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="d-flex flex-column align-items-end">
+                          <span className="font-size-9 fw-bold text-uppercase" style={{ color: 'rgba(255,255,255,0.55)', letterSpacing: '1px' }}>Status</span>
+                          <span className="font-size-11 fw-bold text-white">{compulsoryPrefixes[prefix] ? 'MANDATORY' : 'OPTIONAL'}</span>
                         </div>
                         <div
                           onClick={() => !isUpdatingCompulsory[prefix] && onCompulsoryChange(prefix, !compulsoryPrefixes[prefix])}
                           className={`minia-switch ${compulsoryPrefixes[prefix] ? 'on' : ''}`}
-                          style={{ transform: 'scale(0.9)', cursor: 'pointer' }}
+                          style={{ cursor: 'pointer', background: compulsoryPrefixes[prefix] ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)' }}
                         >
                           <div className="switch-dot" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Vertical Rows */}
-                    <div className="d-flex flex-column bg-light-subtle p-3 gap-3">
-                      {getGrouped(prefix).map((q: any, idx: number, arr: any[]) => (
-                        <div key={q.tqId} className="bg-white rounded-3 shadow-sm border border-light p-4 d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-4 transition-2 hover-scale">
-
-                          {/* LEFT: Badges */}
-                          <div className="d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '60px' }}>
-                            <span className="badge bg-soft-success text-success font-size-15 fw-bold px-3 py-2 rounded-circle shadow-sm" style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {q.quesNo}
-                            </span>
+                    {/* Questions */}
+                    <div className="vqq-theory-body">
+                      {getGrouped(prefix).map((q: any, idx: number) => (
+                        <div key={q.tqId} className="vqq-theory-row">
+                          <div className="vqq-q-num">
+                            <span>{q.quesNo}</span>
                           </div>
-
-                          {/* MIDDLE: Content */}
-                          <div className="flex-grow-1 d-flex flex-column gap-3">
-                            <div className="font-size-15 fw-bold text-dark lh-base" dangerouslySetInnerHTML={{ __html: q.question }} />
+                          <div className="vqq-q-content">
+                            <div className="font-size-14 fw-bold text-dark lh-base mb-2" dangerouslySetInnerHTML={{ __html: q.question }} />
                             {q.evaluationCriteria && (
-                              <div className="bg-light-subtle rounded-3 px-4 py-3 border-start border-4 border-success mt-1">
-                                <div className="d-flex align-items-center gap-2 text-success mb-2">
-                                  <Target size={14} />
-                                  <span className="font-size-11 fw-bold text-uppercase letter-spacing-1">Evaluation KPI</span>
+                              <div className="vqq-eval-box">
+                                <div className="d-flex align-items-center gap-2 mb-1">
+                                  <Target size={12} style={{ color: '#2ab57d' }} />
+                                  <span className="font-size-10 fw-bold text-uppercase" style={{ color: '#2ab57d', letterSpacing: '0.8px' }}>Evaluation KPI</span>
                                 </div>
-                                <p className="font-size-13 text-muted mb-0 fw-medium">"{q.evaluationCriteria}"</p>
+                                <p className="font-size-12 text-muted mb-0 fw-medium">&ldquo;{q.evaluationCriteria}&rdquo;</p>
                               </div>
                             )}
                           </div>
-
-                          {/* RIGHT: Actions */}
-                          <div className="d-flex flex-column align-items-center justify-content-center gap-3 flex-shrink-0" style={{ width: '100px' }}>
-                            <div className="text-center bg-light-subtle rounded-3 py-2 px-3 border w-100">
-                              <span className="d-block font-size-20 fw-bold text-dark lh-1 mb-1">{q.marks}</span>
-                              <span className="font-size-10 text-muted fw-bold text-uppercase tracking-wider">PTS</span>
+                          <div className="vqq-q-actions">
+                            <div className="vqq-marks-chip">
+                              <span className="d-block font-size-18 fw-bold text-dark lh-1">{q.marks}</span>
+                              <span className="font-size-9 text-muted fw-bold text-uppercase">PTS</span>
                             </div>
-                            <div className="d-flex gap-2 w-100 justify-content-center">
-                              <button className="btn-icon-sm bg-white border shadow-sm text-info hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}><Edit size={14} /></button>
-                              <button className="btn-icon-sm bg-white border shadow-sm text-danger hover-scale rounded-circle d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}><Trash2 size={14} /></button>
+                            <div className="d-flex gap-2">
+                              <button className="vqq-act-btn" style={{ color: '#4ba3ff' }} onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}><Edit size={14} /></button>
+                              <button className="vqq-act-btn" style={{ color: '#fd625e' }} onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}><Trash2 size={14} /></button>
                             </div>
                           </div>
                         </div>
@@ -873,15 +872,70 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* Page Header */
+        .vqq-page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .vqq-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
         /* Objective Inventory responsive grid */
-        .vqq-obj-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-        }
+        /* Objective Inventory grid — 2 columns */
+        .vqq-obj-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        @media (max-width: 600px) { .vqq-obj-grid { grid-template-columns: 1fr; } }
+
+        /* Objective Card */
+        .vqq-obj-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(18,38,63,0.08); border: 1px solid #eff0f2; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
+        .vqq-obj-card:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(18,38,63,0.13); }
+
+        .vqq-obj-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; }
+        .vqq-obj-num { background: rgba(255,255,255,0.25); color: #fff; font-size: 13px; font-weight: 800; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.3px; }
+        .vqq-obj-type { background: rgba(255,255,255,0.18); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; }
+        .vqq-hdr-btn { width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,0.2); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .vqq-hdr-btn:hover { background: rgba(255,255,255,0.35); }
+        .vqq-hdr-btn-danger:hover { background: rgba(253,98,94,0.55); }
+
+        .vqq-obj-body { padding: 16px 18px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+        .vqq-obj-question { font-size: 14px; font-weight: 700; color: #2a3142; line-height: 1.6; margin: 0; }
+
+        .vqq-opts-list { display: flex; flex-direction: column; gap: 6px; }
+        .vqq-opt { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid #e9ecef; background: #fafbff; transition: all 0.15s; }
+        .vqq-opt-correct { font-weight: 600; }
+        .vqq-opt-letter { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; }
+        .vqq-opt-text { font-size: 13px; color: #495057; flex: 1; min-width: 0; }
+
+        .vqq-tf-row { display: flex; gap: 10px; }
+        .vqq-tf-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 10px; border-radius: 10px; border: 1.5px solid; font-size: 13px; font-weight: 700; transition: all 0.15s; }
+
+        .vqq-match-list { display: flex; flex-direction: column; gap: 6px; }
+        .vqq-match-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; background: #f8f9fa; border: 1px solid #eff0f2; font-size: 12px; }
+        .vqq-match-prompt { flex: 1; color: #495057; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .vqq-match-answer { flex: 1; font-weight: 700; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .vqq-obj-footer { padding: 12px 18px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; }
+        .vqq-marks-pill { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+
+        /* Theory Card */
+        .vqq-theory-col { display: flex; flex-direction: column; gap: 24px; }
+        .vqq-theory-card { background: #fff; border-radius: 16px; border: 1px solid #eff0f2; box-shadow: 0 4px 24px rgba(18,38,63,0.07); overflow: hidden; }
+        .vqq-theory-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; background: linear-gradient(135deg, #2ab57d 0%, #1a9666 100%); flex-wrap: wrap; gap: 12px; }
+        .vqq-group-badge { width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0; }
+        .vqq-theory-body { padding: 4px 0; }
+        .vqq-theory-row { display: flex; align-items: flex-start; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
+        .vqq-theory-row:last-child { border-bottom: none; }
+        .vqq-theory-row:hover { background: #fafbff; }
+        .vqq-q-num { width: 42px; height: 42px; border-radius: 10px; background: rgba(42,181,125,0.1); display: flex; align-items: center; justify-content: center; color: #2ab57d; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+        .vqq-q-content { flex: 1; min-width: 0; }
+        .vqq-eval-box { background: #f0faf5; border-left: 3px solid #2ab57d; border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 8px; }
+        .vqq-q-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
+        .vqq-marks-chip { text-align: center; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 8px 12px; min-width: 56px; }
+        .vqq-act-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e9ecef; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.06); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .vqq-act-btn:hover { transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
 
         @media (max-width: 640px) {
+          .vqq-page-header { flex-direction: column; align-items: flex-start; }
+          .vqq-header-actions { width: 100%; }
           .vqq-obj-grid { grid-template-columns: 1fr; }
+          .vqq-theory-row { flex-wrap: wrap; }
+          .vqq-q-actions { flex-direction: row; width: 100%; justify-content: flex-end; padding-top: 8px; }
+          .vqq-theory-header { flex-direction: column; align-items: flex-start; }
           .minia-modal-overlay > div { width: 95vw !important; max-width: none !important; }
         }
       `}</style>
