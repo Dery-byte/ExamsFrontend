@@ -63,6 +63,27 @@ export default function Instructions() {
     }).catch(() => {}).finally(() => { isLoadingRep = false; check(); });
   }, [qid, user?.id]);
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Validate origin to ensure security (assuming both are on same origin)
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data === 'QUIZ_SUBMITTED') {
+        Swal.fire({
+          title: 'Submitted!',
+          text: 'Your assessment has been successfully submitted for grading.',
+          icon: 'success',
+          confirmButtonColor: '#7a6fbe',
+          customClass: { popup: 'swal2-premium-popup' }
+        }).then(() => {
+          window.location.reload();
+        });
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   const getFormattedTime = () => {
     if (!timerAll) return 'Calculating...';
     const hr = Math.floor(timerAll / 3600);

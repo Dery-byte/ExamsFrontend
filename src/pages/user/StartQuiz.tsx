@@ -244,6 +244,11 @@ export default function StartQuiz() {
         const comp = pfxs.filter(p => isGroupCompulsory(grp[p]));
         const initSel: Record<string, boolean> = {};
         comp.forEach(p => { initSel[p] = true; });
+        
+        if (qt === 'THEORY' && Object.keys(initSel).length === 0 && pfxs.length > 0) {
+          initSel[pfxs[0]] = true;
+        }
+
         setPrefixes(pfxs);
         setCompulsoryPfx(comp);
         setSelectedPfx(initSel);
@@ -435,13 +440,21 @@ export default function StartQuiz() {
       // Brief pause so student can see final log
       await new Promise(r => setTimeout(r, 1500));
 
-      await Swal.fire({
-        title: 'Submitted!',
-        text: 'Your assessment has been successfully submitted for grading.',
-        icon: 'success',
-        confirmButtonColor: '#7a6fbe',
-      });
-      window.location.reload();
+      // If opened in a new window, notify the main window to show confirmation and close this popup
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage('QUIZ_SUBMITTED', window.location.origin);
+        window.close();
+      } else {
+        await Swal.fire({
+          title: 'Submitted!',
+          text: 'Your assessment has been successfully submitted for grading.',
+          icon: 'success',
+          confirmButtonColor: '#7a6fbe',
+          customClass: { popup: 'swal2-premium-popup' }
+        });
+        // Fallback for direct navigation
+        window.location.reload();
+      }
     } catch (e: any) {
       setSubmitting(false);
       // We don't clear logs here so the user can see what failed
