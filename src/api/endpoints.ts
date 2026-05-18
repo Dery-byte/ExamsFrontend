@@ -174,6 +174,11 @@ export const getStudentCount = () =>
   client.get('/students/counts').then(r => r.data);
 export const getLecturerCount = () =>
   client.get('/lecturers/counts').then(r => r.data);
+
+// Download PDF result slip (returns raw blob)
+export const downloadReportPdf = (qid: number | string) =>
+  client.get(`/report/pdf/${qid}`, { responseType: 'blob' });
+
 // Extract unique categories+quizzes from raw report data (mirrors Angular extractCategoriesAndQuizzes)
 const extractCategoriesAndQuizzes = (raw: any): any[] => {
   // Handle both array responses and wrapped responses like { data: [...] }

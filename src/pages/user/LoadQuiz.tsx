@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getReport, getRegCourses, getReportsByUser, getTakenQuizzesOfCategoryByUser } from '../../api/endpoints';
+import { getReport, getRegCourses, getReportsByUser, getTakenQuizzesOfCategoryByUser, downloadReportPdf } from '../../api/endpoints';
 import PageHeader from '../../components/PageHeader';
 import { 
   X, 
   Loader2, 
   BookOpen, 
   Award, 
-  Printer, 
+  Download,
   FileText,
   Activity,
   ArrowUpRight
@@ -153,7 +152,12 @@ function SummaryModal({ qId, onClose, userId }: { qId: number; onClose: () => vo
 }
 
 /* ─── quiz card ─────────────────────────────────────────────────── */
-function QuizCard({ q, idx, report, onSummary, onPrint }: { q: any; idx: number; report: any; onSummary: () => void; onPrint: () => void }) {
+function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
+  q: any; idx: number; report: any;
+  onSummary: () => void;
+  onDownload: () => void;
+  isDownloading: boolean;
+}) {
   if (!q) return null;
   const closed  = q?.status === 'CLOSED';
   const total   = parseFloat(report?.marks || 0) + parseFloat(report?.marksB || 0);
@@ -202,12 +206,14 @@ function QuizCard({ q, idx, report, onSummary, onPrint }: { q: any; idx: number;
           Analytics
         </button>
         <button 
-          onClick={closed ? onPrint : undefined} 
-          disabled={!closed}
+          onClick={closed && !isDownloading ? onDownload : undefined} 
+          disabled={!closed || isDownloading}
           className={`btn-lexa ${closed ? 'btn-lexa-primary' : ''}`}
-          style={{ flex: 1, padding: '10px', fontSize: 13, opacity: closed ? 1 : 0.5, justifyContent: 'center', borderRadius: 8, textDecoration: 'none' }}
+          style={{ flex: 1, padding: '10px', fontSize: 13, opacity: closed ? 1 : 0.5, justifyContent: 'center', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
         >
-          <Printer size={16} /> Result Slip
+          {isDownloading
+            ? <><Loader2 size={15} className="spin-ico" /> Generating...</>
+            : <><Download size={15} /> Result Slip</>}
         </button>
       </div>
     </div>
@@ -216,8 +222,7 @@ function QuizCard({ q, idx, report, onSummary, onPrint }: { q: any; idx: number;
 
 /* ─── main component ────────────────────────────────────────────── */
 export default function LoadQuiz() {
-  const { user }  = useAuth();
-  const navigate  = useNavigate();
+  const { user } = useAuth();
 
   const [uniqueCategories, setUniqueCategories] = useState<any[]>([]);
   const [selectedCid, setSelected]              = useState('');
@@ -226,6 +231,27 @@ export default function LoadQuiz() {
   const [isLoadingInit, setLoadingInit]         = useState(true);
   const [isLoadingQ, setLoadingQ]               = useState(false);
   const [summaryId, setSummaryId]               = useState<number | null>(null);
+  const [downloadingId, setDownloadingId]       = useState<number | null>(null);
+
+  const handleDownloadPdf = async (qId: number) => {
+    setDownloadingId(qId);
+    try {
+      const res = await downloadReportPdf(qId);
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `ResultSlip_Q${qId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PDF download failed', err);
+      alert('Could not generate the result slip. Please try again.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => { init(); }, []);
   useEffect(() => { if (selectedCid) loadQuizzes(selectedCid); else setQuizzes([]); }, [selectedCid]);
@@ -396,7 +422,8 @@ export default function LoadQuiz() {
                   idx={i}
                   report={getReportForQuiz(q?.qId)}
                   onSummary={() => setSummaryId(q?.qId)}
-                  onPrint={() => navigate(`/print_quiz/${q?.qId}`)}
+                  onDownload={() => handleDownloadPdf(q?.qId)}
+                  isDownloading={downloadingId === q?.qId}
                 />
               ))}
             </div>
