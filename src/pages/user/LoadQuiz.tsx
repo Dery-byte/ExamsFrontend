@@ -233,14 +233,20 @@ export default function LoadQuiz() {
   const [summaryId, setSummaryId]               = useState<number | null>(null);
   const [downloadingId, setDownloadingId]       = useState<number | null>(null);
 
-  const handleDownloadPdf = async (qId: number) => {
-    setDownloadingId(qId);
+  const handleDownloadPdf = async (q: any) => {
+    setDownloadingId(q.qId);
     try {
-      const res = await downloadReportPdf(qId);
+      const res = await downloadReportPdf(q.qId);
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `ResultSlip_Q${qId}.pdf`);
+
+      const courseTitle = q.category?.title || 'Course';
+      const quizTitle = q.title || 'Quiz';
+      const safeCourse = courseTitle.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const safeQuiz = quizTitle.replace(/[^a-zA-Z0-9.-]/g, '_');
+      
+      link.setAttribute('download', `ResultsSlip_${safeCourse}_${safeQuiz}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -422,7 +428,7 @@ export default function LoadQuiz() {
                   idx={i}
                   report={getReportForQuiz(q?.qId)}
                   onSummary={() => setSummaryId(q?.qId)}
-                  onDownload={() => handleDownloadPdf(q?.qId)}
+                  onDownload={() => handleDownloadPdf(q)}
                   isDownloading={downloadingId === q?.qId}
                 />
               ))}
