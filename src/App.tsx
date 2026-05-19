@@ -25,12 +25,14 @@ import ViewQuizQuestions from './pages/admin/ViewQuizQuestions';
 import AddQuestion from './pages/admin/AddQuestion';
 import Students from './pages/admin/Students';
 import Lecturers from './pages/admin/Lecturers';
+import QuizReview from './pages/admin/QuizReview';
 
 // Lecturer
 import LectWelcome from './pages/lecturer/LectWelcome';
 import ViewCourse from './pages/lecturer/ViewCourse';
 import AddCourse from './pages/lecturer/AddCourse';
 import LectViewQuizzes from './pages/lecturer/LectViewQuizzes';
+import LectQuizReview from './pages/lecturer/LectQuizReview';
 import LectAddQuiz from './pages/lecturer/LectAddQuiz';
 import LectViewQuizQuestions from './pages/lecturer/LectViewQuizQuestions';
 import LectAddQuestion from './pages/lecturer/LectAddQuestion';
@@ -88,6 +90,7 @@ export default function App() {
           <Route path="add-question/:qId/:title" element={<AddQuestion />} />
           <Route path="students" element={<Students />} />
           <Route path="lecturers" element={<Lecturers />} />
+          <Route path="quiz-review" element={<QuizReview />} />
         </Route>
 
         {/* Lecturer */}
@@ -100,6 +103,7 @@ export default function App() {
           <Route path="add-quizes" element={<LectAddQuiz />} />
           <Route path="view-quetions/:qId/:qTitle" element={<LectViewQuizQuestions />} />
           <Route path="add-question/:qId/:title" element={<LectAddQuestion />} />
+          <Route path="quiz-review" element={<LectQuizReview />} />
         </Route>
 
         {/* Student */}

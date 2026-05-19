@@ -15,7 +15,8 @@ import {
   X, 
   ChevronRight, 
   ShieldCheck,
-  Clock
+  Clock,
+  Eye
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -57,6 +58,12 @@ export default function AdminLayout() {
       items: [
         { to: '/admin/students', icon: <GraduationCap size={20} />, label: 'Student Directory' },
         { to: '/admin/lecturers', icon: <Users size={20} />, label: 'Faculty Directory' },
+      ]
+    },
+    {
+      label: 'Assessment Review',
+      items: [
+        { to: '/admin/quiz-review', icon: <Eye size={20} />, label: 'Quiz Review Panel' },
       ]
     },
   ];

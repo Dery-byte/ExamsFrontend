@@ -18,7 +18,8 @@ import {
   Moon,
   Bell,
   Settings,
-  LogOut
+  LogOut,
+  Eye
 } from 'lucide-react';
 
 export default function LecturerLayout() {
@@ -32,11 +33,7 @@ export default function LecturerLayout() {
     { to: '/lect/profile', icon: <Users size={20} />, title: 'Profile' },
     { to: '/lect/add-course', icon: <Layout size={20} />, title: 'Add Course' },
     { to: '/lect/add-quizes', icon: <Briefcase size={20} />, title: 'Create Quiz' },
-    // { to: '#', icon: <Gift size={20} />, title: 'Rewards' },
-    // { to: '#', icon: <Box size={20} />, title: 'Components' },
-    // { to: '#', icon: <Sliders size={20} />, title: 'Settings' },
-    // { to: '#', icon: <PieChart size={20} />, title: 'Analytics' },
-    // { to: '#', icon: <Cpu size={20} />, title: 'System' },
+    { to: '/lect/quiz-review', icon: <Eye size={20} />, title: 'Quiz Review' },
   ];
 
   return (

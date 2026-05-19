@@ -259,3 +259,7 @@ export const deleteRegCourse = (rid: number | string) =>
 // ── Section B marks ───────────────────────────────────────────────────────
 export const addSectionBMarks = (questions: object) =>
   client.put('/addtheoryMark', questions).then(r => r.data);
+
+// ── Student theory answers by user + quiz ─────────────────────────────────
+export const getStudentTheoryAnswers = (userId: number, quizId: number | string) =>
+  client.get(`/answers/by-user-quiz/${userId}/${quizId}`).then(r => r.data).catch(() => []);
