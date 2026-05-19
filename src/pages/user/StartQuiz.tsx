@@ -372,7 +372,9 @@ export default function StartQuiz() {
         addLog(`Submitting ${questions.length} objective question(s)…`, 'info');
         await evalQuiz(qid!, questions.map(q => ({
           ...q,
-          givenAnswer: Array.isArray(q.givenAnswer) ? q.givenAnswer : [q.givenAnswer ?? ''],
+          givenAnswer: q.questionType === 'MATCHING' 
+            ? (q.matchingAnswers ?? []) 
+            : (Array.isArray(q.givenAnswer) ? q.givenAnswer : [q.givenAnswer ?? '']),
         }))).catch((e: any) => {
           const errMsg = e.response?.data?.error || e.response?.data?.message || e.message || 'Unknown error';
           addLog(`Objective evaluation error: ${errMsg}`, 'err');
