@@ -258,6 +258,12 @@ export default function AdminLayout() {
           flex: 1;
           overflow-y: auto;
           padding: 10px 15px;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .lexa-sidebar-nav::-webkit-scrollbar {
+          display: none;
         }
 
         .lexa-nav-section {
