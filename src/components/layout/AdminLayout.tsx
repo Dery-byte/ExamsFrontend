@@ -183,7 +183,8 @@ export default function AdminLayout() {
 
         .lexa-admin-shell {
           display: flex;
-          min-height: 100vh;
+          height: 100vh;
+          overflow: hidden;
           background-color: var(--lexa-bg);
           color: #495057;
         }
@@ -391,9 +392,16 @@ export default function AdminLayout() {
         .lexa-main {
           flex: 1;
           margin-left: var(--sidebar-width);
-          min-height: 100vh;
+          height: 100vh;
+          overflow-y: auto;
           display: flex;
           flex-direction: column;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        
+        .lexa-main::-webkit-scrollbar {
+          display: none;
         }
 
         .lexa-navbar {
