@@ -4,8 +4,9 @@ import { createPortal } from 'react-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   loadQuizzes, getReportByQuizId, getTheoryQuestions,
-  addSectionBMarks
+  addSectionBMarks, getMyCoursesWithQuizzes
 } from '../../api/endpoints';
+import { useAuth } from '../../contexts/AuthContext';
 import client from '../../api/client';
 import {
   ChevronDown, ChevronRight, X, Loader2, FileText,
@@ -286,12 +287,38 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
 
 /* ── Main Page ─────────────────────────────────────────────────────────── */
 export default function QuizReview({ adminMode = true }: { adminMode?: boolean }) {
+  const { user } = useAuth();
   const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
   const [reviewTarget, setReviewTarget] = useState<{ student: any; quiz: any } | null>(null);
 
   const { data: rawQuizzes = [], isLoading } = useQuery({
-    queryKey: ['quizzes-review'],
-    queryFn: loadQuizzes,
+    queryKey: ['quizzes-review', adminMode, user?.id || user?.username],
+    queryFn: async () => {
+      if (adminMode) {
+        return loadQuizzes();
+      } else {
+        try {
+          const courses = await getMyCoursesWithQuizzes();
+          console.log("Fetched courses for lecturer via principal:", courses);
+          let allQuizzes: any[] = [];
+          courses.forEach((course: any) => {
+             if (course.quizzes && Array.isArray(course.quizzes)) {
+                const mappedQuizzes = course.quizzes.map((q: any) => ({
+                   ...q,
+                   qId: q.qId || q.qid, // Handle Jackson mapping variations
+                   category: q.category || { title: course.title, cid: course.cid } // Fallback to course details
+                }));
+                allQuizzes = allQuizzes.concat(mappedQuizzes);
+             }
+          });
+          console.log("Flattened mapped quizzes:", allQuizzes);
+          return allQuizzes;
+        } catch (err) {
+          console.error("Error fetching lecturer quizzes:", err);
+          return [];
+        }
+      }
+    },
   });
 
   const quizzes: any[] = [...(Array.isArray(rawQuizzes) ? rawQuizzes : (rawQuizzes as any)?.quizzes || [])].sort((a: any, b: any) => b.qId - a.qId);

@@ -57,6 +57,10 @@ export const assignCourseToLecturer = (courseId: number, lecturerId: number) =>
   client.put(`/courses/${courseId}/assign/${lecturerId}`, {}).then(r => r.data);
 export const getAllLecturers = () => client.get('/all/lecturers').then(r => r.data);
 export const getAllStudents = () => client.get('/all/students').then(r => r.data);
+export const getLecturerCoursesWithQuizzes = (lecturerId: number | string) => 
+  client.get(`/category/lecturer/${lecturerId}/with-quizzes`).then(r => r.data);
+export const getMyCoursesWithQuizzes = () =>
+  client.get('/category/my-courses-with-quizzes').then(r => r.data);
 
 // ── Quizzes ───────────────────────────────────────────────────────────────
 export const loadQuizzes = () => client.get('/getQuizzes').then(r => r.data);
