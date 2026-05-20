@@ -256,7 +256,7 @@ export default function UserDashboard() {
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assessment Title</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Code</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Performance</th>
-                  <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                  <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Review Status</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verification Date</th>
                 </tr>
               </thead>
@@ -286,9 +286,21 @@ export default function UserDashboard() {
                         </div>
                       </td>
                       <td style={{ padding: '10px 16px' }}>
-                        <span className={`lexa-badge badge-soft-${percent >= 50 ? 'success' : 'danger'}`} style={{ padding: '4px 10px', fontSize: 10, borderRadius: 4, fontWeight: 800 }}>
-                          {percent >= 50 ? 'DISTINCTION' : 'REVIEW'}
-                        </span>
+                        {r.isReviewed ? (
+                          <span
+                            className="lexa-badge badge-soft-success"
+                            style={{ padding: '4px 10px', fontSize: 10, borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                          >
+                            ✓ Reviewed
+                          </span>
+                        ) : (
+                          <span
+                            className="lexa-badge"
+                            style={{ padding: '4px 10px', fontSize: 10, borderRadius: 4, fontWeight: 800, background: 'rgba(241,180,76,0.15)', color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                          >
+                            ⏳ Pending Review
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: '10px 16px', color: '#adb5bd', fontSize: 11, fontWeight: 600 }}>{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                     </tr>
