@@ -654,13 +654,26 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
   };
 
   const endDelay = useCallback(() => {
-    if (delayIv.current) { clearInterval(delayIv.current); delayIv.current = null; }
-    st.current.totalDelayServed += st.current.curDelayDuration;
-    st.current.isDelayActive = false;
-    st.current.delayRemaining = 0;
-    saveViolationDelay(cfgRef.current.quizId, 0).catch(()=>{});
     removeOv();
-    if (cfgRef.current.enableFullscreenLock) setTimeout(enterFS, 300);
+    const c = cfgRef.current;
+    const s = st.current;
+    s.isDelayActive = false;
+    s.delayRemaining = 0;
+    if (delayIv.current) { clearInterval(delayIv.current); delayIv.current = null; }
+    s.totalDelayServed += s.curDelayDuration;
+    saveViolationDelay(c.quizId, 0).catch(()=>{});
+
+    showToast('Quiz access restored');
+    
+    const remaining = c.maxViolations - s.totalViolations;
+    if (c.violationAction === 'DELAY_AND_AUTOSUBMIT' && remaining === 1) {
+      showCriticalWarnOv(remaining, s.totalViolations, c.maxViolations, () => {
+        window.focus(); if (c.enableFullscreenLock) setTimeout(enterFS, 300);
+      });
+    } else {
+      window.focus();
+      if (c.enableFullscreenLock) setTimeout(enterFS, 300);
+    }
   }, []);
 
   const startDelay = useCallback((type: string, willAutoNext: boolean) => {
@@ -734,7 +747,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
         break;
 
       case 'AUTOSUBMIT_ONLY':
-        if (remaining <= 2) {
+        if (remaining === 1) {
           showCriticalWarnOv(remaining, s.totalViolations, c.maxViolations, () => {
             window.focus(); if (c.enableFullscreenLock) enterFS();
           });
