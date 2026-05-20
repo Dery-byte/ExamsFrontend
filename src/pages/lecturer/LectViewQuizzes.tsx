@@ -107,6 +107,10 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
               <div><label style={lbl}>Max Violations</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.maxViolations??''} onChange={e=>set('maxViolations',Number(e.target.value))}/></div>
               <div><label style={lbl}>Delay (sec)</label><input style={{...inp,textAlign:'center'}} type="number" min="0" value={quiz.violationDelaySeconds??''} onChange={e=>set('violationDelaySeconds',Number(e.target.value))} placeholder="e.g. 30"/></div>
             </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
+              <div><label style={lbl}>Delay Multiplier</label><input style={{...inp,textAlign:'center'}} type="number" step="0.1" min="1" value={quiz.delayMultiplier??''} onChange={e=>set('delayMultiplier',Number(e.target.value))} placeholder="e.g. 1.5"/></div>
+              <div><label style={lbl}>Auto Submit (sec)</label><input style={{...inp,textAlign:'center'}} type="number" min="0" value={quiz.autoSubmitCountdownSeconds??''} onChange={e=>set('autoSubmitCountdownSeconds',Number(e.target.value))} placeholder="e.g. 5"/></div>
+            </div>
             <div className="qem-toggle-grid">
               <Toggle label="Focus Lock" icon={<Layers size={14}/>} k="enableFullscreenLock"/>
               <Toggle label="Watermark" icon={<CheckCircle size={14}/>} k="enableWatermark"/>

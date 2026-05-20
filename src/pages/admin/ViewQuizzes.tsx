@@ -81,7 +81,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
           <div className="modal-head" style={{ flexShrink: 0 }}>
              <div className="h-title">
                 <div className="h-ico"><Settings size={16} /></div>
-                <span>Protocol Settings - {quiz.title}</span>
+                <span>Quiz Settings - {quiz.title}</span>
              </div>
              <button className="h-close" onClick={onClose}><X size={16} /></button>
           </div>
@@ -262,17 +262,21 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                       </select>
                     </div>
                     <div className="row g-2">
-                      <div className="col-4">
-                        <label className="minia-form-label text-center">Limit</label>
-                        <input className="minia-field text-center font-size-13" type="number" value={quiz.maxViolations} onChange={e=>set('maxViolations',e.target.value)}/>
+                      <div className="col-3">
+                        <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Max Violiation Limit</label>
+                        <input className="minia-field text-center px-1" type="number" value={quiz.maxViolations} onChange={e=>set('maxViolations',e.target.value)}/>
                       </div>
-                      <div className="col-4">
-                        <label className="minia-form-label text-center">Delay</label>
-                        <input className="minia-field text-center font-size-13" type="number" value={quiz.violationDelaySeconds ?? ''} onChange={e=>set('violationDelaySeconds',Number(e.target.value))}/>
+                      <div className="col-3">
+                        <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Delay</label>
+                        <input className="minia-field text-center px-1" type="number" value={quiz.violationDelaySeconds ?? ''} onChange={e=>set('violationDelaySeconds',Number(e.target.value))}/>
                       </div>
-                      <div className="col-4">
-                        <label className="minia-form-label text-center">Auto</label>
-                        <input className="minia-field text-center font-size-13" type="number" value={quiz.autoSubmitCountdownSeconds} onChange={e=>set('autoSubmitCountdownSeconds',e.target.value)}/>
+                      <div className="col-3">
+                        <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Delay Multiplier</label>
+                        <input className="minia-field text-center px-1" type="number" step="0.1" value={quiz.delayMultiplier ?? ''} onChange={e=>set('delayMultiplier',Number(e.target.value))}/>
+                      </div>
+                      <div className="col-3">
+                        <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Auto Submit Count Downdown</label>
+                        <input className="minia-field text-center px-1" type="number" value={quiz.autoSubmitCountdownSeconds} onChange={e=>set('autoSubmitCountdownSeconds',e.target.value)}/>
                       </div>
                     </div>
                   </div>

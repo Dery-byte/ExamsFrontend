@@ -256,7 +256,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 {VIOLATION_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
               </select>
             </div>
-            <div className="aq-grid-3">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '12px' }}>
               <div className="aq-field">
                 <label className="aq-label">Max</label>
                 <input className="aq-input aq-input-sm text-center" type="number" value={quiz.maxViolations} onChange={e => set('maxViolations', e.target.value)} />
@@ -264,6 +264,12 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
               <div className="aq-field">
                 <label className="aq-label">Delay (s)</label>
                 <input className="aq-input aq-input-sm text-center" type="number" value={quiz.violationDelaySeconds} onChange={e => set('violationDelaySeconds', e.target.value)} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="aq-field">
+                <label className="aq-label">Multiplier</label>
+                <input className="aq-input aq-input-sm text-center" type="number" step="0.1" value={quiz.delayMultiplier} onChange={e => set('delayMultiplier', e.target.value)} />
               </div>
               <div className="aq-field">
                 <label className="aq-label">Auto (s)</label>
