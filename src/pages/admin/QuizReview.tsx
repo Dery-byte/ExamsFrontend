@@ -10,7 +10,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import client from '../../api/client';
 import {
   ChevronDown, ChevronRight, X, Loader2, FileText,
-  MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye
+  MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye,
+  CheckSquare, AlertTriangle
 } from 'lucide-react';
 
 const RESPONSIVE_CSS = `
@@ -351,6 +352,73 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
   );
 }
 
+/* ── Bulk Confirm Modal ────────────────────────────────────────────────── */
+function BulkConfirmModal({
+  quizTitle, count, loading, onConfirm, onCancel
+}: {
+  quizTitle: string; count: number; loading: boolean;
+  onConfirm: () => void; onCancel: () => void;
+}) {
+  return createPortal(
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,15,30,0.75)', backdropFilter: 'blur(8px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 460, boxShadow: '0 30px 80px rgba(0,0,0,0.28)', overflow: 'hidden', animation: 'bulkFadeIn 0.18s ease' }}>
+
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(135deg,#1e293b,#334155)', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245,158,11,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <AlertTriangle size={22} color="#f59e0b" />
+          </div>
+          <div>
+            <div style={{ color: '#fff', fontWeight: 800, fontSize: 16 }}>Bulk Review Confirmation</div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 }}>Please review before proceeding</div>
+          </div>
+          <button onClick={onCancel} disabled={loading} style={{ marginLeft: 'auto', width: 34, height: 34, borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '24px 28px' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 15, color: '#1e293b', fontWeight: 600, lineHeight: 1.65 }}>
+            You are about to mark{' '}
+            <strong style={{ color: '#5156be' }}>{count} unreviewed submission{count !== 1 ? 's' : ''}</strong>{' '}
+            as <strong style={{ color: '#16a34a' }}>Reviewed</strong> for:
+          </p>
+          <div style={{ padding: '10px 14px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: '#334155', fontWeight: 700, marginBottom: 18 }}>
+            📋 {quizTitle}
+          </div>
+          <div style={{ padding: '12px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, fontSize: 13, color: '#92400e', lineHeight: 1.65 }}>
+            <strong>⚠ Note:</strong> Existing Section&nbsp;B marks are preserved. Only students not yet reviewed will be affected.
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '16px 28px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            style={{ padding: '10px 22px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 13, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            style={{ padding: '10px 24px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#16a34a,#15803d)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8, opacity: loading ? 0.75 : 1, boxShadow: '0 4px 12px rgba(22,163,74,0.35)' }}
+          >
+            {loading
+              ? <Loader2 size={14} style={{ animation: 'rSpin 1s linear infinite' }} />
+              : <CheckSquare size={14} />}
+            {loading ? 'Processing…' : `Yes, Mark All (${count})`}
+          </button>
+        </div>
+      </div>
+      <style>{`@keyframes bulkFadeIn { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }`}</style>
+    </div>,
+    document.body
+  );
+}
+
 /* ── Main Page ─────────────────────────────────────────────────────────── */
 export default function QuizReview({ adminMode = true }: { adminMode?: boolean }) {
   const { user } = useAuth();
@@ -449,10 +517,41 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
     queryKey: ['quiz-reports', quiz.qId],
     queryFn: () => getReportByQuizId(quiz.qId),
   });
+  const queryClient = useQueryClient();
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const totalTaken = reports.length;
   const totalReviewed = reports.filter((r: any) => r.isReviewed).length;
   const notReviewed = totalTaken - totalReviewed;
+
+  /* ── Bulk Review Handler ── */
+  const handleBulkReview = async () => {
+    const unreviewed = (reports as any[]).filter((r: any) => !r.isReviewed);
+    if (unreviewed.length === 0) return;
+    setBulkLoading(true);
+    let failed = 0;
+    await Promise.all(
+      unreviewed.map((r: any) =>
+        saveReviewedMarks({
+          userId: r.user?.id,
+          quizId: quiz.qId,
+          marksB: r.marksB || 0,
+          isReviewed: true,
+          comments: {},
+          reviewedMarks: {},
+        }).catch(() => { failed++; })
+      )
+    );
+    setBulkLoading(false);
+    setBulkConfirmOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['quiz-reports', quiz.qId] });
+    if (failed > 0) {
+      toast.error(`${failed} submission(s) could not be marked.`);
+    } else {
+      toast.success(`All ${unreviewed.length} submission(s) marked as Reviewed!`);
+    }
+  };
 
   const typeColor: Record<string, string> = { OBJ: '#5156be', THEORY: '#fd625e', BOTH: '#f59e0b' };
   const color = typeColor[quiz.quizType] || '#5156be';
@@ -510,73 +609,103 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
               <p style={{ color: '#94a3b8', marginTop: 8, fontSize: 13 }}>No students have taken this quiz yet.</p>
             </div>
           ) : (
-            <table className="resp-table">
-              <thead>
-                <tr>
-                  {['Student', 'Submission', 'Sec A', 'Sec B', 'Grade', 'Action'].map(h => (
-                    <th key={h}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {reports.map((r: any, i: number) => {
-                  const name = `${r.user?.firstName || ''} ${r.user?.lastName || ''}`.trim() || r.user?.username || 'Unknown';
-                  const date = r.submissionDate ? new Date(r.submissionDate).toLocaleDateString() : '—';
-                  return (
-                    <tr key={r.id || i}>
-                      <td data-label="Student">
-                        <div className="resp-td-content" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#eff6ff', color: '#5156be', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, flexShrink: 0 }}>
-                            {name.charAt(0).toUpperCase()}
-                          </div>
-                          <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>{name}</div>
-                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.user?.email || r.user?.username || ''}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td data-label="Submission">
-                        <div className="resp-td-content" style={{ fontSize: 13, color: '#64748b' }}>{date}</div>
-                      </td>
-                      <td data-label="Sec A">
-                        <div className="resp-td-content">
-                          <span style={{ fontWeight: 700, fontSize: 14, color: '#5156be' }}>{r.marks ?? '—'}</span>
-                        </div>
-                      </td>
-                      <td data-label="Sec B">
-                        <div className="resp-td-content">
-                          <span style={{ fontWeight: 700, fontSize: 14, color: '#2ab57d' }}>{r.marksB ?? '—'}</span>
-                        </div>
-                      </td>
-                      <td data-label="Grade">
-                        <div className="resp-td-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                          <span style={{ background: r.grade ? '#ecfdf5' : '#f1f5f9', color: r.grade ? '#16a34a' : '#94a3b8', fontWeight: 700, fontSize: 12, padding: '3px 10px', borderRadius: 20 }}>
-                            {r.grade || 'N/A'}
-                          </span>
-                          {r.isReviewed && (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#16a34a', fontWeight: 700 }}>
-                              <CheckCircle size={10} /> REVIEWED
+            <>
+              {/* ── Bulk Review Toolbar ── */}
+              <div style={{ padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', flexWrap: 'wrap', gap: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: notReviewed > 0 ? '#92400e' : '#16a34a' }}>
+                  {notReviewed > 0
+                    ? `⏳ ${notReviewed} submission${notReviewed !== 1 ? 's' : ''} pending review`
+                    : '✓ All submissions have been reviewed'}
+                </span>
+                {notReviewed > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setBulkConfirmOpen(true); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 18px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#16a34a,#15803d)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 10px rgba(22,163,74,0.3)', transition: 'opacity 0.2s' }}
+                  >
+                    <CheckSquare size={13} /> Mark All as Reviewed
+                  </button>
+                )}
+              </div>
+
+              <table className="resp-table">
+                <thead>
+                  <tr>
+                    {['Student', 'Submission', 'Sec A', 'Sec B', 'Grade', 'Action'].map(h => (
+                      <th key={h}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((r: any, i: number) => {
+                    const name = `${r.user?.firstName || ''} ${r.user?.lastName || ''}`.trim() || r.user?.username || 'Unknown';
+                    const date = r.submissionDate ? new Date(r.submissionDate).toLocaleDateString() : '—';
+                    return (
+                      <tr key={r.id || i}>
+                        <td data-label="Student">
+                          <div className="resp-td-content" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#eff6ff', color: '#5156be', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, flexShrink: 0 }}>
+                              {name.charAt(0).toUpperCase()}
                             </div>
-                          )}
-                        </div>
-                      </td>
-                      <td data-label="Action">
-                        <div className="resp-td-content">
-                          <button
-                            onClick={() => onReview(r)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#5156be,#3d41a8)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-                          >
-                            <Award size={13} /> Review
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            <div style={{ textAlign: 'left' }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>{name}</div>
+                              <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.user?.email || r.user?.username || ''}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td data-label="Submission">
+                          <div className="resp-td-content" style={{ fontSize: 13, color: '#64748b' }}>{date}</div>
+                        </td>
+                        <td data-label="Sec A">
+                          <div className="resp-td-content">
+                            <span style={{ fontWeight: 700, fontSize: 14, color: '#5156be' }}>{r.marks ?? '—'}</span>
+                          </div>
+                        </td>
+                        <td data-label="Sec B">
+                          <div className="resp-td-content">
+                            <span style={{ fontWeight: 700, fontSize: 14, color: '#2ab57d' }}>{r.marksB ?? '—'}</span>
+                          </div>
+                        </td>
+                        <td data-label="Grade">
+                          <div className="resp-td-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                            <span style={{ background: r.grade ? '#ecfdf5' : '#f1f5f9', color: r.grade ? '#16a34a' : '#94a3b8', fontWeight: 700, fontSize: 12, padding: '3px 10px', borderRadius: 20 }}>
+                              {r.grade || 'N/A'}
+                            </span>
+                            {r.isReviewed && (
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#16a34a', fontWeight: 700 }}>
+                                <CheckCircle size={10} /> REVIEWED
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td data-label="Action">
+                          <div className="resp-td-content">
+                            <button
+                              onClick={() => onReview(r)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#5156be,#3d41a8)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              <Award size={13} /> Review
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
+      )}
+
+      {/* Bulk Confirm Modal */}
+      {bulkConfirmOpen && (
+        <BulkConfirmModal
+          quizTitle={quiz.title}
+          count={notReviewed}
+          loading={bulkLoading}
+          onConfirm={handleBulkReview}
+          onCancel={() => setBulkConfirmOpen(false)}
+        />
       )}
     </div>
   );
