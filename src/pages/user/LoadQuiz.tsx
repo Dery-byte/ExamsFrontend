@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getReport, getRegCourses, getReportsByUser, getTakenQuizzesOfCategoryByUser, downloadReportPdf } from '../../api/endpoints';
 import PageHeader from '../../components/PageHeader';
@@ -55,7 +56,7 @@ function SummaryModal({ qId, onClose, userId }: { qId: number; onClose: () => vo
   const showObj  = quizType !== 'THEORY';
   const showTh   = quizType !== 'OBJ';
 
-  return (
+  return createPortal(
     <div className="lexa-modal-overlay">
       <div ref={ref} className="lexa-modal-content animate-zoom-in" style={{ maxWidth: 650, borderRadius: 12 }}>
         <div className="lexa-modal-header" style={{ padding: '20px 25px', background: '#fff' }}>
@@ -148,7 +149,8 @@ function SummaryModal({ qId, onClose, userId }: { qId: number; onClose: () => vo
           <button onClick={onClose} className="btn-lexa btn-lexa-primary" style={{ padding: '10px 30px', borderRadius: 8 }}>Acknowledge Analytics</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
