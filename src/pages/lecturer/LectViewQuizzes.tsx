@@ -105,7 +105,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'12px', marginBottom:'10px' }}>
               <div><label style={lbl}>Violation Action</label><select style={inp} value={quiz.violationAction||'NONE'} onChange={e=>set('violationAction',e.target.value)}>{VIOLATION_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select></div>
               <div><label style={lbl}>Max Violations</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.maxViolations??''} onChange={e=>set('maxViolations',Number(e.target.value))}/></div>
-              <div><label style={lbl}>Delay (sec)</label><input style={{...inp,textAlign:'center'}} type="number" min="0" value={quiz.violationDelaySeconds??''} onChange={e=>set('violationDelaySeconds',Number(e.target.value))} placeholder="e.g. 30"/></div>
+              <div><label style={lbl}>Delay (sec)</label><input style={{...inp,textAlign:'center'}} type="number" min="0" value={quiz.delaySeconds??''} onChange={e=>set('delaySeconds',Number(e.target.value))} placeholder="e.g. 30"/></div>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
               <div><label style={lbl}>Delay Multiplier</label><input style={{...inp,textAlign:'center'}} type="number" step="0.1" min="1" value={quiz.delayMultiplier??''} onChange={e=>set('delayMultiplier',Number(e.target.value))} placeholder="e.g. 1.5"/></div>
@@ -158,7 +158,7 @@ export default function LectViewQuizzes() {
 
   return (
     <div className="lvq-wrap">
-      <Toaster position="top-right"/>
+      <Toaster position="top-right" containerStyle={{ zIndex: 999999 }} />
 
       <div className="lvq-header">
         <div>

@@ -20,7 +20,7 @@ const VIOLATION_OPTIONS = [
 const defaultQuiz = () => ({
   title: '', description: '', maxMarks: '', numberOfQuestions: '', quizpassword: '', quizTime: '',
   startTime: '', quizDate: '', attempted: false, active: true, category: { cid: '' }, quizType: '',
-  violationAction: 'NONE', violationDelaySeconds: 0, autoSubmitCountdownSeconds: 5, maxViolations: 3,
+  violationAction: 'NONE', delaySeconds: 0, autoSubmitCountdownSeconds: 5, maxViolations: 3,
   delayMultiplier: 1.5, enableFullscreenLock: true, enableWatermark: true,
   enableScreenshotBlocking: true, enableDevToolsBlocking: true,
 });
@@ -263,7 +263,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
               </div>
               <div className="aq-field">
                 <label className="aq-label">Delay (s)</label>
-                <input className="aq-input aq-input-sm text-center" type="number" min="0" placeholder="e.g. 30" value={quiz.violationDelaySeconds || ''} onChange={e => set('violationDelaySeconds', Number(e.target.value))} />
+                <input className="aq-input aq-input-sm text-center" type="number" min="0" placeholder="e.g. 30" value={quiz.delaySeconds || ''} onChange={e => set('delaySeconds', Number(e.target.value))} />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>

@@ -268,7 +268,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                       </div>
                       <div className="col-3">
                         <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Delay</label>
-                        <input className="minia-field text-center px-1" type="number" value={quiz.violationDelaySeconds ?? ''} onChange={e=>set('violationDelaySeconds',Number(e.target.value))}/>
+                        <input className="minia-field text-center px-1" type="number" value={quiz.delaySeconds ?? ''} onChange={e=>set('delaySeconds',Number(e.target.value))}/>
                       </div>
                       <div className="col-3">
                         <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Delay Multiplier</label>
@@ -333,7 +333,7 @@ export default function ViewQuizzes() {
 
   return (
     <div className="modern-registry animate-fade-in">
-      <Toaster position="top-right" />
+      <Toaster position="top-right" containerStyle={{ zIndex: 999999 }} />
       <PageHeader title="Assessment Registry" breadcrumbs={['Admin', 'Command', 'Registry']} />
 
       <div className="reg-top-bar">

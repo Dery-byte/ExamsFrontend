@@ -136,7 +136,7 @@ export default function StartQuiz() {
     quizId: qid!,
     violationAction: quizConfig.violationAction ?? 'NONE',
     maxViolations: quizConfig.maxViolations ?? 3,
-    delaySeconds: quizConfig.violationDelaySeconds ?? 30,
+    delaySeconds: quizConfig.delaySeconds ?? 30,
     delayMultiplier: quizConfig.delayMultiplier ?? 1.5,
     autoSubmitCountdownSeconds: quizConfig.autoSubmitCountdownSeconds ?? 5,
     enableFullscreenLock: quizConfig.enableFullscreenLock ?? false,
@@ -202,7 +202,7 @@ export default function StartQuiz() {
       setQuiz(quizData);
       setQuizConfig({
         ...quizData,
-        _pendingViolationDelay: savedDelay?.violationDelayTime ?? savedDelay?.violationDelaySeconds ?? 0,
+        _pendingViolationDelay: savedDelay?.violationDelayTime ?? savedDelay?.delaySeconds ?? 0,
         _savedViolationCount: savedViolationCount?.totalViolationCount ?? savedViolationCount?.count ?? (savedTime as any)?.totalViolationCount ?? 0,
       });
       const qt: QuizType = ((quizData.quizType as string)?.toUpperCase().trim() as QuizType) || 'OBJ';
