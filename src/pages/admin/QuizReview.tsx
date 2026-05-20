@@ -13,6 +13,73 @@ import {
   MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye
 } from 'lucide-react';
 
+const RESPONSIVE_CSS = `
+@keyframes rSpin { to { transform: rotate(360deg); } }
+
+/* Layout & Containers */
+.page-container { padding: 32px 40px; font-family: 'Inter', sans-serif; background: #f4f5f7; min-height: 100vh; box-sizing: border-box; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(10,15,30,0.7); backdrop-filter: blur(8px); z-index: 99999; display: flex; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+.modal-content { background: #fff; border-radius: 16px; width: 100%; max-width: 860px; box-shadow: 0 30px 80px rgba(0,0,0,0.3); margin-top: 20px; margin-bottom: 20px; position: relative; }
+
+/* Modal Header */
+.modal-header { background: linear-gradient(135deg,#1e293b,#334155); padding: 20px 28px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; }
+.modal-header-right { display: flex; align-items: center; gap: 16px; }
+
+/* Modal Body/Footer */
+.modal-scores { padding: 16px 28px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; gap: 24px; flex-wrap: wrap; }
+.modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+.modal-q-header { background: linear-gradient(135deg,#f8faff,#f1f5f9); padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.modal-q-marks-box { text-align: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 14px; flex-shrink: 0; }
+.modal-reviewed-marks { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.modal-footer { padding: 16px 28px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 16px 16px; display: flex; justify-content: space-between; align-items: center; }
+.modal-footer-left { display: flex; align-items: center; gap: 20px; }
+.modal-footer-right { display: flex; gap: 12px; }
+
+/* Quiz Row */
+.quiz-row-container { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: box-shadow 0.2s; }
+.quiz-row-header { padding: 18px 24px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: background 0.2s; }
+.quiz-row-stats { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+.quiz-row-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.quiz-row-info { font-size: 12px; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 16px; }
+
+/* Responsive Table */
+.resp-table-wrapper { width: 100%; overflow-x: auto; border-top: 1px solid #f1f5f9; }
+.resp-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+.resp-table th { padding: 12px 20px; text-align: left; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+.resp-table td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; }
+.resp-table tr { transition: background 0.2s; }
+.resp-table tbody tr:hover { background: #fafafe; }
+
+@media (max-width: 768px) {
+  .page-container { padding: 16px 12px !important; }
+  .modal-overlay { padding: 10px; }
+  .modal-header, .modal-scores, .modal-body, .modal-footer { padding: 16px !important; }
+  
+  .modal-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .modal-header-right { width: 100%; justify-content: space-between; flex-direction: row-reverse; }
+  
+  .modal-q-header { flex-direction: column; }
+  .modal-q-marks-box { align-self: flex-start; }
+  
+  .modal-footer { flex-direction: column; gap: 16px; align-items: stretch; }
+  .modal-footer-left { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .modal-footer-right { justify-content: flex-end; }
+  
+  .quiz-row-header { flex-direction: column; align-items: flex-start; padding: 16px; }
+  .quiz-row-stats { width: 100%; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+  
+  .resp-table { min-width: 100%; }
+  .resp-table thead { display: none; }
+  .resp-table, .resp-table tbody, .resp-table tr, .resp-table td { display: block; width: 100%; box-sizing: border-box; }
+  .resp-table tbody { padding: 12px; }
+  .resp-table tr { margin-bottom: 12px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .resp-table td { text-align: right; padding: 12px 16px !important; border-bottom: 1px solid #f8fafc; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .resp-table td:last-child { border-bottom: none; }
+  .resp-table td::before { content: attr(data-label); font-weight: 700; font-size: 11px; text-transform: uppercase; color: #94a3b8; flex-shrink: 0; }
+  .resp-td-content { display: flex; justify-content: flex-end; align-items: center; text-align: right; word-break: break-word; }
+}
+`;
+
 /* ── helpers ───────────────────────────────────────────────────────────── */
 const getStudentAnswers = (userId: number, quizId: number) =>
   client.get(`/answers/by-user-quiz/${userId}/${quizId}`).then(r => r.data).catch(() => []);
@@ -103,11 +170,11 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
   const answeredTheoryQs = theoryQs.filter((tq: any) => getAnswer(tq.quesNo) != null);
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,15,30,0.7)', backdropFilter: 'blur(8px)', zIndex: 99999, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 860, boxShadow: '0 30px 80px rgba(0,0,0,0.3)', marginTop: 20, marginBottom: 20 }}>
+    <div className="modal-overlay">
+      <div className="modal-content">
 
         {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg,#1e293b,#334155)', padding: '20px 28px', borderRadius: '16px 16px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="modal-header">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <FileText size={18} color="#60a5fa" />
@@ -117,7 +184,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
               {quiz.title} &nbsp;·&nbsp; {student.user?.firstName} {student.user?.lastName}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div className="modal-header-right">
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>{totalReviewed}</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Reviewed Marks</div>
@@ -129,7 +196,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
         </div>
 
         {/* Scores Summary */}
-        <div style={{ padding: '16px 28px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+        <div className="modal-scores">
           {[
             { label: 'Sec A (OBJ)', value: student.marks ?? '—', color: '#5156be' },
             { label: 'Sec B (Theory)', value: student.marksB ?? '—', color: '#2ab57d' },
@@ -144,7 +211,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
         </div>
 
         {/* Body */}
-        <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="modal-body">
           {(loadingTQ || loadingAns) ? (
             <div style={{ textAlign: 'center', padding: 48 }}>
               <Loader2 size={32} style={{ animation: 'rSpin 1s linear infinite', color: '#5156be' }} />
@@ -161,7 +228,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
             return (
               <div key={tq.tqId || idx} style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
                 {/* Question header */}
-                <div style={{ background: 'linear-gradient(135deg,#f8faff,#f1f5f9)', padding: '14px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                <div className="modal-q-header">
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                       <span style={{ background: '#5156be', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{tq.quesNo}</span>
@@ -174,7 +241,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
                       </div>
                     )}
                   </div>
-                  <div style={{ textAlign: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 14px', flexShrink: 0 }}>
+                  <div className="modal-q-marks-box">
                     <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>{tq.marks}</div>
                     <div style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Max Pts</div>
                   </div>
@@ -217,7 +284,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
 
                 {/* Reviewed Marks */}
                 <div style={{ padding: '0 20px 20px', background: '#fff' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div className="modal-reviewed-marks">
                     <Star size={14} color="#f59e0b" />
                     <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e', textTransform: 'uppercase' }}>Reviewed Mark</span>
                     <span style={{ fontSize: 11, color: '#94a3b8' }}>(Original: {ans?.score ?? '—'} / {tq.marks})</span>
@@ -253,8 +320,8 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 28px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', borderRadius: '0 0 16px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div className="modal-footer">
+          <div className="modal-footer-left">
             <div style={{ fontSize: 13, color: '#64748b' }}>
               Total reviewed marks: <strong style={{ color: '#1e293b', fontSize: 16 }}>{totalReviewed}</strong>
             </div>
@@ -268,7 +335,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
               Mark as Reviewed
             </label>
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="modal-footer-right">
             <button onClick={onClose} style={{ padding: '10px 22px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
               Cancel
             </button>
@@ -279,7 +346,6 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
           </div>
         </div>
       </div>
-      <style>{`@keyframes rSpin { to { transform: rotate(360deg); } }`}</style>
     </div>,
     document.body
   );
@@ -324,7 +390,7 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
   const quizzes: any[] = [...(Array.isArray(rawQuizzes) ? rawQuizzes : (rawQuizzes as any)?.quizzes || [])].sort((a: any, b: any) => b.qId - a.qId);
 
   return (
-    <div style={{ padding: '32px 40px', fontFamily: "'Inter', sans-serif", background: '#f4f5f7', minHeight: '100vh' }}>
+    <div className="page-container">
       <Toaster position="top-right" />
 
       {/* Page Header */}
@@ -372,7 +438,7 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
           onClose={() => setReviewTarget(null)}
         />
       )}
-      <style>{`@keyframes rSpin { to { transform: rotate(360deg); } }`}</style>
+      <style>{RESPONSIVE_CSS}</style>
     </div>
   );
 }
@@ -392,22 +458,23 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
   const color = typeColor[quiz.quizType] || '#5156be';
 
   return (
-    <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', transition: 'box-shadow 0.2s' }}>
+    <div className="quiz-row-container">
       {/* Quiz Header Row */}
       <div
         onClick={onToggle}
-        style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', background: expanded ? '#fafafe' : '#fff', transition: 'background 0.2s' }}
+        className="quiz-row-header"
+        style={{ background: expanded ? '#fafafe' : '#fff' }}
       >
         <div style={{ width: 44, height: 44, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <FileText size={20} color={color} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <div className="quiz-row-meta">
             <span style={{ fontWeight: 800, fontSize: 15, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{quiz.title}</span>
             <span style={{ background: `${color}18`, color, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', flexShrink: 0 }}>{quiz.quizType}</span>
             <span style={{ background: quiz.status === 'OPEN' ? '#ecfdf5' : '#f1f5f9', color: quiz.status === 'OPEN' ? '#16a34a' : '#94a3b8', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, flexShrink: 0 }}>{quiz.status}</span>
           </div>
-          <div style={{ fontSize: 12, color: '#94a3b8', display: 'flex', gap: 16 }}>
+          <div className="quiz-row-info">
             <span>{quiz.category?.title || 'Uncategorized'}</span>
             <span>Max: {quiz.maxMarks ?? '—'} marks</span>
             <span style={{ color: '#1e293b', fontWeight: 600 }}>Taken: {totalTaken}</span>
@@ -415,7 +482,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
             <span style={{ color: '#ef4444', fontWeight: 600 }}>Not Reviewed: {notReviewed}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
+        <div className="quiz-row-stats">
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{quiz.numberOfQuestions || 0}</div>
             <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase' }}>Questions</div>
@@ -431,7 +498,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
 
       {/* Expanded: Student List */}
       {expanded && (
-        <div style={{ borderTop: '1px solid #f1f5f9' }}>
+        <div className="resp-table-wrapper">
           {isLoading ? (
             <div style={{ padding: 32, textAlign: 'center' }}>
               <Loader2 size={24} style={{ animation: 'rSpin 1s linear infinite', color: '#5156be' }} />
@@ -443,11 +510,11 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
               <p style={{ color: '#94a3b8', marginTop: 8, fontSize: 13 }}>No students have taken this quiz yet.</p>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="resp-table">
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr>
                   {['Student', 'Submission', 'Sec A', 'Sec B', 'Grade', 'Action'].map(h => (
-                    <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                    <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -456,44 +523,52 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                   const name = `${r.user?.firstName || ''} ${r.user?.lastName || ''}`.trim() || r.user?.username || 'Unknown';
                   const date = r.submissionDate ? new Date(r.submissionDate).toLocaleDateString() : '—';
                   return (
-                    <tr key={r.id || i} style={{ borderBottom: '1px solid #f1f5f9' }}
-                      onMouseOver={e => (e.currentTarget.style.background = '#fafafe')}
-                      onMouseOut={e => (e.currentTarget.style.background = '#fff')}>
-                      <td style={{ padding: '14px 20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <tr key={r.id || i}>
+                      <td data-label="Student">
+                        <div className="resp-td-content" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#eff6ff', color: '#5156be', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, flexShrink: 0 }}>
                             {name.charAt(0).toUpperCase()}
                           </div>
-                          <div>
+                          <div style={{ textAlign: 'left' }}>
                             <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>{name}</div>
                             <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.user?.email || r.user?.username || ''}</div>
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '14px 20px', fontSize: 13, color: '#64748b' }}>{date}</td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: '#5156be' }}>{r.marks ?? '—'}</span>
+                      <td data-label="Submission">
+                        <div className="resp-td-content" style={{ fontSize: 13, color: '#64748b' }}>{date}</div>
                       </td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: '#2ab57d' }}>{r.marksB ?? '—'}</span>
+                      <td data-label="Sec A">
+                        <div className="resp-td-content">
+                          <span style={{ fontWeight: 700, fontSize: 14, color: '#5156be' }}>{r.marks ?? '—'}</span>
+                        </div>
                       </td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <span style={{ background: r.grade ? '#ecfdf5' : '#f1f5f9', color: r.grade ? '#16a34a' : '#94a3b8', fontWeight: 700, fontSize: 12, padding: '3px 10px', borderRadius: 20 }}>
-                          {r.grade || 'N/A'}
-                        </span>
-                        {r.isReviewed && (
-                          <div style={{ marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#16a34a', fontWeight: 700 }}>
-                            <CheckCircle size={10} /> REVIEWED
-                          </div>
-                        )}
+                      <td data-label="Sec B">
+                        <div className="resp-td-content">
+                          <span style={{ fontWeight: 700, fontSize: 14, color: '#2ab57d' }}>{r.marksB ?? '—'}</span>
+                        </div>
                       </td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <button
-                          onClick={() => onReview(r)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#5156be,#3d41a8)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-                        >
-                          <Award size={13} /> Review
-                        </button>
+                      <td data-label="Grade">
+                        <div className="resp-td-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                          <span style={{ background: r.grade ? '#ecfdf5' : '#f1f5f9', color: r.grade ? '#16a34a' : '#94a3b8', fontWeight: 700, fontSize: 12, padding: '3px 10px', borderRadius: 20 }}>
+                            {r.grade || 'N/A'}
+                          </span>
+                          {r.isReviewed && (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#16a34a', fontWeight: 700 }}>
+                              <CheckCircle size={10} /> REVIEWED
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td data-label="Action">
+                        <div className="resp-td-content">
+                          <button
+                            onClick={() => onReview(r)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#5156be,#3d41a8)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            <Award size={13} /> Review
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
