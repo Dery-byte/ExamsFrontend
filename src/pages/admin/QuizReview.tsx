@@ -18,22 +18,22 @@ const RESPONSIVE_CSS = `
 
 /* Layout & Containers */
 .page-container { padding: 32px 40px; font-family: 'Inter', sans-serif; background: #f4f5f7; min-height: 100vh; box-sizing: border-box; }
-.modal-overlay { position: fixed; inset: 0; background: rgba(10,15,30,0.7); backdrop-filter: blur(8px); z-index: 99999; display: flex; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; box-sizing: border-box; }
-.modal-content { background: #fff; border-radius: 16px; width: 100%; max-width: 860px; box-shadow: 0 30px 80px rgba(0,0,0,0.3); margin-top: 20px; margin-bottom: 20px; position: relative; }
+.qr-modal-overlay { position: fixed; inset: 0; background: rgba(10,15,30,0.7); backdrop-filter: blur(8px); z-index: 99999; display: flex; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+.qr-modal-content { background: #fff; border-radius: 16px; width: 100%; max-width: 860px; box-shadow: 0 30px 80px rgba(0,0,0,0.3); margin-top: 20px; margin-bottom: 20px; position: relative; }
 
 /* Modal Header */
-.modal-header { background: linear-gradient(135deg,#1e293b,#334155); padding: 20px 28px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; }
-.modal-header-right { display: flex; align-items: center; gap: 16px; }
+.qr-modal-header { background: linear-gradient(135deg,#1e293b,#334155); padding: 20px 28px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-between; align-items: center; }
+.qr-modal-header-right { display: flex; align-items: center; gap: 16px; }
 
 /* Modal Body/Footer */
-.modal-scores { padding: 16px 28px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; gap: 24px; flex-wrap: wrap; }
-.modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
-.modal-q-header { background: linear-gradient(135deg,#f8faff,#f1f5f9); padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.modal-q-marks-box { text-align: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 14px; flex-shrink: 0; }
-.modal-reviewed-marks { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.modal-footer { padding: 16px 28px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 16px 16px; display: flex; justify-content: space-between; align-items: center; }
-.modal-footer-left { display: flex; align-items: center; gap: 20px; }
-.modal-footer-right { display: flex; gap: 12px; }
+.qr-modal-scores { padding: 16px 28px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; gap: 24px; flex-wrap: wrap; }
+.qr-modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+.qr-modal-q-header { background: linear-gradient(135deg,#f8faff,#f1f5f9); padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.qr-modal-q-marks-box { text-align: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 14px; flex-shrink: 0; }
+.qr-modal-reviewed-marks { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.qr-modal-footer { padding: 16px 28px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 16px 16px; display: flex; justify-content: space-between; align-items: center; }
+.qr-modal-footer-left { display: flex; align-items: center; gap: 20px; }
+.qr-modal-footer-right { display: flex; gap: 12px; }
 
 /* Quiz Row */
 .quiz-row-container { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: box-shadow 0.2s; }
@@ -52,18 +52,18 @@ const RESPONSIVE_CSS = `
 
 @media (max-width: 768px) {
   .page-container { padding: 16px 12px !important; }
-  .modal-overlay { padding: 10px; }
-  .modal-header, .modal-scores, .modal-body, .modal-footer { padding: 16px !important; }
+  .qr-modal-overlay { padding: 10px; }
+  .qr-modal-header, .qr-modal-scores, .qr-modal-body, .qr-modal-footer { padding: 16px !important; }
   
-  .modal-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .modal-header-right { width: 100%; justify-content: space-between; flex-direction: row-reverse; }
+  .qr-modal-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .qr-modal-header-right { width: 100%; justify-content: space-between; flex-direction: row-reverse; }
   
-  .modal-q-header { flex-direction: column; }
-  .modal-q-marks-box { align-self: flex-start; }
+  .qr-modal-q-header { flex-direction: column; }
+  .qr-modal-q-marks-box { align-self: flex-start; }
   
-  .modal-footer { flex-direction: column; gap: 16px; align-items: stretch; }
-  .modal-footer-left { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .modal-footer-right { justify-content: flex-end; }
+  .qr-modal-footer { flex-direction: column; gap: 16px; align-items: stretch; }
+  .qr-modal-footer-left { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .qr-modal-footer-right { justify-content: flex-end; }
   
   .quiz-row-header { flex-direction: column; align-items: flex-start; padding: 16px; }
   .quiz-row-stats { width: 100%; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
@@ -170,11 +170,11 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
   const answeredTheoryQs = theoryQs.filter((tq: any) => getAnswer(tq.quesNo) != null);
 
   return createPortal(
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div className="qr-modal-overlay">
+      <div className="qr-modal-content">
 
         {/* Header */}
-        <div className="modal-header">
+        <div className="qr-modal-header">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <FileText size={18} color="#60a5fa" />
@@ -184,7 +184,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
               {quiz.title} &nbsp;·&nbsp; {student.user?.firstName} {student.user?.lastName}
             </p>
           </div>
-          <div className="modal-header-right">
+          <div className="qr-modal-header-right">
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>{totalReviewed}</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Reviewed Marks</div>
@@ -196,7 +196,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
         </div>
 
         {/* Scores Summary */}
-        <div className="modal-scores">
+        <div className="qr-modal-scores">
           {[
             { label: 'Sec A (OBJ)', value: student.marks ?? '—', color: '#5156be' },
             { label: 'Sec B (Theory)', value: student.marksB ?? '—', color: '#2ab57d' },
@@ -211,7 +211,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
         </div>
 
         {/* Body */}
-        <div className="modal-body">
+        <div className="qr-modal-body">
           {(loadingTQ || loadingAns) ? (
             <div style={{ textAlign: 'center', padding: 48 }}>
               <Loader2 size={32} style={{ animation: 'rSpin 1s linear infinite', color: '#5156be' }} />
@@ -228,7 +228,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
             return (
               <div key={tq.tqId || idx} style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
                 {/* Question header */}
-                <div className="modal-q-header">
+                <div className="qr-modal-q-header">
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                       <span style={{ background: '#5156be', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{tq.quesNo}</span>
@@ -241,7 +241,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
                       </div>
                     )}
                   </div>
-                  <div className="modal-q-marks-box">
+                  <div className="qr-modal-q-marks-box">
                     <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>{tq.marks}</div>
                     <div style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Max Pts</div>
                   </div>
@@ -284,7 +284,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
 
                 {/* Reviewed Marks */}
                 <div style={{ padding: '0 20px 20px', background: '#fff' }}>
-                  <div className="modal-reviewed-marks">
+                  <div className="qr-modal-reviewed-marks">
                     <Star size={14} color="#f59e0b" />
                     <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e', textTransform: 'uppercase' }}>Reviewed Mark</span>
                     <span style={{ fontSize: 11, color: '#94a3b8' }}>(Original: {ans?.score ?? '—'} / {tq.marks})</span>
@@ -320,8 +320,8 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
         </div>
 
         {/* Footer */}
-        <div className="modal-footer">
-          <div className="modal-footer-left">
+        <div className="qr-modal-footer">
+          <div className="qr-modal-footer-left">
             <div style={{ fontSize: 13, color: '#64748b' }}>
               Total reviewed marks: <strong style={{ color: '#1e293b', fontSize: 16 }}>{totalReviewed}</strong>
             </div>
@@ -335,7 +335,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
               Mark as Reviewed
             </label>
           </div>
-          <div className="modal-footer-right">
+          <div className="qr-modal-footer-right">
             <button onClick={onClose} style={{ padding: '10px 22px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
               Cancel
             </button>
