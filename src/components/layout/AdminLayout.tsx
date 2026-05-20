@@ -47,10 +47,10 @@ export default function AdminLayout() {
     { 
       label: 'Academic Registry', 
       items: [
-        { to: '/admin/courses', icon: <BookOpen size={20} />, label: 'Categories' },
-        { to: '/admin/add-course', icon: <PlusCircle size={20} />, label: 'New Category' },
-        { to: '/admin/quizzes', icon: <ClipboardList size={20} />, label: 'Questionnaires' },
-        { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Initialize Quiz' },
+        { to: '/admin/courses', icon: <BookOpen size={20} />, label: 'Courses' },
+        { to: '/admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
+        { to: '/admin/quizzes', icon: <ClipboardList size={20} />, label: 'Quizzes' },
+        { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
       ]
     },
     { 
@@ -78,7 +78,7 @@ export default function AdminLayout() {
               <ShieldCheck size={24} />
             </div>
             <div className="lexa-brand-text">
-              <span className="main">LEXA</span>
+              <span className="main">OTC</span>
               <span className="sub">ADMIN PORTAL</span>
             </div>
           </div>
@@ -86,7 +86,6 @@ export default function AdminLayout() {
             <X size={20} />
           </button>
         </div>
-
         <nav className="lexa-sidebar-nav">
           {navItems.map((section, idx) => (
             <div key={idx} className="lexa-nav-section">
@@ -108,7 +107,6 @@ export default function AdminLayout() {
             </div>
           ))}
         </nav>
-
         <div className="lexa-sidebar-footer">
           <div className="lexa-user-brief">
             <div className="lexa-avatar">
@@ -116,16 +114,15 @@ export default function AdminLayout() {
             </div>
             <div className="lexa-user-info">
               <span className="name">{user?.firstname} {user?.lastname}</span>
-              <span className="role">Senior Admin</span>
+              <span className="role">Administrator</span>
             </div>
           </div>
           <button onClick={logout} className="lexa-logout-btn">
             <LogOut size={18} />
-            <span>Terminate Session</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
-
       {/* Main Content Area */}
       <div className="lexa-main">
         {/* Modern Top Navbar */}
@@ -139,7 +136,6 @@ export default function AdminLayout() {
                <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--lexa-dark)', letterSpacing: '0.05em' }}>REGISTRY MANAGEMENT CONSOLE</span>
             </div>
           </div>
-
           <div className="lexa-nav-right">
             {timeDisplay && (
               <div className={`lexa-status-badge ${timeDisplay.className}`} style={{ marginRight: 15 }}>
@@ -155,7 +151,6 @@ export default function AdminLayout() {
             </div>
           </div>
         </header>
-
         {/* Dynamic Page Content */}
         <main className="lexa-content-wrapper">
           <div className="lexa-page-container">
@@ -163,12 +158,10 @@ export default function AdminLayout() {
           </div>
         </main>
       </div>
-
       {/* Mobile Backdrop */}
       {mobileOpen && (
         <div className="lexa-mobile-backdrop" onClick={() => setMobileOpen(false)} />
       )}
-
       <style>{`
         :root {
           --sidebar-width: 280px;
@@ -180,7 +173,6 @@ export default function AdminLayout() {
           --lexa-sidebar-bg: #2a3142;
           --lexa-sidebar-item-active: rgba(255, 255, 255, 0.1);
         }
-
         .lexa-admin-shell {
           display: flex;
           height: 100vh;
@@ -188,7 +180,6 @@ export default function AdminLayout() {
           background-color: var(--lexa-bg);
           color: #495057;
         }
-
         .lexa-sidebar {
           width: var(--sidebar-width);
           height: 100vh;
@@ -201,20 +192,17 @@ export default function AdminLayout() {
           flex-direction: column;
           transition: all 0.3s ease;
         }
-
         .lexa-sidebar-header {
           padding: 30px 24px;
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
-
         .lexa-brand {
           display: flex;
           align-items: center;
           gap: 12px;
         }
-
         .lexa-logo-box {
           width: 40px;
           height: 40px;
@@ -226,7 +214,6 @@ export default function AdminLayout() {
           color: white;
           box-shadow: 0 4px 12px rgba(98, 110, 212, 0.4);
         }
-
         .lexa-brand-text {
           display: flex;
           flex-direction: column;

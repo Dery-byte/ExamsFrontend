@@ -25,8 +25,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
       title: 'Main',
       items: [
         { to: '/user-dashboard/user-dashboard', label: 'Dashboard',       icon: LayoutDashboard },
-        { to: '/user-dashboard/register',        label: 'Course Catalog',  icon: GraduationCap   },
-        { to: '/user-dashboard/courses',         label: 'My Curriculum',   icon: BookOpen         },
+        { to: '/user-dashboard/register',        label: 'Register Course',  icon: GraduationCap   },
+        { to: '/user-dashboard/courses',         label: 'My Courses',   icon: BookOpen         },
       ]
     },
     {
@@ -39,7 +39,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
     {
       title: 'Account',
       items: [
-        { to: '/user-dashboard/profile', label: 'Profile Settings', icon: User },
+        { to: '/user-dashboard/profile', label: 'Profile', icon: User },
       ]
     }
   ];
@@ -53,8 +53,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
     >
       {/* Brand */}
       <div className="user-sidebar-brand">
-        <div className="user-sidebar-logo">L</div>
-        <span className="user-sidebar-name">LEXA</span>
+        <div className="user-sidebar-logo">O</div>
+        <span className="user-sidebar-name">OTC</span>
         {/* Close button — visible on mobile only */}
         <button className="user-sidebar-close mobile-show" onClick={onClose} aria-label="Close menu">
           <X size={20} />
@@ -89,7 +89,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
       <div className="user-sidebar-footer">
         <button onClick={logout} className="user-sidebar-logout">
           <LogOut size={18} />
-          Secure Logout
+          Logout
         </button>
       </div>
     </aside>
@@ -171,8 +171,8 @@ export default function UserLayout() {
 
         {/* ── Footer ── */}
         <footer className="user-footer">
-          <span>2023 – 2024 © Lexa.</span>
-          <span className="desktop-show">Crafted with <span style={{ color: 'var(--danger)' }}>♥</span> by Digital Solutions</span>
+          <span>2026 © OTC.</span>
+          <span className="desktop-show">Crafted with <span style={{ color: 'var(--danger)' }}>♥</span> by OTC</span>
         </footer>
       </div>
 

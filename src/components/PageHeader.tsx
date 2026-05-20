@@ -19,7 +19,7 @@ export default function PageHeader({ title, breadcrumbs }: { title: string; brea
       </div>
       <div className="desktop-only">
         <button className="btn-lexa btn-lexa-primary" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, boxShadow: '0 4px 12px rgba(122, 111, 190, 0.2)' }}>
-          <Settings size={16} /> <span style={{ fontWeight: 700 }}>Portal Settings</span>
+          <Settings size={16} /> <span style={{ fontWeight: 700 }}>Portal</span>
         </button>
       </div>
     </div>

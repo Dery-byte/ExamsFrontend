@@ -75,22 +75,22 @@ export default function LecturerLayout() {
             <button className="menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>
               <Menu size={20} />
             </button>
-            <div className="search-box">
+            {/* <div className="search-box">
               <input type="text" placeholder="Search..." />
               <button className="search-btn">
                 <Search size={16} />
               </button>
-            </div>
+            </div> */}
           </div>
           <div className="header-right">
-            <div className="header-icon flag-icon">🇺🇸</div>
-            <button className="header-icon"><Moon size={20} /></button>
+            {/* <div className="header-icon flag-icon">🇺🇸</div> */}
+            {/* <button className="header-icon"><Moon size={20} /></button>
             <button className="header-icon"><Grid size={20} /></button>
             <button className="header-icon notification">
               <Bell size={20} />
               <span className="badge">5</span>
-            </button>
-            <button className="header-icon"><Settings size={20} /></button>
+            </button> */}
+            {/* <button className="header-icon"><Settings size={20} /></button> */}
             <div className="user-profile">
               <div className="avatar">
                 {(user?.firstname?.[0] ?? 'S').toUpperCase()}
