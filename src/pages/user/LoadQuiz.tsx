@@ -10,7 +10,8 @@ import {
   Download,
   FileText,
   Activity,
-  ArrowUpRight
+  ArrowUpRight,
+  Clock
 } from 'lucide-react';
 
 /* ─── tiny helpers ──────────────────────────────────────────────── */
@@ -183,25 +184,41 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
           {q?.category?.courseCode || 'N/A'} • {q?.category?.title || 'Uncategorized'}
         </div>
 
-        <div style={{ marginTop: 24, padding: '18px', background: '#fcfdfe', border: '1px solid #f1f5f7', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#adb5bd', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Score Attained</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#2a3142' }}>
-              {total} <span style={{ color: '#adb5bd', fontSize: 13, fontWeight: 600 }}>/ {max}</span>
+        <div style={{ marginTop: 24, padding: '18px', background: report?.isReviewed ? '#fcfdfe' : '#fffbeb', border: `1px solid ${report?.isReviewed ? '#f1f5f7' : '#fde68a'}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 72 }}>
+          {report?.isReviewed ? (
+            <>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 800, color: '#adb5bd', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Score Attained</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#2a3142' }}>
+                  {total} <span style={{ color: '#adb5bd', fontSize: 13, fontWeight: 600 }}>/ {max}</span>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: color }}>{p}%</div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Proficiency</div>
+              </div>
+            </>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Clock size={20} color="#b45309" />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>⏳ Pending Review</div>
+                <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600, marginTop: 2 }}>Results available once reviewed by lecturer</div>
+              </div>
             </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: color }}>{p}%</div>
-            <div style={{ fontSize: 9, fontWeight: 800, color: color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Proficiency</div>
-          </div>
+          )}
         </div>
       </div>
 
       <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f7', background: '#fcfdfe', display: 'flex', gap: 12 }}>
         <button 
-          onClick={onSummary} 
+          onClick={report?.isReviewed ? onSummary : undefined}
+          disabled={!report?.isReviewed}
+          title={!report?.isReviewed ? 'Analytics available after lecturer review' : 'View performance analytics'}
           className="btn-lexa btn-lexa-outline"
-          style={{ flex: 1, padding: '10px', fontSize: 13, borderRadius: 8 }}
+          style={{ flex: 1, padding: '10px', fontSize: 13, borderRadius: 8, opacity: report?.isReviewed ? 1 : 0.45, cursor: report?.isReviewed ? 'pointer' : 'not-allowed' }}
         >
           Analytics
         </button>
