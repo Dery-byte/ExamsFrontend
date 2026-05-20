@@ -268,7 +268,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                       </div>
                       <div className="col-4">
                         <label className="minia-form-label text-center">Delay</label>
-                        <input className="minia-field text-center font-size-13" type="number" value={quiz.violationDelaySeconds} onChange={e=>set('violationDelaySeconds',e.target.value)}/>
+                        <input className="minia-field text-center font-size-13" type="number" value={quiz.violationDelaySeconds ?? ''} onChange={e=>set('violationDelaySeconds',Number(e.target.value))}/>
                       </div>
                       <div className="col-4">
                         <label className="minia-form-label text-center">Auto</label>

@@ -765,46 +765,165 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
 
       {editCountModal && createPortal(
-        <div className="minia-modal-overlay">
-          <div className="animate-scale-up shadow-lg bg-white" style={{ width: '100%', maxWidth: 400, borderRadius: '16px', overflow: 'hidden' }}>
-            <div className="py-3 px-4 border-bottom d-flex justify-content-between align-items-center" style={{ background: 'linear-gradient(to right, #ffffff, #f8f9ff)' }}>
-              <div className="d-flex align-items-center gap-3">
-                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(81, 86, 190, 0.1)', color: '#5156be', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Target size={16} />
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(10,15,30,0.65)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 99999, padding: '20px'
+        }}>
+          <div className="animate-scale-up" style={{
+            width: '100%', maxWidth: 460,
+            borderRadius: '20px', overflow: 'hidden',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.28)',
+            background: '#fff',
+            display: 'flex', flexDirection: 'column'
+          }}>
+
+            {/* ── HEADER ── */}
+            <div style={{
+              background: 'linear-gradient(135deg, #3d41a8 0%, #5156be 50%, #6c70d4 100%)',
+              padding: '24px 28px 20px',
+              position: 'relative', overflow: 'hidden'
+            }}>
+              {/* decorative circles */}
+              <div style={{ position:'absolute', top:-30, right:-30, width:120, height:120, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }} />
+              <div style={{ position:'absolute', bottom:-20, left:-20, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }} />
+
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', position:'relative', zIndex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                  <div style={{
+                    width:46, height:46, borderRadius:14,
+                    background:'rgba(255,255,255,0.15)',
+                    border:'1px solid rgba(255,255,255,0.25)',
+                    display:'flex', alignItems:'center', justifyContent:'center', color:'#fff'
+                  }}>
+                    <Settings size={22} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.6)', textTransform:'uppercase', letterSpacing:'1.2px', marginBottom:3 }}>Configuration</div>
+                    <h5 style={{ margin:0, fontSize:18, fontWeight:800, color:'#fff', letterSpacing:'-0.3px' }}>Section B Logistics</h5>
+                  </div>
                 </div>
-                <h5 className="font-size-15 mb-0 fw-bold text-dark">Section B Logistics</h5>
+                <button onClick={() => setEditCountModal(false)} style={{
+                  width:32, height:32, borderRadius:8,
+                  border:'1px solid rgba(255,255,255,0.2)',
+                  background:'rgba(255,255,255,0.12)',
+                  color:'#fff', cursor:'pointer',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  transition:'background 0.2s'
+                }}><X size={16} /></button>
               </div>
-              <button className="btn-icon-sm rounded-circle border-0" onClick={() => setEditCountModal(false)}><X size={18} /></button>
+
+              {/* Stats row */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginTop:20, position:'relative', zIndex:1 }}>
+                {[
+                  { icon: <Target size={14}/>, label:'Questions Required', value: countData[0]?.totalQuestToAnswer ?? '—' },
+                  { icon: <Clock size={14}/>,  label:'Time Allowed',       value: `${countData[0]?.timeAllowed ?? '—'} min` },
+                ].map((s,i) => (
+                  <div key={i} style={{
+                    background:'rgba(255,255,255,0.1)',
+                    border:'1px solid rgba(255,255,255,0.15)',
+                    borderRadius:12, padding:'10px 14px'
+                  }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, color:'rgba(255,255,255,0.6)', marginBottom:4 }}>
+                      {s.icon}
+                      <span style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.9px' }}>{s.label}</span>
+                    </div>
+                    <div style={{ fontSize:20, fontWeight:800, color:'#fff', lineHeight:1 }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="p-4">
-              <div className="text-center mb-4">
-                <label className="form-label-custom mb-3">Required Assessment Count</label>
-                <div className="d-flex justify-content-center align-items-center gap-4 bg-light-subtle p-3 rounded-4 border">
-                  <button className="btn-icon-lg text-muted hover-scale" onClick={() => {
-                    const n = [...countData]; n[0].totalQuestToAnswer = Math.max(0, n[0].totalQuestToAnswer - 1); setCountData(n);
-                  }}><MinusCircle size={32} /></button>
-                  <span className="font-size-40 fw-bold text-primary" style={{ minWidth: '60px' }}>{countData[0]?.totalQuestToAnswer}</span>
-                  <button className="btn-icon-lg text-primary hover-scale" onClick={() => {
-                    const n = [...countData]; n[0].totalQuestToAnswer++; setCountData(n);
-                  }}><PlusCircle size={32} /></button>
+
+            {/* ── BODY ── */}
+            <div style={{ padding:'24px 28px', display:'flex', flexDirection:'column', gap:22 }}>
+
+              {/* Question count stepper */}
+              <div>
+                <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, color:'#74788d', textTransform:'uppercase', letterSpacing:'0.7px', marginBottom:12 }}>
+                  <Target size={12} style={{ color:'#5156be' }} /> Questions to Answer
+                </label>
+                <div style={{
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                  background:'#f8f9ff', border:'1.5px solid #e2e6ff',
+                  borderRadius:14, padding:'12px 16px'
+                }}>
+                  <button onClick={() => { const n=[...countData]; n[0].totalQuestToAnswer=Math.max(0,n[0].totalQuestToAnswer-1); setCountData(n); }}
+                    style={{
+                      width:40, height:40, borderRadius:10, border:'1.5px solid #dde1f7',
+                      background:'#fff', color:'#5156be', cursor:'pointer',
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      boxShadow:'0 2px 6px rgba(81,86,190,0.12)', transition:'all 0.15s'
+                    }}>
+                    <MinusCircle size={20} />
+                  </button>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:42, fontWeight:800, color:'#5156be', lineHeight:1, fontVariantNumeric:'tabular-nums' }}>
+                      {countData[0]?.totalQuestToAnswer ?? 0}
+                    </div>
+                    <div style={{ fontSize:10, fontWeight:600, color:'#a0a5c9', marginTop:2, textTransform:'uppercase', letterSpacing:'0.7px' }}>questions</div>
+                  </div>
+                  <button onClick={() => { const n=[...countData]; n[0].totalQuestToAnswer++; setCountData(n); }}
+                    style={{
+                      width:40, height:40, borderRadius:10, border:'1.5px solid #dde1f7',
+                      background:'#5156be', color:'#fff', cursor:'pointer',
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      boxShadow:'0 2px 8px rgba(81,86,190,0.3)', transition:'all 0.15s'
+                    }}>
+                    <PlusCircle size={20} />
+                  </button>
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="form-label-custom">Temporal Allocation (Minutes)</label>
-                <div className="input-group">
-                  <span className="input-group-text bg-light border-end-0 text-muted"><Clock size={18} /></span>
-                  <input className="form-control-custom fw-bold font-size-18 text-center" style={{ borderLeft: 'none' }} type="number" value={countData[0]?.timeAllowed || 0} onChange={e => {
-                    const n = [...countData]; n[0].timeAllowed = Number(e.target.value); setCountData(n);
-                  }} />
+              {/* Time input */}
+              <div>
+                <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, color:'#74788d', textTransform:'uppercase', letterSpacing:'0.7px', marginBottom:12 }}>
+                  <Clock size={12} style={{ color:'#5156be' }} /> Time Allowed (Minutes)
+                </label>
+                <div style={{ display:'flex', alignItems:'center', gap:0, borderRadius:12, border:'1.5px solid #e2e6ff', overflow:'hidden', background:'#f8f9ff' }}>
+                  <div style={{ padding:'0 16px', background:'#eef0fc', borderRight:'1.5px solid #e2e6ff', height:52, display:'flex', alignItems:'center', color:'#5156be' }}>
+                    <Clock size={18} />
+                  </div>
+                  <input
+                    type="number"
+                    value={countData[0]?.timeAllowed ?? 0}
+                    onChange={e => { const n=[...countData]; n[0].timeAllowed=Number(e.target.value); setCountData(n); }}
+                    style={{
+                      flex:1, height:52, border:'none', outline:'none',
+                      background:'transparent', fontSize:22, fontWeight:800,
+                      color:'#2a3142', textAlign:'center', fontVariantNumeric:'tabular-nums'
+                    }}
+                  />
+                  <div style={{ padding:'0 16px', background:'#eef0fc', borderLeft:'1.5px solid #e2e6ff', height:52, display:'flex', alignItems:'center', fontSize:12, fontWeight:700, color:'#a0a5c9', textTransform:'uppercase', letterSpacing:'0.7px' }}>
+                    min
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <button className="btn-primary-custom w-100 py-3 shadow-md font-size-15 fw-bold" style={{ borderRadius: '12px' }} onClick={updateCountAction} disabled={saving}>
-                {saving ? <div className="spinner-border spinner-border-sm me-2" /> : <Save size={18} className="me-2" />}
-                Commit Logistics Configuration
+            {/* ── FOOTER ── */}
+            <div style={{ display:'flex', gap:10, padding:'0 28px 24px' }}>
+              <button onClick={() => setEditCountModal(false)} style={{
+                flex:1, height:46, borderRadius:12,
+                border:'1.5px solid #e2e6ff', background:'#fff',
+                color:'#74788d', fontWeight:700, fontSize:14, cursor:'pointer',
+                transition:'all 0.15s'
+              }}>Cancel</button>
+              <button onClick={updateCountAction} disabled={saving} style={{
+                flex:2, height:46, borderRadius:12, border:'none',
+                background: saving ? '#a0a5c9' : 'linear-gradient(135deg,#5156be,#6c70d4)',
+                color:'#fff', fontWeight:700, fontSize:14, cursor: saving ? 'not-allowed' : 'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                boxShadow:'0 4px 14px rgba(81,86,190,0.35)', transition:'all 0.15s'
+              }}>
+                {saving
+                  ? <><Loader2 size={16} style={{ animation:'spin 1s linear infinite' }} /> Saving…</>
+                  : <><Save size={16} /> Save Configuration</>
+                }
               </button>
             </div>
+
           </div>
         </div>, document.body
       )}

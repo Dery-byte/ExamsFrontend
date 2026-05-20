@@ -39,9 +39,10 @@ export default function Signup() {
       await registerStudent(user);
       toast.success('Account created successfully!', {
         icon: '🎓',
+        duration: 2000,
         style: { borderRadius: '12px', background: '#333', color: '#fff' }
       });
-      navigate('/login');
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Registration failed. Try again.');
     } finally { setLoading(false); }

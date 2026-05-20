@@ -102,9 +102,10 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
               <ShieldCheck size={16} style={{ color:'#5156be' }}/>
               <span style={{ fontSize:'12px', fontWeight:700, color:'#2a3142', textTransform:'uppercase', letterSpacing:'0.8px' }}>Security & Integrity</span>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'12px', marginBottom:'10px' }}>
               <div><label style={lbl}>Violation Action</label><select style={inp} value={quiz.violationAction||'NONE'} onChange={e=>set('violationAction',e.target.value)}>{VIOLATION_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select></div>
-              <div><label style={lbl}>Max Violations</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.maxViolations||''} onChange={e=>set('maxViolations',e.target.value)}/></div>
+              <div><label style={lbl}>Max Violations</label><input style={{...inp,textAlign:'center'}} type="number" value={quiz.maxViolations??''} onChange={e=>set('maxViolations',Number(e.target.value))}/></div>
+              <div><label style={lbl}>Delay (sec)</label><input style={{...inp,textAlign:'center'}} type="number" min="0" value={quiz.violationDelaySeconds??''} onChange={e=>set('violationDelaySeconds',Number(e.target.value))} placeholder="e.g. 30"/></div>
             </div>
             <div className="qem-toggle-grid">
               <Toggle label="Focus Lock" icon={<Layers size={14}/>} k="enableFullscreenLock"/>

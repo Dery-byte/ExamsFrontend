@@ -5,7 +5,7 @@ import {
   getQuizTimer, saveQuizTimer, updateQuizAnswer, getQuizAnswersByQuiz,
   saveTheoryAnswers, loadTheoryAnswers, clearTheoryAnswers,
   evalQuiz, evalTheory, addSectionBMarks,
-  deleteQuizTimer, clearQuizAnswers,
+  deleteQuizTimer, clearQuizAnswers, getViolationDelay, getViolationCount
 } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuizProtection } from '../../hooks/useQuizProtection';
@@ -98,6 +98,7 @@ export default function StartQuiz() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [submitLogs, setSubmitLogs] = useState<Array<{ msg: string; type: 'info'|'ok'|'warn'|'err' }>>([]);
   const [quiz, setQuiz] = useState<any>(null);
   const [quizType, setQuizType] = useState<QuizType>('OBJ');
@@ -135,7 +136,7 @@ export default function StartQuiz() {
     quizId: qid!,
     violationAction: quizConfig.violationAction ?? 'NONE',
     maxViolations: quizConfig.maxViolations ?? 3,
-    delaySeconds: quizConfig.delaySeconds ?? 30,
+    delaySeconds: quizConfig.violationDelaySeconds ?? 30,
     delayMultiplier: quizConfig.delayMultiplier ?? 1.5,
     autoSubmitCountdownSeconds: quizConfig.autoSubmitCountdownSeconds ?? 5,
     enableFullscreenLock: quizConfig.enableFullscreenLock ?? false,
@@ -187,7 +188,7 @@ export default function StartQuiz() {
 
   const loadAll = async () => {
     try {
-      const [quizData, rawQs, theoryRaw, nqArr, savedTime, savedAns, savedTh] = await Promise.all([
+      const [quizData, rawQs, theoryRaw, nqArr, savedTime, savedAns, savedTh, savedDelay, savedViolationCount] = await Promise.all([
         getQuiz(qid!),
         getQuestionsForStudent(qid!).catch(() => []),
         getTheoryQuestions(qid!).catch(() => []),
@@ -195,12 +196,14 @@ export default function StartQuiz() {
         getQuizTimer(qid!).catch(() => null),
         getQuizAnswersByQuiz(qid!).catch(() => ({})),
         loadTheoryAnswers(qid!).catch(() => []),
+        getViolationDelay(qid!).catch(() => null),
+        getViolationCount(qid!).catch(() => null),
       ]);
       setQuiz(quizData);
       setQuizConfig({
         ...quizData,
-        _pendingViolationDelay: 0,
-        _savedViolationCount: (savedTime as any)?.totalViolationCount ?? 0,
+        _pendingViolationDelay: savedDelay?.violationDelayTime ?? savedDelay?.violationDelaySeconds ?? 0,
+        _savedViolationCount: savedViolationCount?.totalViolationCount ?? savedViolationCount?.count ?? (savedTime as any)?.totalViolationCount ?? 0,
       });
       const qt: QuizType = ((quizData.quizType as string)?.toUpperCase().trim() as QuizType) || 'OBJ';
       setQuizType(qt);
@@ -348,7 +351,8 @@ export default function StartQuiz() {
     setSubmitLogs(prev => [...prev, { msg, type }]);
 
   const submitAll = useCallback(async (auto = false) => {
-    if (submitting) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     if (!auto) {
       const result = await Swal.fire({
         title: 'Submit Assessment?',
@@ -361,7 +365,10 @@ export default function StartQuiz() {
         cancelButtonColor: '#adb5bd',
         reverseButtons: true,
       });
-      if (!result.isConfirmed) return;
+      if (!result.isConfirmed) {
+        isSubmittingRef.current = false;
+        return;
+      }
     }
     setSubmitting(true);
     setSubmitLogs([]);
@@ -458,10 +465,11 @@ export default function StartQuiz() {
         window.location.reload();
       }
     } catch (e: any) {
+      isSubmittingRef.current = false;
       setSubmitting(false);
       // We don't clear logs here so the user can see what failed
     }
-  }, [quizType, questions, sectionBAll, selectedPfx, qid, saveTheory, submitting]);
+  }, [quizType, questions, sectionBAll, selectedPfx, qid, saveTheory]);
   submitAllRef.current = submitAll;
 
   const currentQs = useMemo(() => sectionBAll.filter(q => {
