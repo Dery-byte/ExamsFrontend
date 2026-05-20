@@ -122,9 +122,9 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
       answers.forEach((ans: any) => {
         const key = ans.quesNo || ans.questionNo || ans.quesO;
         if (key) {
-          if (ans.feedback) {
-            initComments[key] = ans.feedback;
-            initShowComments[key] = true; // Auto-show if comment exists
+          if (ans.lecturerComment) {
+            initComments[key] = ans.lecturerComment;
+            initShowComments[key] = true;
           }
           if (ans.score !== undefined && ans.score !== null) {
             initReviewed[key] = ans.score;
