@@ -589,7 +589,13 @@ export default function StartQuiz() {
         </aside>
 
         {/* ── MAIN CONTENT ── */}
-        <main ref={mainRef} style={{ height: '100%', overflowY: 'auto', paddingRight: 15 }}>
+        <main
+          ref={mainRef}
+          style={{ height: '100%', overflowY: 'auto', paddingRight: 15 }}
+          onCopy={e => e.preventDefault()}
+          onCut={e => e.preventDefault()}
+          onPaste={e => e.preventDefault()}
+        >
           {quizType === 'BOTH' && (
             <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
               <button
@@ -624,7 +630,7 @@ export default function StartQuiz() {
                     <div className="lexa-card-body">
                       <div style={{ display: 'flex', gap: 12, marginBottom: 15 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: '#7a6fbe', background: 'rgba(122, 111, 190, 0.1)', padding: '2px 8px', borderRadius: 4, height: 'fit-content' }}>Q{q.count}</span>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: theme.title, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: q.content }} />
+                        <div style={{ fontSize: 15, fontWeight: 600, color: theme.title, lineHeight: 1.6, userSelect: 'none', WebkitUserSelect: 'none' }} dangerouslySetInnerHTML={{ __html: q.content }} />
                       </div>
 
                       {q.questionType === 'TRUE_FALSE' ? (
@@ -719,7 +725,7 @@ export default function StartQuiz() {
                         <span className="lexa-badge badge-soft-primary">{q.quesNo}</span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: theme.muted }}>{q.marks} Marks</span>
                       </div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: theme.title, marginBottom: 15, lineHeight: 1.6 }}>{q.question}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: theme.title, marginBottom: 15, lineHeight: 1.6, userSelect: 'none', WebkitUserSelect: 'none' }}>{q.question}</div>
                       <textarea
                         rows={5}
                         value={q.givenAnswer || ''}

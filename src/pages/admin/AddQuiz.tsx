@@ -20,7 +20,7 @@ const VIOLATION_OPTIONS = [
 const defaultQuiz = () => ({
   title: '', description: '', maxMarks: '', numberOfQuestions: '', quizpassword: '', quizTime: '',
   startTime: '', quizDate: '', attempted: false, active: true, category: { cid: '' }, quizType: '',
-  violationAction: 'NONE', violationDelaySeconds: 30, autoSubmitCountdownSeconds: 5, maxViolations: 3,
+  violationAction: 'NONE', violationDelaySeconds: 0, autoSubmitCountdownSeconds: 5, maxViolations: 3,
   delayMultiplier: 1.5, enableFullscreenLock: true, enableWatermark: true,
   enableScreenshotBlocking: true, enableDevToolsBlocking: true,
 });
@@ -258,22 +258,22 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '12px' }}>
               <div className="aq-field">
-                <label className="aq-label">Max</label>
-                <input className="aq-input aq-input-sm text-center" type="number" value={quiz.maxViolations} onChange={e => set('maxViolations', e.target.value)} />
+                <label className="aq-label">Max Violations</label>
+                <input className="aq-input aq-input-sm text-center" type="number" min="1" value={quiz.maxViolations} onChange={e => set('maxViolations', Number(e.target.value))} />
               </div>
               <div className="aq-field">
                 <label className="aq-label">Delay (s)</label>
-                <input className="aq-input aq-input-sm text-center" type="number" value={quiz.violationDelaySeconds} onChange={e => set('violationDelaySeconds', e.target.value)} />
+                <input className="aq-input aq-input-sm text-center" type="number" min="0" placeholder="e.g. 30" value={quiz.violationDelaySeconds || ''} onChange={e => set('violationDelaySeconds', Number(e.target.value))} />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="aq-field">
                 <label className="aq-label">Multiplier</label>
-                <input className="aq-input aq-input-sm text-center" type="number" step="0.1" value={quiz.delayMultiplier} onChange={e => set('delayMultiplier', e.target.value)} />
+                <input className="aq-input aq-input-sm text-center" type="number" step="0.1" min="1" value={quiz.delayMultiplier} onChange={e => set('delayMultiplier', Number(e.target.value))} />
               </div>
               <div className="aq-field">
                 <label className="aq-label">Auto (s)</label>
-                <input className="aq-input aq-input-sm text-center" type="number" value={quiz.autoSubmitCountdownSeconds} onChange={e => set('autoSubmitCountdownSeconds', e.target.value)} />
+                <input className="aq-input aq-input-sm text-center" type="number" min="0" value={quiz.autoSubmitCountdownSeconds} onChange={e => set('autoSubmitCountdownSeconds', Number(e.target.value))} />
               </div>
             </div>
           </div>

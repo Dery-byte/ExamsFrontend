@@ -264,7 +264,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                     <div className="row g-2">
                       <div className="col-3">
                         <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Max Violiation Limit</label>
-                        <input className="minia-field text-center px-1" type="number" value={quiz.maxViolations} onChange={e=>set('maxViolations',e.target.value)}/>
+                        <input className="minia-field text-center px-1" type="number" value={quiz.maxViolations} onChange={e=>set('maxViolations',Number(e.target.value))}/>
                       </div>
                       <div className="col-3">
                         <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Delay</label>
@@ -276,7 +276,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                       </div>
                       <div className="col-3">
                         <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Auto Submit Count Downdown</label>
-                        <input className="minia-field text-center px-1" type="number" value={quiz.autoSubmitCountdownSeconds} onChange={e=>set('autoSubmitCountdownSeconds',e.target.value)}/>
+                        <input className="minia-field text-center px-1" type="number" value={quiz.autoSubmitCountdownSeconds} onChange={e=>set('autoSubmitCountdownSeconds',Number(e.target.value))}/>
                       </div>
                     </div>
                   </div>
