@@ -110,10 +110,10 @@ export default function AdminLayout() {
         <div className="lexa-sidebar-footer">
           <div className="lexa-user-brief">
             <div className="lexa-avatar">
-              {(user?.firstname?.[0] ?? 'A').toUpperCase()}
+              {(user?.username?.[0] ?? user?.firstname?.[0] ?? 'A').toUpperCase()}
             </div>
             <div className="lexa-user-info">
-              <span className="name">{user?.firstname} {user?.lastname}</span>
+              <span className="name">{user?.username || user?.firstname || 'Admin'}</span>
               <span className="role">Administrator</span>
             </div>
           </div>
@@ -147,7 +147,7 @@ export default function AdminLayout() {
               <div className="lexa-profile-avatar">
                 <UserCircle size={20} />
               </div>
-              <span className="lexa-profile-name">{user?.firstname} {user?.lastname}</span>
+              <span className="lexa-profile-name">{user?.username || user?.firstname || 'Admin'}</span>
             </div>
           </div>
         </header>

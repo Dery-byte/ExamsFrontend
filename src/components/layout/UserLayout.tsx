@@ -133,8 +133,8 @@ export default function UserLayout() {
 
             {/* Page brand visible on mobile when sidebar is closed */}
             <span className="user-topbar-brand mobile-show">
-              <span className="user-sidebar-logo sm">L</span>
-              <span style={{ fontWeight: 800, fontSize: 16, color: '#2a3142', marginLeft: 8 }}>LEXA</span>
+              <span className="user-sidebar-logo sm">O</span>
+              <span style={{ fontWeight: 800, fontSize: 16, color: '#2a3142', marginLeft: 8 }}>OTC</span>
             </span>
           </div>
 
@@ -154,11 +154,11 @@ export default function UserLayout() {
 
             <div className="user-topbar-profile">
               <div className="user-topbar-profile-text desktop-show">
-                <div className="user-topbar-name">{user?.firstname} {user?.lastname?.[0]}.</div>
-                <div className="user-topbar-role">Verified Student</div>
+                <div className="user-topbar-name">{user?.username || user?.firstname || 'Student'}</div>
+                {/* <div className="user-topbar-role">Verified Student</div> */}
               </div>
               <div className="user-avatar" aria-label="User avatar">
-                {user?.firstname?.[0] || 'U'}
+                {(user?.username?.[0] ?? user?.firstname?.[0] ?? 'U').toUpperCase()}
               </div>
             </div>
           </div>
