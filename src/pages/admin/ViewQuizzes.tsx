@@ -1,25 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import AssessmentCard from '../../components/ui/AssessmentCard';
-import { 
+import {
   Plus, Loader2, LayoutGrid, Settings, X,
-  ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock, 
-  BookOpen, Layers, CheckCircle, ShieldCheck, Monitor, 
+  ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock,
+  BookOpen, Layers, CheckCircle, ShieldCheck, Monitor,
   Smartphone, List, FileText, Terminal, Award,
   Activity, Key, Timer, Tag, Hash, Info
 } from 'lucide-react';
 
 const VIOLATION_OPTIONS = [
-  { v:'NONE', l:'No Restrictions' }, 
-  { v:'DELAY_ONLY', l:'Temporary Lock' },
-  { v:'AUTOSUBMIT_ONLY', l:'Auto Submit' }, 
-  { v:'DELAY_AND_AUTOSUBMIT', l:'Lock + Auto Submit' },
+  { v: 'NONE',                 l: 'No Restrictions' },
+  { v: 'DELAY_ONLY',           l: 'Temporary Lock' },
+  { v: 'AUTOSUBMIT_ONLY',      l: 'Auto Submit' },
+  { v: 'DELAY_AND_AUTOSUBMIT', l: 'Lock + Auto Submit' },
 ];
 
 function QuizEditModal({ qId, onClose, onSave, categories }: any) {
@@ -39,259 +39,287 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
   }, [qId]);
 
   if (!quiz) return createPortal(
-    <div className="modern-overlay">
-       <div className="modern-loader">
-          <Loader2 className="spin" size={32} />
-          <span>Synchronizing Node...</span>
-       </div>
-    </div>, document.body
+    <div className="qe-overlay">
+      <div className="qe-loader">
+        <Loader2 className="qe-spin" size={32} />
+        <span>Loading quiz data...</span>
+      </div>
+    </div>,
+    document.body
   );
 
   const set = (k: string, v: any) => setQuiz((q: any) => ({ ...q, [k]: v }));
 
   const save = async () => {
-    if (!quiz.quizType) { toast.error('Please select a quiz type (OBJ/Theory)'); return; }
-    if (!quiz.category?.cid) { toast.error('Please associate this with a course'); return; }
-
+    if (!quiz.quizType)    { toast.error('Please select a quiz type'); return; }
+    if (!quiz.category?.cid) { toast.error('Please select a course category'); return; }
     setSaving(true);
     try {
       await updateQuiz(quiz);
-      toast.success('Protocol state synchronized');
+      toast.success('Quiz settings saved successfully');
       onSave(); onClose();
-    } catch { toast.error('Sync failure'); }
+    } catch { toast.error('Failed to save settings'); }
     setSaving(false);
   };
 
-  const ToggleNode = ({ label, k, icon: Icon, desc }: { label: string; k: string; icon: any; desc: string }) => (
-    <div className={`minia-switch-item ${quiz[k] ? 'active' : ''}`} onClick={() => set(k, !quiz[k])}>
-       <div className="switch-icon"><Icon size={16} /></div>
-       <div className="switch-info">
-          <span className="switch-label">{label}</span>
-          <span className="switch-description">{desc}</span>
-       </div>
-       <div className="minia-toggle">
-         <div className="toggle-thumb" />
-       </div>
-    </div>
-  );
+  const Toggle = ({ label, k, icon: Icon, desc }: { label: string; k: string; icon: any; desc: string }) => {
+    const on = quiz[k];
+    return (
+      <div className={`aq-toggle ${on ? 'on' : ''}`} onClick={() => set(k, !on)}>
+        <div className="aq-toggle-icon"><Icon size={15} /></div>
+        <div className="aq-toggle-info">
+          <span className="aq-toggle-label">{label}</span>
+          <span className="aq-toggle-desc">{desc}</span>
+        </div>
+        <div className="aq-switch"><div className="aq-thumb" /></div>
+      </div>
+    );
+  };
 
   return createPortal(
-    <div className="modern-overlay">
-       <div className="modern-modal animate-scale-in" style={{ width: 1000, maxWidth: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-          <div className="modal-head" style={{ flexShrink: 0 }}>
-             <div className="h-title">
-                <div className="h-ico"><Settings size={16} /></div>
-                <span>Quiz Settings - {quiz.title}</span>
-             </div>
-             <button className="h-close" onClick={onClose}><X size={16} /></button>
+    <div className="qe-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="qe-modal animate-scale-in">
+
+        {/* ── Header ── */}
+        <div className="qe-header">
+          <div className="qe-header-left">
+            <div className="qe-header-icon"><Settings size={18} /></div>
+            <div>
+              <h5 className="qe-header-title">Quiz Settings</h5>
+              <p className="qe-header-sub">{quiz.title}</p>
+            </div>
           </div>
-          <div className="modal-body minia-app-container-modal" style={{ overflowY: 'auto', padding: '24px', flex: 1, backgroundColor: '#f4f5f7' }}>
-            <div className="row g-4 m-0">
-              <div className="col-xl-8">
-                {/* Identity Card */}
-                <div className="minia-card-standout standout-identity mb-4">
-                  <div className="minia-card-header-distinct">
-                    <div className="d-flex align-items-center gap-2">
-                      <div className="icon-badge-distinct bg-soft-primary"><BookOpen size={20}/></div>
-                      <h6 className="mb-0 fw-bold">Assessment Identity</h6>
+          <button className="qe-close-btn" onClick={onClose}><X size={18} /></button>
+        </div>
+
+        {/* ── Body ── */}
+        <div className="qe-body">
+          <div className="qe-layout">
+
+            {/* Main Column */}
+            <div className="qe-main">
+
+              {/* Identity Section */}
+              <div className="aq-section aq-section-blue" style={{ marginBottom: 20 }}>
+                <div className="aq-section-head">
+                  <div className="aq-section-icon blue"><BookOpen size={18} /></div>
+                  <div>
+                    <h6 className="aq-section-title">Assessment Identity</h6>
+                    <p className="aq-section-sub">Basic information about this quiz</p>
+                  </div>
+                </div>
+                <div className="aq-grid-2-1">
+                  <div className="aq-field">
+                    <label className="aq-label">Quiz Title</label>
+                    <div className="aq-iw">
+                      <span className="aq-ii"><Tag size={15} /></span>
+                      <input className="aq-input" required value={quiz.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Mid-Semester Examination" />
                     </div>
                   </div>
-                  <div className="card-body p-4">
-                    <div className="row g-4 mb-4">
-                      <div className="col-md-8">
-                        <label className="minia-form-label">Quiz Title</label>
-                        <div className="minia-input-group">
-                           <span className="minia-input-icon"><Tag size={16}/></span>
-                           <input className="minia-field" required value={quiz.title} onChange={e=>set('title',e.target.value)} placeholder="e.g. Mid-Semester Theory Examination"/>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <label className="minia-form-label">Academic Category</label>
-                        <div className="minia-input-group">
-                           <span className="minia-input-icon"><Layers size={16}/></span>
-                           <select className="minia-field" required value={quiz.category?.cid || ''} onChange={e=>set('category',{cid:e.target.value})}>
-                            <option value="">Select Category...</option>
-                            {categories.map((c:any)=><option key={c.cid} value={c.cid}>{c.title}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="col-12">
-                        <label className="minia-form-label">Instructions & Syllabus Guidelines</label>
-                        <textarea className="minia-field" rows={3} value={quiz.description} onChange={e=>set('description',e.target.value)} placeholder="Provide student guidelines..." style={{ resize: 'none' }}/>
-                      </div>
+                  <div className="aq-field">
+                    <label className="aq-label">Course Category</label>
+                    <div className="aq-iw">
+                      <span className="aq-ii"><Layers size={15} /></span>
+                      <select className="aq-input" required value={quiz.category?.cid || ''} onChange={e => set('category', { cid: e.target.value })}>
+                        <option value="">Select category...</option>
+                        {categories.map((c: any) => <option key={c.cid} value={c.cid}>{c.title}</option>)}
+                      </select>
                     </div>
                   </div>
                 </div>
-
-                {/* Metrics Card */}
-                <div className="minia-card-standout standout-parameters mb-4">
-                  <div className="minia-card-header-distinct">
-                    <div className="d-flex align-items-center gap-2">
-                      <div className="icon-badge-distinct bg-soft-info"><Activity size={20}/></div>
-                      <h6 className="mb-0 fw-bold">Assessment Parameters</h6>
-                    </div>
-                  </div>
-                  <div className="card-body p-4">
-                    <div className="mb-4">
-                      <label className="minia-form-label">Taxonomy Classification</label>
-                      <div className="d-flex gap-2">
-                        {[
-                          { id: 'OBJ', label: 'Objectives', icon: List, color: '#5156be' },
-                          { id: 'THEORY', label: 'Theory', icon: FileText, color: '#2ab57d' },
-                          { id: 'BOTH', label: 'Combined', icon: LayoutGrid, color: '#ffbf53' }
-                        ].map(t=>(
-                          <button key={t.id} type="button" className={`minia-tax-btn ${quiz.quizType===t.id ? 'active' : ''}`} onClick={()=>set('quizType',t.id)}>
-                            <t.icon size={16} /> <span>{t.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="row g-3 mb-4">
-                      <div className="col-md-4">
-                        <label className="minia-form-label text-center">Max Marks</label>
-                        <div className="minia-input-group">
-                           <span className="minia-input-icon"><Award size={16}/></span>
-                           <input className="minia-field text-center fw-bold" type="number" required value={quiz.maxMarks} onChange={e=>set('maxMarks',e.target.value)}/>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <label className="minia-form-label text-center">Item Count</label>
-                        <div className="minia-input-group">
-                           <span className="minia-input-icon"><Hash size={16}/></span>
-                           <input className="minia-field text-center fw-bold" type="number" required value={quiz.numberOfQuestions} onChange={e=>set('numberOfQuestions',e.target.value)}/>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <label className="minia-form-label text-center">Duration (M)</label>
-                        <div className="minia-input-group">
-                           <span className="minia-input-icon"><Timer size={16}/></span>
-                           <input className="minia-field text-center fw-bold text-primary" type="number" required value={quiz.quizTime} onChange={e=>set('quizTime',e.target.value)}/>
-                        </div>
-                      </div>
-                    </div>
-
-                    {quiz.quizType === 'THEORY' && (
-                      <div className="minia-theory-notice mb-4">
-                        <Info size={16} /> 
-                        <span>Theory mode requires manual marking via the Lecturer Assessment Panel.</span>
-                      </div>
-                    )}
-
-                    <div className="row g-3">
-                      <div className="col-md-4">
-                        <label className="minia-form-label">Scheduled Date</label>
-                        <div className="minia-input-group">
-                           <span className="minia-input-icon"><Calendar size={16}/></span>
-                           <input className="minia-field" type="date" required value={quiz.quizDate} onChange={e=>set('quizDate',e.target.value)}/>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <label className="minia-form-label">Start Time</label>
-                        <div className="minia-input-group">
-                           <span className="minia-input-icon"><Clock size={16}/></span>
-                           <input className="minia-field" type="time" required value={quiz.startTime} onChange={e=>set('startTime',e.target.value)}/>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <label className="minia-form-label">Security Passkey</label>
-                        <div className="minia-input-group">
-                          <span className="minia-input-icon"><Key size={16}/></span>
-                          <input className="minia-field pe-5" type={hide?'password':'text'} value={quiz.quizpassword} onChange={e=>set('quizpassword',e.target.value)} placeholder="TOKEN"/>
-                          <button type="button" onClick={()=>setHide(!hide)} className="minia-eye-btn">{hide ? <Eye size={16}/> : <EyeOff size={16}/>}</button>
-                        </div>
-                      </div>
-                    </div>
+                <div style={{ padding: '0 24px 24px' }}>
+                  <div className="aq-field">
+                    <label className="aq-label">Instructions &amp; Guidelines</label>
+                    <textarea
+                      className="aq-input aq-textarea"
+                      rows={3}
+                      value={quiz.description}
+                      onChange={e => set('description', e.target.value)}
+                      placeholder="Provide student instructions and syllabus guidelines..."
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="col-xl-4">
-                {/* System Security */}
-                <div className="minia-card-standout standout-security mb-4">
-                  <div className="minia-card-header-distinct">
-                    <div className="d-flex align-items-center gap-2">
-                      <div className="icon-badge-distinct bg-soft-indigo"><ShieldCheck size={20}/></div>
-                      <h6 className="mb-0 fw-bold">Integrity Controls</h6>
-                    </div>
-                  </div>
-                  <div className="card-body p-3">
-                    <ToggleNode label="Focus Lock" k="enableFullscreenLock" icon={Monitor} desc="Restrict window maneuvers"/>
-                    <ToggleNode label="Watermark" k="enableWatermark" icon={Layers} desc="Visible student ID trace"/>
-                    <ToggleNode label="Media Shield" k="enableScreenshotBlocking" icon={Smartphone} desc="Block screen captures"/>
-                    <ToggleNode label="Tech Shield" k="enableDevToolsBlocking" icon={Terminal} desc="Inhibit console access"/>
+              {/* Parameters Section */}
+              <div className="aq-section aq-section-green">
+                <div className="aq-section-head">
+                  <div className="aq-section-icon green"><Activity size={18} /></div>
+                  <div>
+                    <h6 className="aq-section-title">Assessment Parameters</h6>
+                    <p className="aq-section-sub">Quiz type, scoring, schedule and access</p>
                   </div>
                 </div>
+                <div style={{ padding: '24px 24px 0' }}>
 
-                {/* Deployment Card */}
-                <div className="minia-card-standout standout-deployment mb-4">
-                  <div className="minia-card-header-distinct">
-                    <div className="d-flex align-items-center gap-2">
-                      <div className="icon-badge-distinct bg-soft-warning"><Zap size={20}/></div>
-                      <h6 className="mb-0 fw-bold">Deployment Status</h6>
+                  {/* Quiz Type */}
+                  <div className="aq-field" style={{ marginBottom: 20 }}>
+                    <label className="aq-label">Quiz Type</label>
+                    <div className="aq-type-row">
+                      {[
+                        { id: 'OBJ',    label: 'Objectives', icon: List },
+                        { id: 'THEORY', label: 'Theory',     icon: FileText },
+                        { id: 'BOTH',   label: 'Combined',   icon: LayoutGrid },
+                      ].map(t => (
+                        <button key={t.id} type="button"
+                          className={`aq-type-btn ${quiz.quizType === t.id ? 'active' : ''}`}
+                          onClick={() => set('quizType', t.id)}>
+                          <t.icon size={16} /><span>{t.label}</span>
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                  <div className="card-body p-4">
-                    <div className={`minia-deployment-card-distinct ${quiz.active ? 'active' : 'draft'}`} onClick={()=>set('active',!quiz.active)}>
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="status-badge-distinct">
-                          {quiz.active ? <CheckCircle size={22} /> : <Save size={22} />}
-                        </div>
-                        <div>
-                          <h6 className="mb-0 fw-bold">{quiz.active ? 'LIVE STATUS' : 'DRAFT MODE'}</h6>
-                          <p className="mb-0 font-size-11 opacity-75">{quiz.active ? 'Visible to students' : 'Private to author'}</p>
-                        </div>
+                    {quiz.quizType === 'THEORY' && (
+                      <div className="aq-notice">
+                        <Info size={14} />
+                        <span>Theory mode: marking is done manually via the Assessment Panel.</span>
                       </div>
-                    </div>
+                    )}
                   </div>
-                </div>
 
-                {/* Breach Protocols */}
-                <div className="minia-card-standout standout-danger mb-4">
-                  <div className="minia-card-header-distinct">
-                    <div className="d-flex align-items-center gap-2">
-                      <div className="icon-badge-distinct bg-soft-danger"><ShieldAlert size={20}/></div>
-                      <h6 className="mb-0 fw-bold text-danger">Breach Policy</h6>
+                  {/* Metrics */}
+                  <div className="aq-grid-3" style={{ marginBottom: 20 }}>
+                    <div className="aq-field">
+                      <label className="aq-label">Max Marks</label>
+                      <div className="aq-iw">
+                        <span className="aq-ii"><Award size={15} /></span>
+                        <input className="aq-input text-center" type="number" required value={quiz.maxMarks} onChange={e => set('maxMarks', e.target.value)} placeholder="100" />
+                      </div>
+                    </div>
+                    <div className="aq-field">
+                      <label className="aq-label">No. of Questions</label>
+                      <div className="aq-iw">
+                        <span className="aq-ii"><Hash size={15} /></span>
+                        <input className="aq-input text-center" type="number" required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder="40" />
+                      </div>
+                    </div>
+                    <div className="aq-field">
+                      <label className="aq-label">Duration (mins)</label>
+                      <div className="aq-iw">
+                        <span className="aq-ii"><Timer size={15} /></span>
+                        <input className="aq-input text-center" type="number" required value={quiz.quizTime} onChange={e => set('quizTime', e.target.value)} placeholder="60" />
+                      </div>
                     </div>
                   </div>
-                  <div className="card-body p-4">
-                    <div className="mb-4">
-                      <label className="minia-form-label">Automated Penalty</label>
-                      <select className="minia-field border-danger-subtle" value={quiz.violationAction} onChange={e=>set('violationAction',e.target.value)}>
-                        {VIOLATION_OPTIONS.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}
-                      </select>
+
+                  {/* Schedule + Passkey */}
+                  <div className="aq-grid-3" style={{ paddingBottom: 24 }}>
+                    <div className="aq-field">
+                      <label className="aq-label">Scheduled Date</label>
+                      <div className="aq-iw">
+                        <span className="aq-ii"><Calendar size={15} /></span>
+                        <input className="aq-input" type="date" required value={quiz.quizDate} onChange={e => set('quizDate', e.target.value)} />
+                      </div>
                     </div>
-                    <div className="row g-2">
-                      <div className="col-3">
-                        <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Max Violiation Limit</label>
-                        <input className="minia-field text-center px-1" type="number" value={quiz.maxViolations} onChange={e=>set('maxViolations',Number(e.target.value))}/>
+                    <div className="aq-field">
+                      <label className="aq-label">Start Time</label>
+                      <div className="aq-iw">
+                        <span className="aq-ii"><Clock size={15} /></span>
+                        <input className="aq-input" type="time" required value={quiz.startTime} onChange={e => set('startTime', e.target.value)} />
                       </div>
-                      <div className="col-3">
-                        <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Delay</label>
-                        <input className="minia-field text-center px-1" type="number" value={quiz.delaySeconds ?? ''} onChange={e=>set('delaySeconds',Number(e.target.value))}/>
-                      </div>
-                      <div className="col-3">
-                        <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Delay Multiplier</label>
-                        <input className="minia-field text-center px-1" type="number" step="0.1" value={quiz.delayMultiplier ?? ''} onChange={e=>set('delayMultiplier',Number(e.target.value))}/>
-                      </div>
-                      <div className="col-3">
-                        <label className="minia-form-label text-center" style={{ fontSize: '11px' }}>Auto Submit Count Downdown</label>
-                        <input className="minia-field text-center px-1" type="number" value={quiz.autoSubmitCountdownSeconds} onChange={e=>set('autoSubmitCountdownSeconds',Number(e.target.value))}/>
+                    </div>
+                    <div className="aq-field">
+                      <label className="aq-label">Security Passkey</label>
+                      <div className="aq-iw">
+                        <span className="aq-ii"><Key size={15} /></span>
+                        <input
+                          className="aq-input"
+                          style={{ paddingRight: 42 }}
+                          type={hide ? 'password' : 'text'}
+                          value={quiz.quizpassword}
+                          onChange={e => set('quizpassword', e.target.value)}
+                          placeholder="TOKEN"
+                        />
+                        <button type="button" className="aq-eye" onClick={() => setHide(!hide)}>
+                          {hide ? <Eye size={15} /> : <EyeOff size={15} />}
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Sidebar Column */}
+            <div className="qe-sidebar">
+
+              {/* Deployment */}
+              <div className="aq-sidebar-card aq-card-deploy">
+                <div className="aq-sidebar-head">
+                  <div className="aq-section-icon amber"><Zap size={16} /></div>
+                  <h6 className="aq-sidebar-title">Deployment</h6>
+                </div>
+                <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={() => set('active', !quiz.active)}>
+                  <div className="aq-deploy-icon">
+                    {quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}
+                  </div>
+                  <div>
+                    <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
+                    <p className="aq-deploy-hint">{quiz.active ? 'Visible to students' : 'Private – not published'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Integrity Controls */}
+              <div className="aq-sidebar-card aq-card-security">
+                <div className="aq-sidebar-head">
+                  <div className="aq-section-icon purple"><ShieldCheck size={16} /></div>
+                  <h6 className="aq-sidebar-title">Integrity Controls</h6>
+                </div>
+                <Toggle label="Focus Lock"     k="enableFullscreenLock"     icon={Monitor}    desc="Restrict window switches" />
+                <Toggle label="Watermark"      k="enableWatermark"          icon={Layers}     desc="Visible student ID overlay" />
+                <Toggle label="Media Shield"   k="enableScreenshotBlocking" icon={Smartphone} desc="Block screen captures" />
+                <Toggle label="DevTools Block" k="enableDevToolsBlocking"   icon={Terminal}   desc="Disable browser console" />
+              </div>
+
+              {/* Breach Policy */}
+              <div className="aq-sidebar-card aq-card-danger">
+                <div className="aq-sidebar-head">
+                  <div className="aq-section-icon red"><ShieldAlert size={16} /></div>
+                  <h6 className="aq-sidebar-title" style={{ color: '#dc2626' }}>Breach Policy</h6>
+                </div>
+                <div className="aq-field" style={{ marginBottom: 14 }}>
+                  <label className="aq-label">Auto Penalty</label>
+                  <select className="aq-input aq-input-sm" style={{ paddingLeft: 14 }} value={quiz.violationAction} onChange={e => set('violationAction', e.target.value)}>
+                    {VIOLATION_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div className="aq-field">
+                    <label className="aq-label">Max Violations</label>
+                    <input className="aq-input aq-input-sm text-center" type="number" min="1" value={quiz.maxViolations} onChange={e => set('maxViolations', Number(e.target.value))} />
+                  </div>
+                  <div className="aq-field">
+                    <label className="aq-label">Delay (s)</label>
+                    <input className="aq-input aq-input-sm text-center" type="number" min="0" value={quiz.delaySeconds ?? ''} onChange={e => set('delaySeconds', Number(e.target.value))} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="aq-field">
+                    <label className="aq-label">Multiplier</label>
+                    <input className="aq-input aq-input-sm text-center" type="number" step="0.1" min="1" value={quiz.delayMultiplier ?? ''} onChange={e => set('delayMultiplier', Number(e.target.value))} />
+                  </div>
+                  <div className="aq-field">
+                    <label className="aq-label">Auto Submit (s)</label>
+                    <input className="aq-input aq-input-sm text-center" type="number" min="0" value={quiz.autoSubmitCountdownSeconds} onChange={e => set('autoSubmitCountdownSeconds', Number(e.target.value))} />
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
-          <div className="modal-foot" style={{ flexShrink: 0 }}>
-            <button className="btn-sec" onClick={onClose}>Discard</button>
-            <button className="btn-pri" onClick={save} disabled={saving}>
-              {saving ? 'Syncing...' : 'Save Configuration'}
-            </button>
-          </div>
-       </div>
-    </div>, document.body
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="qe-footer">
+          <button className="aq-btn-ghost" onClick={onClose}>Discard</button>
+          <button className="aq-btn-primary" onClick={save} disabled={saving}>
+            {saving ? <Loader2 className="aq-spin" size={16} /> : <Save size={16} />}
+            <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -313,11 +341,11 @@ export default function ViewQuizzes() {
 
   const doDelete = (qId: number) => {
     Swal.fire({
-      title: 'Purge Assessment?', text: "Permanent decommission of this node.",
-      icon: 'warning', showCancelButton: true, confirmButtonColor: '#6366f1', confirmButtonText: 'Yes, Purge'
+      title: 'Delete Quiz?', text: 'This action is permanent and cannot be undone.',
+      icon: 'warning', showCancelButton: true, confirmButtonColor: '#6366f1', confirmButtonText: 'Yes, Delete'
     }).then(r => {
       if (r.isConfirmed) {
-        deleteQuiz(qId).then(() => { toast.success('Node purged'); qc.invalidateQueries({ queryKey: ['quizzes'] }); });
+        deleteQuiz(qId).then(() => { toast.success('Quiz deleted'); qc.invalidateQueries({ queryKey: ['quizzes'] }); });
       }
     });
   };
@@ -326,7 +354,7 @@ export default function ViewQuizzes() {
     const sel = statusMap[q.qId] ?? q.status;
     setUpdatingMap(m => ({ ...m, [q.qId]: true }));
     updateQuizStatus(q.qId, sel).then(() => {
-      toast.success('Registry Updated');
+      toast.success('Status updated');
       qc.invalidateQueries({ queryKey: ['quizzes'] });
     }).finally(() => setUpdatingMap(m => ({ ...m, [q.qId]: false })));
   };
@@ -334,25 +362,25 @@ export default function ViewQuizzes() {
   return (
     <div className="modern-registry animate-fade-in">
       <Toaster position="top-right" containerStyle={{ zIndex: 999999 }} />
-      <PageHeader title="Assessment Registry" breadcrumbs={['Admin', 'Command', 'Registry']} />
+      <PageHeader title="Quizzes" breadcrumbs={['Admin', 'Command', 'Registry']} />
 
       <div className="reg-top-bar">
-         <div className="t-info">
-            <h1 className="t-title">Assessment Nodes</h1>
-            <p className="t-sub">{quizzes.length} protocols currently established.</p>
-         </div>
-         <button className="btn-add" onClick={() => navigate('/admin/add-quiz')}>
-            <Plus size={18} /> <span>Initialize Node</span>
-         </button>
+        <div className="t-info">
+          <h1 className="t-title">Quizzes</h1>
+          <p className="t-sub">{quizzes.length} quizzes currently available.</p>
+        </div>
+        <button className="btn-add" onClick={() => navigate('/admin/add-quiz')}>
+          <Plus size={18} /> <span>Add Quiz</span>
+        </button>
       </div>
 
       {isLoading ? (
         <div className="reg-loading"><Loader2 className="spin" size={40} /></div>
       ) : quizzes.length === 0 ? (
         <div className="reg-empty">
-           <LayoutGrid size={64} />
-           <h3>Registry Empty</h3>
-           <p>No active assessment nodes found.</p>
+          <LayoutGrid size={64} />
+          <h3>Registry Empty</h3>
+          <p>No active quizzes found.</p>
         </div>
       ) : (
         <div className="reg-grid-modern">
@@ -379,107 +407,206 @@ export default function ViewQuizzes() {
       )}
 
       {editQuizId !== null && (
-        <QuizEditModal qId={editQuizId} categories={categories} onClose={() => setEditQuizId(null)} onSave={() => qc.invalidateQueries({ queryKey: ['quizzes'] })} />
+        <QuizEditModal
+          qId={editQuizId}
+          categories={categories}
+          onClose={() => setEditQuizId(null)}
+          onSave={() => qc.invalidateQueries({ queryKey: ['quizzes'] })}
+        />
       )}
 
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&family=JetBrains+Mono:wght@500;600&display=swap');
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@700;800;900&display=swap');
+
+        /* ── Page ── */
         .modern-registry { padding: 40px 0 80px; font-family: 'Inter', sans-serif; background: #fafafa; min-height: 100vh; }
-        .reg-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; padding: 0 40px; }
-        .t-title { font-family: 'Outfit', sans-serif; font-size: 36px; font-weight: 800; color: #111827; margin: 0 0 8px 0; letter-spacing: -0.02em; }
-        .t-sub { font-size: 15px; color: #6b7280; font-weight: 400; margin: 0; }
-        .btn-add { height: 44px; padding: 0 20px; background: #111827; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .btn-add:hover { transform: translateY(-2px); background: #374151; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        .reg-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 0 40px; gap: 16px; }
+        .t-title { font-family: 'Outfit', sans-serif; font-size: 36px; font-weight: 800; color: #111827; margin: 0 0 6px; letter-spacing: -0.02em; }
+        .t-sub { font-size: 14px; color: #6b7280; margin: 0; }
+
+        .btn-add { height: 44px; padding: 0 20px; background: #111827; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .btn-add:hover { transform: translateY(-2px); background: #374151; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+
         .reg-grid-modern { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; padding: 0 40px; }
-        .reg-loading, .reg-empty { padding: 100px 0; text-align: center; }
-        .reg-loading { color: #111827; }
-        .reg-empty h3 { margin: 20px 0 10px; color: #111827; font-weight: 700; font-size: 20px; }
-        .reg-empty p { font-size: 15px; color: #6b7280; }
-        .modern-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; }
-        .modern-modal { background: #fff; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid #eaeaea; }
-        .modal-head { padding: 20px 24px; border-bottom: 1px solid #eaeaea; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
-        .h-title { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #111827; font-size: 15px; }
-        .modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-        .modal-foot { padding: 20px 24px; background: #fafafa; border-top: 1px solid #eaeaea; display: flex; justify-content: flex-end; gap: 12px; }
-        .btn-sec { background: none; border: none; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; transition: color 0.2s; }
-        .btn-sec:hover { color: #111827; }
-        .btn-pri { height: 40px; padding: 0 20px; background: #111827; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s ease; }
-        .btn-pri:hover { background: #374151; }
+        .reg-loading, .reg-empty { padding: 100px 0; text-align: center; color: #6b7280; }
+        .reg-empty h3 { margin: 20px 0 8px; color: #111827; font-weight: 700; font-size: 20px; }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        @media (max-width: 768px) {
-          .reg-top-bar { flex-direction: column; align-items: flex-start; gap: 16px; padding: 0 16px; }
-          .t-title { font-size: 24px; }
-          .btn-add { width: 100%; justify-content: center; }
-          .reg-grid-modern { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 0 16px; }
-          .modern-modal { width: 95vw !important; max-width: none !important; }
+        /* ── Modal overlay ── */
+        .qe-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 16px; }
+        .qe-loader { display: flex; flex-direction: column; align-items: center; gap: 14px; color: #fff; font-size: 14px; font-weight: 600; }
+        .qe-spin { animation: spin 1s linear infinite; }
+
+        /* ── Modal shell ── */
+        .qe-modal {
+          background: #f0f2f8;
+          border-radius: 20px;
+          box-shadow: 0 32px 64px -12px rgba(0,0,0,0.35);
+          width: 100%;
+          max-width: 1060px;
+          max-height: 92vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          font-family: 'Inter', sans-serif;
+        }
+        .animate-scale-in { animation: scaleIn 0.22s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes scaleIn { from { opacity:0; transform:scale(0.94); } to { opacity:1; transform:scale(1); } }
+
+        /* ── Modal header ── */
+        .qe-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 20px 28px;
+          background: #fff;
+          border-bottom: 1px solid #e8eaf0;
+          flex-shrink: 0;
+        }
+        .qe-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .qe-header-icon {
+          width: 40px; height: 40px; border-radius: 11px;
+          background: linear-gradient(135deg, #5156be, #7c3aed);
+          color: #fff; display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0; box-shadow: 0 4px 12px rgba(81,86,190,0.35);
+        }
+        .qe-header-title { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 2px; }
+        .qe-header-sub { font-size: 12px; color: #94a3b8; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .qe-close-btn {
+          width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid #e2e8f0;
+          background: #f8fafc; color: #64748b; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: .2s; flex-shrink: 0;
+        }
+        .qe-close-btn:hover { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+
+        /* ── Modal body ── */
+        .qe-body { flex: 1; overflow-y: auto; padding: 24px; }
+        .qe-body::-webkit-scrollbar { width: 5px; }
+        .qe-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+
+        /* ── Two-column layout ── */
+        .qe-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+        .qe-main { display: flex; flex-direction: column; }
+        .qe-sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+        /* ── Modal footer ── */
+        .qe-footer {
+          padding: 18px 28px; background: #fff; border-top: 1px solid #e8eaf0;
+          display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0;
         }
 
-        /* Modal specific form styles */
-        .minia-card-standout {
-          background: #fff; border-radius: 12px; border: 1px solid #e2e8f0;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-          overflow: hidden;
-          transition: all 0.3s ease;
+        /* ── Shared section styles (matching AddQuiz) ── */
+        .aq-section { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -4px rgba(0,0,0,0.06); overflow: hidden; }
+        .aq-section-blue  { border-left: 4px solid #5156be; }
+        .aq-section-green { border-left: 4px solid #10b981; }
+        .aq-section-head  { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; background: linear-gradient(135deg,#fafbff,#f8fafc); }
+        .aq-section-title { font-size: 15px; font-weight: 800; color: #1e293b; margin: 0 0 2px; }
+        .aq-section-sub   { font-size: 12px; color: #94a3b8; margin: 0; font-weight: 500; }
+
+        .aq-section-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .aq-section-icon.blue   { background: #eef2ff; color: #5156be; }
+        .aq-section-icon.green  { background: #ecfdf5; color: #10b981; }
+        .aq-section-icon.amber  { background: #fffbeb; color: #f59e0b; }
+        .aq-section-icon.purple { background: #f5f3ff; color: #7c3aed; }
+        .aq-section-icon.red    { background: #fef2f2; color: #dc2626; }
+
+        /* ── Sidebar cards ── */
+        .aq-sidebar-card  { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 20px -4px rgba(0,0,0,0.06); }
+        .aq-card-deploy   { border-left: 4px solid #f59e0b; }
+        .aq-card-security { border-left: 4px solid #7c3aed; }
+        .aq-card-danger   { border-left: 4px solid #dc2626; }
+        .aq-sidebar-head  { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+        .aq-sidebar-title { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0; }
+
+        /* ── Deployment toggle ── */
+        .aq-deploy-toggle { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 12px; border: 2px dashed #e2e8f0; cursor: pointer; transition: .3s; }
+        .aq-deploy-toggle.live { border-style: solid; border-color: #10b981; background: #f0fdf4; }
+        .aq-deploy-icon { width: 44px; height: 44px; border-radius: 12px; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; transition: .3s; flex-shrink: 0; }
+        .aq-deploy-toggle.live .aq-deploy-icon { background: #10b981; color: #fff; }
+        .aq-deploy-status { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0 0 2px; }
+        .aq-deploy-hint   { font-size: 11px; color: #94a3b8; margin: 0; font-weight: 500; }
+
+        /* ── Toggle rows ── */
+        .aq-toggle { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; transition: .2s; margin-bottom: 6px; }
+        .aq-toggle:hover { background: #f8fafc; }
+        .aq-toggle.on { background: rgba(124,58,237,0.04); }
+        .aq-toggle-icon { width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; transition: .2s; flex-shrink: 0; }
+        .aq-toggle.on .aq-toggle-icon { background: #7c3aed; color: #fff; }
+        .aq-toggle-info  { flex: 1; }
+        .aq-toggle-label { display: block; font-size: 13px; font-weight: 700; color: #334155; }
+        .aq-toggle-desc  { display: block; font-size: 10px; color: #94a3b8; }
+        .aq-switch { width: 34px; height: 18px; border-radius: 20px; background: #e2e8f0; position: relative; transition: .3s; flex-shrink: 0; }
+        .aq-toggle.on .aq-switch { background: #7c3aed; }
+        .aq-thumb { width: 13px; height: 13px; border-radius: 50%; background: #fff; position: absolute; top: 2.5px; left: 2.5px; transition: .3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .aq-toggle.on .aq-thumb { left: 18px; }
+
+        /* ── Form elements ── */
+        .aq-field { display: flex; flex-direction: column; gap: 7px; }
+        .aq-label { font-size: 10.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .06em; }
+        .aq-iw  { position: relative; display: flex; align-items: center; }
+        .aq-ii  { position: absolute; left: 13px; color: #94a3b8; pointer-events: none; z-index: 1; transition: .2s; }
+        .aq-input { width: 100%; padding: 11px 14px 11px 40px; font-size: 14px; font-weight: 500; color: #1e293b; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; transition: all .2s; outline: none; font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        .aq-input:hover { border-color: #c7d2fe; background: #f5f7ff; }
+        .aq-input:focus { border-color: #5156be; background: #fff; box-shadow: 0 0 0 4px rgba(81,86,190,.1); }
+        .aq-iw:focus-within .aq-ii { color: #5156be; }
+        .aq-textarea { padding: 12px 14px; resize: none; line-height: 1.6; }
+        .aq-input-sm  { padding: 9px 10px; font-size: 13px; border-radius: 8px; }
+        .aq-eye { position: absolute; right: 12px; background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; align-items: center; }
+        .aq-eye:hover { color: #5156be; }
+
+        /* ── Quiz type buttons ── */
+        .aq-type-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .aq-type-btn { flex: 1; min-width: 90px; padding: 11px 8px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; transition: .25s; }
+        .aq-type-btn.active { background: #1e293b; border-color: #1e293b; color: #fff; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+        .aq-type-btn:hover:not(.active) { background: #f5f7ff; border-color: #c7d2fe; color: #5156be; }
+
+        /* ── Notice ── */
+        .aq-notice { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 9px; color: #1d4ed8; font-size: 12px; font-weight: 600; margin-top: 8px; }
+
+        /* ── Grids ── */
+        .aq-grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; padding: 24px; }
+        .aq-grid-3   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+        .text-center { text-align: center; }
+
+        /* ── Action buttons ── */
+        .aq-btn-primary { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg,#5156be,#7c3aed); color: #fff; border: none; padding: 12px 28px; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .3s; box-shadow: 0 6px 20px -4px rgba(81,86,190,.5); font-family: 'Inter',sans-serif; }
+        .aq-btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px -4px rgba(81,86,190,.55); }
+        .aq-btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+        .aq-btn-ghost  { display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid #e2e8f0; color: #64748b; padding: 12px 24px; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .2s; font-family: 'Inter',sans-serif; }
+        .aq-btn-ghost:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+        .aq-spin { animation: spin 1s linear infinite; }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+          .qe-layout { grid-template-columns: 1fr; }
+          .qe-sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+          .aq-card-danger { grid-column: span 2; }
         }
-        .minia-card-standout:hover { box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1); }
-        .minia-card-header-distinct {
-           padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; position: relative;
+        @media (max-width: 768px) {
+          .reg-top-bar { flex-direction: column; align-items: flex-start; padding: 0 16px; }
+          .t-title { font-size: 26px; }
+          .btn-add { width: 100%; justify-content: center; }
+          .reg-grid-modern { grid-template-columns: 1fr; padding: 0 16px; gap: 16px; }
+          .qe-body { padding: 16px; }
+          .qe-header { padding: 16px 20px; }
+          .qe-footer { padding: 14px 20px; }
+          .aq-grid-2-1 { grid-template-columns: 1fr; padding: 16px; }
+          .aq-grid-3   { grid-template-columns: 1fr 1fr; }
+          .qe-sidebar  { grid-template-columns: 1fr; }
+          .aq-card-danger { grid-column: span 1; }
+          .aq-btn-primary, .aq-btn-ghost { padding: 12px 18px; }
         }
-        .standout-identity { border-left: 5px solid #5156be; }
-        .standout-identity .minia-card-header-distinct { background: rgba(81, 86, 190, 0.02); }
-        .standout-parameters { border-left: 5px solid #2ab57d; }
-        .standout-parameters .minia-card-header-distinct { background: rgba(42, 181, 125, 0.02); }
-        .standout-security { border-left: 5px solid #6f42c1; }
-        .standout-security .minia-card-header-distinct { background: rgba(111, 66, 193, 0.02); }
-        .standout-deployment { border-left: 5px solid #ffbf53; }
-        .standout-deployment .minia-card-header-distinct { background: rgba(255, 191, 83, 0.02); }
-        .standout-danger { border-left: 5px solid #fd625e; }
-        .standout-danger .minia-card-header-distinct { background: rgba(253, 98, 94, 0.02); }
-        .icon-badge-distinct { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
-        .bg-soft-primary { background: #eef2ff; color: #5156be; }
-        .bg-soft-info { background: #ecfdf5; color: #2ab57d; }
-        .bg-soft-warning { background: #fffbeb; color: #ffbf53; }
-        .bg-soft-danger { background: #fef2f2; color: #fd625e; }
-        .bg-soft-indigo { background: #f5f3ff; color: #6f42c1; }
-        .minia-form-label { display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em; }
-        .minia-input-group { position: relative; display: flex; align-items: center; }
-        .minia-input-icon { position: absolute; left: 14px; color: #94a3b8; pointer-events: none; }
-        .minia-field {
-          width: 100%; padding: 0.6rem 1rem 0.6rem 2.8rem; font-size: 14px;
-          font-weight: 500; color: #334155; background-color: #fff;
-          border: 1px solid #cbd5e1; border-radius: 8px;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        @media (max-width: 480px) {
+          .qe-modal { border-radius: 14px; max-height: 96vh; }
+          .qe-header-title { font-size: 14px; }
+          .aq-grid-3 { grid-template-columns: 1fr; }
+          .aq-type-btn { min-width: 70px; font-size: 12px; }
+          .qe-footer { flex-direction: column-reverse; }
+          .aq-btn-primary, .aq-btn-ghost { width: 100%; justify-content: center; }
         }
-        textarea.minia-field { padding-left: 1rem; }
-        .minia-field:focus { border-color: #5156be; outline: 0; box-shadow: 0 0 0 4px rgba(81, 86, 190, 0.1); }
-        .minia-tax-btn {
-          flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;
-          background: #fff; display: flex; align-items: center; justify-content: center;
-          gap: 10px; font-size: 13px; font-weight: 700; color: #64748b; transition: 0.3s; cursor: pointer;
-        }
-        .minia-tax-btn.active { background: #1e293b; border-color: #1e293b; color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .minia-eye-btn { position: absolute; right: 12px; background: none; border: none; color: #94a3b8; cursor: pointer; }
-        .minia-switch-item {
-          padding: 12px; border-radius: 10px; display: flex; align-items: center; gap: 12px;
-          cursor: pointer; transition: 0.2s; margin-bottom: 8px; border: 1px solid transparent;
-        }
-        .minia-switch-item.active { background: rgba(111, 66, 193, 0.05); }
-        .switch-icon { width: 36px; height: 36px; border-radius: 8px; background: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .minia-switch-item.active .switch-icon { background: #6f42c1; color: #fff; }
-        .switch-info { flex: 1; }
-        .switch-label { display: block; font-size: 13px; font-weight: 700; color: #334155; }
-        .switch-description { display: block; font-size: 10px; color: #94a3b8; font-weight: 500; }
-        .minia-toggle { width: 36px; height: 18px; border-radius: 20px; background: #e2e8f0; position: relative; transition: 0.3s; }
-        .minia-switch-item.active .minia-toggle { background: #6f42c1; }
-        .toggle-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; position: absolute; top: 2px; left: 2px; transition: 0.3s; }
-        .minia-switch-item.active .toggle-thumb { left: 20px; }
-        .minia-deployment-card-distinct { padding: 1.75rem; border: 2px dashed #e2e8f0; border-radius: 12px; cursor: pointer; transition: 0.3s; }
-        .minia-deployment-card-distinct.active { border-color: #2ab57d; background: #ecfdf5; border-style: solid; box-shadow: 0 10px 20px -5px rgba(42, 181, 125, 0.1); }
-        .status-badge-distinct { width: 44px; height: 44px; border-radius: 12px; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
-        .minia-deployment-card-distinct.active .status-badge-distinct { background: #2ab57d; color: #fff; }
-        .minia-theory-notice { padding: 12px 16px; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 10px; display: flex; align-items: center; gap: 10px; color: #1d4ed8; font-size: 12px; font-weight: 600; }
-        `}</style>
+      `}</style>
     </div>
   );
 }
