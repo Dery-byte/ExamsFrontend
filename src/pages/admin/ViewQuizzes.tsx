@@ -104,7 +104,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                 <div className="aq-section-head">
                   <div className="aq-section-icon blue"><BookOpen size={18} /></div>
                   <div>
-                    <h6 className="aq-section-title">Assessment Identity</h6>
+                    <h6 className="aq-section-title">Quiz Information</h6>
                     <p className="aq-section-sub">Basic information about this quiz</p>
                   </div>
                 </div>
@@ -146,7 +146,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                 <div className="aq-section-head">
                   <div className="aq-section-icon green"><Activity size={18} /></div>
                   <div>
-                    <h6 className="aq-section-title">Assessment Parameters</h6>
+                    <h6 className="aq-section-title">Quiz Parameters</h6>
                     <p className="aq-section-sub">Quiz type, scoring, schedule and access</p>
                   </div>
                 </div>

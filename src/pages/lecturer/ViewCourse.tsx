@@ -41,7 +41,13 @@ export default function ViewCourse() {
   const doUpdate = async () => {
     if (!categoryEdit.title || !categoryEdit.courseCode) { toast.error('Title and Code are required'); return; }
     setSaving(true);
-    try { await updateCategory(categoryEdit); toast.success('Course updated!'); qc.invalidateQueries({queryKey:['lectCats']}); setEditModal(false); }
+    try {
+      const payload = { ...categoryEdit, id: categoryEdit.cid };
+      await updateCategory(payload); 
+      toast.success('Course updated!'); 
+      qc.invalidateQueries({queryKey:['lectCats']}); 
+      setEditModal(false); 
+    }
     catch { toast.error('Failed to synchronize changes'); }
     setSaving(false);
   };
@@ -60,7 +66,7 @@ export default function ViewCourse() {
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'12px', marginBottom:'28px' }}>
         <div>
-          <h4 style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#2a3142' }}>Academic Portfolio</h4>
+          <h4 style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#2a3142' }}>My Courses</h4>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', color:'#74788d', fontSize:'13px', marginTop:'3px' }}>
             <span>Lecturer</span><ChevronRight size={12}/><span style={{ color:'#5156be', fontWeight:600 }}>Courses</span>
           </div>
@@ -128,9 +134,9 @@ export default function ViewCourse() {
 
                 {/* Footer */}
                 <div style={{ padding:'12px 18px', borderTop:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end' }}>
-                  <button onClick={()=>navigate(`/lecturer/view-course/${c.cid}`)} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 16px', borderRadius:'20px', border:'1.5px solid rgba(81,86,190,0.2)', background:'rgba(81,86,190,0.06)', color:'#5156be', fontSize:'12px', fontWeight:700, cursor:'pointer', transition:'0.2s' }}>
+                  {/* <button onClick={()=>navigate(`/lecturer/view-course/${c.cid}`)} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 16px', borderRadius:'20px', border:'1.5px solid rgba(81,86,190,0.2)', background:'rgba(81,86,190,0.06)', color:'#5156be', fontSize:'12px', fontWeight:700, cursor:'pointer', transition:'0.2s' }}>
                     Manage <ChevronRight size={13}/>
-                  </button>
+                  </button> */}
                 </div>
               </div>
             );
@@ -148,7 +154,7 @@ export default function ViewCourse() {
               <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
                 <div style={{ width:36, height:36, borderRadius:'10px', background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}><BookOpen size={18}/></div>
                 <div>
-                  <h5 style={{ margin:0, fontWeight:800, fontSize:'15px', color:'#fff' }}>Update Registry</h5>
+                  <h5 style={{ margin:0, fontWeight:800, fontSize:'15px', color:'#fff' }}>Update Course</h5>
                   <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.75)' }}>{categoryEdit.courseCode || 'Course Details'}</span>
                 </div>
               </div>

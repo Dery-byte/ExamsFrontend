@@ -57,7 +57,7 @@ const [chartData, setChartData] = useState(null); // or whatever type fits
     { label: 'Total Courses', val: (cateGory as any[]).length, badge: '+12%', badgeColor: 'bg-soft-success text-success', spark: <SparklineUp /> },
     { label: 'Active Quizzes', val: (myQuizzes as any[]).length, badge: '+8%', badgeColor: 'bg-soft-success text-success', spark: <SparklineUp /> },
     { label: 'Average Score', val: avgScore.toFixed(1) + '%', badge: '-2.5%', badgeColor: 'bg-soft-danger text-danger', spark: <SparklineDown /> },
-    { label: 'Total Assessments', val: reports.length, badge: '+15%', badgeColor: 'bg-soft-success text-success', spark: <SparklineUp /> },
+    { label: 'Total Quizzes', val: reports.length, badge: '+15%', badgeColor: 'bg-soft-success text-success', spark: <SparklineUp /> },
   ];
 
   return (
@@ -94,7 +94,7 @@ const [chartData, setChartData] = useState(null); // or whatever type fits
       <div className="dashboard-row-2">
         <div className="minia-card">
           <div className="card-header border-none">
-            <h5 className="card-title">Assessment Overview</h5>
+            <h5 className="card-title">Quiz Overview</h5>
             <div className="dropdown-action">
               <span>Filter</span> <ChevronDown size={14} />
             </div>
@@ -117,7 +117,7 @@ const [chartData, setChartData] = useState(null); // or whatever type fits
 
               <div className="o-stats">
                 <div>
-                  <p className="os-label">ASSESSMENT</p>
+                  <p className="os-label">Quiz</p>
                   <select className="o-select sm" value={selQuizId ?? ''} onChange={e => onQuizSelected(e.target.value ? Number(e.target.value) : null)} disabled={!selCatId}>
                     <option value="">Select Quiz</option>
                     {quizOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -125,7 +125,7 @@ const [chartData, setChartData] = useState(null); // or whatever type fits
                 </div>
               </div>
 
-              <button className="btn-view-more">View more <ArrowRight size={14} /></button>
+              {/* <button className="btn-view-more">View more <ArrowRight size={14} /></button> */}
             </div>
           </div>
         </div>

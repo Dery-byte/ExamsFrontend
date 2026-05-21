@@ -51,7 +51,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
           <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
             <div style={{ width:36, height:36, borderRadius:'10px', background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}><Settings size={18}/></div>
             <div>
-              <h5 style={{ margin:0, fontWeight:800, fontSize:'15px', color:'#fff' }}>Configure Assessment</h5>
+              <h5 style={{ margin:0, fontWeight:800, fontSize:'15px', color:'#fff' }}>Configure Quiz</h5>
               <span style={{ fontSize:'11px', color:'rgba(255,255,255,0.7)' }}>Update quiz settings and schedule</span>
             </div>
           </div>
@@ -162,7 +162,7 @@ export default function LectViewQuizzes() {
 
       <div className="lvq-header">
         <div>
-          <h4 className="lvq-title">Assessment Portfolio</h4>
+          <h4 className="lvq-title">My Quizzes</h4>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', color:'#74788d', fontSize:'13px', marginTop:'2px' }}>
             <span>Home</span><ChevronRight size={12}/><span>Quizzes</span>
           </div>
@@ -214,7 +214,7 @@ export default function LectViewQuizzes() {
               {/* Body */}
               <div style={{ padding:'16px 18px', flex:1 }}>
                 <p style={{ fontSize:'13px', color:'#74788d', lineHeight:1.6, margin:'0 0 14px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
-                  {q.description || 'Standard academic assessment for student proficiency evaluation.'}
+                  {q.description || 'Standard academic quiz for student evaluation.'}
                 </p>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', border:'1px solid #eff0f2', borderRadius:'10px', overflow:'hidden' }}>
                   {[['Items', q.numberOfQuestions||'—'], ['Marks', q.maxMarks||'—'], ['Time', q.quizTime ? `${q.quizTime}m` : '—']].map(([k,v])=>(

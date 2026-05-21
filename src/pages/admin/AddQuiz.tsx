@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getCategories, addQuiz } from '../../api/endpoints';
+import { getCategories, addQuiz, addLecturerQuiz } from '../../api/endpoints';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock, Layers,
@@ -42,7 +42,11 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     if (!quiz.category.cid) { toast.error('Please select a category'); return; }
     setLoading(true);
     try {
-      await addQuiz(quiz);
+      if (lectMode) {
+        await addLecturerQuiz(quiz);
+      } else {
+        await addQuiz(quiz);
+      }
       toast.success('Assessment created successfully!');
       setTimeout(() => navigate(backPath), 1200);
     } catch { toast.error('Failed to create assessment'); }

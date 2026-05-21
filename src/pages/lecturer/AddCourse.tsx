@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addCategoryForUser } from '../../api/endpoints';
+import { addLecturerCategory } from '../../api/endpoints';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   BookOpen, Save, ChevronRight, Loader2, Tag, Hash, AlignLeft,
@@ -21,7 +21,7 @@ export default function AddCourse() {
     e.preventDefault();
     setLoading(true);
     try {
-      await addCategoryForUser(category);
+      await addLecturerCategory(category);
       toast.success('Course added successfully!');
       setTimeout(() => navigate('/lect/courses'), 1000);
     } catch { toast.error('Failed to add course registry'); }

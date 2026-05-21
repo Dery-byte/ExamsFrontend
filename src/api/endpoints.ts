@@ -48,6 +48,7 @@ export const getCategories = () => client.get('/getCategories').then(r => r.data
 export const getCategoriesForUser = () => client.get('/categoriesForUser').then(r => r.data);
 export const getCategory = (id: number) => client.get(`/category/${id}`).then(r => r.data);
 export const addCategory = (data: object) => client.post('/add', data).then(r => r.data);
+export const addLecturerCategory = (data: object) => client.post('/lecturer/addCategory', data).then(r => r.data);
 export const addCategoryForUser = (data: object) => client.post('/user/addCategory', data).then(r => r.data);
 export const adminUpdateCategory = (id: number, data: object) =>
   client.put(`/category/admin/updateCategory/${id}`, data).then(r => r.data);
@@ -67,6 +68,7 @@ export const loadQuizzes = () => client.get('/getQuizzes').then(r => r.data);
 export const loadQuizzesForUser = () => client.get('/user/getQuiz').then(r => r.data);
 export const getQuiz = (id: number | string) => client.get(`/singleQuiz/${id}`).then(r => r.data);
 export const addQuiz = (data: object) => client.post('/addQuiz', data).then(r => r.data);
+export const addLecturerQuiz = (data: object) => client.post('/lecturer/addQuiz', data).then(r => r.data);
 export const addUserQuiz = (data: object) => client.post('/user/addQuiz', data).then(r => r.data);
 export const updateQuiz = (data: object) => client.put('/update', data).then(r => r.data);
 export const deleteQuiz = (id: number) => client.delete(`/delete/quiz/${id}`).then(r => r.data);

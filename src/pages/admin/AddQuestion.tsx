@@ -81,7 +81,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
 
   // ── Theory state ─────────────────────────────────────────────────────────────
   const [theoryForm, setTheoryForm] = useState({
-    quiz: { qId }, quesNo: '', question: '', marks: 0, evaluationCriteria: ''
+    quiz: { qId }, quesNo: '', question: '', marks: '', evaluationCriteria: ''
   });
 
   // ── Bulk / file state ────────────────────────────────────────────────────────
@@ -199,14 +199,20 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
 
   const handleAddTheory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!theoryForm.quesNo.trim() || !theoryForm.question.trim() || theoryForm.marks <= 0) {
+    if (!theoryForm.quesNo.trim() || !theoryForm.question.trim() || !theoryForm.marks || Number(theoryForm.marks) <= 0) {
       toast.error('Question number, content and marks are required'); return;
     }
     setLoading(true);
     try {
-      await addTheoryQuestion(theoryForm);
+      // Backend entity stores marks as String, evaluationCriteria is nullable
+      const payload = {
+        ...theoryForm,
+        marks: String(theoryForm.marks),
+        evaluationCriteria: theoryForm.evaluationCriteria?.trim() || null,
+      };
+      await addTheoryQuestion(payload);
       toast.success('Theory question added!');
-      setTheoryForm(t => ({ ...t, quesNo: '', question: '', marks: 0, evaluationCriteria: '' }));
+      setTheoryForm(t => ({ ...t, quesNo: '', question: '', marks: '', evaluationCriteria: '' }));
     } catch { toast.error('Failed to add question'); }
     finally { setLoading(false); }
   };
