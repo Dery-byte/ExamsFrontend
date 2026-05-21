@@ -145,35 +145,39 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 {quiz.quizType === 'THEORY' && (
                   <div className="aq-notice">
                     <Info size={14} />
-                    <span>Theory mode: marking is done manually via the Assessment Panel.</span>
+                    <span>Theory mode: marking is done By AI and subsequently reviewed by Lecturer before release of results</span>
+                    <span>When Adding question set the no. of questions to answer and duration.</span>
+
                   </div>
                 )}
               </div>
 
-              {/* Metrics */}
-              <div className="aq-grid-3 mb-4">
-                <div className="aq-field">
-                  <label className="aq-label">Max Marks</label>
-                  <div className="aq-iw">
-                    <span className="aq-ii"><Award size={15} /></span>
-                    <input className="aq-input text-center" type="number" required value={quiz.maxMarks} onChange={e => set('maxMarks', e.target.value)} placeholder="100" />
+              {/* Metrics — hidden for Theory-only quizzes */}
+              {quiz.quizType !== 'THEORY' && (
+                <div className="aq-grid-3 mb-4">
+                  <div className="aq-field">
+                    <label className="aq-label">Max Marks</label>
+                    <div className="aq-iw">
+                      <span className="aq-ii"><Award size={15} /></span>
+                      <input className="aq-input text-center" type="number" required value={quiz.maxMarks} onChange={e => set('maxMarks', e.target.value)} placeholder="100" />
+                    </div>
+                  </div>
+                  <div className="aq-field">
+                    <label className="aq-label">No. of Questions</label>
+                    <div className="aq-iw">
+                      <span className="aq-ii"><Hash size={15} /></span>
+                      <input className="aq-input text-center" type="number" required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder="40" />
+                    </div>
+                  </div>
+                  <div className="aq-field">
+                    <label className="aq-label">Duration (mins)</label>
+                    <div className="aq-iw">
+                      <span className="aq-ii"><Timer size={15} /></span>
+                      <input className="aq-input text-center" type="number" required value={quiz.quizTime} onChange={e => set('quizTime', e.target.value)} placeholder="60" />
+                    </div>
                   </div>
                 </div>
-                <div className="aq-field">
-                  <label className="aq-label">No. of Questions</label>
-                  <div className="aq-iw">
-                    <span className="aq-ii"><Hash size={15} /></span>
-                    <input className="aq-input text-center" type="number" required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder="40" />
-                  </div>
-                </div>
-                <div className="aq-field">
-                  <label className="aq-label">Duration (mins)</label>
-                  <div className="aq-iw">
-                    <span className="aq-ii"><Timer size={15} /></span>
-                    <input className="aq-input text-center" type="number" required value={quiz.quizTime} onChange={e => set('quizTime', e.target.value)} placeholder="60" />
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Schedule + Passkey */}
               <div className="aq-grid-3">
