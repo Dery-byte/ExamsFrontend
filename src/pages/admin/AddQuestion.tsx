@@ -562,7 +562,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                     <label className="addq-label"><Award size={13} />Marks</label>
                     <input className="addq-input addq-input-center" type="number" min="1"
                       value={theoryForm.marks || ''}
-                      onChange={e => setTheoryForm(t => ({ ...t, marks: Number(e.target.value) }))}
+                      onChange={e => setTheoryForm(t => ({ ...t, marks: e.target.value }))}
                       placeholder="5" />
                   </div>
                 </div>
