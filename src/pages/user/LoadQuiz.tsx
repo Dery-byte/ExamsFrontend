@@ -225,10 +225,11 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
           Analytics
         </button>
         <button 
-          onClick={closed && !isDownloading ? onDownload : undefined} 
-          disabled={!closed || isDownloading}
-          className={`btn-lexa ${closed ? 'btn-lexa-primary' : ''}`}
-          style={{ flex: 1, padding: '10px', fontSize: 13, opacity: closed ? 1 : 0.5, justifyContent: 'center', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
+          onClick={closed && report?.isReviewed && !isDownloading ? onDownload : undefined} 
+          disabled={!closed || !report?.isReviewed || isDownloading}
+          className={`btn-lexa ${closed && report?.isReviewed ? 'btn-lexa-primary' : ''}`}
+          style={{ flex: 1, padding: '10px', fontSize: 13, opacity: (closed && report?.isReviewed) ? 1 : 0.5, justifyContent: 'center', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
+          title={!report?.isReviewed ? 'Result Slip available after lecturer review' : ''}
         >
           {isDownloading
             ? <><Loader2 size={15} className="spin-ico" /> Generating...</>
