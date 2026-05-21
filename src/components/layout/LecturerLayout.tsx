@@ -84,18 +84,18 @@ export default function LecturerLayout() {
           </div>
           <div className="header-right">
             {/* <div className="header-icon flag-icon">🇺🇸</div> */}
-            {/* <button className="header-icon"><Moon size={20} /></button>
-            <button className="header-icon"><Grid size={20} /></button>
+            {/* <button className="header-icon"><Moon size={20} /></button> */}
+            <button className="header-icon"><Grid size={0} /></button>
             <button className="header-icon notification">
-              <Bell size={20} />
-              <span className="badge">5</span>
-            </button> */}
+              {/* <Bell size={20} /> */}
+              {/* <span className="badge">5</span> */}
+            </button>
             {/* <button className="header-icon"><Settings size={20} /></button> */}
             <div className="user-profile">
               <div className="avatar">
-                {(user?.firstname?.[0] ?? 'S').toUpperCase()}
+                {(user?.username?.[0] ?? user?.firstname?.[0] ?? 'L').toUpperCase()}
               </div>
-              <span className="name">{user?.firstname || 'Shawn'} {user?.lastname?.charAt(0) || 'L'}.</span>
+              <span className="name">{user?.username || user?.firstname || 'Lecturer'}</span>
             </div>
             <button className="header-icon" onClick={logout} title="Logout" style={{ marginLeft: 8 }}>
               <LogOut size={18} />
