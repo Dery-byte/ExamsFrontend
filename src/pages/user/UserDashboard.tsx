@@ -106,10 +106,12 @@ export default function UserDashboard() {
     loadData();
   }, [user]);
 
-  const chartData = reports.map(r => ({
-    name: r.quiz?.title?.substring(0, 8) || 'Quiz',
-    score: parseFloat(r.marks || 0) + parseFloat(r.marksB || 0)
-  })).reverse();
+  const chartData = reports
+    .filter(r => r.isReviewed)
+    .map(r => ({
+      name: r.quiz?.title?.substring(0, 8) || 'Quiz',
+      score: parseFloat(r.marks || 0) + parseFloat(r.marksB || 0)
+    })).reverse();
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 10 }}>
@@ -278,12 +280,16 @@ export default function UserDashboard() {
                         <span className="lexa-badge badge-soft-primary" style={{ fontWeight: 800 }}>{r.quiz?.category?.courseCode || 'GEN'}</span>
                       </td>
                       <td style={{ padding: '10px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ flex: 1, height: 6, background: '#f1f5f7', borderRadius: 3, maxWidth: 100, overflow: 'hidden' }}>
-                            <div style={{ width: `${percent}%`, height: '100%', background: percent > 50 ? 'var(--success)' : 'var(--danger)', borderRadius: 3 }}></div>
+                        {r.isReviewed ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ flex: 1, height: 6, background: '#f1f5f7', borderRadius: 3, maxWidth: 100, overflow: 'hidden' }}>
+                              <div style={{ width: `${percent}%`, height: '100%', background: percent > 50 ? 'var(--success)' : 'var(--danger)', borderRadius: 3 }}></div>
+                            </div>
+                            <span style={{ fontWeight: 800, color: '#495057', fontSize: 13 }}>{score} / {max}</span>
                           </div>
-                          <span style={{ fontWeight: 800, color: '#495057', fontSize: 13 }}>{score} / {max}</span>
-                        </div>
+                        ) : (
+                          <span style={{ fontSize: 12, color: '#b45309', fontWeight: 600 }}>⏳ Pending Review</span>
+                        )}
                       </td>
                       <td style={{ padding: '10px 16px' }}>
                         {r.isReviewed ? (
