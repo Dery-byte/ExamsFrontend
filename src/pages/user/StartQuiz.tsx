@@ -526,7 +526,7 @@ export default function StartQuiz() {
         </div>
 
         <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
-          <div style={{
+          <div className="mobile-hide-timer" style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '5px 15px',
             background: isLight ? '#f8f9fa' : '#2d333b', borderRadius: 4, border: `1px solid ${theme.border}`
           }}>
@@ -853,6 +853,19 @@ export default function StartQuiz() {
         </aside>
       </div>
 
+      {/* ── MOBILE FLOATING TIMER ── */}
+      <div className="mobile-float-timer" style={{
+        alignItems: 'center', gap: 8,
+        padding: '7px 16px',
+        background: theme.card,
+        borderRadius: 30,
+        border: `1px solid ${theme.border}`,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+      }}>
+        <Clock size={14} style={{ color: timerColor }} />
+        <span style={{ fontSize: 15, fontWeight: 700, color: timerColor, fontFamily: 'monospace' }}>{fmtTimer(timer)}</span>
+      </div>
+
       <style>{`
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -883,7 +896,7 @@ export default function StartQuiz() {
           .quiz-shell {
             height: auto;
             min-height: 100vh;
-            overflow: auto;
+            overflow: visible !important;
           }
           .quiz-three-col {
             display: flex !important;
@@ -898,11 +911,25 @@ export default function StartQuiz() {
             top: 0;
             z-index: 100 !important;
           }
+
+          /* Hide the in-header timer on mobile — replaced by floating pill */
+          .mobile-hide-timer { display: none !important; }
+
+          /* Floating timer pill — always visible, fixed to viewport */
+          .mobile-float-timer {
+            display: flex !important;
+            position: fixed;
+            top: 12px;
+            right: 15px;
+            z-index: 200;
+          }
+
+          /* Progress card sticks just below the sticky header */
           .mobile-sticky-progress {
             order: -2;
             position: sticky;
-            top: 53px;
-            z-index: 50;
+            top: 54px;
+            z-index: 90;
           }
           .mobile-navigator {
             display: none !important;
