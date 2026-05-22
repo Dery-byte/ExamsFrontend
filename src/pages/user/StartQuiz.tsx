@@ -248,7 +248,7 @@ export default function StartQuiz() {
         const initSel: Record<string, boolean> = {};
         comp.forEach(p => { initSel[p] = true; });
         
-        if (qt === 'THEORY' && Object.keys(initSel).length === 0 && pfxs.length > 0) {
+        if (Object.keys(initSel).length === 0 && pfxs.length > 0) {
           initSel[pfxs[0]] = true;
         }
 
@@ -742,9 +742,9 @@ export default function StartQuiz() {
           )}
 
           {section === 'B' && prefixes.length > 0 && (
-            <div className="lexa-card" style={{ background: theme.card, marginBottom: 20 }}>
+            <div className="lexa-card theory-groups-main" style={{ background: theme.card, marginBottom: 20 }}>
               <div className="lexa-card-header" style={{ borderBottomColor: theme.border }}>
-                <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Theory Protocol Groups</h6>
+                <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Theory Questions</h6>
               </div>
               <div className="lexa-card-body">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -849,11 +849,34 @@ export default function StartQuiz() {
             </div>
           )}
 
+          {section === 'B' && prefixes.length > 0 && (
+            <div className="lexa-card aside-theory-groups" style={{ background: theme.card }}>
+              <div className="lexa-card-header" style={{ borderBottomColor: theme.border }}>
+                <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Theory Groups</h6>
+              </div>
+              <div className="lexa-card-body" style={{ overflowX: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {prefixes.map(p => (
+                    <button
+                      key={p}
+                      onClick={() => togglePrefix(p)}
+                      className={`btn-lexa ${selectedPfx[p] ? 'btn-lexa-primary' : 'btn-lexa-outline'}`}
+                      style={{ justifyContent: 'center', padding: '8px 4px', fontSize: 11 }}
+                    >
+                      {compulsoryPfx.includes(p) && <Shield size={12} style={{ marginRight: 4 }} />} {p}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginTop: 8, fontSize: 11, color: theme.muted, fontWeight: 600, textAlign: 'center' }}>
+                  Select {nqta} group{nqta !== 1 ? 's' : ''}
+                </div>
+              </div>
+            </div>
+          )}
 
         </aside>
       </div>
 
-      {/* ── MOBILE FLOATING TIMER ── */}
       <div className="mobile-float-timer" style={{
         alignItems: 'center', gap: 8,
         padding: '7px 16px',
@@ -944,6 +967,12 @@ export default function StartQuiz() {
             margin-top: 0 !important;
             flex: 1;
           }
+          /* Theory groups in aside — hidden on mobile (shown in main instead) */
+          .aside-theory-groups { display: none !important; }
+        }
+        /* Theory groups in main — hidden on desktop (shown in aside instead) */
+        @media (min-width: 901px) {
+          .theory-groups-main { display: none !important; }
         }
         @media (max-width: 576px) {
           .quiz-three-col { padding: 10px; gap: 12px; }
