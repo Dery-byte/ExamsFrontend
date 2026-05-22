@@ -741,6 +741,31 @@ export default function StartQuiz() {
             </div>
           )}
 
+          {section === 'B' && prefixes.length > 0 && (
+            <div className="lexa-card" style={{ background: theme.card, marginBottom: 20 }}>
+              <div className="lexa-card-header" style={{ borderBottomColor: theme.border }}>
+                <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Theory Protocol Groups</h6>
+              </div>
+              <div className="lexa-card-body">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {prefixes.map(p => (
+                    <button
+                      key={p}
+                      onClick={() => togglePrefix(p)}
+                      className={`btn-lexa ${selectedPfx[p] ? 'btn-lexa-primary' : 'btn-lexa-outline'}`}
+                      style={{ justifyContent: 'center', padding: '8px 4px', fontSize: 11 }}
+                    >
+                      {compulsoryPfx.includes(p) && <Shield size={12} style={{ marginRight: 4 }} />} {p}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginTop: 5, fontSize: 11, color: theme.muted, fontWeight: 600, textAlign: 'center' }}>
+                  Select {nqta} groups
+                </div>
+              </div>
+            </div>
+          )}
+
           <div style={{ marginTop: 40, textAlign: 'center' }}>
             <button onClick={() => submitAll()} disabled={isSubmitDisabled} className="btn-lexa btn-lexa-primary" style={{ padding: '12px 40px', fontSize: 15, opacity: isSubmitDisabled ? 0.6 : 1 }}>
               Submit Assessment
@@ -756,7 +781,7 @@ export default function StartQuiz() {
               <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Progress</h6>
             </div>
             <div className="lexa-card-body" style={{ overflowX: 'hidden' }}>
-              <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+              <div className="mobile-hide-spinner" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
                 <ProgressRing pct={timerPct} size={110} color={timerColor} />
                 <div style={{ position: 'absolute' }}>
                   <div style={{ fontSize: 20, fontWeight: 700, color: timerColor }}>{fmtTimer(timer)}</div>
@@ -822,30 +847,7 @@ export default function StartQuiz() {
             </div>
           )}
 
-          {section === 'B' && prefixes.length > 0 && (
-            <div className="lexa-card" style={{ background: theme.card }}>
-              <div className="lexa-card-header" style={{ borderBottomColor: theme.border }}>
-                <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Theory Protocol Groups</h6>
-              </div>
-              <div className="lexa-card-body">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {prefixes.map(p => (
-                    <button
-                      key={p}
-                      onClick={() => togglePrefix(p)}
-                      className={`btn-lexa ${selectedPfx[p] ? 'btn-lexa-primary' : 'btn-lexa-outline'}`}
-                      style={{ justifyContent: 'center', padding: '8px 4px', fontSize: 11 }}
-                    >
-                      {compulsoryPfx.includes(p) && <Shield size={12} style={{ marginRight: 4 }} />} {p}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ marginTop: 5, fontSize: 11, color: theme.muted, fontWeight: 600, textAlign: 'center' }}>
-                  Select {nqta} groups
-                </div>
-              </div>
-            </div>
-          )}
+
         </aside>
       </div>
 
@@ -888,6 +890,7 @@ export default function StartQuiz() {
           }
           .quiz-left-panel { display: none !important; }
           aside:last-of-type { order: -1; }
+          .mobile-hide-spinner { display: none !important; }
         }
         @media (max-width: 576px) {
           .quiz-three-col { padding: 10px; gap: 12px; }
