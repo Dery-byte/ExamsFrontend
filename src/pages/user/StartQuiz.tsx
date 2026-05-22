@@ -510,7 +510,7 @@ export default function StartQuiz() {
   return (
     <div className="quiz-shell" style={{ background: theme.bg, color: theme.text, transition: 'all 0.3s', fontFamily: "'Inter', sans-serif" }}>
       {/* ── HEADER ── */}
-      <header style={{
+      <header className="mobile-sticky-header" style={{
         position: 'relative', zIndex: 100, background: theme.card, padding: '10px 30px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         borderBottom: `1px solid ${theme.border}`, boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
@@ -776,7 +776,7 @@ export default function StartQuiz() {
 
         {/* ── RIGHT: STATUS ── */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 20, height: '100%', overflowY: 'auto', overflowX: 'hidden', paddingRight: 5 }}>
-          <div className="lexa-card" style={{ background: theme.card, textAlign: 'center' }}>
+          <div className="lexa-card mobile-sticky-progress" style={{ background: theme.card, textAlign: 'center' }}>
             <div className="lexa-card-header" style={{ borderBottomColor: theme.border }}>
               <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Progress</h6>
             </div>
@@ -792,32 +792,34 @@ export default function StartQuiz() {
                 <div style={{ height: '100%', width: `${timerPct}%`, background: timerColor, transition: 'width 1s linear' }} />
               </div>
 
-              <div style={{ marginTop: 24, textAlign: 'left' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
-                  <span style={{ color: theme.title }}>Objective</span>
-                  <span style={{ color: '#7a6fbe' }}>{Math.round((answered / (questions.length || 1)) * 100)}%</span>
-                </div>
-                <div style={{ height: 6, background: isLight ? '#f1f5f7' : '#2d333b', borderRadius: 100, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(answered / (questions.length || 1)) * 100}%`, background: '#7a6fbe' }} />
-                </div>
-              </div>
-
-              {(quizType === 'THEORY' || quizType === 'BOTH') && (
-                <div style={{ marginTop: 16, textAlign: 'left' }}>
+              <div className="mobile-inline-progress">
+                <div style={{ marginTop: 24, textAlign: 'left' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
-                    <span style={{ color: theme.title }}>Theory</span>
-                    <span style={{ color: '#28bbe3' }}>{selCount} / {nqta}</span>
+                    <span style={{ color: theme.title }}>Objective</span>
+                    <span style={{ color: '#7a6fbe' }}>{Math.round((answered / (questions.length || 1)) * 100)}%</span>
                   </div>
                   <div style={{ height: 6, background: isLight ? '#f1f5f7' : '#2d333b', borderRadius: 100, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(selCount / (nqta || 1)) * 100}%`, background: '#28bbe3' }} />
+                    <div style={{ height: '100%', width: `${(answered / (questions.length || 1)) * 100}%`, background: '#7a6fbe' }} />
                   </div>
                 </div>
-              )}
+
+                {(quizType === 'THEORY' || quizType === 'BOTH') && (
+                  <div style={{ marginTop: 16, textAlign: 'left' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
+                      <span style={{ color: theme.title }}>Theory</span>
+                      <span style={{ color: '#28bbe3' }}>{selCount} / {nqta}</span>
+                    </div>
+                    <div style={{ height: 6, background: isLight ? '#f1f5f7' : '#2d333b', borderRadius: 100, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${(selCount / (nqta || 1)) * 100}%`, background: '#28bbe3' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {section === 'A' && (
-            <div className="lexa-card" style={{ background: theme.card }}>
+            <div className="lexa-card mobile-navigator" style={{ background: theme.card }}>
               <div className="lexa-card-header" style={{ borderBottomColor: theme.border }}>
                 <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Navigator</h6>
               </div>
@@ -884,13 +886,37 @@ export default function StartQuiz() {
             overflow: auto;
           }
           .quiz-three-col {
-            grid-template-columns: 1fr !important;
+            display: flex !important;
+            flex-direction: column;
             gap: 16px;
             padding: 16px;
           }
           .quiz-left-panel { display: none !important; }
-          aside:last-of-type { order: -1; }
+          aside:last-of-type { display: contents !important; }
+          .mobile-sticky-header {
+            position: sticky !important;
+            top: 0;
+            z-index: 100 !important;
+          }
+          .mobile-sticky-progress {
+            order: -2;
+            position: sticky;
+            top: 53px;
+            z-index: 50;
+          }
+          .mobile-navigator {
+            display: none !important;
+          }
           .mobile-hide-spinner { display: none !important; }
+          .mobile-inline-progress {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+          }
+          .mobile-inline-progress > div {
+            margin-top: 0 !important;
+            flex: 1;
+          }
         }
         @media (max-width: 576px) {
           .quiz-three-col { padding: 10px; gap: 12px; }
