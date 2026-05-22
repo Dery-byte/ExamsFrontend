@@ -777,7 +777,7 @@ export default function StartQuiz() {
         {/* ── RIGHT: STATUS ── */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 20, height: '100%', overflowY: 'auto', overflowX: 'hidden', paddingRight: 5 }}>
           <div className="lexa-card mobile-sticky-progress" style={{ background: theme.card, textAlign: 'center' }}>
-            <div className="lexa-card-header" style={{ borderBottomColor: theme.border }}>
+            <div className="lexa-card-header mobile-hide-progress" style={{ borderBottomColor: theme.border }}>
               <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Progress</h6>
             </div>
             <div className="lexa-card-body" style={{ overflowX: 'hidden' }}>
@@ -788,7 +788,7 @@ export default function StartQuiz() {
                   <div style={{ fontSize: 8, fontWeight: 700, color: theme.muted, textTransform: 'uppercase' }}>Remaining</div>
                 </div>
               </div>
-              <div style={{ height: 4, background: isLight ? '#f1f5f7' : '#2d333b', borderRadius: 2, overflow: 'hidden' }}>
+              <div className="mobile-hide-progress-bar" style={{ height: 4, background: isLight ? '#f1f5f7' : '#2d333b', borderRadius: 2, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${timerPct}%`, background: timerColor, transition: 'width 1s linear' }} />
               </div>
 
@@ -957,7 +957,11 @@ export default function StartQuiz() {
           .mobile-navigator {
             display: none !important;
           }
-          .mobile-hide-spinner { display: none !important; }
+          .mobile-hide-spinner,
+          .mobile-hide-progress,
+          .mobile-hide-progress-bar {
+            display: none !important;
+          }
           .mobile-inline-progress {
             display: flex;
             gap: 15px;
