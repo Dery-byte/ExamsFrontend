@@ -251,7 +251,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
                 {/* Student Answer */}
                 <div style={{ padding: '16px 20px', background: '#fff' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Student Response</div>
-                  <div style={{ padding: '12px 16px', background: ans ? '#fafafa' : '#fff7ed', border: `1px solid ${ans ? '#e2e8f0' : '#fed7aa'}`, borderRadius: 8, minHeight: 80, fontSize: 14, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                  <div style={{ padding: '12px 16px', background: ans ? '#fafafa' : '#fff7ed', border: `1px solid ${ans ? '#e2e8f0' : '#fed7aa'}`, borderRadius: 8, minHeight: 80, fontSize: 14, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', overflowX: 'auto' }}>
                     {ans?.studentAnswer || <span style={{ color: '#f97316', fontStyle: 'italic', fontSize: 13 }}>No response submitted</span>}
                   </div>
                   {ans?.feedback && (
