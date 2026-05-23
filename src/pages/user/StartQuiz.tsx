@@ -449,18 +449,14 @@ export default function StartQuiz() {
       // Brief pause so student can see final log
       await new Promise(r => setTimeout(r, 1500));
 
+      // Bypass the beforeunload protection so we can leave smoothly
+      (window as any).__allow_unload = true;
+
       // If opened in a new window, notify the main window to show confirmation and close this popup
       if (window.opener && !window.opener.closed) {
         window.opener.postMessage('QUIZ_SUBMITTED', window.location.origin);
         window.close();
       } else {
-        await Swal.fire({
-          title: 'Submitted!',
-          text: 'Your assessment has been successfully submitted for grading.',
-          icon: 'success',
-          confirmButtonColor: '#7a6fbe',
-          customClass: { popup: 'swal2-premium-popup' }
-        });
         // Fallback for direct navigation
         window.location.reload();
       }

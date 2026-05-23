@@ -957,7 +957,11 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     add(() => window.removeEventListener('blur', blur));
 
     // ── Before unload ──
-    const unload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    const unload = (e: BeforeUnloadEvent) => { 
+      if ((window as any).__allow_unload) return;
+      e.preventDefault(); 
+      e.returnValue = ''; 
+    };
     window.addEventListener('beforeunload', unload);
     add(() => window.removeEventListener('beforeunload', unload));
 
