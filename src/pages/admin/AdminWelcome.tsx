@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllUsers, getUniqueCategoriesAndQuizzes, getReportByQuizId, getStudentCount, getLecturerCount, loadQuizzes } from '../../api/endpoints';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import {
+  BarChart, Bar, LineChart, Line, AreaChart, Area,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
 import * as XLSX from 'xlsx';
 import PageHeader from '../../components/PageHeader';
-import { Book, Clipboard, Users, GraduationCap, Download, BarChart2, Filter, Loader2, Search, ArrowUpRight, TrendingUp, Info, Award, Calendar, Activity, ChevronRight, Zap, Target, ShieldCheck as ShieldIcon, Database } from 'lucide-react';
+import { Book, Clipboard, Users, GraduationCap, Download, BarChart2, Filter, Loader2, Search, ArrowUpRight, TrendingUp, Info, Award, Calendar, Activity, ChevronRight, Zap, Target, ShieldCheck as ShieldIcon, Database, LineChart as LineChartIcon } from 'lucide-react';
+
+type AdminChartType = 'bar' | 'line' | 'area' | 'radar';
 
 export default function AdminWelcome() {
   const [selCatId, setSelCatId] = useState<number | null>(null);
@@ -16,6 +22,7 @@ export default function AdminWelcome() {
   const [quizType, setQuizType] = useState('');
   const [avgScore, setAvgScore] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]);
+  const [chartType, setChartType] = useState<AdminChartType>('bar');
 
   const { data: cateGory = [] } = useQuery({ queryKey: ['adminCatReport'], queryFn: getUniqueCategoriesAndQuizzes });
   const { data: allQuizzes = [] } = useQuery({ queryKey: ['allQuizzes'], queryFn: loadQuizzes });
@@ -65,8 +72,67 @@ export default function AdminWelcome() {
 
   const showOBJ = quizType === 'OBJ' || quizType === 'BOTH';
   const showTheory = quizType === 'THEORY' || quizType === 'BOTH';
-  const catOpts = (cateGory as any[]).map(c => ({ value: c.cid, label: c.title }));
+  const catOpts  = (cateGory as any[]).map(c => ({ value: c.cid, label: c.title }));
   const quizOpts = assocQuizzes.map(q => ({ value: q.qId, label: q.title }));
+
+  const adminChartTypeOptions: { key: AdminChartType; label: string; icon: JSX.Element }[] = [
+    { key: 'bar',   label: 'Bar',   icon: <BarChart2 size={15} /> },
+    { key: 'line',  label: 'Line',  icon: <LineChartIcon size={15} /> },
+    { key: 'area',  label: 'Area',  icon: <Activity size={15} /> },
+    { key: 'radar', label: 'Radar', icon: <Target size={15} /> },
+  ];
+
+  const ACCENT = '#6366f1';
+  const BLUE   = '#0ea5e9';
+
+  const commonChartProps = {
+    data: chartData,
+    margin: { top: 20, right: 30, left: 10, bottom: 10 },
+  };
+  const sharedGrid  = <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />;
+  const sharedXAxis = <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} dy={15} />;
+  const sharedYAxis = <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} />;
+  const sharedTip   = <Tooltip cursor={{ fill: 'rgba(99,102,241,0.04)' }} contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.12)', padding: '20px' }} />;
+  const sharedLeg   = <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', fontWeight: 700 }} />;
+
+  const renderAdminChart = () => {
+    if (chartType === 'bar') return (
+      <BarChart {...commonChartProps}>
+        {sharedGrid}{sharedXAxis}{sharedYAxis}{sharedTip}{sharedLeg}
+        {showOBJ    && <Bar dataKey="objScore" name="Objective" fill={ACCENT} radius={[10,10,0,0]} barSize={42} />}
+        {showTheory && <Bar dataKey="thScore"  name="Theory"   fill={BLUE}   radius={[10,10,0,0]} barSize={42} />}
+        {!showOBJ && !showTheory && <Bar dataKey="score" name="Total" fill={ACCENT} radius={[10,10,0,0]} barSize={42} />}
+      </BarChart>
+    );
+    if (chartType === 'line') return (
+      <LineChart {...commonChartProps}>
+        {sharedGrid}{sharedXAxis}{sharedYAxis}{sharedTip}{sharedLeg}
+        {showOBJ    && <Line type="monotone" dataKey="objScore" name="Objective" stroke={ACCENT} strokeWidth={3} dot={{ r: 5, fill: ACCENT }} activeDot={{ r: 7 }} />}
+        {showTheory && <Line type="monotone" dataKey="thScore"  name="Theory"   stroke={BLUE}   strokeWidth={3} dot={{ r: 5, fill: BLUE }}   activeDot={{ r: 7 }} />}
+        {!showOBJ && !showTheory && <Line type="monotone" dataKey="score" name="Total" stroke={ACCENT} strokeWidth={3} dot={{ r: 5, fill: ACCENT }} activeDot={{ r: 7 }} />}
+      </LineChart>
+    );
+    if (chartType === 'area') return (
+      <AreaChart {...commonChartProps}>
+        {sharedGrid}{sharedXAxis}{sharedYAxis}{sharedTip}{sharedLeg}
+        {showOBJ    && <Area type="monotone" dataKey="objScore" name="Objective" stroke={ACCENT} fill="rgba(99,102,241,0.12)" strokeWidth={2.5} dot={{ r: 4 }} />}
+        {showTheory && <Area type="monotone" dataKey="thScore"  name="Theory"   stroke={BLUE}   fill="rgba(14,165,233,0.1)"   strokeWidth={2.5} dot={{ r: 4 }} />}
+        {!showOBJ && !showTheory && <Area type="monotone" dataKey="score" name="Total" stroke={ACCENT} fill="rgba(99,102,241,0.12)" strokeWidth={2.5} dot={{ r: 4 }} />}
+      </AreaChart>
+    );
+    if (chartType === 'radar') return (
+      <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
+        <PolarGrid stroke="#e2e8f0" />
+        <PolarAngleAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} />
+        <PolarRadiusAxis axisLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+        {sharedTip}{sharedLeg}
+        {showOBJ    && <Radar name="Objective" dataKey="objScore" stroke={ACCENT} fill={ACCENT} fillOpacity={0.2} />}
+        {showTheory && <Radar name="Theory"    dataKey="thScore"  stroke={BLUE}   fill={BLUE}   fillOpacity={0.15} />}
+        {!showOBJ && !showTheory && <Radar name="Total" dataKey="score" stroke={ACCENT} fill={ACCENT} fillOpacity={0.2} />}
+      </RadarChart>
+    );
+  };
+
 
   return (
     <div className="admin-welcome-container animate-fade-in" style={{ padding: '0 0 50px', fontFamily: '"Outfit", "Inter", sans-serif' }}>
@@ -97,18 +163,18 @@ export default function AdminWelcome() {
           <div className="h-identity">
             <div className="h-icon-glow"><BarChart2 size={24} /></div>
             <div>
-              <h4 className="h-title">Performance Analytics Center</h4>
-              <p className="h-subtitle">Unified intelligence across assessment protocols</p>
+              <h4 className="h-title">Performance  Center</h4>
+              <p className="h-subtitle">Unified performance across assessment quizzes</p>
             </div>
           </div>
           <div className="h-controls">
             <div className="h-select-wrapper">
               <select className="premium-select" value={selCatId ?? ''} onChange={e => selectCategory(e.target.value ? Number(e.target.value) : null)}>
-                <option value="">Filter By Course Catalog</option>
+                <option value="">Select Course Catalog</option>
                 {catOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <select className="premium-select" value={selQuizId ?? ''} onChange={e => onQuizSelected(e.target.value ? Number(e.target.value) : null)} disabled={!selCatId}>
-                <option value="">{selCatId ? 'Select Active Protocol' : 'Catalog Pending...'}</option>
+                <option value="">{selCatId ? 'Select Active Quiz' : 'Select Quiz...'}</option>
                 {quizOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
@@ -134,48 +200,44 @@ export default function AdminWelcome() {
                 <div className="metric-box">
                   <div className="m-icon"><Users size={18} /></div>
                   <div className="m-details">
-                    <span className="m-label">Total Population</span>
+                    <span className="m-label">Participants</span>
                     <span className="m-value">{reports.length} Candidates</span>
                   </div>
                 </div>
                 <div style={{ flex: 1 }} />
                 <button className="premium-export-btn" onClick={exportExcel}>
-                  <Download size={18} /> <span>Download Analytical Ledger</span>
+                  <Download size={18} /> <span>Export Results</span>
                 </button>
+              </div>
+
+              {/* Chart type toggle */}
+              <div className="admin-chart-toggle-row">
+                <span className="admin-toggle-label">Chart Type:</span>
+                <div className="admin-chart-toggle">
+                  {adminChartTypeOptions.map(opt => (
+                    <button
+                      key={opt.key}
+                      className={`admin-toggle-btn${chartType === opt.key ? ' active' : ''}`}
+                      onClick={() => setChartType(opt.key)}
+                    >
+                      {opt.icon}
+                      <span>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="chart-container-premium">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
-                      dy={15}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }}
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'rgba(99, 102, 241, 0.04)' }}
-                      contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.12)', padding: '20px' }}
-                    />
-                    {showOBJ && <Bar dataKey="objScore" name="Objective" fill="#6366f1" radius={[10, 10, 0, 0]} barSize={42} />}
-                    {showTheory && <Bar dataKey="thScore" name="Theory" fill="#0ea5e9" radius={[10, 10, 0, 0]} barSize={42} />}
-                    {!showOBJ && !showTheory && <Bar dataKey="score" name="Total" fill="#6366f1" radius={[10, 10, 0, 0]} barSize={42} />}
-                  </BarChart>
+                  {renderAdminChart() as any}
                 </ResponsiveContainer>
               </div>
             </div>
           ) : (
             <div className="idle-state">
               <div className="idle-icon-glow"><Database size={48} /></div>
-              <h3>Analytical Index Standby</h3>
-              <p>Initialize categorical filters to synchronize real-time assessment data distribution.</p>
+              <h3>Awaiting Selection</h3>
+              <p>Select Course and Quiz to filter assessment data distribution.</p>
             </div>
           )}
         </div>
@@ -188,8 +250,8 @@ export default function AdminWelcome() {
             <div className="h-identity">
               <div className="h-icon-glow secondary"><Activity size={24} /></div>
               <div>
-                <h4 className="h-title">Candidate Registry Ledger</h4>
-                <p className="h-subtitle">Complete transcript and performance identity mapping</p>
+                <h4 className="h-title">Sudents Results Ledger</h4>
+                <p className="h-subtitle">Performance identity mapping</p>
               </div>
             </div>
           </div>
@@ -358,6 +420,19 @@ export default function AdminWelcome() {
         }
         .premium-export-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(30, 41, 59, 0.3); background: #000; }
 
+        /* Chart type toggle */
+        .admin-chart-toggle-row { display: flex; align-items: center; gap: 16px; margin-bottom: 30px; }
+        .admin-toggle-label     { font-size: 12px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+        .admin-chart-toggle     { display: flex; gap: 8px; background: #f8fafc; border-radius: 16px; padding: 6px; border: 1px solid #e2e8f0; }
+        .admin-toggle-btn {
+          display: flex; align-items: center; gap: 7px; padding: 8px 18px;
+          border-radius: 12px; border: none; background: transparent;
+          font-size: 13px; font-weight: 700; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+          font-family: 'Outfit', 'Inter', sans-serif;
+        }
+        .admin-toggle-btn:hover  { background: #fff; color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .admin-toggle-btn.active { background: var(--accent-primary); color: #fff; box-shadow: 0 6px 16px rgba(99,102,241,0.3); }
+
         .chart-container-premium { height: 450px; }
 
         .idle-state { padding: 100px 0; text-align: center; }
@@ -403,8 +478,9 @@ export default function AdminWelcome() {
           .h-select-wrapper { flex-direction: column; width: 100%; }
           .premium-select { min-width: unset; width: 100%; }
           .standout-body { padding: 30px; }
-          .metrics-dashboard { flex-wrap: wrap; gap: 15px; }
+          .metrics-dashboard { flex-wrap: wrap; gap: 15px; margin-bottom: 25px; }
           .metric-box { flex: 1 1 200px; }
+          .admin-chart-toggle-row { flex-direction: column; align-items: flex-start; }
           .premium-data-table th, .premium-data-table td { padding: 18px 20px; }
           .chart-container-premium { height: 320px; }
         }
@@ -420,6 +496,7 @@ export default function AdminWelcome() {
           .h-title { font-size: 18px; }
           .metrics-dashboard { flex-direction: column; }
           .metric-box { width: 100%; }
+          .admin-chart-toggle { flex-wrap: wrap; }
           .premium-export-btn { width: 100%; justify-content: center; height: 48px; padding: 0 20px; font-size: 13px; }
           .chart-container-premium { height: 250px; }
           .premium-data-table th, .premium-data-table td { padding: 12px 15px; font-size: 12px; }
