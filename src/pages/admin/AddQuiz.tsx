@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getCategories, addQuiz, addLecturerQuiz } from '../../api/endpoints';
+import { getCategories, addQuiz, addLecturerQuiz, getCategoriesForUser } from '../../api/endpoints';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock, Layers,
@@ -30,7 +30,10 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
   const [quiz, setQuiz] = useState(defaultQuiz());
   const [hide, setHide] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
+  const { data: categories = [] } = useQuery({ 
+    queryKey: lectMode ? ['lectCategories'] : ['categories'], 
+    queryFn: lectMode ? getCategoriesForUser : getCategories 
+  });
   const roleName = lectMode ? 'Lecturer' : 'Admin';
   const backPath = lectMode ? '/lect/quizes' : '/admin/quizzes';
 

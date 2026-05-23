@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getUniqueCategoriesForLecturer, getReportByQuizId, loadQuizzesForUser } from '../../api/endpoints';
+import { getUniqueCategoriesForLecturer, getReportByQuizId, loadQuizzesForUser, getCategoriesForUser } from '../../api/endpoints';
 import * as XLSX from 'xlsx';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 
@@ -13,6 +13,7 @@ export default function LectWelcome() {
   const [avgScore, setAvgScore]           = useState(0);
 
   const { data: cateGory = [] } = useQuery({ queryKey: ['lectCatReport'], queryFn: getUniqueCategoriesForLecturer });
+  const { data: myCourses = [] } = useQuery({ queryKey: ['lectCats'], queryFn: getCategoriesForUser });
   const { data: myQuizzes = [] } = useQuery({ queryKey: ['myQuizzes'], queryFn: loadQuizzesForUser });
 const [chartData, setChartData] = useState(null); // or whatever type fits
   const selectCategory = (cid: number | null) => {
@@ -54,7 +55,7 @@ const [chartData, setChartData] = useState(null); // or whatever type fits
   );
 
   const topCards = [
-    { label: 'Total Courses', val: (cateGory as any[]).length, badge: '+12%', badgeColor: 'bg-soft-success text-success', spark: <SparklineUp /> },
+    { label: 'Total Courses', val: (myCourses as any[]).length, badge: '+12%', badgeColor: 'bg-soft-success text-success', spark: <SparklineUp /> },
     { label: 'Active Quizzes', val: (myQuizzes as any[]).length, badge: '+8%', badgeColor: 'bg-soft-success text-success', spark: <SparklineUp /> },
     { label: 'Average Score', val: avgScore.toFixed(1) + '%', badge: '-2.5%', badgeColor: 'bg-soft-danger text-danger', spark: <SparklineDown /> },
     { label: 'Total Quizzes', val: reports.length, badge: '+15%', badgeColor: 'bg-soft-success text-success', spark: <SparklineUp /> },
