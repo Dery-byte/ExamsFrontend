@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getUniqueCategoriesForLecturer, getReportByQuizId, loadQuizzesForUser, getCategoriesForUser } from '../../api/endpoints';
 import * as XLSX from 'xlsx';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { BarChart2, TrendingUp, Users, Database, Loader2, BookOpen } from 'lucide-react';
 
 export default function LectWelcome() {
   const [selCatId, setSelCatId]           = useState<number|null>(null);
@@ -92,100 +92,243 @@ const [chartData, setChartData] = useState(null); // or whatever type fits
         ))}
       </div>
 
-      <div className="dashboard-row-2">
-        <div className="minia-card">
-          <div className="card-header border-none">
-            <h5 className="card-title">Quiz Overview</h5>
-            <div className="dropdown-action">
-              <span>Filter</span> <ChevronDown size={14} />
+      <div className="lect-standout-container">
+        {/* Header */}
+        <div className="lect-standout-header">
+          <div className="lect-h-identity">
+            <div className="lect-h-icon-glow">
+              <BarChart2 size={24} />
+            </div>
+            <div>
+              <h4 className="lect-h-title">Quiz Overview</h4>
+              <p className="lect-h-subtitle">Filter by course and assessment to view performance data</p>
             </div>
           </div>
-          <div className="overview-content">
-            <div className="radial-wrap" style={{ transform: 'scale(1.2)' }}>
-              <svg width="140" height="140" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="#f1f1f5" strokeWidth="12" strokeDasharray="180 300" strokeDashoffset="180" strokeLinecap="round" transform="rotate(135 60 60)"></circle>
-                <circle cx="60" cy="60" r="50" fill="none" stroke="#2ab57d" strokeWidth="12" strokeDasharray="120 300" strokeDashoffset="180" strokeLinecap="round" transform="rotate(135 60 60)"></circle>
-                <text x="60" y="65" textAnchor="middle" fontSize="18" fontWeight="600" fill="#495057">{reports.length > 0 ? '80%' : '0%'}</text>
-              </svg>
-            </div>
-            <div className="overview-data">
-              <p className="o-label">Selected Course</p>
-              <select className="o-select" value={selCatId ?? ''} onChange={e => selectCategory(e.target.value ? Number(e.target.value) : null)}>
-                <option value="">Select Course</option>
+          <div className="lect-h-controls">
+            <div className="lect-select-wrapper">
+              <select
+                className="lect-premium-select"
+                value={selCatId ?? ''}
+                onChange={e => selectCategory(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">Filter By Course</option>
                 {catOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <p className="o-sub">+ Data synced ({reports.length} records)</p>
+              <select
+                className="lect-premium-select"
+                value={selQuizId ?? ''}
+                onChange={e => onQuizSelected(e.target.value ? Number(e.target.value) : null)}
+                disabled={!selCatId}
+              >
+                <option value="">{selCatId ? 'Select Quiz' : 'Course Pending...'}</option>
+                {quizOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
 
-              <div className="o-stats">
-                <div>
-                  <p className="os-label">Quiz</p>
-                  <select className="o-select sm" value={selQuizId ?? ''} onChange={e => onQuizSelected(e.target.value ? Number(e.target.value) : null)} disabled={!selCatId}>
-                    <option value="">Select Quiz</option>
-                    {quizOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+        {/* Body */}
+        <div className="lect-standout-body">
+          {reports.length > 0 ? (
+            <div className="lect-analytics-content">
+              {/* Metric boxes */}
+              <div className="lect-metrics-dashboard">
+                <div className="lect-metric-box">
+                  <div className="lect-m-icon"><TrendingUp size={18} /></div>
+                  <div className="lect-m-details">
+                    <span className="lect-m-label">Average Score</span>
+                    <span className="lect-m-value accent">{avgScore}%</span>
+                  </div>
+                </div>
+                <div className="lect-metric-box">
+                  <div className="lect-m-icon"><Users size={18} /></div>
+                  <div className="lect-m-details">
+                    <span className="lect-m-label">Total Submissions</span>
+                    <span className="lect-m-value">{reports.length} Students</span>
+                  </div>
+                </div>
+                <div className="lect-metric-box">
+                  <div className="lect-m-icon"><BookOpen size={18} /></div>
+                  <div className="lect-m-details">
+                    <span className="lect-m-label">Selected Course</span>
+                    <span className="lect-m-value" style={{ fontSize: '16px' }}>{courseName || '—'}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* <button className="btn-view-more">View more <ArrowRight size={14} /></button> */}
+              {/* Radial gauge */}
+              <div className="lect-gauge-wrap">
+                <svg width="200" height="200" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#f1f5f9" strokeWidth="10"
+                    strokeDasharray="180 300" strokeDashoffset="180" strokeLinecap="round"
+                    transform="rotate(135 60 60)" />
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#6366f1" strokeWidth="10"
+                    strokeDasharray={`${Math.min(avgScore / 100 * 180, 180)} 300`}
+                    strokeDashoffset="180" strokeLinecap="round"
+                    transform="rotate(135 60 60)" />
+                  <text x="60" y="56" textAnchor="middle" fontSize="18" fontWeight="800" fill="#1e293b">
+                    {avgScore.toFixed(1)}%
+                  </text>
+                  <text x="60" y="72" textAnchor="middle" fontSize="8" fontWeight="600" fill="#64748b">
+                    AVG SCORE
+                  </text>
+                </svg>
+                <p className="lect-gauge-label">{reports.length} record{reports.length !== 1 ? 's' : ''} loaded</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="lect-idle-state">
+              <div className="lect-idle-icon-glow"><Database size={48} /></div>
+              <h3>Awaiting Selection</h3>
+              <p>Choose a course and quiz above to load student performance data.</p>
+            </div>
+          )}
         </div>
       </div>
 
       <style>{`
-        .minia-dashboard { font-family: 'Inter', sans-serif; color: #495057; }
-        
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+        .minia-dashboard {
+          font-family: 'Outfit', 'Inter', sans-serif;
+          color: #495057;
+          --accent-primary: #6366f1;
+          --accent-secondary: #0ea5e9;
+          --text-main: #1e293b;
+          --text-muted: #64748b;
+          --card-bg: #ffffff;
+          --surface-bg: #f8fafc;
+        }
+
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .page-title { font-size: 15px; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
         .breadcrumb { display: flex; gap: 8px; font-size: 13px; color: #74788d; font-weight: 500; }
         .separator { color: #ced4da; }
 
-        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 24px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px; }
 
         .minia-card { background: #ffffff; border: 1px solid #e9e9ef; border-radius: 4px; box-shadow: 0 0.75rem 1.5rem rgba(18, 38, 63, 0.03); transition: transform 0.2s; }
         .minia-card:hover { transform: translateY(-2px); }
-        
+
         .metric-card { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .card-top-row { display: flex; justify-content: space-between; align-items: flex-start; }
         .metric-label { font-size: 13px; color: #74788d; margin: 0 0 8px 0; font-weight: 500; }
         .metric-val { font-size: 22px; font-weight: 700; margin: 0; color: #495057; }
         .card-bottom-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
-        
+
         .metric-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
         .bg-soft-success { background-color: rgba(42, 181, 125, 0.1); color: #2ab57d; }
         .bg-soft-danger { background-color: rgba(253, 98, 94, 0.1); color: #fd625e; }
-        
         .metric-subtext { font-size: 12px; color: #74788d; font-weight: 400; }
 
-        .dashboard-row-2 { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        
-        .card-header { padding: 18px 20px; border-bottom: 1px solid #f3f3f9; display: flex; justify-content: space-between; align-items: center; }
-        .card-header.border-none { border-bottom: none; }
-        .card-title { font-size: 15px; font-weight: 700; margin: 0; }
-        
-        .dropdown-action { font-size: 12px; font-weight: 600; color: #495057; border: 1px solid #e9e9ef; padding: 5px 12px; border-radius: 4px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: background 0.2s; }
-        .dropdown-action:hover { background: #f8f9fa; }
+        /* ── Quiz Overview Premium Card ── */
+        .lect-standout-container {
+          background: var(--card-bg);
+          border-radius: 32px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+          margin-bottom: 40px;
+          overflow: hidden;
+          transition: 0.3s;
+        }
+        .lect-standout-container:hover {
+          box-shadow: 0 20px 50px rgba(0,0,0,0.06);
+          border-color: #cbd5e1;
+        }
 
-        .overview-content { display: flex; padding: 30px 20px 40px 20px; align-items: center; justify-content: center; gap: 100px; }
-        .overview-data { flex: 0 1 450px; }
-        .o-label { font-size: 12px; font-weight: 700; color: #a6b0cf; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px; }
-        .o-select { width: 100%; border: none; font-size: 20px; font-weight: 700; color: #495057; background: transparent; outline: none; margin-bottom: 4px; cursor: pointer; padding-left: 0; }
-        .o-select.sm { font-size: 15px; color: #5156be; }
-        .o-sub { font-size: 12px; color: #2ab57d; margin: 0 0 25px 0; font-weight: 600; }
-        
-        .o-stats { border-top: 1px solid #f3f3f9; padding-top: 25px; margin-bottom: 30px; }
-        .os-label { font-size: 10px; color: #74788d; margin: 0 0 6px 0; letter-spacing: 1px; font-weight: 700; }
-        
-        .btn-view-more { background: #5156be; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.2s; }
-        .btn-view-more:hover { background: #4549a2; }
+        .lect-standout-header {
+          padding: 36px 48px;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: linear-gradient(to right, #ffffff, #fafafa);
+        }
 
+        .lect-h-identity { display: flex; align-items: center; gap: 22px; }
+        .lect-h-icon-glow {
+          width: 56px; height: 56px; border-radius: 18px;
+          background: rgba(99, 102, 241, 0.1); color: var(--accent-primary);
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15);
+        }
+        .lect-h-title { margin: 0; font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
+        .lect-h-subtitle { margin: 4px 0 0 0; font-size: 14px; color: var(--text-muted); font-weight: 500; }
+
+        .lect-h-controls { display: flex; align-items: center; }
+        .lect-select-wrapper { display: flex; gap: 16px; }
+        .lect-premium-select {
+          height: 52px; padding: 0 22px; border-radius: 14px;
+          border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 700;
+          color: var(--text-main); background: #fff;
+          transition: 0.3s; cursor: pointer; min-width: 210px;
+          font-family: 'Outfit', 'Inter', sans-serif;
+        }
+        .lect-premium-select:focus { border-color: var(--accent-primary); outline: none; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
+        .lect-premium-select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .lect-standout-body { padding: 48px; }
+
+        /* Metrics row */
+        .lect-analytics-content { display: flex; flex-direction: column; gap: 48px; }
+        .lect-metrics-dashboard { display: flex; align-items: center; gap: 28px; }
+        .lect-metric-box {
+          background: #f8fafc; padding: 20px 28px; border-radius: 20px;
+          display: flex; align-items: center; gap: 18px; border: 1px solid #f1f5f9;
+          transition: 0.2s;
+        }
+        .lect-metric-box:hover { background: #f1f5f9; }
+        .lect-m-icon {
+          width: 40px; height: 40px; border-radius: 12px; background: #fff;
+          color: var(--accent-primary); display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        }
+        .lect-m-details { display: flex; flex-direction: column; }
+        .lect-m-label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2px; }
+        .lect-m-value { font-size: 22px; font-weight: 900; color: var(--text-main); }
+        .lect-m-value.accent { color: var(--accent-primary); }
+
+        /* Radial gauge */
+        .lect-gauge-wrap {
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+          padding: 32px 0;
+          border-top: 1px solid #f1f5f9;
+        }
+        .lect-gauge-label {
+          font-size: 13px; font-weight: 700; color: var(--text-muted);
+          margin: 0; letter-spacing: 0.02em;
+        }
+
+        /* Idle state */
+        .lect-idle-state { padding: 90px 0; text-align: center; }
+        .lect-idle-icon-glow {
+          width: 90px; height: 90px; border-radius: 30px; background: #f1f5f9;
+          display: flex; align-items: center; justify-content: center;
+          margin: 0 auto 28px; color: #cbd5e1;
+          box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .lect-idle-state h3 { font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 12px; }
+        .lect-idle-state p { font-size: 15px; color: var(--text-muted); max-width: 380px; margin: 0 auto; line-height: 1.6; font-weight: 500; }
+
+        /* Responsive */
         @media (max-width: 1200px) {
           .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
         }
+        @media (max-width: 1024px) {
+          .lect-standout-header { flex-direction: column; align-items: flex-start; gap: 20px; padding: 28px; }
+          .lect-select-wrapper { flex-direction: column; width: 100%; }
+          .lect-premium-select { min-width: unset; width: 100%; }
+          .lect-standout-body { padding: 28px; }
+          .lect-metrics-dashboard { flex-wrap: wrap; gap: 14px; }
+          .lect-metric-box { flex: 1 1 200px; }
+        }
         @media (max-width: 768px) {
           .dashboard-grid { grid-template-columns: 1fr; }
-          .overview-content { flex-direction: column; align-items: flex-start; gap: 30px; }
-          .overview-data { width: 100%; }
+          .lect-standout-header { padding: 20px; }
+          .lect-standout-body { padding: 20px; }
+          .lect-h-title { font-size: 18px; }
+          .lect-metrics-dashboard { flex-direction: column; }
+          .lect-metric-box { width: 100%; }
         }
       `}</style>
     </div>
