@@ -204,12 +204,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         throw new Error("Invalid or empty data from API");
       }
 
-      setTheory({ ...data, marks: data.marks ?? 0 });
+      const pMarks = parseInt(String(data.marks), 10);
+      setTheory({ ...data, marks: isNaN(pMarks) ? '' : pMarks });
     } catch (err) {
       console.warn("Falling back to local theory data:", err);
       const local = sectionB.find(q => String(q.tqId || q.id || q.quesId || q.theoryId) === String(idToUse));
       if (local) {
-        setTheory({ ...local, marks: local.marks ?? 0 });
+        const lMarks = parseInt(String(local.marks), 10);
+        setTheory({ ...local, marks: isNaN(lMarks) ? '' : lMarks });
       } else {
         toast.error("Failed to sync protocol");
         setEditTheoryModal(false);
@@ -729,7 +731,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                   <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e9ecef', borderRadius: '8px', overflow: 'hidden' }}>
                     <span style={{ padding: '8px 10px', background: '#f8f9fa', color: '#74788d', borderRight: '1px solid #e9ecef', display: 'flex', alignItems: 'center', flexShrink: 0 }}><Award size={13} /></span>
                     <input type="number" style={{ flex: 1, padding: '8px 10px', border: 'none', outline: 'none', fontSize: '14px', fontWeight: 700, color: '#2ab57d', textAlign: 'center', minWidth: 0 }}
-                      value={theory.marks || 0} onChange={e => setTheory({ ...theory, marks: Number(e.target.value) })} placeholder="0" />
+                      value={theory.marks || ''} onChange={e => setTheory({ ...theory, marks: e.target.value })} placeholder="0" />
                   </div>
                 </div>
               </div>
