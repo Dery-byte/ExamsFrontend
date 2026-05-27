@@ -176,11 +176,9 @@ export default function LectWelcome() {
                 <p className="lect-mc-label">{card.label}</p>
                 <h4 className="lect-mc-val">{card.val}</h4>
               </div>
-              <div className="lect-sparkline">{card.spark}</div>
+              {/* <div className="lect-sparkline">{card.spark}</div> */}
             </div>
             <div className="lect-mcard-bot">
-              <span className={`lect-badge ${card.badgeOk ? 'ok' : 'bad'}`}>{card.badge}</span>
-              <span className="lect-mcard-sub">Since last week</span>
             </div>
           </div>
         ))}
