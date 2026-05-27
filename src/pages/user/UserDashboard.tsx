@@ -288,7 +288,8 @@ export default function UserDashboard() {
                             <span style={{ fontWeight: 800, color: '#495057', fontSize: 13 }}>{score} / {max}</span>
                           </div>
                         ) : (
-                          <span style={{ fontSize: 12, color: '#b45309', fontWeight: 600 }}>⏳ Pending Review</span>
+                          <span style={{ padding: '4px 10px', fontSize: 10, borderRadius: 4, fontWeight: 800, background: 'rgba(241,180,76,0.15)', color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 4 }}                          
+                          >⏳ Under Review</span>
                         )}
                       </td>
                       <td style={{ padding: '10px 16px' }}>
@@ -304,7 +305,7 @@ export default function UserDashboard() {
                             className="lexa-badge"
                             style={{ padding: '4px 10px', fontSize: 10, borderRadius: 4, fontWeight: 800, background: 'rgba(241,180,76,0.15)', color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           >
-                            ⏳ Pending Review
+                            ⏳ Under Review
                           </span>
                         )}
                       </td>

@@ -269,38 +269,53 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
     <div style={{ maxWidth: '1200px', margin: '0 auto', overflowX: 'hidden' }} className="minia-page animate-fade-in">
       <Toaster position="top-right" />
 
-      <div className="vqq-page-header mb-4">
-        <div>
-          <h4 className="page-title mb-0 font-size-18 fw-bold">Assessment Registry Console</h4>
-          <div className="breadcrumb m-0 font-size-13 text-muted">
-            <span>{roleName} Portal</span> <ChevronRight size={12} className="mx-1" /> <span>Registry</span>
+      {/* ── PAGE HEADER ── */}
+      <div className="vqq-page-header mb-5">
+        <div className="vqq-phd-left">
+          <div className="vqq-phd-icon"><Cpu size={19} /></div>
+          <div>
+            <h4 className="vqq-phd-title">Assessment Registry Console</h4>
+            <div className="vqq-breadcrumb">
+              <span>{roleName} Portal</span>
+              <ChevronRight size={11} />
+              <span>Registry</span>
+              <ChevronRight size={11} />
+              <span className="vqq-bc-active">{qTitle}</span>
+            </div>
           </div>
         </div>
         <div className="vqq-header-actions">
-          <Link to={`${basePath}/quizzes`} className="btn-light-custom d-flex align-items-center gap-2">
-            <ArrowLeft size={16} /> <span>Registry</span>
+          <Link to={`${basePath}/quizzes`} className="vqq-btn-back">
+            <ArrowLeft size={15} /><span>Registry</span>
           </Link>
-          <Link to={`${basePath}/add-question/${qId}/${qTitle}`} className="btn-primary-custom d-flex align-items-center gap-2">
-            <Plus size={18} /> <span>Add Items</span>
+          <Link to={`${basePath}/add-question/${qId}/${qTitle}`} className="vqq-btn-add">
+            <Plus size={16} /><span>Add Items</span>
           </Link>
         </div>
       </div>
 
-      <div className="minia-card shadow-sm mb-5 overflow-hidden">
-        <div className="card-body p-4 bg-light-subtle">
-          <div className="d-flex align-items-center gap-4">
-            <div className="avatar-md flex-shrink-0">
-              <span className="avatar-title rounded-circle bg-soft-primary text-primary shadow-sm">
-                <Cpu size={28} />
-              </span>
+      {/* ── QUIZ BANNER ── */}
+      <div className="vqq-quiz-banner mb-5">
+        <div className="vqq-quiz-banner-accent" />
+        <div className="vqq-quiz-banner-body">
+          <div className="vqq-quiz-banner-icon"><Cpu size={22} /></div>
+          <div className="vqq-quiz-banner-info">
+            <h4 className="vqq-quiz-banner-title">{qTitle}</h4>
+            <div className="vqq-quiz-banner-meta">
+              <span className="vqq-quiz-id-badge">ID: {qId}</span>
+              <span className="vqq-quiz-role-tag">Master Registry Node</span>
             </div>
-            <div>
-              <h4 className="font-size-20 mb-1 fw-bold text-dark">{qTitle}</h4>
-              <div className="d-flex align-items-center gap-3">
-                <span className="badge badge-soft-primary px-3 py-1 font-size-11 fw-bold">ID: {qId}</span>
-                <span className="text-muted font-size-12 fw-medium text-uppercase letter-spacing-1">Master Registry Node</span>
-              </div>
-            </div>
+          </div>
+        </div>
+        <div className="vqq-quiz-banner-stats">
+          <div className="vqq-bstat">
+            <span className="vqq-bstat-val">{questions.length}</span>
+            <span className="vqq-bstat-lbl">Objective</span>
+          </div>
+          <div className="vqq-bstat-div" />
+          <div className="vqq-bstat">
+            <span className="vqq-bstat-val">{sectionB.length}</span>
+            <span className="vqq-bstat-lbl">Theory</span>
           </div>
         </div>
       </div>
@@ -441,112 +456,129 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
             </div>
           )}
 
-          {/* SECTION B */}
+          {/* ── SECTION B : THEORY PROTOCOL ── */}
           {getPrefixes().length > 0 && (
             <div className="registry-section">
-              <div className="d-flex align-items-center gap-3 mb-4 ps-2">
-                <div className="avatar-xs flex-shrink-0">
-                  <span className="avatar-title rounded-circle bg-soft-success text-success">
-                    <FileText size={18} />
-                  </span>
+
+              {/* Section heading */}
+              <div className="vqq-sec-hd">
+                <div className="vqq-sec-hd-left">
+                  <div className="vqq-sec-ico vqq-sec-ico--theory"><FileText size={16} /></div>
+                  <div>
+                    <h6 className="vqq-sec-title">Section B: Theory Protocol</h6>
+                    <span className="vqq-sec-sub">
+                      {sectionB.length} question{sectionB.length !== 1 ? 's' : ''} &middot; {getPrefixes().length} group{getPrefixes().length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h6 className="mb-0 font-size-15 fw-bold text-dark">Section B: Theory Protocol</h6>
-                  <span className="text-muted font-size-12 fw-medium">Theoretical Assessment Schema</span>
-                </div>
+                <span className="vqq-sec-badge vqq-sec-badge--theory">{getPrefixes().length} Groups</span>
               </div>
 
-              {/* Logistics Widget - Compact Banner */}
+              {/* Logistics bar */}
               {numberOfquestionsToAnswers.length > 0 && (
-                <div className="minia-card bg-dark text-white shadow-sm mb-4 overflow-hidden" style={{ borderRadius: '12px' }}>
-                  <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center p-3 px-4 position-relative z-index-2">
-                    <div className="d-flex flex-wrap gap-4 align-items-center mb-3 mb-md-0">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="avatar-xs rounded-circle bg-white-soft text-white d-flex align-items-center justify-content-center">
-                          <Target size={14} className="opacity-75" />
-                        </div>
-                        <div>
-                          <span className="font-size-10 text-white-50 text-uppercase fw-bold letter-spacing-1 d-block lh-1">Requirement</span>
-                          <span className="font-size-14 fw-bold">{numberOfquestionsToAnswers[0]?.totalQuestToAnswer} Items</span>
-                        </div>
-                      </div>
-                      <div className="d-none d-md-block" style={{ width: '1px', height: '30px', background: 'rgba(255,255,255,0.1)' }} />
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="avatar-xs rounded-circle bg-white-soft text-white d-flex align-items-center justify-content-center">
-                          <Clock size={14} className="opacity-75" />
-                        </div>
-                        <div>
-                          <span className="font-size-10 text-white-50 text-uppercase fw-bold letter-spacing-1 d-block lh-1">Duration</span>
-                          <span className="font-size-14 fw-bold">{numberOfquestionsToAnswers[0]?.timeAllowed} Minutes</span>
-                        </div>
+                <div className="vqq-logistics mb-4">
+                  <div className="vqq-logistics-stats">
+                    <div className="vqq-lstat">
+                      <div className="vqq-lstat-ico"><Target size={14} /></div>
+                      <div>
+                        <span className="vqq-lstat-lbl">Questions Required</span>
+                        <span className="vqq-lstat-val">{numberOfquestionsToAnswers[0]?.totalQuestToAnswer}</span>
                       </div>
                     </div>
-                    <button className="btn btn-sm btn-light bg-white-soft text-white border-0 fw-bold px-3 d-flex align-items-center gap-2 transition-2 hover-scale" onClick={openUpdateCount}>
-                      <Settings size={14} /> <span>Configure Logistics</span>
-                    </button>
+                    <div className="vqq-lstat-sep" />
+                    <div className="vqq-lstat">
+                      <div className="vqq-lstat-ico"><Clock size={14} /></div>
+                      <div>
+                        <span className="vqq-lstat-lbl">Time Allowed</span>
+                        <span className="vqq-lstat-val">{numberOfquestionsToAnswers[0]?.timeAllowed} <em>min</em></span>
+                      </div>
+                    </div>
                   </div>
+                  <button className="vqq-logistics-btn" onClick={openUpdateCount}>
+                    <Settings size={14} /><span>Configure</span>
+                  </button>
                 </div>
               )}
 
+              {/* Theory group cards */}
               <div className="vqq-theory-col">
                 {getPrefixes().map(prefix => (
-                  <div key={prefix} className="vqq-theory-card">
-                    {/* Card Header */}
-                    <div className="vqq-theory-header">
-                      <div className="d-flex align-items-center gap-3">
+                  <div key={prefix} className={`vqq-theory-card ${compulsoryPrefixes[prefix] ? 'vqq-theory-card--mandatory' : ''}`}>
+
+                    {/* ── Group header ── */}
+                    <div className={`vqq-theory-hd ${compulsoryPrefixes[prefix] ? 'vqq-theory-hd--mandatory' : ''}`}>
+                      <div className="vqq-theory-hd-left">
                         <div className="vqq-group-badge">{prefix}</div>
                         <div>
-                          <h6 className="mb-0 fw-bold text-white font-size-16">Group Protocol {prefix}</h6>
-                          <span className="font-size-11 fw-medium text-uppercase" style={{ color: 'rgba(255,255,255,0.7)' }}>Theoretical Assessment Set &bull; {getGrouped(prefix).length} Questions</span>
+                          <h6 className="vqq-theory-hd-title">Group {prefix}</h6>
+                          <span className="vqq-theory-hd-sub">
+                            {getGrouped(prefix).length} question{getGrouped(prefix).length !== 1 ? 's' : ''}
+                          </span>
                         </div>
                       </div>
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="d-flex flex-column align-items-end">
-                          <span className="font-size-9 fw-bold text-uppercase" style={{ color: 'rgba(255,255,255,0.55)', letterSpacing: '1px' }}>Status</span>
-                          <span className="font-size-11 fw-bold text-white">{compulsoryPrefixes[prefix] ? 'MANDATORY' : 'OPTIONAL'}</span>
+                      <div className="vqq-compulsory-wrap">
+                        <div className="vqq-compulsory-labels">
+                          <span className={`vqq-compulsory-status ${compulsoryPrefixes[prefix] ? 'is-mandatory' : ''}`}>
+                            {compulsoryPrefixes[prefix] ? 'Mandatory' : 'Optional'}
+                          </span>
+                          <span className="vqq-compulsory-hint">Compulsory</span>
                         </div>
                         <div
-                          onClick={() => !isUpdatingCompulsory[prefix] && onCompulsoryChange(prefix, !compulsoryPrefixes[prefix])}
                           className={`minia-switch ${compulsoryPrefixes[prefix] ? 'on' : ''}`}
-                          style={{ cursor: 'pointer', background: compulsoryPrefixes[prefix] ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)' }}
+                          onClick={() => !isUpdatingCompulsory[prefix] && onCompulsoryChange(prefix, !compulsoryPrefixes[prefix])}
+                          style={{ cursor: isUpdatingCompulsory[prefix] ? 'wait' : 'pointer' }}
                         >
                           <div className="switch-dot" />
                         </div>
                       </div>
                     </div>
 
-                    {/* Questions */}
+                    {/* ── Question rows ── */}
                     <div className="vqq-theory-body">
-                      {getGrouped(prefix).map((q: any, idx: number) => (
+                      {getGrouped(prefix).map((q: any) => (
                         <div key={q.tqId} className="vqq-theory-row">
-                          <div className="vqq-q-num">
-                            <span>{q.quesNo}</span>
-                          </div>
+
+                          {/* Number badge */}
+                          <div className="vqq-q-num">{q.quesNo}</div>
+
+                          {/* Content */}
                           <div className="vqq-q-content">
-                            <div className="font-size-14 fw-bold text-dark lh-base mb-2" dangerouslySetInnerHTML={{ __html: q.question }} />
+                            <div className="vqq-q-text" dangerouslySetInnerHTML={{ __html: q.question }} />
                             {q.evaluationCriteria && (
                               <div className="vqq-eval-box">
-                                <div className="d-flex align-items-center gap-2 mb-1">
-                                  <Target size={12} style={{ color: '#2ab57d' }} />
-                                  <span className="font-size-10 fw-bold text-uppercase" style={{ color: '#2ab57d', letterSpacing: '0.8px' }}>Evaluation KPI</span>
+                                <div className="vqq-eval-hd">
+                                  <Target size={11} />
+                                  <span>Evaluation Criteria</span>
                                 </div>
-                                <p className="font-size-12 text-muted mb-0 fw-medium">&ldquo;{q.evaluationCriteria}&rdquo;</p>
+                                <p className="vqq-eval-text">&ldquo;{q.evaluationCriteria}&rdquo;</p>
                               </div>
                             )}
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                            <div style={{ textAlign: 'center', background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '8px', padding: '6px 10px', minWidth: '52px' }}>
-                              <span style={{ display: 'block', fontSize: '16px', fontWeight: 700, color: '#2a3142', lineHeight: 1 }}>{q.marks}</span>
-                              <span style={{ fontSize: '9px', color: '#74788d', fontWeight: 700, textTransform: 'uppercase' }}>PTS</span>
+
+                          {/* Right: marks + actions */}
+                          <div className="vqq-q-actions">
+                            <div className="vqq-marks-chip">
+                              <span className="vqq-marks-val">{q.marks}</span>
+                              <span className="vqq-marks-lbl">pts</span>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px' }}>
-                              <button style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #e9ecef', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4ba3ff', transition: 'all 0.2s', flexShrink: 0 }} onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}><Edit size={14} /></button>
-                              <button style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid #e9ecef', background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fd625e', transition: 'all 0.2s', flexShrink: 0 }} onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}><Trash2 size={14} /></button>
+                            <div className="vqq-action-btns">
+                              <button
+                                className="vqq-act-btn vqq-act-edit"
+                                title="Edit question"
+                                onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}
+                              ><Edit size={14} /></button>
+                              <button
+                                className="vqq-act-btn vqq-act-del"
+                                title="Delete question"
+                                onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}
+                              ><Trash2 size={14} /></button>
                             </div>
                           </div>
+
                         </div>
                       ))}
                     </div>
+
                   </div>
                 ))}
               </div>
@@ -993,71 +1025,185 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Page Header */
-        .vqq-page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-        .vqq-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        /* ═══════════════════════════════════════════
+           PAGE HEADER
+        ═══════════════════════════════════════════ */
+        .vqq-page-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding-bottom:20px; border-bottom:1px solid #eff0f2; margin-bottom:28px !important; }
+        .vqq-phd-left { display:flex; align-items:center; gap:14px; }
+        .vqq-phd-icon { width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#5156be,#6c70d4); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(81,86,190,0.3); flex-shrink:0; }
+        .vqq-phd-title { font-size:18px; font-weight:800; color:#2a3142; margin:0 0 4px; letter-spacing:-0.3px; }
+        .vqq-breadcrumb { display:flex; align-items:center; gap:5px; font-size:12px; color:#adb5bd; font-weight:500; flex-wrap:wrap; }
+        .vqq-bc-active { color:#5156be; font-weight:700; }
+        .vqq-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .vqq-btn-back { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:1.5px solid #e2e8f0; background:#fff; color:#5156be; font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 2px 6px rgba(0,0,0,0.04); }
+        .vqq-btn-back:hover { background:#f8f9ff; border-color:#c7caf5; }
+        .vqq-btn-add { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:none; background:linear-gradient(135deg,#5156be,#6c70d4); color:#fff; font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 4px 12px rgba(81,86,190,0.28); }
+        .vqq-btn-add:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(81,86,190,0.38); }
 
-        /* Objective Inventory responsive grid */
-        /* Objective Inventory grid — 2 columns */
-        .vqq-obj-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        @media (max-width: 600px) { .vqq-obj-grid { grid-template-columns: 1fr; } }
+        /* ═══════════════════════════════════════════
+           QUIZ BANNER
+        ═══════════════════════════════════════════ */
+        .vqq-quiz-banner { background:#fff; border-radius:16px; border:1px solid #eff0f2; box-shadow:0 4px 20px rgba(18,38,63,0.06); display:flex; align-items:center; gap:20px; padding:20px 24px; overflow:hidden; position:relative; flex-wrap:wrap; }
+        .vqq-quiz-banner-accent { position:absolute; left:0; top:0; bottom:0; width:5px; background:linear-gradient(180deg,#5156be,#6c70d4); border-radius:0; }
+        .vqq-quiz-banner-body { display:flex; align-items:center; gap:16px; flex:1; min-width:0; }
+        .vqq-quiz-banner-icon { width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,#5156be,#6c70d4); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(81,86,190,0.25); flex-shrink:0; }
+        .vqq-quiz-banner-info { min-width:0; }
+        .vqq-quiz-banner-title { font-size:17px; font-weight:800; color:#2a3142; margin:0 0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.2px; }
+        .vqq-quiz-banner-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .vqq-quiz-id-badge { background:rgba(81,86,190,0.1); color:#5156be; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; letter-spacing:0.3px; }
+        .vqq-quiz-role-tag { font-size:11px; font-weight:600; color:#adb5bd; text-transform:uppercase; letter-spacing:0.8px; }
+        .vqq-quiz-banner-stats { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+        .vqq-bstat { text-align:center; }
+        .vqq-bstat-val { display:block; font-size:22px; font-weight:800; color:#2a3142; line-height:1; }
+        .vqq-bstat-lbl { display:block; font-size:10px; font-weight:700; color:#adb5bd; text-transform:uppercase; letter-spacing:0.8px; margin-top:2px; }
+        .vqq-bstat-div { width:1px; height:36px; background:#eff0f2; }
 
-        /* Objective Card */
-        .vqq-obj-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(18,38,63,0.08); border: 1px solid #eff0f2; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
-        .vqq-obj-card:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(18,38,63,0.13); }
+        /* ═══════════════════════════════════════════
+           OBJECTIVE GRID
+        ═══════════════════════════════════════════ */
+        .vqq-obj-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
+        .vqq-obj-card { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(18,38,63,0.08); border:1px solid #eff0f2; display:flex; flex-direction:column; transition:transform 0.2s,box-shadow 0.2s; }
+        .vqq-obj-card:hover { transform:translateY(-3px); box-shadow:0 10px 32px rgba(18,38,63,0.13); }
+        .vqq-obj-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; }
+        .vqq-obj-num { background:rgba(255,255,255,0.25); color:#fff; font-size:13px; font-weight:800; padding:4px 10px; border-radius:20px; letter-spacing:0.3px; }
+        .vqq-obj-type { background:rgba(255,255,255,0.18); color:#fff; font-size:10px; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:0.8px; }
+        .vqq-hdr-btn { width:30px; height:30px; border-radius:8px; border:none; background:rgba(255,255,255,0.2); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
+        .vqq-hdr-btn:hover { background:rgba(255,255,255,0.35); }
+        .vqq-hdr-btn-danger:hover { background:rgba(253,98,94,0.55); }
+        .vqq-obj-body { padding:16px 18px; flex:1; display:flex; flex-direction:column; gap:12px; }
+        .vqq-obj-question { font-size:14px; font-weight:700; color:#2a3142; line-height:1.6; margin:0; }
+        .vqq-opts-list { display:flex; flex-direction:column; gap:6px; }
+        .vqq-opt { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; border:1px solid #e9ecef; background:#fafbff; transition:all 0.15s; }
+        .vqq-opt-correct { font-weight:600; }
+        .vqq-opt-letter { width:24px; height:24px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+        .vqq-opt-text { font-size:13px; color:#495057; flex:1; min-width:0; }
+        .vqq-tf-row { display:flex; gap:10px; }
+        .vqq-tf-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:10px; border-radius:10px; border:1.5px solid; font-size:13px; font-weight:700; transition:all 0.15s; }
+        .vqq-match-list { display:flex; flex-direction:column; gap:6px; }
+        .vqq-match-row { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:8px; background:#f8f9fa; border:1px solid #eff0f2; font-size:12px; }
+        .vqq-match-prompt { flex:1; color:#495057; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .vqq-match-answer { flex:1; font-weight:700; text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .vqq-obj-footer { padding:12px 18px; border-top:1px solid #f1f5f9; display:flex; align-items:center; }
+        .vqq-marks-pill { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px; font-size:13px; font-weight:700; }
 
-        .vqq-obj-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; }
-        .vqq-obj-num { background: rgba(255,255,255,0.25); color: #fff; font-size: 13px; font-weight: 800; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.3px; }
-        .vqq-obj-type { background: rgba(255,255,255,0.18); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.8px; }
-        .vqq-hdr-btn { width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,0.2); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-        .vqq-hdr-btn:hover { background: rgba(255,255,255,0.35); }
-        .vqq-hdr-btn-danger:hover { background: rgba(253,98,94,0.55); }
+        /* ═══════════════════════════════════════════
+           SECTION HEADER (A & B shared)
+        ═══════════════════════════════════════════ */
+        .vqq-sec-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+        .vqq-sec-hd-left { display:flex; align-items:center; gap:12px; }
+        .vqq-sec-ico { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .vqq-sec-ico--theory { background:rgba(42,181,125,0.12); color:#2ab57d; }
+        .vqq-sec-title { font-size:16px; font-weight:800; color:#2a3142; margin:0 0 2px; }
+        .vqq-sec-sub { font-size:12px; color:#adb5bd; font-weight:500; }
+        .vqq-sec-badge { display:inline-flex; align-items:center; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:800; letter-spacing:0.3px; }
+        .vqq-sec-badge--theory { background:rgba(42,181,125,0.1); color:#2ab57d; }
 
-        .vqq-obj-body { padding: 16px 18px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
-        .vqq-obj-question { font-size: 14px; font-weight: 700; color: #2a3142; line-height: 1.6; margin: 0; }
+        /* ═══════════════════════════════════════════
+           LOGISTICS BAR
+        ═══════════════════════════════════════════ */
+        .vqq-logistics { display:flex; align-items:center; justify-content:space-between; gap:16px; background:#fff; border:1.5px solid #e2e8f0; border-radius:14px; padding:16px 20px; box-shadow:0 2px 10px rgba(18,38,63,0.05); flex-wrap:wrap; }
+        .vqq-logistics-stats { display:flex; align-items:center; gap:0; flex-wrap:wrap; }
+        .vqq-lstat { display:flex; align-items:center; gap:12px; padding:0 20px; }
+        .vqq-lstat:first-child { padding-left:0; }
+        .vqq-lstat-ico { width:34px; height:34px; border-radius:10px; background:rgba(42,181,125,0.1); display:flex; align-items:center; justify-content:center; color:#2ab57d; flex-shrink:0; }
+        .vqq-lstat-lbl { display:block; font-size:10px; font-weight:700; color:#adb5bd; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:2px; }
+        .vqq-lstat-val { display:block; font-size:18px; font-weight:800; color:#2a3142; line-height:1; }
+        .vqq-lstat-val em { font-size:11px; font-weight:600; color:#adb5bd; font-style:normal; margin-left:3px; }
+        .vqq-lstat-sep { width:1px; height:40px; background:#eff0f2; margin:0 4px; }
+        .vqq-logistics-btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8f9ff; color:#5156be; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap; flex-shrink:0; }
+        .vqq-logistics-btn:hover { background:#eef0fc; border-color:#c7caf5; }
 
-        .vqq-opts-list { display: flex; flex-direction: column; gap: 6px; }
-        .vqq-opt { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid #e9ecef; background: #fafbff; transition: all 0.15s; }
-        .vqq-opt-correct { font-weight: 600; }
-        .vqq-opt-letter { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; }
-        .vqq-opt-text { font-size: 13px; color: #495057; flex: 1; min-width: 0; }
+        /* ═══════════════════════════════════════════
+           THEORY CARD
+        ═══════════════════════════════════════════ */
+        .vqq-theory-col { display:flex; flex-direction:column; gap:20px; }
+        .vqq-theory-card { background:#fff; border-radius:18px; border:1.5px solid #eff0f2; box-shadow:0 4px 24px rgba(18,38,63,0.08); overflow:hidden; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); position:relative; }
+        .vqq-theory-card:hover { box-shadow:0 8px 32px rgba(18,38,63,0.12); }
 
-        .vqq-tf-row { display: flex; gap: 10px; }
-        .vqq-tf-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 10px; border-radius: 10px; border: 1.5px solid; font-size: 13px; font-weight: 700; transition: all 0.15s; }
+        /* Mandatory standout state */
+        .vqq-theory-card--mandatory { border-color:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,0.15), 0 6px 28px rgba(245,158,11,0.18); }
+        .vqq-theory-card--mandatory:hover { box-shadow:0 0 0 3px rgba(245,158,11,0.22), 0 12px 40px rgba(245,158,11,0.25); }
+        .vqq-theory-card--mandatory::before { content:'MANDATORY'; position:absolute; top:14px; right:14px; background:linear-gradient(135deg,#d97706,#f59e0b); color:#fff; font-size:9px; font-weight:800; letter-spacing:1.2px; padding:3px 10px; border-radius:20px; z-index:10; box-shadow:0 2px 8px rgba(217,119,6,0.4); pointer-events:none; }
+        .vqq-theory-hd--mandatory { background:linear-gradient(135deg,#b45309 0%,#d97706 50%,#f59e0b 100%) !important; }
+        .vqq-theory-card--mandatory .vqq-group-badge { background:rgba(255,255,255,0.25); border-color:rgba(255,255,255,0.45); box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+        .vqq-theory-card--mandatory .vqq-marks-chip { background:linear-gradient(135deg,#fffbeb,#fef3c7); border-color:rgba(245,158,11,0.35); }
+        .vqq-theory-card--mandatory .vqq-marks-val { color:#b45309; }
+        .vqq-theory-card--mandatory .vqq-q-num { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.25); color:#d97706; }
+        .vqq-theory-card--mandatory .vqq-eval-box { background:#fffbeb; border-left-color:#f59e0b; }
+        .vqq-theory-card--mandatory .vqq-eval-hd { color:#d97706; }
+        .vqq-theory-card--mandatory .vqq-compulsory-status.is-mandatory { color:#fcd34d; text-shadow:0 0 8px rgba(252,211,77,0.5); }
 
-        .vqq-match-list { display: flex; flex-direction: column; gap: 6px; }
-        .vqq-match-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; background: #f8f9fa; border: 1px solid #eff0f2; font-size: 12px; }
-        .vqq-match-prompt { flex: 1; color: #495057; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .vqq-match-answer { flex: 1; font-weight: 700; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Group header */
+        .vqq-theory-hd { display:flex; align-items:center; justify-content:space-between; padding:18px 24px; background:linear-gradient(135deg,#1a8a60 0%,#2ab57d 100%); gap:14px; flex-wrap:wrap; }
+        .vqq-theory-hd-left { display:flex; align-items:center; gap:14px; min-width:0; }
+        .vqq-group-badge { min-width:44px; height:44px; padding:0 8px; border-radius:12px; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; flex-shrink:0; letter-spacing:0.3px; }
+        .vqq-theory-hd-title { font-size:16px; font-weight:800; color:#fff; margin:0 0 3px; letter-spacing:-0.2px; }
+        .vqq-theory-hd-sub { font-size:11px; font-weight:600; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.6px; }
 
-        .vqq-obj-footer { padding: 12px 18px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; }
-        .vqq-marks-pill { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+        /* Compulsory toggle */
+        .vqq-compulsory-wrap { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+        .vqq-compulsory-labels { text-align:right; }
+        .vqq-compulsory-status { display:block; font-size:12px; font-weight:800; color:#fff; line-height:1.2; }
+        .vqq-compulsory-status.is-mandatory { color:#ffd700; }
+        .vqq-compulsory-hint { display:block; font-size:9px; font-weight:700; color:rgba(255,255,255,0.55); text-transform:uppercase; letter-spacing:0.9px; margin-top:1px; }
 
-        /* Theory Card */
-        .vqq-theory-col { display: flex; flex-direction: column; gap: 24px; }
-        .vqq-theory-card { background: #fff; border-radius: 16px; border: 1px solid #eff0f2; box-shadow: 0 4px 24px rgba(18,38,63,0.07); overflow: hidden; }
-        .vqq-theory-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; background: linear-gradient(135deg, #2ab57d 0%, #1a9666 100%); flex-wrap: wrap; gap: 12px; }
-        .vqq-group-badge { width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0; }
-        .vqq-theory-body { padding: 4px 0; }
-        .vqq-theory-row { display: flex; align-items: flex-start; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
-        .vqq-theory-row:last-child { border-bottom: none; }
-        .vqq-theory-row:hover { background: #fafbff; }
-        .vqq-q-num { width: 42px; height: 42px; border-radius: 10px; background: rgba(42,181,125,0.1); display: flex; align-items: center; justify-content: center; color: #2ab57d; font-size: 12px; font-weight: 800; flex-shrink: 0; }
-        .vqq-q-content { flex: 1; min-width: 0; }
-        .vqq-eval-box { background: #f0faf5; border-left: 3px solid #2ab57d; border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 8px; }
-        .vqq-q-actions { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
-        .vqq-marks-chip { text-align: center; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 8px 12px; min-width: 56px; }
-        .vqq-act-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #e9ecef; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.06); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .vqq-act-btn:hover { transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
+        /* Question rows */
+        .vqq-theory-body { padding:0; }
+        .vqq-theory-row { display:flex; align-items:flex-start; gap:16px; padding:18px 24px; border-bottom:1px solid #f1f5f9; transition:background 0.18s; }
+        .vqq-theory-row:last-child { border-bottom:none; }
+        .vqq-theory-row:hover { background:#f9fbfd; }
+        .vqq-q-num { min-width:42px; height:42px; border-radius:10px; background:rgba(42,181,125,0.1); border:1px solid rgba(42,181,125,0.2); display:flex; align-items:center; justify-content:center; color:#2ab57d; font-size:11px; font-weight:800; flex-shrink:0; text-align:center; padding:0 4px; }
+        .vqq-q-content { flex:1; min-width:0; }
+        .vqq-q-text { font-size:14px; font-weight:700; color:#2a3142; line-height:1.65; margin:0; }
+        .vqq-eval-box { margin-top:10px; background:#f0faf5; border-left:3px solid #2ab57d; border-radius:0 8px 8px 0; padding:9px 14px; }
+        .vqq-eval-hd { display:flex; align-items:center; gap:5px; color:#2ab57d; margin-bottom:4px; }
+        .vqq-eval-hd span { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.7px; }
+        .vqq-eval-text { font-size:12px; color:#74788d; font-weight:500; margin:0; line-height:1.5; }
 
+        /* Right: marks + actions */
+        .vqq-q-actions { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; }
+        .vqq-marks-chip { text-align:center; background:linear-gradient(135deg,#f0faf5,#e8f7f1); border:1.5px solid rgba(42,181,125,0.25); border-radius:10px; padding:7px 10px; min-width:52px; }
+        .vqq-marks-val { display:block; font-size:18px; font-weight:800; color:#1a8a60; line-height:1; }
+        .vqq-marks-lbl { display:block; font-size:9px; font-weight:700; color:#adb5bd; text-transform:uppercase; letter-spacing:0.7px; margin-top:1px; }
+        .vqq-action-btns { display:flex; gap:6px; }
+        .vqq-act-btn { width:32px; height:32px; border-radius:9px; border:1.5px solid #e9ecef; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.06); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+        .vqq-act-btn:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,0.14); }
+        .vqq-act-edit { color:#5156be; }
+        .vqq-act-edit:hover { background:#5156be; color:#fff; border-color:#5156be; }
+        .vqq-act-del { color:#fd625e; }
+        .vqq-act-del:hover { background:#fd625e; color:#fff; border-color:#fd625e; }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE
+        ═══════════════════════════════════════════ */
+        @media (max-width: 768px) {
+          .vqq-quiz-banner { flex-direction:column; align-items:flex-start; }
+          .vqq-quiz-banner-stats { border-top:1px solid #eff0f2; padding-top:14px; width:100%; justify-content:flex-start; }
+          .vqq-logistics { flex-direction:column; align-items:flex-start; }
+          .vqq-logistics-stats { flex-wrap:wrap; gap:12px; }
+          .vqq-lstat { padding:0; }
+          .vqq-lstat-sep { display:none; }
+          .vqq-logistics-btn { width:100%; justify-content:center; }
+        }
         @media (max-width: 640px) {
-          .vqq-page-header { flex-direction: column; align-items: flex-start; }
-          .vqq-header-actions { width: 100%; }
-          .vqq-obj-grid { grid-template-columns: 1fr; }
-          .vqq-theory-row { flex-wrap: wrap; }
-          .vqq-q-actions { justify-content: flex-end; padding-top: 4px; }
-          .vqq-theory-header { flex-direction: column; align-items: flex-start; }
-          .minia-modal-overlay > div { width: 95vw !important; max-width: none !important; }
+          .vqq-page-header { flex-direction:column; align-items:flex-start; }
+          .vqq-header-actions { width:100%; }
+          .vqq-btn-back, .vqq-btn-add { flex:1; justify-content:center; }
+          .vqq-obj-grid { grid-template-columns:1fr; }
+          .vqq-theory-hd { flex-direction:column; align-items:flex-start; }
+          .vqq-compulsory-wrap { width:100%; justify-content:space-between; flex-direction:row-reverse; }
+          .vqq-compulsory-labels { text-align:left; }
+          .vqq-theory-row { flex-wrap:wrap; gap:12px; }
+          .vqq-q-actions { flex-direction:row; justify-content:space-between; width:100%; }
+          .vqq-action-btns { gap:8px; }
+          .vqq-act-btn { width:38px; height:38px; }
+          .minia-modal-overlay > div { width:95vw !important; max-width:none !important; }
+        }
+        @media (max-width: 400px) {
+          .vqq-theory-hd { padding:16px 16px; }
+          .vqq-theory-row { padding:14px 16px; }
+          .vqq-phd-title { font-size:16px; }
+          .vqq-quiz-banner { padding:16px; }
         }
       `}</style>
     </div>
