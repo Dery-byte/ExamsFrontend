@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { resetPasswordWithToken } from '../../api/endpoints';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -42,8 +43,17 @@ export default function ResetPassword() {
                   <div className="field-shell no-icon"><input value={newPassword} onChange={e=>setNewPassword(e.target.value)} required type="password" placeholder="••••••••"/></div>
                 </div>
               </div>
-              <button type="submit" className="go-btn" disabled={loading} style={{marginTop:16}}>
-                <span className="shimmer"/><span className="btn-txt">{loading?'Resetting…':'Reset Password'}</span>
+              <button
+                type="submit"
+                className={`go-btn${loading ? ' btn-loading' : ''}`}
+                disabled={loading}
+                style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+              >
+                <span className="shimmer"/>
+                {loading
+                  ? <Loader2 className="spin-ico" size={20} />
+                  : <span className="btn-txt">Reset Password</span>
+                }
               </button>
             </form>
             <div className="signup-row"><Link to="/login" className="signup-btn">Back to Login</Link></div>

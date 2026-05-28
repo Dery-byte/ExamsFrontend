@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 /* Universal box-sizing reset — prevents padding from causing overflow */
 *,
@@ -876,6 +876,31 @@ body {
   font-size: 14px;
   color: var(--gray-500);
   margin-top: 4px;
+}
+
+/* ── Spinner / Loading animations ───────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Applied to Loader2 icon when a request is in flight */
+.spin-ico {
+  animation: spin 0.75s linear infinite;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Subtle pulse on the whole button while loading */
+@keyframes btn-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.78; }
+}
+
+.btn-loading {
+  animation: btn-pulse 1.2s ease-in-out infinite;
+  cursor: not-allowed !important;
+  pointer-events: none;
 }
 
 /* ── Animations ────────────────────────────────────────────────────────── */

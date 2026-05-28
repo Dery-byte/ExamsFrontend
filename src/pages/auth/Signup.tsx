@@ -59,7 +59,22 @@ export default function Signup() {
       });
       setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Registration failed. Try again.');
+      const msg: string = err?.response?.data?.message ?? 'Registration failed. Please try again.';
+      const isConflict = err?.response?.status === 409 || msg.toLowerCase().includes('already exist');
+      toast.error(msg, {
+        duration: isConflict ? 5000 : 3500,
+        style: {
+          borderRadius: '14px',
+          background: '#1e1e2e',
+          color: '#fff',
+          fontSize: '14px',
+          fontWeight: 600,
+          maxWidth: '420px',
+          padding: '14px 18px',
+          border: isConflict ? '1.5px solid rgba(236,69,97,0.4)' : 'none',
+        },
+        icon: isConflict ? '⚠️' : '❌',
+      });
     } finally {
       setLoading(false);
     }
@@ -453,7 +468,7 @@ export default function Signup() {
               <div className="su-actions">
                 <button
                   type="submit"
-                  className="btn btn-primary su-submit"
+                  className={`btn btn-primary su-submit${loading ? ' btn-loading' : ''}`}
                   disabled={loading}
                 >
                   {loading

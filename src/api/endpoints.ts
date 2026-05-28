@@ -15,8 +15,15 @@ export const getCurrentUser = () => client.get('/current-user').then(r => r.data
 export const doLogout = (token: string) =>
   client.post('/logout', {}, { headers: { Authorization: `Bearer ${token}` } });
 
+// Unified: pass { phone } for SMS recovery, or { email } for email recovery
 export const forgotPasswordSms = (phone: string) =>
   client.post('/forgotten-password', { phone }).then(r => r.data);
+
+export const forgotPasswordEmail = (email: string) =>
+  client.post('/forgotten-password', { email }).then(r => r.data);
+
+export const forgotPassword = (data: { phone?: string; email?: string }) =>
+  client.post('/forgotten-password', data).then(r => r.data);
 
 export const resetPasswordWithToken = (data: { token: string; newPassword: string }) =>
   client.post('/reset-password', data).then(r => r.data);

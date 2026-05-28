@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { forgotPasswordSms } from '../../api/endpoints';
+import { forgotPassword } from '../../api/endpoints';
 import {
   User,
   Lock,
@@ -24,6 +24,8 @@ const PHRASES = [
   'Secure identity verification'
 ];
 
+type RecoveryChannel = 'phone' | 'email';
+
 export default function Login() {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
@@ -33,11 +35,13 @@ export default function Login() {
   const [error, setError] = useState('');
   const [typed, setTyped] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [channel, setChannel] = useState<RecoveryChannel>('phone');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [apiErr, setApiErr] = useState('');
   const [success, setSuccess] = useState(false);
-  const [successPhone, setSuccessPhone] = useState('');
+  const [successIdentifier, setSuccessIdentifier] = useState('');
 
   // Typing effect
   const phIdx = useRef(0);
@@ -81,24 +85,33 @@ export default function Login() {
     setApiErr('');
     setSending(true);
     try {
-      await forgotPasswordSms(phone);
-      setSuccessPhone(phone);
+      const payload = channel === 'phone' ? { phone } : { email };
+      await forgotPassword(payload);
+      setSuccessIdentifier(channel === 'phone' ? phone : email);
       setSuccess(true);
     } catch (err: any) {
-      setApiErr(err?.response?.data?.message ?? 'Failed to send reset code.');
+      setApiErr(err?.response?.data?.message ?? 'Failed to send reset code. Please try again.');
     } finally { setSending(false); }
   };
+
+  const openModal = () => {
+    setPhone(''); setEmail(''); setApiErr(''); setSuccess(false);
+    setSuccessIdentifier(''); setChannel('phone');
+    setShowModal(true);
+  };
+  const closeModal = () => setShowModal(false);
 
   return (
     <>
       <style>{`
+        /* ── Login page ────────────────────────────── */
         .login-wrapper {
           min-height: 100vh;
           background: var(--gray-50);
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 24px;
+          padding: 24px 16px;
           position: relative;
           overflow: hidden;
         }
@@ -139,7 +152,7 @@ export default function Login() {
         .login-card {
           padding: 48px;
           border: none;
-          background: rgba(255, 255, 255, 0.95);
+          background: rgba(255, 255, 255, 0.97);
           backdrop-filter: blur(20px);
           border-radius: 32px;
         }
@@ -156,44 +169,92 @@ export default function Login() {
           font-weight: 500;
           height: 1.5em;
         }
+
+        /* ── Recovery Modal ────────────────────────── */
         .modal-glass {
           position: fixed;
           inset: 0;
           z-index: 9999;
-          background: rgba(15, 23, 42, 0.4);
-          backdrop-filter: blur(10px);
+          background: rgba(15, 23, 42, 0.45);
+          backdrop-filter: blur(12px);
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 24px;
+          padding: 20px;
         }
         .modal-card {
           width: 100%;
-          max-width: 400px;
-          padding: 32px;
+          max-width: 440px;
+          padding: 36px;
           background: #fff;
           border: none;
-          border-radius: 24px;
+          border-radius: 28px;
+          box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+          animation: slideUp 0.28s cubic-bezier(0.16,1,0.3,1);
         }
-        
+        @keyframes slideUp {
+          from { opacity:0; transform:translateY(24px) scale(0.97); }
+          to   { opacity:1; transform:translateY(0)    scale(1); }
+        }
+
+        /* ── Channel Tabs ──────────────────────────── */
+        .channel-tabs {
+          display: flex;
+          background: var(--gray-100);
+          border-radius: 14px;
+          padding: 4px;
+          gap: 4px;
+          margin-bottom: 24px;
+        }
+        .channel-tab {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          padding: 11px 10px;
+          border-radius: 11px;
+          font-size: 13.5px;
+          font-weight: 700;
+          cursor: pointer;
+          border: none;
+          background: transparent;
+          color: var(--gray-500);
+          transition: all 0.22s ease;
+        }
+        .channel-tab.active {
+          background: #fff;
+          color: var(--primary);
+          box-shadow: 0 2px 10px rgba(0,0,0,0.09);
+        }
+        .channel-tab:hover:not(.active) {
+          color: var(--gray-700);
+        }
+
+        /* ── Responsive ────────────────────────────── */
         @media (max-width: 640px) {
-          .login-wrapper { padding: 16px; }
-          .login-card { padding: 32px 24px; border-radius: 24px; }
-          .login-title { font-size: 28px; }
-          .login-subtitle { font-size: 14px; }
+          .login-wrapper { padding: 16px 12px; }
+          .login-card { padding: 28px 20px; border-radius: 24px; }
+          .login-title { font-size: 26px; }
+          .login-subtitle { font-size: 13px; }
           .login-decor-1 { filter: blur(70px); opacity: 0.3; }
           .login-decor-2 { filter: blur(70px); opacity: 0.2; }
-          .modal-glass { padding: 16px; align-items: flex-end; }
-          .modal-card { padding: 24px; border-radius: 24px 24px 12px 12px; margin-bottom: 0; }
+          .modal-glass { padding: 12px; align-items: flex-end; }
+          .modal-card {
+            padding: 28px 20px 32px;
+            border-radius: 28px 28px 14px 14px;
+            max-width: 100%;
+          }
         }
         @media (max-width: 400px) {
-          .login-card { padding: 24px 16px; }
-          .login-title { font-size: 24px; }
+          .login-card { padding: 22px 14px; }
+          .login-title { font-size: 22px; }
+          .channel-tab { font-size: 12px; padding: 10px 6px; }
         }
       `}</style>
 
       <div className="login-wrapper">
-        {/* Decorative Elements */}
+        {/* Decorative blobs */}
         <div className="login-decor-1" />
         <div className="login-decor-2" />
 
@@ -202,7 +263,12 @@ export default function Login() {
 
             {/* Brand Logo */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
-              <div style={{ width: 64, height: 64, background: 'var(--primary)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: 'var(--shadow-lg)' }}>
+              <div style={{
+                width: 64, height: 64,
+                background: 'var(--primary)', borderRadius: '20px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', boxShadow: 'var(--shadow-lg)'
+              }}>
                 <GraduationCap size={32} />
               </div>
             </div>
@@ -215,110 +281,266 @@ export default function Login() {
             </div>
 
             {error && (
-              <div style={{ display: 'flex', gap: 12, padding: '16px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: '16px', marginBottom: 24, fontSize: 14, fontWeight: 600, alignItems: 'center' }}>
+              <div style={{
+                display: 'flex', gap: 12, padding: '14px 16px',
+                background: 'var(--danger-bg)', color: 'var(--danger)',
+                borderRadius: '14px', marginBottom: 24, fontSize: 14, fontWeight: 600, alignItems: 'center'
+              }}>
                 <AlertCircle size={18} style={{ flexShrink: 0 }} />
                 <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+              {/* Username */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-700)', marginLeft: 4 }}>Username or Email</label>
+                <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-700)', marginLeft: 4 }}>
+                  Username or Email
+                </label>
                 <div style={{ position: 'relative' }}>
                   <User size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
                   <input
+                    id="login-username"
                     type="text"
                     className="input card"
                     placeholder="student.id"
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     required
+                    autoComplete="username"
                     style={{ paddingLeft: 48, background: 'var(--gray-50)', border: 'none', width: '100%', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
+              {/* Password */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
                   <label style={{ fontSize: 14, fontWeight: 700, color: 'var(--gray-700)' }}>Security Password</label>
-                  <button type="button" onClick={() => setShowModal(true)} style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>Forgot?</button>
+                  <button
+                    id="forgot-password-btn"
+                    type="button"
+                    onClick={openModal}
+                    style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+                  >
+                    Forgot?
+                  </button>
                 </div>
                 <div style={{ position: 'relative' }}>
                   <Lock size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
                   <input
+                    id="login-password"
                     type={hidePass ? 'password' : 'text'}
                     className="input card"
                     placeholder="••••••••"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
                     style={{ paddingLeft: 48, paddingRight: 48, background: 'var(--gray-50)', border: 'none', width: '100%', boxSizing: 'border-box' }}
                   />
-                  <button type="button" onClick={() => setHidePass(!hidePass)} style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <button
+                    type="button"
+                    onClick={() => setHidePass(!hidePass)}
+                    style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
                     {hidePass ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '16px', fontSize: 16, borderRadius: '16px', marginTop: 8 }} disabled={loading}>
+              <button
+                id="sign-in-btn"
+                type="submit"
+                className={`btn btn-primary${loading ? ' btn-loading' : ''}`}
+                style={{ width: '100%', padding: '16px', fontSize: 16, borderRadius: '16px', marginTop: 4 }}
+                disabled={loading}
+              >
                 {loading ? <Loader2 className="spin-ico" size={20} /> : <><ShieldCheck size={20} style={{ marginRight: 10 }} /> Sign In</>}
               </button>
             </form>
 
-            <div style={{ marginTop: 40, textAlign: 'center' }}>
+            <div style={{ marginTop: 36, textAlign: 'center' }}>
               <span style={{ fontSize: 14, color: 'var(--gray-500)', fontWeight: 500 }}>New member? </span>
-              <Link to="/signup" style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>Create Student Account</Link>
+              <Link to="/signup" style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
+                Create Student Account
+              </Link>
             </div>
           </div>
 
-          <div style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.05em' }}>
+          <div style={{ marginTop: 22, textAlign: 'center', fontSize: 12, color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.05em' }}>
             OTC · © 2026
           </div>
         </div>
 
-        {/* Recovery Modal */}
+        {/* ── Recovery Modal ────────────────────────────────────── */}
         {showModal && (
-          <div className="modal-glass" onClick={() => setShowModal(false)}>
+          <div className="modal-glass" onClick={closeModal}>
             <div className="card shadow-premium animate-fade-in modal-card" onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <div style={{ width: 40, height: 40, background: 'var(--primary-glow)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                  <ShieldCheck size={20} />
+
+              {/* Modal header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 42, height: 42,
+                    background: 'var(--primary-glow)', borderRadius: '13px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)'
+                  }}>
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--gray-900)', margin: 0, lineHeight: 1.2 }}>
+                      Recover Access
+                    </h3>
+                    <p style={{ fontSize: 12, color: 'var(--gray-400)', fontWeight: 500, margin: '3px 0 0' }}>
+                      Choose how to receive your reset link
+                    </p>
+                  </div>
                 </div>
-                <button onClick={() => setShowModal(false)} className="btn-secondary" style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'var(--gray-100)', cursor: 'pointer' }}>
+                <button
+                  id="close-recovery-modal"
+                  onClick={closeModal}
+                  style={{
+                    width: 32, height: 32, borderRadius: '50%', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    border: 'none', background: 'var(--gray-100)', cursor: 'pointer', color: 'var(--gray-600)',
+                    flexShrink: 0, marginLeft: 8
+                  }}
+                >
                   <X size={16} />
                 </button>
               </div>
 
               {success ? (
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ width: 56, height: 56, background: 'var(--success-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)', margin: '0 auto 20px' }}>
-                    <CheckCircle2 size={32} />
+                /* ── Success state ── */
+                <div style={{ textAlign: 'center', paddingTop: 8 }}>
+                  <div style={{
+                    width: 60, height: 60,
+                    background: 'var(--success-bg)', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--success)', margin: '0 auto 20px'
+                  }}>
+                    <CheckCircle2 size={34} />
                   </div>
-                  <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--gray-900)', marginBottom: 8 }}>Verification Sent</h3>
-                  <p style={{ fontSize: 14, color: 'var(--gray-500)', lineHeight: 1.5, marginBottom: 24 }}>A recovery code has been dispatched to <strong>{successPhone}</strong>. Please check your SMS.</p>
-                  <button onClick={() => setShowModal(false)} className="btn btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '12px' }}>Done</button>
+                  <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--gray-900)', marginBottom: 8 }}>
+                    {channel === 'phone' ? 'SMS Sent!' : 'Email Sent!'}
+                  </h3>
+                  <p style={{ fontSize: 14, color: 'var(--gray-500)', lineHeight: 1.6, marginBottom: 28 }}>
+                    A recovery link has been sent to{' '}
+                    <strong style={{ color: 'var(--gray-800)' }}>{successIdentifier}</strong>.{' '}
+                    {channel === 'phone'
+                      ? 'Please check your SMS messages.'
+                      : 'Please check your inbox (and spam folder).'}
+                  </p>
+                  <button
+                    id="recovery-done-btn"
+                    onClick={closeModal}
+                    className="btn btn-primary"
+                    style={{ width: '100%', padding: '14px', borderRadius: '14px', fontSize: 15 }}
+                  >
+                    Done
+                  </button>
                 </div>
               ) : (
+                /* ── Form state ── */
                 <>
-                  <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--gray-900)', marginBottom: 8 }}>Recover Access</h3>
-                  <p style={{ fontSize: 14, color: 'var(--gray-500)', lineHeight: 1.5, marginBottom: 24 }}>Enter your registered mobile number to receive a secure recovery code.</p>
+                  {/* Tab switcher */}
+                  <div className="channel-tabs" role="tablist">
+                    <button
+                      id="tab-phone"
+                      role="tab"
+                      className={`channel-tab${channel === 'phone' ? ' active' : ''}`}
+                      onClick={() => { setChannel('phone'); setApiErr(''); }}
+                      type="button"
+                    >
+                      <Phone size={15} />
+                      Via Phone
+                    </button>
+                    <button
+                      id="tab-email"
+                      role="tab"
+                      className={`channel-tab${channel === 'email' ? ' active' : ''}`}
+                      onClick={() => { setChannel('email'); setApiErr(''); }}
+                      type="button"
+                    >
+                      <Mail size={15} />
+                      Via Email
+                    </button>
+                  </div>
 
-                  <form onSubmit={handleForgot} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    <div style={{ position: 'relative' }}>
-                      <Phone size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
-                      <input
-                        type="tel"
-                        className="input card"
-                        placeholder="e.g. 0544 073 427"
-                        value={phone}
-                        onChange={e => setPhone(e.target.value)}
-                        required
-                        style={{ paddingLeft: 48, background: 'var(--gray-50)', border: 'none', width: '100%', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                    {apiErr && <div style={{ color: 'var(--danger)', fontSize: 12, fontWeight: 600 }}>{apiErr}</div>}
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '12px' }} disabled={sending}>
-                      {sending ? <Loader2 className="spin-ico" size={18} /> : 'Send Recovery Code'}
+                  <form onSubmit={handleForgot} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                    {channel === 'phone' ? (
+                      <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--gray-700)', marginBottom: 8 }}>
+                          Registered Mobile Number
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Phone size={17} style={{ position: 'absolute', left: 15, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
+                          <input
+                            id="recovery-phone"
+                            type="tel"
+                            className="input card"
+                            placeholder="e.g. 0544 073 427"
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
+                            required
+                            autoComplete="tel"
+                            style={{ paddingLeft: 46, background: 'var(--gray-50)', border: 'none', width: '100%', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                        <p style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 6, marginLeft: 2 }}>
+                          We'll send a recovery link via SMS to this number.
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--gray-700)', marginBottom: 8 }}>
+                          Registered Email Address
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Mail size={17} style={{ position: 'absolute', left: 15, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
+                          <input
+                            id="recovery-email"
+                            type="email"
+                            className="input card"
+                            placeholder="e.g. student@example.com"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            required
+                            autoComplete="email"
+                            style={{ paddingLeft: 46, background: 'var(--gray-50)', border: 'none', width: '100%', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                        <p style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 6, marginLeft: 2 }}>
+                          We'll email a password reset link to this address.
+                        </p>
+                      </div>
+                    )}
+
+                    {apiErr && (
+                      <div style={{
+                        display: 'flex', gap: 10, alignItems: 'center',
+                        padding: '12px 14px', background: 'var(--danger-bg)',
+                        color: 'var(--danger)', borderRadius: '12px', fontSize: 13, fontWeight: 600
+                      }}>
+                        <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                        {apiErr}
+                      </div>
+                    )}
+
+                    <button
+                      id="send-recovery-btn"
+                      type="submit"
+                      className={`btn btn-primary${sending ? ' btn-loading' : ''}`}
+                      style={{ width: '100%', padding: '14px', borderRadius: '14px', fontSize: 15 }}
+                      disabled={sending}
+                    >
+                      {sending
+                        ? <Loader2 className="spin-ico" size={18} />
+                        : channel === 'phone'
+                          ? <><Phone size={16} style={{ marginRight: 8 }} />Send via SMS</>
+                          : <><Mail size={16} style={{ marginRight: 8 }} />Send via Email</>
+                      }
                     </button>
                   </form>
                 </>
