@@ -25,8 +25,11 @@ export const forgotPasswordEmail = (email: string) =>
 export const forgotPassword = (data: { phone?: string; email?: string }) =>
   client.post('/forgotten-password', data).then(r => r.data);
 
+// Must call /reset-password-with-token — this is handled by PasswordResetController
+// which reads from the same in-memory map where the token was stored.
+// /reset-password (AuthenticationController) reads from MySQL DB — a completely separate system.
 export const resetPasswordWithToken = (data: { token: string; newPassword: string }) =>
-  client.post('/reset-password', data).then(r => r.data);
+  client.post('/reset-password-with-token', data).then(r => r.data);
 
 // ── User registration ─────────────────────────────────────────────────────
 export const registerStudent = (data: object) =>
