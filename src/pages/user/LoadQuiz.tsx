@@ -71,7 +71,7 @@ function SummaryModal({ qId, onClose, userId }: { qId: number; onClose: () => vo
 
         <div className="lexa-modal-body" style={{ padding: '25px' }}>
           {loading ? (
-            <div style={{ padding: '60px 0', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0' }}>
               <Loader2 className="spin-ico" size={40} style={{ color: 'var(--primary)', marginBottom: 20 }} />
               <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 700 }}>Processing candidate metrics...</p>
             </div>
@@ -324,7 +324,7 @@ export default function LoadQuiz() {
   const getReportForQuiz = (qId: number) => reports.find((r: any) => r && r.quiz && r.quiz.qId === qId) ?? null;
 
   if (isLoadingInit) return (
-    <div style={{ padding: '120px 0', textAlign: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
       <Loader2 className="spin-ico" size={48} style={{ color: 'var(--primary)', marginBottom: 20 }} />
       <h5 style={{ fontWeight: 800, color: '#2a3142' }}>Synchronizing Secure Vault</h5>
       <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 600 }}>Accessing candidate examination records...</p>
@@ -424,7 +424,7 @@ export default function LoadQuiz() {
         {/* Main Records Area */}
         <div className="animate-fade-in-right">
           {isLoadingQ ? (
-            <div className="lexa-card" style={{ padding: '100px 20px', textAlign: 'center', background: '#fff' }}>
+            <div className="lexa-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', background: '#fff' }}>
               <Loader2 className="spin-ico text-primary" size={48} style={{ marginBottom: 20 }} />
               <h6 style={{ fontWeight: 800, color: '#2a3142' }}>Retrieving Session Data</h6>
               <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 600 }}>Accessing secure repository...</p>

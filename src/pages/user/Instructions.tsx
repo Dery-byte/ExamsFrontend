@@ -152,7 +152,7 @@ export default function Instructions() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '100px 0', textAlign: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <Loader2 className="spin-ico" size={40} style={{ color: 'var(--primary)', marginBottom: 16 }} />
         <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 600 }}>Configuring examination parameters...</p>
       </div>

@@ -114,7 +114,7 @@ export default function CoursesRegistered() {
 
         <div className="lexa-card-body" style={{ padding: 0 }}>
           {isLoading ? (
-            <div style={{ padding: '100px 0', textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
               <Loader2 className="spin-ico" size={48} style={{ color: 'var(--primary)', marginBottom: 20 }} />
               <h6 style={{ fontWeight: 700, color: '#495057' }}>Retrieving Curriculum Data</h6>
               <p style={{ color: '#adb5bd', fontSize: 13 }}>Connecting to academic database...</p>

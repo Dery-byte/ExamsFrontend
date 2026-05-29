@@ -144,7 +144,7 @@ export default function AvailableQuizzes() {
       </div>
 
       {isLoadingUserRecords || isLoadingQuizzes ? (
-        <div style={{ padding: '120px 0', textAlign: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
           <Loader2 className="spin-ico" size={48} style={{ color: 'var(--primary)', marginBottom: 20 }} />
           <h5 style={{ fontWeight: 700, color: '#495057' }}>Syncing Assessment Data</h5>
           <p style={{ color: '#adb5bd', fontSize: 14 }}>Initializing secure connection to examination server...</p>
@@ -243,7 +243,7 @@ export default function AvailableQuizzes() {
             </div>
             <div className="lexa-modal-body" style={{ padding: '25px' }}>
               {isLoadingReportData ? (
-                <div style={{ padding: '60px 0', textAlign: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0' }}>
                   <Loader2 className="spin-ico" size={40} style={{ color: 'var(--primary)', marginBottom: 20 }} />
                   <h6 style={{ fontWeight: 700, color: '#495057' }}>Retrieving Candidate Data</h6>
                   <p style={{ fontSize: 13, color: '#adb5bd' }}>Decryption in progress...</p>
