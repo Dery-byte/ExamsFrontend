@@ -279,3 +279,8 @@ export const addSectionBMarks = (questions: object) =>
 // ── Student theory answers by user + quiz ─────────────────────────────────
 export const getStudentTheoryAnswers = (userId: number, quizId: number | string) =>
   client.get(`/answers/by-user-quiz/${userId}/${quizId}`).then(r => r.data).catch(() => []);
+
+// ── LLM Providers ─────────────────────────────────────────────────────────
+export const getAvailableLlmProviders = () => client.get('/llm/providers').then(r => r.data);
+export const getQuizLlmProvider = (quizId: number | string) => client.get(`/llm/quiz/${quizId}/provider`).then(r => r.data);
+export const setQuizLlmProvider = (quizId: number | string, provider: string) => client.put(`/llm/quiz/${quizId}/provider`, { provider }).then(r => r.data);

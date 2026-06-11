@@ -260,12 +260,10 @@ export default function LoadQuiz() {
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-
       const courseTitle = q.category?.title || 'Course';
       const quizTitle = q.title || 'Quiz';
       const safeCourse = courseTitle.replace(/[^a-zA-Z0-9.-]/g, '_');
       const safeQuiz = quizTitle.replace(/[^a-zA-Z0-9.-]/g, '_');
-      
       link.setAttribute('download', `ResultsSlip_${safeCourse}_${safeQuiz}.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -278,6 +276,13 @@ export default function LoadQuiz() {
       setDownloadingId(null);
     }
   };
+
+
+
+
+
+
+
 
   useEffect(() => { init(); }, []);
   useEffect(() => { if (selectedCid) loadQuizzes(selectedCid); else setQuizzes([]); }, [selectedCid]);

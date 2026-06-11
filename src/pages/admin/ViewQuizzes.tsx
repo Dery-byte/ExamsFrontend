@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus } from '../../api/endpoints';
+import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
@@ -12,7 +12,7 @@ import {
   ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock,
   BookOpen, Layers, CheckCircle, ShieldCheck, Monitor,
   Smartphone, List, FileText, Terminal, Award,
-  Activity, Key, Timer, Tag, Hash, Info
+  Activity, Key, Timer, Tag, Hash, Info, Bot
 } from 'lucide-react';
 
 const VIOLATION_OPTIONS = [
@@ -37,6 +37,22 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
       }
     }).catch(() => onClose());
   }, [qId]);
+
+  const { data: providersData } = useQuery({
+    queryKey: ['llmProviders'],
+    queryFn: getAvailableLlmProviders,
+    retry: 1,
+  });
+
+  const FALLBACK_PROVIDERS = [
+    { id: 'GPT',      displayName: 'OpenAI GPT',       description: 'GPT-3.5-Turbo / GPT-4 — Default evaluator', available: true },
+    { id: 'GEMINI',   displayName: 'Google Gemini',    description: 'Gemini 1.5 Flash — Google AI evaluator',      available: true },
+    { id: 'DEEPSEEK', displayName: 'DeepSeek',         description: 'DeepSeek Chat — Cost-effective evaluator',    available: true },
+    { id: 'CLAUDE',   displayName: 'Anthropic Claude', description: 'Claude 3 Haiku — Requires Claude API key',    available: false },
+  ];
+  const llmProviders: any[] = (providersData?.providers?.length > 0)
+    ? providersData.providers
+    : FALLBACK_PROVIDERS;
 
   if (!quiz) return createPortal(
     <div className="qe-overlay">
@@ -177,6 +193,39 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                       </div>
                     )}
                   </div>
+
+                  {/* LLM Provider Selection — visible for Theory & Combined quiz types */}
+                  {(quiz.quizType === 'THEORY' || quiz.quizType === 'BOTH') && (
+                    <div className="aq-llm-card">
+                      <div className="aq-llm-header">
+                        <div className="aq-llm-icon"><Bot size={17} /></div>
+                        <div>
+                          <p className="aq-llm-title">AI Evaluator</p>
+                          <p className="aq-llm-sub">Select the LLM model to grade subjective answers</p>
+                        </div>
+                      </div>
+                      <div className="aq-llm-grid">
+                        {llmProviders.map((p: any) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            disabled={!p.available}
+                            onClick={() => p.available && set('llmProvider', p.id)}
+                            className={`aq-llm-btn ${
+                              (quiz.llmProvider || 'GPT') === p.id ? 'aq-llm-btn--active' : ''
+                            } ${!p.available ? 'aq-llm-btn--disabled' : ''}`}
+                          >
+                            <span className="aq-llm-btn-name">{p.displayName}</span>
+                            <span className="aq-llm-btn-desc">{p.description}</span>
+                            {!p.available && <span className="aq-llm-badge">Key needed</span>}
+                            {(quiz.llmProvider || 'GPT') === p.id && p.available && (
+                              <span className="aq-llm-check">✓ Selected</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Metrics — hidden for Theory-only quizzes */}
                   {quiz.quizType !== 'THEORY' && (
@@ -569,7 +618,24 @@ export default function ViewQuizzes() {
         /* ── Notice ── */
         .aq-notice { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 9px; color: #1d4ed8; font-size: 12px; font-weight: 600; margin-top: 8px; }
 
-        /* ── Grids ── */
+        /* ── LLM Provider Card ── */
+        .aq-llm-card { background: linear-gradient(135deg,#f5f3ff,#ede9fe); border: 1.5px solid #c4b5fd; border-radius: 14px; padding: 18px; margin-top: 8px; margin-bottom: 16px; }
+        .aq-llm-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .aq-llm-icon { width: 36px; height: 36px; border-radius: 10px; background: #7c3aed; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .aq-llm-title { font-size: 13px; font-weight: 800; color: #4c1d95; margin: 0 0 2px; }
+        .aq-llm-sub { font-size: 11px; color: #7c3aed; margin: 0; font-weight: 500; }
+        .aq-llm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .aq-llm-btn { background: #fff; border: 2px solid #e2e8f0; border-radius: 11px; padding: 12px 14px; text-align: left; cursor: pointer; transition: all .2s; position: relative; display: flex; flex-direction: column; gap: 4px; }
+        .aq-llm-btn:hover:not(.aq-llm-btn--disabled) { border-color: #7c3aed; background: #faf5ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,.15); }
+        .aq-llm-btn--active { border-color: #7c3aed !important; background: linear-gradient(135deg,#faf5ff,#f3e8ff) !important; box-shadow: 0 0 0 4px rgba(124,58,237,.15); }
+        .aq-llm-btn--disabled { opacity: .5; cursor: not-allowed; background: #f8fafc; }
+        .aq-llm-btn-name { font-size: 13px; font-weight: 700; color: #1e293b; }
+        .aq-llm-btn-desc { font-size: 10.5px; color: #64748b; font-weight: 500; line-height: 1.4; }
+        .aq-llm-badge { margin-top: 6px; font-size: 9.5px; font-weight: 700; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 20px; padding: 2px 8px; display: inline-block; }
+        .aq-llm-check { margin-top: 6px; font-size: 9.5px; font-weight: 700; color: #7c3aed; background: #f5f3ff; border: 1px solid #c4b5fd; border-radius: 20px; padding: 2px 8px; display: inline-block; }
+        @media (max-width: 560px) { .aq-llm-grid { grid-template-columns: 1fr; } }
+
+
         .aq-grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; padding: 24px; }
         .aq-grid-3   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
         .text-center { text-align: center; }
