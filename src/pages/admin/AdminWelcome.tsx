@@ -259,10 +259,12 @@ export default function AdminWelcome() {
             <table id="reportdata" className="premium-data-table">
               <thead>
                 <tr>
-                  <th>Identity Module</th>
+                  <th>Name</th>
+                  <th>Username</th>
                   {showOBJ && <th className="text-center">Section A (OBJ)</th>}
                   {showTheory && <th className="text-center">Section B (TH)</th>}
-                  <th className="text-right">Global Aggregate</th>
+                  <th className="text-center">Total Score</th>
+                  <th className="text-center">Max Marks</th>
                 </tr>
               </thead>
               <tbody>
@@ -271,21 +273,18 @@ export default function AdminWelcome() {
                   return (
                     <tr key={idx}>
                       <td>
-                        <div className="user-profile-stack">
-                          <div className="u-avatar">{(item.user?.firstname?.[0] || 'U').toUpperCase()}</div>
-                          <div className="u-info">
-                            <span className="u-name">{item.user?.firstname} {item.user?.lastname}</span>
-                            <span className="u-id">{item.user?.username}</span>
-                          </div>
-                        </div>
+                        <span className="u-name">{item.user?.firstname} {item.user?.lastname}</span>
+                      </td>
+                      <td>
+                        <span className="u-id">{item.user?.username}</span>
                       </td>
                       {showOBJ && <td className="text-center"><span className="p-badge">{parseFloat(item.marks || 0).toFixed(1)}</span></td>}
                       {showTheory && <td className="text-center"><span className="p-badge theory">{parseFloat(item.marksB || 0).toFixed(1)}</span></td>}
-                      <td className="text-right">
-                        <div className="outcome-stack">
-                          <span className={`o-val ${total >= 50 ? 'success' : 'critical'}`}>{total.toFixed(1)}</span>
-                          <span className="o-max">/ {item.quiz?.maxMarks}</span>
-                        </div>
+                      <td className="text-center">
+                        <span className={`o-val ${total >= 50 ? 'success' : 'critical'}`}>{total.toFixed(1)}</span>
+                      </td>
+                      <td className="text-center">
+                        <span className="o-max-standalone">{item.quiz?.maxMarks ?? '—'}</span>
                       </td>
                     </tr>
                   );
@@ -467,6 +466,7 @@ export default function AdminWelcome() {
         .o-val.success { color: #10b981; }
         .o-val.critical { color: #f43f5e; }
         .o-max { font-size: 13px; color: var(--text-muted); font-weight: 700; }
+        .o-max-standalone { font-size: 20px; font-weight: 800; color: var(--text-muted); }
 
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }

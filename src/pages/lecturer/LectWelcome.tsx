@@ -299,10 +299,12 @@ export default function LectWelcome() {
             <table id="lect-reportdata" className="lect-data-table">
               <thead>
                 <tr>
-                  <th>Student</th>
+                  <th>Name</th>
+                  <th>Username</th>
                   {showOBJ    && <th className="tc">Objective (A)</th>}
                   {showTheory && <th className="tc">Theory (B)</th>}
-                  <th className="tr">Total Score</th>
+                  <th className="tc">Total Score</th>
+                  <th className="tc">Max Marks</th>
                 </tr>
               </thead>
               <tbody>
@@ -312,21 +314,18 @@ export default function LectWelcome() {
                   return (
                     <tr key={idx}>
                       <td>
-                        <div className="lect-user-stack">
-                          <div className="lect-avatar">{(item.user?.firstname?.[0] || 'U').toUpperCase()}</div>
-                          <div className="lect-u-info">
-                            <span className="lect-u-name">{item.user?.firstname} {item.user?.lastname}</span>
-                            <span className="lect-u-id">{item.user?.username}</span>
-                          </div>
-                        </div>
+                        <span className="lect-u-name">{item.user?.firstname} {item.user?.lastname}</span>
+                      </td>
+                      <td>
+                        <span className="lect-u-id">{item.user?.username}</span>
                       </td>
                       {showOBJ    && <td className="tc"><span className="lect-p-badge">{parseFloat(item.marks || 0).toFixed(1)}</span></td>}
                       {showTheory && <td className="tc"><span className="lect-p-badge theory">{parseFloat(item.marksB || 0).toFixed(1)}</span></td>}
-                      <td className="tr">
-                        <div className="lect-outcome-stack">
-                          <span className={`lect-o-val ${pass ? 'pass' : 'fail'}`}>{total.toFixed(1)}</span>
-                          <span className="lect-o-max">/ {item.quiz?.maxMarks}</span>
-                        </div>
+                      <td className="tc">
+                        <span className={`lect-o-val ${pass ? 'pass' : 'fail'}`}>{total.toFixed(1)}</span>
+                      </td>
+                      <td className="tc">
+                        <span className="lect-o-max-standalone">{item.quiz?.maxMarks ?? '—'}</span>
                       </td>
                     </tr>
                   );
@@ -503,6 +502,7 @@ export default function LectWelcome() {
         .lect-o-val.pass    { color: #10b981; }
         .lect-o-val.fail    { color: #f43f5e; }
         .lect-o-max         { font-size: 13px; color: var(--tmu); font-weight: 700; }
+        .lect-o-max-standalone { font-size: 20px; font-weight: 800; color: var(--tmu); }
 
         /* Responsive */
         @media (max-width: 1200px) {
