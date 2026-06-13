@@ -345,7 +345,7 @@ export default function PrintQuiz() {
                             <div className="print-question-flex">
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{q.quesO}</div>
-                                <h5 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#2a3142', lineHeight: 1.5 }}>{q.question}</h5>
+                                <h5 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#2a3142', lineHeight: 1.5 }} className="ql-content" dangerouslySetInnerHTML={{ __html: q.question }} />
                               </div>
                               <div style={{ textAlign: 'center', padding: '12px 20px', background: '#fcfdfe', borderRadius: 12, border: '1px solid #f1eefb', minWidth: 80 }}>
                                 <div style={{ fontSize: 22, fontWeight: 800, color: gradeColor(p) }}>{q.score}</div>

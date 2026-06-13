@@ -10,6 +10,10 @@ import {
   Loader2, Database, Zap, Hash, Award, Target, ChevronRight,
   Layers, CheckSquare, ToggleLeft, Link2, X, Check, Plus, Trash2
 } from 'lucide-react';
+import RichTextEditor from '../../components/ui/RichTextEditor';
+
+// Strip HTML tags for validation
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim();
 
 // ─── Exact enum values from backend QuestionType.java ────────────────────────
 const Q_TYPES = [
@@ -157,7 +161,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
   // ─── Submit handlers ──────────────────────────────────────────────────────────
   const handleAddMCQ = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mcqForm.content.trim()) { toast.error('Question content is required'); return; }
+    if (!stripHtml(mcqForm.content)) { toast.error('Question content is required'); return; }
     if (!mcqForm.option1.trim() || !mcqForm.option2.trim()) { toast.error('At least two options are required'); return; }
     if (!mcqForm.correct_answer.length) { toast.error('Mark at least one correct answer'); return; }
     setLoading(true);
@@ -171,7 +175,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
 
   const handleAddTF = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tfForm.content.trim()) { toast.error('Question content is required'); return; }
+    if (!stripHtml(tfForm.content)) { toast.error('Question content is required'); return; }
     if (!tfForm.correct_answer.length) { toast.error('Select True or False as the correct answer'); return; }
     setLoading(true);
     try {
@@ -184,7 +188,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
 
   const handleAddMatching = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!matchForm.content.trim()) { toast.error('Question content is required'); return; }
+    if (!stripHtml(matchForm.content)) { toast.error('Question content is required'); return; }
     if (matchForm.matchingPairs.length < 2) { toast.error('Add at least 2 matching pairs'); return; }
     const incomplete = matchForm.matchingPairs.some((p: any) => !p.prompt.trim() || !p.answer.trim());
     if (incomplete) { toast.error('All pairs must have both a prompt and an answer'); return; }
@@ -199,7 +203,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
 
   const handleAddTheory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!theoryForm.quesNo.trim() || !theoryForm.question.trim() || !theoryForm.marks || Number(theoryForm.marks) <= 0) {
+    if (!theoryForm.quesNo.trim() || !stripHtml(theoryForm.question) || !theoryForm.marks || Number(theoryForm.marks) <= 0) {
       toast.error('Question number, content and marks are required'); return;
     }
     setLoading(true);
@@ -361,10 +365,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                     <form onSubmit={handleAddMCQ} className="addq-form-body">
                       <div className="addq-field">
                         <label className="addq-label"><Hash size={13} />Question</label>
-                        <textarea className="addq-input addq-textarea" rows={4}
+                        <RichTextEditor
                           value={mcqForm.content}
-                          onChange={e => setMcq('content', e.target.value)}
-                          placeholder="Enter the question text here..." />
+                          onChange={val => setMcq('content', val)}
+                          placeholder="Enter the question text here..."
+                          minHeight={140}
+                          id="mcq-content-editor"
+                        />
                       </div>
 
                       <div className="addq-field">
@@ -428,10 +435,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                     <form onSubmit={handleAddTF} className="addq-form-body">
                       <div className="addq-field">
                         <label className="addq-label"><Hash size={13} />Question</label>
-                        <textarea className="addq-input addq-textarea" rows={4}
+                        <RichTextEditor
                           value={tfForm.content}
-                          onChange={e => setTfForm((f: any) => ({ ...f, content: e.target.value }))}
-                          placeholder="Enter the True/False statement here..." />
+                          onChange={val => setTfForm((f: any) => ({ ...f, content: val }))}
+                          placeholder="Enter the True/False statement here..."
+                          minHeight={140}
+                          id="tf-content-editor"
+                        />
                       </div>
 
                       <div className="addq-field">
@@ -469,10 +479,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                     <form onSubmit={handleAddMatching} className="addq-form-body">
                       <div className="addq-field">
                         <label className="addq-label"><Hash size={13} />Question / Instructions</label>
-                        <textarea className="addq-input addq-textarea" rows={3}
+                        <RichTextEditor
                           value={matchForm.content}
-                          onChange={e => setMatchForm((f: any) => ({ ...f, content: e.target.value }))}
-                          placeholder="e.g. Match each HTTP status code to its meaning..." />
+                          onChange={val => setMatchForm((f: any) => ({ ...f, content: val }))}
+                          placeholder="e.g. Match each HTTP status code to its meaning..."
+                          minHeight={110}
+                          id="matching-content-editor"
+                        />
                       </div>
 
                       <div className="addq-field">
@@ -568,20 +581,26 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                 </div>
                 <div className="addq-field">
                   <label className="addq-label"><FileText size={13} />Question Content</label>
-                  <textarea className="addq-input addq-textarea" rows={5}
+                  <RichTextEditor
                     value={theoryForm.question}
-                    onChange={e => setTheoryForm(t => ({ ...t, question: e.target.value }))}
-                    placeholder="Enter the theory question here..." />
+                    onChange={val => setTheoryForm(t => ({ ...t, question: val }))}
+                    placeholder="Enter the theory question here..."
+                    minHeight={160}
+                    id="theory-question-editor"
+                  />
                 </div>
                 <div className="addq-field">
                   <label className="addq-label">
                     <Info size={13} />Evaluation Criteria
                     <span className="addq-optional">optional</span>
                   </label>
-                  <textarea className="addq-input addq-textarea addq-textarea-dashed" rows={3}
+                  <RichTextEditor
                     value={theoryForm.evaluationCriteria}
-                    onChange={e => setTheoryForm(t => ({ ...t, evaluationCriteria: e.target.value }))}
-                    placeholder="Internal grading benchmarks..." />
+                    onChange={val => setTheoryForm(t => ({ ...t, evaluationCriteria: val }))}
+                    placeholder="Internal grading benchmarks..."
+                    minHeight={110}
+                    id="theory-eval-editor"
+                  />
                 </div>
                 <button type="submit" className="addq-submit-btn addq-submit-green" disabled={loading}>
                   {loading ? <Loader2 className="addq-spin" size={16} /> : <Save size={16} />}

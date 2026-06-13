@@ -16,6 +16,7 @@ import {
   ArrowLeft, GripVertical, Award, Target, Hash, Zap, Cpu, Activity,
   ChevronDown, MinusCircle, PlusCircle, Check
 } from 'lucide-react';
+import RichTextEditor from '../../components/ui/RichTextEditor';
 
 export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: boolean }) {
   const { qId, qTitle } = useParams();
@@ -391,7 +392,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
                       {/* Body: Question */}
                       <div className="vqq-obj-body">
-                        <p className="vqq-obj-question" dangerouslySetInnerHTML={{ __html: q.content }} />
+                        <p className="vqq-obj-question ql-content" dangerouslySetInnerHTML={{ __html: q.content }} />
 
                         {/* MCQ Options */}
                         {!isMatching && !isTF && (
@@ -543,7 +544,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
                           {/* Content */}
                           <div className="vqq-q-content">
-                            <div className="vqq-q-text" dangerouslySetInnerHTML={{ __html: q.question }} />
+                            <div className="vqq-q-text ql-content" dangerouslySetInnerHTML={{ __html: q.question }} />
                             {q.evaluationCriteria && (
                               <div className="vqq-eval-box">
                                 <div className="vqq-eval-hd">
@@ -627,15 +628,23 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                 <div style={{ flex: 1, minWidth: '80px' }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Marks</label>
                   <input type="number" style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '14px', fontWeight: 700, color: '#5156be', textAlign: 'center', height: '38px', boxSizing: 'border-box' }}
-                    value={specificObj.marks || ''} onChange={e => setSpecificObj({ ...specificObj, marks: Number(e.target.value) })} placeholder="0" />
+                    value={specificObj.marks || ''} onChange={e => setSpecificObj(prev => ({ ...prev, marks: Number(e.target.value) }))} placeholder="0" />
                 </div>
               </div>
 
               {/* Question Text */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Question Text</label>
-                <textarea style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '13px', resize: 'vertical', minHeight: '70px', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fafbff' }}
-                  value={specificObj.content || ''} onChange={e => setSpecificObj({ ...specificObj, content: e.target.value })} placeholder="Enter the question text..." />
+                {!isModalLoading && (
+                  <RichTextEditor
+                    key={`obj-content-${specificObj.quesId}`}
+                    value={specificObj.content || ''}
+                    onChange={val => setSpecificObj(prev => ({ ...prev, content: val }))}
+                    placeholder="Enter the question text..."
+                    minHeight={120}
+                    id="edit-obj-content-editor"
+                  />
+                )}
               </div>
 
               {/* MCQ Options */}
@@ -648,12 +657,16 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                       const isSel = (specificObj.correctAnswer || []).includes(optVal);
                       return (
                         <div key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '8px', border: `1px solid ${isSel ? '#5156be' : '#e9ecef'}`, background: isSel ? 'rgba(81,86,190,0.06)' : '#fff' }}>
-                          <button type="button" onClick={() => { if (!optVal) return; const cur = specificObj.correctAnswer || []; setSpecificObj({ ...specificObj, correctAnswer: isSel ? cur.filter((v: any) => v !== optVal) : [...cur, optVal] }); }}
+                        <button type="button" onClick={() => {
+                            if (!optVal) return;
+                            const cur = specificObj.correctAnswer || [];
+                            setSpecificObj(prev => ({ ...prev, correctAnswer: isSel ? cur.filter((v: any) => v !== optVal) : [...cur, optVal] }));
+                          }}
                             style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: isSel ? '#5156be' : '#f1f3fa', color: isSel ? '#fff' : '#74788d', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             {isSel ? <Check size={12} strokeWidth={3} /> : <span style={{ fontSize: '9px', fontWeight: 700 }}>{String.fromCharCode(65 + i)}</span>}
                           </button>
                           <input style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 500, outline: 'none', minWidth: 0 }}
-                            value={optVal || ''} onChange={e => setSpecificObj({ ...specificObj, [opt]: e.target.value })} placeholder={`Option ${String.fromCharCode(65 + i)}...`} />
+                            value={optVal || ''} onChange={e => setSpecificObj(prev => ({ ...prev, [opt]: e.target.value }))} placeholder={`Option ${String.fromCharCode(65 + i)}...`} />
                         </div>
                       );
                     })}
@@ -670,7 +683,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                       const isSel = (specificObj.correctAnswer || []).includes(val);
                       const color = val === 'True' ? '#2ab57d' : '#fd625e';
                       return (
-                        <button key={val} type="button" onClick={() => setSpecificObj({ ...specificObj, correctAnswer: [val] })}
+                        <button key={val} type="button" onClick={() => setSpecificObj(prev => ({ ...prev, correctAnswer: [val] }))}
                           style={{ flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${isSel ? color : '#e9ecef'}`, background: isSel ? `${color}10` : '#fff', color: isSel ? color : '#74788d', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}>
                           {isSel ? (val === 'True' ? <CheckCircle size={18} /> : <X size={18} />) : <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid #ced4da' }} />}
                           {val.toUpperCase()}
@@ -692,10 +705,10 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto', marginBottom: '8px' }}>
                       {(specificObj.matchingPairs || []).map((pair: any, idx: number) => (
                         <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 16px 1fr 28px', gap: '4px', alignItems: 'center', background: '#fff', padding: '6px 8px', borderRadius: '8px', border: '1px solid #e9ecef' }}>
-                          <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 500, outline: 'none', minWidth: 0 }} value={pair.prompt} onChange={e => { const p = [...specificObj.matchingPairs]; p[idx].prompt = e.target.value; setSpecificObj({ ...specificObj, matchingPairs: p }); }} placeholder="Prompt..." />
+                          <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 500, outline: 'none', minWidth: 0 }} value={pair.prompt} onChange={e => { setSpecificObj(prev => { const p = [...prev.matchingPairs]; p[idx] = { ...p[idx], prompt: e.target.value }; return { ...prev, matchingPairs: p }; }); }} placeholder="Prompt..." />
                           <span style={{ color: '#adb5bd', fontSize: '10px', textAlign: 'center' }}>→</span>
-                          <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 600, color: '#5156be', outline: 'none', minWidth: 0 }} value={pair.answer} onChange={e => { const p = [...specificObj.matchingPairs]; p[idx].answer = e.target.value; setSpecificObj({ ...specificObj, matchingPairs: p }); }} placeholder="Match..." />
-                          <button type="button" onClick={() => setSpecificObj({ ...specificObj, matchingPairs: specificObj.matchingPairs.filter((_: any, i: number) => i !== idx) })}
+                          <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 600, color: '#5156be', outline: 'none', minWidth: 0 }} value={pair.answer} onChange={e => { setSpecificObj(prev => { const p = [...prev.matchingPairs]; p[idx] = { ...p[idx], answer: e.target.value }; return { ...prev, matchingPairs: p }; }); }} placeholder="Match..." />
+                          <button type="button" onClick={() => setSpecificObj(prev => ({ ...prev, matchingPairs: prev.matchingPairs.filter((_: any, i: number) => i !== idx) }))}
                             style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'rgba(236,69,97,0.1)', color: '#ec4561', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={11} /></button>
                         </div>
                       ))}
@@ -703,7 +716,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                         <div style={{ textAlign: 'center', padding: '16px', color: '#adb5bd', fontSize: '12px', border: '1px dashed #e9ecef', borderRadius: '8px' }}>No pairs yet</div>
                       )}
                     </div>
-                    <button type="button" onClick={() => setSpecificObj({ ...specificObj, matchingPairs: [...(specificObj.matchingPairs || []), { prompt: '', answer: '' }] })}
+                    <button type="button" onClick={() => setSpecificObj(prev => ({ ...prev, matchingPairs: [...(prev.matchingPairs || []), { prompt: '', answer: '' }] }))}
                       style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px dashed #5156be', background: 'rgba(81,86,190,0.04)', color: '#5156be', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                       <PlusCircle size={14} /> Add Pair
                     </button>
@@ -763,7 +776,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                   <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e9ecef', borderRadius: '8px', overflow: 'hidden' }}>
                     <span style={{ padding: '8px 10px', background: '#f8f9fa', color: '#74788d', borderRight: '1px solid #e9ecef', display: 'flex', alignItems: 'center', flexShrink: 0 }}><Award size={13} /></span>
                     <input type="number" style={{ flex: 1, padding: '8px 10px', border: 'none', outline: 'none', fontSize: '14px', fontWeight: 700, color: '#2ab57d', textAlign: 'center', minWidth: 0 }}
-                      value={theory.marks || ''} onChange={e => setTheory({ ...theory, marks: e.target.value })} placeholder="0" />
+                      value={theory.marks || ''} onChange={e => setTheory(prev => ({ ...prev, marks: e.target.value }))} placeholder="0" />
                   </div>
                 </div>
               </div>
@@ -771,8 +784,16 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
               {/* Question Text */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Theoretical Prompt</label>
-                <textarea style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '13px', resize: 'vertical', minHeight: '90px', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fafbff', lineHeight: 1.6 }}
-                  value={theory.question || ''} onChange={e => setTheory({ ...theory, question: e.target.value })} placeholder="Enter the question text..." />
+                {!isModalLoading && (
+                  <RichTextEditor
+                    key={`theory-q-${theory.tqId}`}
+                    value={theory.question || ''}
+                    onChange={val => setTheory(prev => ({ ...prev, question: val }))}
+                    placeholder="Enter the question text..."
+                    minHeight={120}
+                    id="edit-theory-question-editor"
+                  />
+                )}
               </div>
 
               {/* Evaluation Criteria */}
@@ -780,8 +801,16 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
                   <Target size={12} style={{ color: '#2ab57d' }} /> Evaluation Rubric
                 </label>
-                <textarea style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px dashed #c3e6cb', fontSize: '13px', resize: 'vertical', minHeight: '80px', boxSizing: 'border-box', fontFamily: 'inherit', background: '#f0faf5', lineHeight: 1.6 }}
-                  value={theory.evaluationCriteria || ''} onChange={e => setTheory({ ...theory, evaluationCriteria: e.target.value })} placeholder="Key grading points..." />
+                {!isModalLoading && (
+                  <RichTextEditor
+                    key={`theory-e-${theory.tqId}`}
+                    value={theory.evaluationCriteria || ''}
+                    onChange={val => setTheory(prev => ({ ...prev, evaluationCriteria: val }))}
+                    placeholder="Key grading points..."
+                    minHeight={100}
+                    id="edit-theory-eval-editor"
+                  />
+                )}
               </div>
             </div>
 
