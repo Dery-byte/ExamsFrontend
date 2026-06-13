@@ -126,6 +126,9 @@ export default function StartQuiz() {
   const isTimerLoaded = useRef(false);
   const isExpiredHandled = useRef(false);
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Always points to the latest sectionBAll — solves stale-closure in interval/blur handlers
+  const sectionBAllRef = useRef<any[]>([]);
   const submitAllRef = useRef<(auto?: boolean) => void>(() => { });
 
   const timerVal = useRef(0);
@@ -171,13 +174,16 @@ export default function StartQuiz() {
     const onBlur = () => {
       if (isTimerLoaded.current && timerVal.current > 0) {
         saveQuizTimer(qid!, timerVal.current).catch(() => { });
-        saveTheory().catch(() => { });
+        // Read directly from ref — always fresh regardless of closure age
+        const answers = sectionBAllRef.current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
+        if (answers.length > 0) saveTheoryAnswers(qid!, answers).catch(() => { });
       }
     };
     window.addEventListener('blur', onBlur);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+      if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
       window.removeEventListener('blur', onBlur);
     };
   }, [qid]);
@@ -240,6 +246,7 @@ export default function StartQuiz() {
         const saved = savedThArray.find((a: any) => a.quesNo === q.quesNo);
         return { ...q, givenAnswer: saved?.givenAnswer ?? '' };
       });
+      sectionBAllRef.current = theoryQs; // keep ref in sync from the start
       setSectionBAll(theoryQs);
       if (theoryQs.length > 0) {
         const grp = groupByPrefix(theoryQs);
@@ -306,14 +313,26 @@ export default function StartQuiz() {
     submitAllRef.current(true);
   };
 
+  // Reads from ref so it is always fresh — safe to call from intervals/blur handlers
   const saveTheory = useCallback(async () => {
-    if (sectionBAll.length === 0) return;
-    const answers = sectionBAll.map(q => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
+    const current = sectionBAllRef.current;
+    if (current.length === 0) return;
+    const answers = current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
     await saveTheoryAnswers(qid!, answers).catch(() => { });
-  }, [sectionBAll, qid]);
+  }, [qid]); // no sectionBAll dep — ref is always current
 
   const updateTheoryAnswer = (quesNo: string, val: string) => {
-    setSectionBAll(prev => prev.map(q => q.quesNo === quesNo ? { ...q, givenAnswer: val } : q));
+    setSectionBAll(prev => {
+      const updated = prev.map(q => q.quesNo === quesNo ? { ...q, givenAnswer: val } : q);
+      sectionBAllRef.current = updated; // sync ref immediately, before next render
+      return updated;
+    });
+    // Debounced save: persists 2 s after the student stops typing
+    if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
+    autoSaveDebounceRef.current = setTimeout(() => {
+      const answers = sectionBAllRef.current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
+      if (answers.length > 0) saveTheoryAnswers(qid!, answers).catch(() => { });
+    }, 2000);
   };
 
   const togglePrefix = (p: string) => {

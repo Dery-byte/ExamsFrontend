@@ -238,7 +238,7 @@ export const clearQuizAnswers = (quizId: number | string) =>
   client.delete(`/quiz-progress/quiz/${quizId}`).then(r => r.data);
 
 export const saveTheoryAnswers = (quizId: number | string, answers: object[]) =>
-  client.post(`/theory-progress/save/${quizId}`, answers, { withCredentials: true }).then(r => r.data);
+  client.post(`/theory-progress/save/${quizId}`, answers).then(r => r.data);
 export const loadTheoryAnswers = (quizId: number | string) =>
   client.get(`/theory-progress/load/${quizId}`).then(r => r.data);
 export const clearTheoryAnswers = (quizId: number | string) =>
