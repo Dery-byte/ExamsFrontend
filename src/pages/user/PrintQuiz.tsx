@@ -114,6 +114,22 @@ export default function PrintQuiz() {
         .print-section-pad { padding: 0 50px 50px; }
         .print-question-flex { display: flex; justify-content: space-between; gap: 30px; margin-bottom: 25px; }
         .print-footer { padding: 40px 50px; }
+
+        /* ── Quill rich-text reset (ensures HTML from editor renders cleanly) ── */
+        .ql-content p { margin: 0 0 6px 0; }
+        .ql-content ol, .ql-content ul { padding-left: 1.5em; margin: 4px 0; }
+        .ql-content strong { font-weight: 700; }
+        .ql-content em { font-style: italic; }
+        .ql-content u { text-decoration: underline; }
+        .ql-content s { text-decoration: line-through; }
+        .ql-content pre { background: #f1f5f7; padding: 8px 12px; border-radius: 4px; font-size: 13px; white-space: pre-wrap; }
+        .ql-content code { background: #f1f5f7; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+        .ql-content blockquote { border-left: 3px solid #adb5bd; margin: 6px 0; padding-left: 12px; color: #6c757d; }
+        .ql-content img { max-width: 100%; height: auto; }
+        /* Option HTML content inline reset */
+        .opt-html p { display: inline; margin: 0; }
+        .opt-html strong { font-weight: 700; }
+        .opt-html em { font-style: italic; }
         
         @media (max-width: 768px) {
           .print-toolbar { padding: 15px 20px; flex-direction: column; gap: 15px; text-align: center; }
@@ -295,9 +311,12 @@ export default function PrintQuiz() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       {['option1', 'option2', 'option3', 'option4'].filter(k => q[k]).map((k, j) => {
-                        const isCorrect = q.correct_answer?.includes(q[k]);
-                        const isSelected = q.selectedAnswers?.includes(q[k]);
+                        const rawVal = q[k] || '';
+                        const isCorrect = q.correct_answer?.includes(rawVal);
+                        const isSelected = q.selectedAnswers?.includes(rawVal);
                         const color = isCorrect ? '#10b981' : isSelected ? '#ef6767' : '#f1f5f7';
+                        /* detect whether the option value contains HTML markup */
+                        const hasHtml = /<[a-z][^>]*>/i.test(rawVal);
                         return (
                           <div key={k} style={{
                             padding: '12px 18px', borderRadius: 10, fontSize: 14,
@@ -307,8 +326,17 @@ export default function PrintQuiz() {
                             fontWeight: isCorrect || isSelected ? 800 : 500,
                             display: 'flex', alignItems: 'center', gap: 12
                           }}>
-                            <span style={{ width: 24, height: 24, borderRadius: 6, background: isCorrect || isSelected ? color : 'rgba(0,0,0,0.03)', color: isCorrect || isSelected ? '#fff' : '#adb5bd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{['A', 'B', 'C', 'D'][j]}</span>
-                            <span style={{ flex: 1 }}>{q[k]}</span>
+                            <span style={{ width: 24, height: 24, borderRadius: 6, background: isCorrect || isSelected ? color : 'rgba(0,0,0,0.03)', color: isCorrect || isSelected ? '#fff' : '#adb5bd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{['A', 'B', 'C', 'D'][j]}</span>
+                            {hasHtml
+                              ? <span className="opt-html" style={{ flex: 1 }} dangerouslySetInnerHTML={{ __html: rawVal }} />
+                              : <span style={{ flex: 1 }}>{rawVal}</span>
+                            }
+                            {isSelected && !isCorrect && (
+                              <span style={{ fontSize: 9, fontWeight: 800, color: '#ef6767', background: 'rgba(239,103,103,0.1)', padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>Your Answer</span>
+                            )}
+                            {isSelected && isCorrect && (
+                              <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>Your Answer ✓</span>
+                            )}
                           </div>
                         );
                       })}
