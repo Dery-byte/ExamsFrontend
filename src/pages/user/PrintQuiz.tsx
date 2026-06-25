@@ -9,6 +9,8 @@ const fmtDur = (m: number) => { const h = Math.floor(m / 60); const mm = m % 60;
 const pct = (got: any, max: any) => { const g = parseFloat(got || 0), m = parseFloat(max || 0); return m > 0 ? Math.round((g / m) * 100) : 0; };
 const gradeColor = (p: number) => p >= 70 ? '#10b981' : p >= 50 ? '#f1b44c' : '#ef6767';
 const gradeLabel = (p: number) => p >= 70 ? 'EXCELLENT' : p >= 50 ? 'SATISFACTORY' : 'NEEDS IMPROVEMENT';
+/* Strip all HTML tags — used only for string comparison, never for display */
+const stripHtml = (s: string) => (s || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
 
 const groupByPrefix = (data: any[]) => {
   if (!data?.length) return [];
@@ -304,7 +306,7 @@ export default function PrintQuiz() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 25, marginBottom: 20 }}>
                       <div style={{ display: 'flex', gap: 15 }}>
                         <span style={{ fontWeight: 800, color: '#adb5bd', fontSize: 15 }}>{String(i + 1).padStart(2, '0')}.</span>
-                        <div style={{ fontSize: 15, color: '#2a3142', fontWeight: 600, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: q.content }} />
+                        <div className="ql-content" style={{ fontSize: 15, color: '#2a3142', fontWeight: 600, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: q.content }} />
                       </div>
                       <StatusBadge status={q.status} />
                     </div>
@@ -312,30 +314,34 @@ export default function PrintQuiz() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       {['option1', 'option2', 'option3', 'option4'].filter(k => q[k]).map((k, j) => {
                         const rawVal = q[k] || '';
-                        const isCorrect = q.correct_answer?.includes(rawVal);
-                        const isSelected = q.selectedAnswers?.includes(rawVal);
+                        /* Strip HTML from both sides so plain-text correct_answer values
+                           match HTML-wrapped option values (and vice-versa) */
+                        const plainVal = stripHtml(rawVal);
+                        const isCorrect = (q.correct_answer || []).some(
+                          (a: string) => stripHtml(a) === plainVal
+                        );
+                        const isSelected = (q.selectedAnswers || []).some(
+                          (a: string) => stripHtml(a) === plainVal
+                        );
                         const color = isCorrect ? '#10b981' : isSelected ? '#ef6767' : '#f1f5f7';
-                        /* detect whether the option value contains HTML markup */
-                        const hasHtml = /<[a-z][^>]*>/i.test(rawVal);
                         return (
                           <div key={k} style={{
                             padding: '12px 18px', borderRadius: 10, fontSize: 14,
                             border: `1.5px solid ${isCorrect || isSelected ? color : '#f1f5f7'}`,
-                            background: isCorrect ? 'rgba(16,185,129,0.03)' : isSelected ? 'rgba(239,103,103,0.03)' : '#fff',
+                            background: isCorrect ? 'rgba(16,185,129,0.05)' : isSelected ? 'rgba(239,103,103,0.05)' : '#fff',
                             color: isCorrect || isSelected ? (isCorrect ? '#10b981' : '#ef6767') : '#495057',
-                            fontWeight: isCorrect || isSelected ? 800 : 500,
+                            fontWeight: isCorrect || isSelected ? 700 : 500,
                             display: 'flex', alignItems: 'center', gap: 12
                           }}>
                             <span style={{ width: 24, height: 24, borderRadius: 6, background: isCorrect || isSelected ? color : 'rgba(0,0,0,0.03)', color: isCorrect || isSelected ? '#fff' : '#adb5bd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{['A', 'B', 'C', 'D'][j]}</span>
-                            {hasHtml
-                              ? <span className="opt-html" style={{ flex: 1 }} dangerouslySetInnerHTML={{ __html: rawVal }} />
-                              : <span style={{ flex: 1 }}>{rawVal}</span>
-                            }
+                            {/* Always render via dangerouslySetInnerHTML so HTML formatting
+                                is displayed correctly and raw tags never appear as text */}
+                            <span className="opt-html" style={{ flex: 1 }} dangerouslySetInnerHTML={{ __html: rawVal }} />
                             {isSelected && !isCorrect && (
-                              <span style={{ fontSize: 9, fontWeight: 800, color: '#ef6767', background: 'rgba(239,103,103,0.1)', padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>Your Answer</span>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: '#ef6767', background: 'rgba(239,103,103,0.12)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>Your Answer</span>
                             )}
                             {isSelected && isCorrect && (
-                              <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>Your Answer ✓</span>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.12)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>Your Answer ✓</span>
                             )}
                           </div>
                         );
