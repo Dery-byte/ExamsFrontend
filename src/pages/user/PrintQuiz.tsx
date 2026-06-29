@@ -338,7 +338,7 @@ export default function PrintQuiz() {
                                 is displayed correctly and raw tags never appear as text */}
                             <span className="opt-html" style={{ flex: 1 }} dangerouslySetInnerHTML={{ __html: rawVal }} />
                             {isSelected && !isCorrect && (
-                              <span style={{ fontSize: 9, fontWeight: 800, color: '#ef6767', background: 'rgba(239,103,103,0.12)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>Your Answer</span>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: '#ef6767', background: 'rgba(239,103,103,0.12)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>Your Answer &#10007;</span>
                             )}
                             {isSelected && isCorrect && (
                               <span style={{ fontSize: 9, fontWeight: 800, color: '#10b981', background: 'rgba(16,185,129,0.12)', padding: '2px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>Your Answer ✓</span>

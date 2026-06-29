@@ -31,6 +31,7 @@ interface AuthCtx {
   isLecturer: () => boolean;
   isStudent: () => boolean;
   timeDisplay: { display: string; className: string } | null;
+  updateUser: (partial: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -52,7 +53,19 @@ function fmtCountdown(ms: number): string {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
-    try { const r = localStorage.getItem('user'); return r ? JSON.parse(r) : null; } catch { return null; }
+    try {
+      const r = localStorage.getItem('user');
+      if (!r) return null;
+      const parsed = JSON.parse(r);
+      // Normalize firstName/lastName → firstname/lastname (backend field name mismatch)
+      if (parsed.firstName !== undefined && parsed.firstname === undefined) parsed.firstname = parsed.firstName;
+      if (parsed.lastName  !== undefined && parsed.lastname  === undefined) parsed.lastname  = parsed.lastName;
+      // Normalize authorities string → array if needed
+      if (typeof parsed.authorities === 'string') {
+        parsed.authorities = parsed.authorities.split(',').map((a: string) => ({ authority: a.trim() }));
+      }
+      return parsed;
+    } catch { return null; }
   });
   const [timeDisplay, setTimeDisplay] = useState<{ display: string; className: string } | null>(null);
   const expiryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,6 +156,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     performLogout();
   }, [performLogout]);
 
+  const updateUser = useCallback((partial: Partial<AuthUser>) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partial };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user, isLoggedIn: !!user && !!localStorage.getItem('access_token'),
@@ -151,6 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLecturer: () => user?.role === 'LECTURER',
       isStudent:  () => user?.role === 'NORMAL',
       timeDisplay,
+      updateUser,
     }}>
       {children}
     </AuthContext.Provider>

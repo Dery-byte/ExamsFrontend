@@ -10,7 +10,14 @@ import client from './client';
 export const authenticate = (data: { username: string; password: string }) =>
   client.post('/authenticate', data).then(r => r.data);
 
-export const getCurrentUser = () => client.get('/current-user').then(r => r.data);
+export const getCurrentUser = () =>
+  client.get('/current-user').then(r => {
+    const d = r.data;
+    // Backend UserResponse uses firstName/lastName (capital N) — normalize to lowercase
+    if (d.firstName !== undefined && d.firstname === undefined) d.firstname = d.firstName;
+    if (d.lastName  !== undefined && d.lastname  === undefined) d.lastname  = d.lastName;
+    return d;
+  });
 
 export const doLogout = (token: string) =>
   client.post('/logout', {}, { headers: { Authorization: `Bearer ${token}` } });
@@ -49,6 +56,15 @@ export const getLecturerById = (id: number) => client.get(`/lecturerbyId/${id}`)
 
 export const updateStudent = (id: number, data: object) => client.put(`/update/student/${id}`, data).then(r => r.data);
 export const updateLecturer = (id: number, data: object) => client.put(`/update/lecturer/${id}`, data).then(r => r.data);
+
+// Update current user's own profile — uses Principal, works for ALL roles
+export const updateMyProfile = (_id: number, _role: string, data: { firstname?: string; lastname?: string; email?: string; phone?: string }) =>
+  client.put('/update-my-profile', data).then(r => r.data);
+
+
+// Change password for the currently logged-in user
+export const changeMyPassword = (newPassword: string) =>
+  client.put('/updatepassword', { password: newPassword }).then(r => r.data);
 
 export const deleteStudent = (id: number) => client.delete(`/student/${id}`).then(r => r.data);
 export const deleteLecturer = (id: number) => client.delete(`/lecturer/${id}`).then(r => r.data);
