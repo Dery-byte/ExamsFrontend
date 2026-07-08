@@ -49,6 +49,8 @@ export const registerLecturer = (data: object) =>
 export const getAllUsers = () => client.get('/users').then(r => r.data);
 
 export const getAllStudentsCounts = () => client.get('/students/counts').then(r => r.data);
+/** Rich student list with programId/currentLevel/currentSemester — for admin enroll & promote pages */
+export const adminGetAllStudents = () => client.get('/admin/students').then(r => r.data);
 export const getAllLecturersCounts = () => client.get('/lecturers/counts').then(r => r.data);
 
 export const getStudentById = (id: number) => client.get(`/studentbyId/${id}`).then(r => r.data);
@@ -300,3 +302,90 @@ export const getStudentTheoryAnswers = (userId: number, quizId: number | string)
 export const getAvailableLlmProviders = () => client.get('/llm/providers').then(r => r.data);
 export const getQuizLlmProvider = (quizId: number | string) => client.get(`/llm/quiz/${quizId}/provider`).then(r => r.data);
 export const setQuizLlmProvider = (quizId: number | string, provider: string) => client.put(`/llm/quiz/${quizId}/provider`, { provider }).then(r => r.data);
+
+// ── Programs (read-only — available to all authenticated users) ────────────
+export const getPrograms = () => client.get('/programs').then(r => r.data);
+export const getProgramsByDept = (deptId: number) => client.get(`/programs/department/${deptId}`).then(r => r.data);
+export const getProgramById = (id: number) => client.get(`/programs/${id}`).then(r => r.data);
+
+// ── Student filtered courses ───────────────────────────────────────────────
+export const getCoursesForStudent = () => client.get('/categories/for-student').then(r => r.data);
+
+// ── Super Admin endpoints (different base path: /api/v1/super-admin) ────────
+import axios from 'axios';
+const SA_BASE = (import.meta as any).env?.VITE_API_URL
+  ? (import.meta as any).env.VITE_API_URL.replace('/auth', '/super-admin')
+  : 'https://examsbackend.onrender.com/api/v1/super-admin';
+
+const saClient = axios.create({ baseURL: SA_BASE, headers: { 'Content-Type': 'application/json' } });
+saClient.interceptors.request.use((cfg: any) => {
+  const token = localStorage.getItem('access_token');
+  if (token) cfg.headers.Authorization = `Bearer ${token}`;
+  return cfg;
+});
+
+// ── Super Admin — Departments ──────────────────────────────────────────────
+export const saGetDepartments   = () => saClient.get('/departments').then(r => r.data);
+export const saCreateDepartment = (data: object) => saClient.post('/departments', data).then(r => r.data);
+export const saUpdateDepartment = (id: number, data: object) => saClient.put(`/departments/${id}`, data).then(r => r.data);
+export const saDeleteDepartment = (id: number) => saClient.delete(`/departments/${id}`).then(r => r.data);
+
+// ── Super Admin — Programs ─────────────────────────────────────────────────
+export const saGetPrograms       = () => saClient.get('/programs').then(r => r.data);
+export const saGetProgramsByDept = (deptId: number) => saClient.get(`/programs/department/${deptId}`).then(r => r.data);
+export const saCreateProgram     = (data: object) => saClient.post('/programs', data).then(r => r.data);
+export const saUpdateProgram     = (id: number, data: object) => saClient.put(`/programs/${id}`, data).then(r => r.data);
+export const saDeleteProgram     = (id: number) => saClient.delete(`/programs/${id}`).then(r => r.data);
+
+// ── Super Admin — HODs ─────────────────────────────────────────────────────
+export const saGetAllHods = () => saClient.get('/admins').then(r => r.data);
+export const saCreateHod  = (data: object) => saClient.post('/register/hod', data).then(r => r.data);
+export const saUpdateHod  = (id: number, data: object) => saClient.put(`/admin/${id}`, data).then(r => r.data);
+export const saDeleteHod  = (id: number) => saClient.delete(`/admin/${id}`).then(r => r.data);
+
+
+// ── Super Admin — Students semester ───────────────────────────────────────
+export const saGetAllStudents     = () => saClient.get('/students').then(r => r.data);
+export const saSetStudentSemester = (id: number, data: { currentSemester?: number; currentLevel?: number }) =>
+  saClient.put(`/student/${id}/level-semester`, data).then(r => r.data);
+
+// ── Super Admin — Student Promotion (forward + backward) ──────────────────
+export const saPromoteStudent     = (id: number, targetLevel: number) =>
+  saClient.put(`/student/${id}/promote`, { targetLevel }).then(r => r.data);
+export const saPromoteAllAtLevel  = (programId: number, level: number, targetLevel: number) =>
+  saClient.put(`/students/promote-all/${programId}/${level}`, { targetLevel }).then(r => r.data);
+export const saPromoteSemesterAllAtLevel = (programId: number, level: number) =>
+  saClient.put(`/students/promote-semester-all/${programId}/${level}`).then(r => r.data);
+
+// ── Super Admin — Enroll student in course ────────────────────────────────
+export const saUnenrollStudent = (studentId: number, categoryId: number) =>
+  saClient.delete(`/unenroll-student/${studentId}/${categoryId}`).then(r => r.data);
+export const saGetEnrolledCourseIds = (studentId: number) =>
+  saClient.get(`/student/${studentId}/enrolled-courses`).then(r => r.data);
+export const saEnrollStudent      = (studentId: number, categoryId: number) =>
+  saClient.post('/enroll-student', { studentId, categoryId }).then(r => r.data);
+export const saGetCoursesForProgram = (programId: number) =>
+  saClient.get(`/courses-for-program/${programId}`).then(r => r.data);
+
+// ── HOD (Admin) — Student Promotion (forward-only) ────────────────────────
+export const adminPromoteStudent    = (id: number, targetLevel: number) =>
+  client.put(`/admin/student/${id}/promote`, { targetLevel }).then(r => r.data);
+export const adminPromoteAllAtLevel = (programId: number, level: number, targetLevel: number) =>
+  client.put(`/admin/students/promote-all/${programId}/${level}`, { targetLevel }).then(r => r.data);
+export const adminPromoteSemesterAllAtLevel = (programId: number, level: number) =>
+  client.put(`/admin/students/promote-semester-all/${programId}/${level}`).then(r => r.data);
+
+// ── HOD (Admin) — Enroll student in course ────────────────────────────────
+export const adminUnenrollStudent = (studentId: number, categoryId: number) =>
+  client.delete(`/admin/unenroll-student/${studentId}/${categoryId}`).then(r => r.data);
+export const adminGetEnrolledCourseIds = (studentId: number) =>
+  client.get(`/admin/student/${studentId}/enrolled-courses`).then(r => r.data);
+export const adminEnrollStudent       = (studentId: number, categoryId: number) =>
+  client.post('/admin/enroll-student', { studentId, categoryId }).then(r => r.data);
+export const adminGetCoursesForProgram = (programId: number) =>
+  client.get(`/admin/courses-for-program/${programId}`).then(r => r.data);
+
+// ── Register Super Admin (bootstrap — via auth base) ──────────────────────
+export const registerSuperAdmin = (data: object) => client.post('/register/super-admin', data).then(r => r.data);
+
+

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { registerStudent } from '../../api/endpoints';
+import { registerStudent, getPrograms } from '../../api/endpoints';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   User,
@@ -22,9 +22,24 @@ export default function Signup() {
   const [hideConfirm, setHideConfirm] = useState(true);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [usernameError, setUsernameError] = useState('');
+  const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[] }[]>([]);
+  const [selectedProgramId, setSelectedProgramId] = useState<number | ''>('');
+  const [selectedLevel, setSelectedLevel] = useState<number | ''>('');
   const [user, setUser] = useState({
     firstname: '', lastname: '', username: '', email: '', phone: '', password: '',
   });
+
+  useEffect(() => {
+    getPrograms().then(data => {
+      if (Array.isArray(data)) {
+        setPrograms(data);
+        if (data.length > 0) {
+          setSelectedProgramId(data[0].id);
+          if (data[0].configuredLevels?.length > 0) setSelectedLevel(data[0].configuredLevels[0]);
+        }
+      }
+    }).catch(() => {});
+  }, []);
 
   // Accepts 3–6 slash-separated segments of uppercase letters and/or digits
   // e.g. DIT/NR/CR/01/25/00205  |  NRIT/CR/17/25/0004  |  PS/MCS/22/0025
@@ -51,7 +66,7 @@ export default function Signup() {
     if (user.password !== confirmPassword) { toast.error('Passwords do not match'); return; }
     setLoading(true);
     try {
-      await registerStudent(user);
+      await registerStudent({ ...user, programId: selectedProgramId || undefined, currentLevel: selectedLevel || undefined });
       toast.success('Account created successfully!', {
         icon: '🎓',
         duration: 2000,
@@ -419,6 +434,54 @@ export default function Signup() {
                   </div>
                 </div>
               </div>
+
+              {/* ── Academic Program ── */}
+              {programs.length > 0 && (
+                <div className="su-section">
+                  <div className="su-sec-hd">
+                    <div className="su-sec-icon" style={{ background: 'rgba(124,58,237,0.12)', color: '#a78bfa' }}>
+                      <GraduationCap size={17} />
+                    </div>
+                    <h3 className="su-sec-title">Academic Program</h3>
+                  </div>
+                  <div className="su-grid">
+                    <div className="su-field">
+                      <label className="su-label">Program</label>
+                      <div className="su-input-wrap">
+                        <GraduationCap size={17} className="su-ico-l" />
+                        <select
+                          className="input card su-input pl"
+                          value={selectedProgramId}
+                          onChange={e => {
+                            const id = Number(e.target.value);
+                            setSelectedProgramId(id);
+                            const prog = programs.find(p => p.id === id);
+                            if (prog?.configuredLevels?.length) setSelectedLevel(prog.configuredLevels[0]);
+                          }}
+                          style={{ background: 'transparent', color: 'inherit' }}
+                        >
+                          {programs.map(p => <option key={p.id} value={p.id} style={{ background: '#1a1a35', color: '#fff' }}>{p.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="su-field">
+                      <label className="su-label">Current Level</label>
+                      <div className="su-input-wrap">
+                        <select
+                          className="input card su-input"
+                          value={selectedLevel}
+                          onChange={e => setSelectedLevel(Number(e.target.value))}
+                          style={{ background: 'transparent', color: 'inherit' }}
+                        >
+                          {(programs.find(p => p.id === selectedProgramId)?.configuredLevels || []).map(lv => (
+                            <option key={lv} value={lv} style={{ background: '#1a1a35', color: '#fff' }}>Level {lv}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ── Security ── */}
               <div className="su-section">

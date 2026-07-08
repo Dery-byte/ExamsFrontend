@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { useNavigate } from 'react-router-dom';
 import { authenticate as apiAuth, doLogout, getCurrentUser } from '../api/endpoints';
 
-export type UserRole = 'ADMIN' | 'LECTURER' | 'NORMAL';
+export type UserRole = 'ADMIN' | 'LECTURER' | 'NORMAL' | 'SUPER_ADMIN';
 
 export interface AuthUser {
   id: number;
@@ -30,6 +30,7 @@ interface AuthCtx {
   isAdmin: () => boolean;
   isLecturer: () => boolean;
   isStudent: () => boolean;
+  isSuperAdmin: () => boolean;
   timeDisplay: { display: string; className: string } | null;
   updateUser: (partial: Partial<AuthUser>) => void;
 }
@@ -145,7 +146,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(authUser);
     startCountdown(token);
 
-    if (authUser.role === 'ADMIN') navigate('/admin', { replace: true });
+    if (authUser.role === 'SUPER_ADMIN') navigate('/super-admin', { replace: true });
+    else if (authUser.role === 'ADMIN') navigate('/admin', { replace: true });
     else if (authUser.role === 'LECTURER') navigate('/lect', { replace: true });
     else navigate('/user-dashboard/user-dashboard', { replace: true });
   }, [navigate, startCountdown]);
@@ -169,9 +171,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       user, isLoggedIn: !!user && !!localStorage.getItem('access_token'),
       login, logout, getToken: () => localStorage.getItem('access_token'),
-      isAdmin:    () => user?.role === 'ADMIN',
-      isLecturer: () => user?.role === 'LECTURER',
-      isStudent:  () => user?.role === 'NORMAL',
+      isAdmin:      () => user?.role === 'ADMIN',
+      isLecturer:   () => user?.role === 'LECTURER',
+      isStudent:    () => user?.role === 'NORMAL',
+      isSuperAdmin: () => user?.role === 'SUPER_ADMIN',
       timeDisplay,
       updateUser,
     }}>

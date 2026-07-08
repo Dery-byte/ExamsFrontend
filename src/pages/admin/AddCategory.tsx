@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addCategory } from '../../api/endpoints';
+import { addCategory, getPrograms } from '../../api/endpoints';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import {
   BookPlus, BookOpen, Layers, FileText, ArrowLeft,
   ShieldCheck, Loader2, BadgeCheck, GraduationCap,
-  Info, CheckCircle2, Award, Cpu, Sparkles
+  Info, CheckCircle2, Award, Cpu, Sparkles, Calendar
 } from 'lucide-react';
 
 const LEVELS = [
@@ -25,9 +25,18 @@ const INFO_ITEMS = [
 
 export default function AddCategory() {
   const navigate = useNavigate();
-  const [category, setCategory] = useState({ title: '', courseCode: '', level: '', description: '' });
+  const [category, setCategory] = useState({ title: '', courseCode: '', level: '', description: '', semester: '', programId: '' });
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
+  const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[] }[]>([]);
+
+  useEffect(() => {
+    getPrograms().then(data => { if (Array.isArray(data)) setPrograms(data); }).catch(() => {});
+  }, []);
+
+  const availableLevels = category.programId
+    ? (programs.find(p => p.id === Number(category.programId))?.configuredLevels || []).map(l => String(l))
+    : ['100', '200', '300', '400'];
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setCategory(c => ({ ...c, [k]: e.target.value }));
@@ -35,10 +44,11 @@ export default function AddCategory() {
   const formSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category.level) { toast.error('Please select an academic level'); return; }
+    if (!category.semester) { toast.error('Please select a semester'); return; }
     const loadingToast = toast.loading('Registering course...');
     setLoading(true);
     try {
-      await addCategory(category);
+      await addCategory({ ...category, programId: category.programId ? Number(category.programId) : undefined });
       toast.success('Course registered successfully', { id: loadingToast });
       setTimeout(() => navigate('/admin/courses'), 1200);
     } catch (err: any) {
@@ -52,10 +62,11 @@ export default function AddCategory() {
     category.title,
     category.courseCode,
     category.level,
+    category.semester,
     category.description,
   ].filter(Boolean).length;
 
-  const progressPct = Math.round((completedFields / 4) * 100);
+  const progressPct = Math.round((completedFields / 5) * 100);
 
   return (
     <div className="acp-page">
@@ -142,7 +153,24 @@ export default function AddCategory() {
               </div>
             </div>
 
-            {/* Row 2: Academic Level */}
+            {/* Row 2: Program */}
+            {programs.length > 0 && (
+              <div className="acp-field">
+                <label className="acp-label">
+                  <GraduationCap size={13} /> Program
+                </label>
+                <div className={`acp-input-wrap ${focused === 'programId' ? 'is-focused' : ''}`}>
+                  <select className="acp-input" value={category.programId} onChange={set('programId')}
+                    onFocus={() => setFocused('programId')} onBlur={() => setFocused(null)}
+                    style={{ background: 'transparent' }}>
+                    <option value="">-- All Programs / Not Linked --</option>
+                    {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Row 3: Academic Level */}
             <div className="acp-field">
               <label className="acp-label">
                 <Layers size={13} />
@@ -150,31 +178,52 @@ export default function AddCategory() {
                 <span className="acp-required">*</span>
               </label>
               <div className="acp-level-grid">
-                {LEVELS.map(lv => (
-                  <button
-                    key={lv.label}
-                    type="button"
-                    onClick={() => setCategory(c => ({ ...c, level: lv.label }))}
-                    className={`acp-level-btn ${category.level === lv.label ? 'is-active' : ''}`}
-                    style={category.level === lv.label
-                      ? { '--lv-color': lv.color, borderColor: lv.color, background: `${lv.color}12` } as any
-                      : { '--lv-color': lv.color } as any
-                    }
+                {availableLevels.map((lv, i) => {
+                  const colors = ['#5156be','#2ab57d','#f59e0b','#fd625e','#0ea5e9','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f43f5e'];
+                  const color = colors[i % colors.length];
+                  const yearSuffix = ['st','nd','rd'][i] || 'th';
+                  return (
+                    <button key={lv} type="button"
+                      onClick={() => setCategory(c => ({ ...c, level: lv }))}
+                      className={`acp-level-btn ${category.level === lv ? 'is-active' : ''}`}
+                      style={category.level === lv ? { '--lv-color': color, borderColor: color, background: `${color}12` } as any : { '--lv-color': color } as any}
+                    >
+                      <span className="acp-level-dot" style={{ background: color }} />
+                      <div className="acp-level-info">
+                        <span className="acp-level-name">Level {lv}</span>
+                        <span className="acp-level-sub">{i + 1}{yearSuffix} Year</span>
+                      </div>
+                      {category.level === lv && <CheckCircle2 size={16} className="acp-level-check" style={{ color }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Row 4: Semester */}
+            <div className="acp-field">
+              <label className="acp-label">
+                <Calendar size={13} /> Semester <span className="acp-required">*</span>
+              </label>
+              <div style={{ display: 'flex', gap: 12 }}>
+                {[{ val: '1', label: 'Semester 1', sub: 'First Half' }, { val: '2', label: 'Semester 2', sub: 'Second Half' }].map(s => (
+                  <button key={s.val} type="button"
+                    onClick={() => setCategory(c => ({ ...c, semester: s.val }))}
+                    className={`acp-level-btn ${category.semester === s.val ? 'is-active' : ''}`}
+                    style={category.semester === s.val ? { '--lv-color': '#5156be', borderColor: '#5156be', background: 'rgba(81,86,190,0.08)', flex: 1 } as any : { '--lv-color': '#5156be', flex: 1 } as any}
                   >
-                    <span className="acp-level-dot" style={{ background: lv.color }} />
+                    <span className="acp-level-dot" style={{ background: '#5156be' }} />
                     <div className="acp-level-info">
-                      <span className="acp-level-name">{lv.label}</span>
-                      <span className="acp-level-sub">{lv.sub}</span>
+                      <span className="acp-level-name">{s.label}</span>
+                      <span className="acp-level-sub">{s.sub}</span>
                     </div>
-                    {category.level === lv.label && (
-                      <CheckCircle2 size={16} className="acp-level-check" style={{ color: lv.color }} />
-                    )}
+                    {category.semester === s.val && <CheckCircle2 size={16} className="acp-level-check" style={{ color: '#5156be' }} />}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Row 3: Description */}
+            {/* Row 5: Description */}
             <div className="acp-field">
               <label className="acp-label">
                 <FileText size={13} />

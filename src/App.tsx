@@ -7,6 +7,7 @@ import { Toaster } from 'react-hot-toast';
 import AdminLayout from './components/layout/AdminLayout';
 import LecturerLayout from './components/layout/LecturerLayout';
 import UserLayout from './components/layout/UserLayout';
+import SuperAdminLayout from './components/layout/SuperAdminLayout';
 
 // Auth
 import Welcome from './pages/auth/Welcome';
@@ -26,6 +27,14 @@ import AddQuestion from './pages/admin/AddQuestion';
 import Students from './pages/admin/Students';
 import Lecturers from './pages/admin/Lecturers';
 import QuizReview from './pages/admin/QuizReview';
+import EnrollStudent from './pages/admin/EnrollStudent';
+
+// Super Admin
+import SuperAdminWelcome from './pages/superadmin/SuperAdminWelcome';
+import Departments from './pages/superadmin/Departments';
+import Programs from './pages/superadmin/Programs';
+import ManageHODs from './pages/superadmin/ManageHODs';
+import ManageStudentLevel from './pages/superadmin/ManageStudentLevel';
 
 // Lecturer
 import LectWelcome from './pages/lecturer/LectWelcome';
@@ -78,8 +87,20 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
+        {/* Super Admin */}
+        <Route path="/super-admin" element={<ProtectedRoute role="SUPER_ADMIN"><SuperAdminLayout /></ProtectedRoute>}>
+          <Route index element={<SuperAdminWelcome />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="departments" element={<Departments />} />
+          <Route path="programs" element={<Programs />} />
+          <Route path="hods" element={<ManageHODs />} />
+          <Route path="student-semester" element={<ManageStudentLevel />} />
+          <Route path="students" element={<Students />} />
+          <Route path="enroll-student" element={<EnrollStudent />} />
+        </Route>
+
         {/* Admin */}
-        <Route path="/admin" element={<ProtectedRoute role="ADMIN"><AdminLayout /></ProtectedRoute>}>
+        <Route path="/admin" element={<ProtectedRoute role={['ADMIN','SUPER_ADMIN']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminWelcome />} />
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCategories />} />
@@ -91,6 +112,7 @@ export default function App() {
           <Route path="students" element={<Students />} />
           <Route path="lecturers" element={<Lecturers />} />
           <Route path="quiz-review" element={<QuizReview />} />
+          <Route path="enroll-student" element={<EnrollStudent />} />
         </Route>
 
         {/* Lecturer */}

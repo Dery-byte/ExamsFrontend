@@ -1,27 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addLecturerCategory } from '../../api/endpoints';
+import { addLecturerCategory, getPrograms } from '../../api/endpoints';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   BookOpen, Save, ChevronRight, Loader2, Tag, Hash, AlignLeft,
-  GraduationCap, ArrowLeft, Sparkles, CheckCircle
+  GraduationCap, ArrowLeft, Sparkles, CheckCircle, Calendar, Layers
 } from 'lucide-react';
 
 const LEVELS = ['Level 100', 'Level 200', 'Level 300', 'Level 400'];
 
 export default function AddCourse() {
   const navigate = useNavigate();
-  const [category, setCategory] = useState({ title: '', courseCode: '', level: '', description: '' });
+  const [category, setCategory] = useState({ title: '', courseCode: '', level: '', description: '', semester: '', programId: '' });
   const [loading, setLoading] = useState(false);
+  const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[] }[]>([]);
+
+  useEffect(() => {
+    getPrograms().then(d => { if (Array.isArray(d)) setPrograms(d); }).catch(() => {});
+  }, []);
+
+  const availableLevels = category.programId
+    ? (programs.find(p => p.id === Number(category.programId))?.configuredLevels || []).map(l => String(l))
+    : ['100', '200', '300', '400'];
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setCategory(c => ({ ...c, [k]: e.target.value }));
 
   const formSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!category.semester) { toast.error('Please select a semester'); return; }
     setLoading(true);
     try {
-      await addLecturerCategory(category);
+      await addLecturerCategory({ ...category, programId: category.programId ? Number(category.programId) : undefined });
       toast.success('Course added successfully!');
       setTimeout(() => navigate('/lect/courses'), 1000);
     } catch { toast.error('Failed to add course registry'); }
@@ -131,7 +141,7 @@ export default function AddCourse() {
                 <div className="ac-field-group">
                   <label className="ac-label">Academic Level</label>
                   <div className="ac-input-wrap">
-                    <span className="ac-input-icon"><AlignLeft size={16} /></span>
+                    <span className="ac-input-icon"><Layers size={16} /></span>
                     <select
                       className="ac-input ac-select"
                       required
@@ -139,7 +149,34 @@ export default function AddCourse() {
                       onChange={set('level')}
                     >
                       <option value="">Select Level</option>
-                      {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                      {availableLevels.map(l => <option key={l} value={l}>Level {l}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Program + Semester row */}
+              <div className="ac-row">
+                {programs.length > 0 && (
+                  <div className="ac-field-group">
+                    <label className="ac-label">Program</label>
+                    <div className="ac-input-wrap">
+                      <span className="ac-input-icon"><GraduationCap size={16} /></span>
+                      <select className="ac-input ac-select" value={category.programId} onChange={set('programId')}>
+                        <option value="">-- Not linked --</option>
+                        {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
+                <div className="ac-field-group">
+                  <label className="ac-label">Semester *</label>
+                  <div className="ac-input-wrap">
+                    <span className="ac-input-icon"><Calendar size={16} /></span>
+                    <select className="ac-input ac-select" required value={category.semester} onChange={set('semester')}>
+                      <option value="">Select Semester</option>
+                      <option value="1">Semester 1 (First Half)</option>
+                      <option value="2">Semester 2 (Second Half)</option>
                     </select>
                   </div>
                 </div>
@@ -147,7 +184,7 @@ export default function AddCourse() {
 
               {/* Description */}
               <div className="ac-field-group">
-                <label className="ac-label">Course Description & Objectives</label>
+                <label className="ac-label">Course Description &amp; Objectives</label>
                 <textarea
                   className="ac-input ac-textarea"
                   required

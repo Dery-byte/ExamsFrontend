@@ -16,7 +16,8 @@ import {
   ChevronRight, 
   ShieldCheck,
   Clock,
-  Eye
+  Eye,
+  BookMarked
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -57,6 +58,7 @@ export default function AdminLayout() {
       label: 'User Management', 
       items: [
         { to: '/admin/students', icon: <GraduationCap size={20} />, label: 'Student Directory' },
+        { to: '/admin/enroll-student', icon: <BookMarked size={20} />, label: 'Enroll Student' },
         { to: '/admin/lecturers', icon: <Users size={20} />, label: 'Faculty Directory' },
       ]
     },

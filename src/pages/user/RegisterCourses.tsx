@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getRegCourses, getCategories, regCourses } from '../../api/endpoints';
+import { getRegCourses, getCoursesForStudent, regCourses } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
-import { Search, Loader2, CheckCircle2, BookOpen, Info, Filter, Plus, ChevronRight, GraduationCap } from 'lucide-react';
+import { Search, Loader2, CheckCircle2, BookOpen, Info, Filter, Plus, ChevronRight, GraduationCap, Calendar } from 'lucide-react';
 
 export default function RegisterCourses() {
   const { user } = useAuth();
@@ -21,22 +21,25 @@ export default function RegisterCourses() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [regRaw, catsRaw] = await Promise.all([getRegCourses(), getCategories()]);
-      const reg = Array.isArray(regRaw) ? regRaw : [];
+      // Use the student-filtered endpoint — returns only courses for the
+      // student's current program + level + semester (set by HOD/SuperAdmin)
+      const [regRaw, catsRaw] = await Promise.all([
+        getRegCourses(),
+        getCoursesForStudent().catch(() => []),
+      ]);
+      const reg  = Array.isArray(regRaw)  ? regRaw  : [];
       const cats = Array.isArray(catsRaw) ? catsRaw : [];
 
-      const userId = user?.id;
+      const userId  = user?.id;
       const userReg = reg.filter((r: any) => r.user?.id === userId);
-      const transformedReg = userReg.map((r: any) => ({
-        cid: r.category.cid, level: r.category.level, title: r.category.title,
-        description: r.category.description, courseCode: r.category.courseCode,
-      }));
+      const regCids = new Set(userReg.map((r: any) => r.category?.cid));
 
-      const unregistered = cats.filter(cat => !transformedReg.some(r => r.cid === cat.cid));
+      // Only show courses the student has NOT yet registered for
+      const unregistered = cats.filter((cat: any) => !regCids.has(cat.cid));
 
-      const levels = Array.from(new Set(cats.map((c: any) => c.level))).sort((a: any, b: any) => {
-        const na = parseInt(a.split(' ')[1]); const nb = parseInt(b.split(' ')[1]);
-        return nb - na;
+      const levels = Array.from(new Set(unregistered.map((c: any) => c.level))).sort((a: any, b: any) => {
+        const na = parseInt(String(a)); const nb = parseInt(String(b));
+        return na - nb;
       }) as string[];
 
       setUniqueLevels(levels);
@@ -108,6 +111,29 @@ export default function RegisterCourses() {
     <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
       <Toaster position="top-right" />
       <PageHeader title="Course Registration" breadcrumbs={['Lexa', 'Portal', 'Enrolment']} />
+
+      {/* Semester context banner */}
+      {(user as any)?.currentLevel && (
+        <div style={{
+          margin: '0 0 16px',
+          padding: '12px 20px',
+          background: 'linear-gradient(135deg,rgba(124,58,237,0.08),rgba(79,70,229,0.05))',
+          border: '1px solid rgba(124,58,237,0.2)',
+          borderRadius: 12,
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <GraduationCap size={18} style={{ color: '#7c3aed', flexShrink: 0 }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#5b21b6' }}>
+            Showing courses for&nbsp;
+            <strong>Level {(user as any).currentLevel}</strong>
+            {(user as any).currentSemester && (
+              <>&nbsp;· <Calendar size={13} style={{ display:'inline', verticalAlign:'middle' }} />&nbsp;
+              <strong>Semester {(user as any).currentSemester}</strong></>
+            )}
+            &nbsp;— courses for subsequent levels/semesters are hidden.
+          </span>
+        </div>
+      )}
 
       {/* Control Panel: Level Tabs & Search */}
       <div className="lexa-card" style={{ overflow: 'hidden' }}>

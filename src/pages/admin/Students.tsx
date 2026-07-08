@@ -1,274 +1,400 @@
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { getAllStudentsCounts, getStudentById, updateStudent, deleteStudent } from '../../api/endpoints';
-import Swal from 'sweetalert2';
-import toast from 'react-hot-toast';
-import PageHeader from '../../components/PageHeader';
-import { 
-  Users, Search, Edit, Trash2, GraduationCap, Mail, Fingerprint, X, 
-  Save, User, Loader2, ShieldCheck, UserCheck, Calendar, Filter, 
-  MoreHorizontal, ArrowRight, BookOpen, BadgeCheck, Phone, ChevronRight,
-  Database, Activity, CheckCircle2, MoreVertical
-} from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import {
+  adminGetAllStudents, getStudentById, updateStudent, deleteStudent,
+  adminPromoteStudent, adminPromoteAllAtLevel, adminPromoteSemesterAllAtLevel,
+  saGetAllStudents, saPromoteStudent, saPromoteAllAtLevel, saPromoteSemesterAllAtLevel,
+  getPrograms,
+} from "../../api/endpoints";
+import { useAuth } from "../../contexts/AuthContext";
+import Swal from "sweetalert2";
+import toast, { Toaster } from "react-hot-toast";
+import PageHeader from "../../components/PageHeader";
+import {
+  Users, Search, Edit, Trash2, GraduationCap, Mail,
+  X, Save, Loader2, ChevronsUp, ArrowRight, RefreshCw,
+} from "lucide-react";
+
+const LEVEL_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
+  "100": { bg: "rgba(81,86,190,0.07)",  border: "#5156be", text: "#3730a3", badge: "#5156be" },
+  "200": { bg: "rgba(42,181,125,0.07)", border: "#2ab57d", text: "#065f46", badge: "#2ab57d" },
+  "300": { bg: "rgba(245,158,11,0.07)", border: "#f59e0b", text: "#92400e", badge: "#f59e0b" },
+  "400": { bg: "rgba(253,98,94,0.07)",  border: "#fd625e", text: "#991b1b", badge: "#fd625e" },
+  "500": { bg: "rgba(14,165,233,0.07)", border: "#0ea5e9", text: "#0c4a6e", badge: "#0ea5e9" },
+  "600": { bg: "rgba(139,92,246,0.07)", border: "#8b5cf6", text: "#4c1d95", badge: "#8b5cf6" },
+};
+const colorFor = (level: string | number) =>
+  LEVEL_COLORS[String(level)] ?? LEVEL_COLORS["100"];
 
 export default function Students() {
-  const [students, setStudents]           = useState<any[]>([]);
-  const [filteredStudents, setFiltered]   = useState<any[]>([]);
-  const [studentTotal, setTotal]          = useState(0);
-  const [searchText, setSearchText]       = useState('');
-  const [editModal, setEditModal]         = useState(false);
-  const [studentEdit, setStudentEdit]     = useState<any>({});
-  const [loading, setLoading]             = useState(false);
-  const [saving, setSaving]               = useState(false);
+  const auth = useAuth() as any;
+  const isSuper = typeof auth.isSuperAdmin === "function" ? auth.isSuperAdmin() : false;
 
-  const fetchStudents = async () => {
+  const [students, setStudents]         = useState<any[]>([]);
+  const [programs, setPrograms]         = useState<any[]>([]);
+  const [search, setSearch]             = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [editModal, setEditModal]       = useState(false);
+  const [studentEdit, setStudentEdit]   = useState<any>({});
+  const [saving, setSaving]             = useState(false);
+  const [promotingId, setPromotingId]   = useState<number | null>(null);
+  const [promotingLv, setPromotingLv]   = useState<string | null>(null);
+  const [promotingSem, setPromotingSem] = useState<string | null>(null);
+  const [programFilter, setProgramFilter]= useState<string>("");
+
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const resp: any = await getAllStudentsCounts();
-      setStudents(resp.students ?? []);
-      setFiltered(resp.students ?? []);
-      setTotal(resp.count ?? 0);
-    } catch {} finally { setLoading(false); }
+      const [stuRaw, progRaw] = await Promise.all([
+        isSuper ? saGetAllStudents() : adminGetAllStudents(),
+        getPrograms().catch(() => []),
+      ]);
+      const stu = Array.isArray(stuRaw) ? stuRaw : stuRaw?.students ?? [];
+      setStudents(stu);
+      setPrograms(Array.isArray(progRaw) ? progRaw : []);
+    } catch { toast.error("Failed to load students"); }
+    finally { setLoading(false); }
+  }, [isSuper]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = students.filter(s => {
+    if (programFilter && s.programId !== Number(programFilter)) return false;
+    const q = search.toLowerCase();
+    return !q || [s.firstname, s.lastname, s.fullName, s.email, s.username, s.program]
+      .filter(Boolean).some((v: string) => v.toLowerCase().includes(q));
+  });
+
+  const grouped: Record<string, any[]> = {};
+  filtered.forEach(s => {
+    const lv = String(s.currentLevel ?? 0);
+    (grouped[lv] = grouped[lv] || []).push(s);
+  });
+  const sortedLevels = Object.keys(grouped).sort((a, b) => Number(a) - Number(b));
+
+  const getLevels = (s: any): number[] => {
+    const prog = programs.find((p: any) => p.id === (s.programId || s.program_id));
+    return prog?.configuredLevels ?? [100, 200, 300, 400];
   };
-  
-  useEffect(() => { 
-    fetchStudents(); 
-  }, []);
 
-  useEffect(() => {
-    if (editModal) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = 'unset';
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [editModal]);
+  const nextLv = (s: any) => {
+    const lvls = getLevels(s);
+    const idx  = lvls.indexOf(s.currentLevel ?? 0);
+    return idx >= 0 && idx < lvls.length - 1 ? lvls[idx + 1] : null;
+  };
 
-  const applyFilter = (text: string) => {
-    setSearchText(text);
-    if (!text) { setFiltered(students); return; }
-    const s = text.toLowerCase();
-    setFiltered(students.filter(st => 
-      st.fullName?.toLowerCase().includes(s) || 
-      st.username?.toLowerCase().includes(s) || 
-      st.email?.toLowerCase().includes(s)
-    ));
+  const prevLv = (s: any) => {
+    const lvls = getLevels(s);
+    const idx  = lvls.indexOf(s.currentLevel ?? 0);
+    return idx > 0 ? lvls[idx - 1] : null;
+  };
+
+  const nextLvForGroup = (level: string) => nextLv(grouped[level]?.[0] ?? {});
+
+  const promoteOne = async (s: any, target: number) => {
+    const fwd  = target > (s.currentLevel ?? 0);
+    const name = s.fullName ?? `${s.firstname ?? ""} ${s.lastname ?? ""}`.trim();
+    const conf = await Swal.fire({
+      title: fwd ? "Promote Student" : "Demote Student",
+      html: `Move <b>${name}</b> to <b>Level ${target}</b>?`,
+      icon: fwd ? "question" : "warning",
+      showCancelButton: true,
+      confirmButtonText: fwd ? "Promote ?" : "? Demote",
+      confirmButtonColor: fwd ? "#5156be" : "#f59e0b",
+      cancelButtonColor: "#adb5bd",
+    });
+    if (!conf.isConfirmed) return;
+    setPromotingId(s.id);
+    try {
+      await (isSuper ? saPromoteStudent : adminPromoteStudent)(s.id, target);
+      toast.success(`Student moved to Level ${target}`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Promotion failed");
+    } finally { setPromotingId(null); }
+  };
+
+  const promoteAll = async (level: string, target: number) => {
+    if (!programFilter) {
+      toast.error("Please select a Program first before promoting in bulk.");
+      return;
+    }
+    const count = grouped[level]?.length ?? 0;
+    const conf  = await Swal.fire({
+      title: "Promote Level",
+      html: `Promote all <b>${count}</b> Level ${level} students in the selected program to <b>Level ${target}</b>?`,
+      icon: "question", showCancelButton: true,
+      confirmButtonText: `Promote Level (${count})`,
+      confirmButtonColor: "#5156be", cancelButtonColor: "#adb5bd",
+    });
+    if (!conf.isConfirmed) return;
+    setPromotingLv(level);
+    try {
+      const res = await (isSuper ? saPromoteAllAtLevel : adminPromoteAllAtLevel)(Number(programFilter), Number(level), target);
+      toast.success(res?.message ?? `${count} students promoted!`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Bulk promotion failed");
+    } finally { setPromotingLv(null); }
+  };
+
+  const promoteSemesterAll = async (level: string) => {
+    if (!programFilter) {
+      toast.error("Please select a Program first before promoting in bulk.");
+      return;
+    }
+    const count = grouped[level]?.length ?? 0;
+    const conf  = await Swal.fire({
+      title: "Promote Semester",
+      html: `Promote all <b>${count}</b> Level ${level} students in the selected program to the next semester?`,
+      icon: "question", showCancelButton: true,
+      confirmButtonText: `Promote Semester (${count})`,
+      confirmButtonColor: "#2ab57d", cancelButtonColor: "#adb5bd",
+    });
+    if (!conf.isConfirmed) return;
+    setPromotingSem(level);
+    try {
+      const res = await (isSuper ? saPromoteSemesterAllAtLevel : adminPromoteSemesterAllAtLevel)(Number(programFilter), Number(level));
+      toast.success(res?.message ?? `${count} students promoted to next semester!`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Bulk promotion failed");
+    } finally { setPromotingSem(null); }
   };
 
   const openEdit = async (id: number) => {
-    try { 
-      const data = await getStudentById(id); 
-      setStudentEdit(data); 
-      setEditModal(true); 
-    } catch {}
+    try { setStudentEdit(await getStudentById(id)); setEditModal(true); } catch {}
   };
 
-  const doUpdate = async () => {
+  const saveEdit = async () => {
     setSaving(true);
-    try { 
-      await toast.promise(
-        updateStudent(studentEdit.id, studentEdit),
-        {
-          loading: 'Synchronizing registry record...',
-          success: 'Student profile updated',
-          error: 'Synchronization protocol failed'
-        }
-      );
-      setEditModal(false); 
-      fetchStudents(); 
-    } catch {}
-    setSaving(false);
+    try {
+      await updateStudent(studentEdit.id, studentEdit);
+      toast.success("Student updated");
+      setEditModal(false); await load();
+    } catch { toast.error("Update failed"); } finally { setSaving(false); }
   };
 
-  const doDelete = (id: number) => {
-    Swal.fire({
-      title: 'Purge Student Record?',
-      text: "Permanent removal of all academic and registry history.",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#f43f5e',
-      confirmButtonText: 'Yes, Purge Record',
-      cancelButtonText: 'Discard'
-    }).then(r=>{
-      if (!r.isConfirmed) return;
-      deleteStudent(id).then(()=>{ 
-        toast.success('Registry record purged'); 
-        fetchStudents(); 
-      }).catch(()=>toast.error('Deletion protocol failed'));
-    });
+  const remove = async (id: number, name: string) => {
+    const c = await Swal.fire({ title: "Delete Student?", text: `Remove ${name}?`, icon: "warning",
+      showCancelButton: true, confirmButtonText: "Delete",
+      confirmButtonColor: "#fd625e", cancelButtonColor: "#adb5bd" });
+    if (!c.isConfirmed) return;
+    try { await deleteStudent(id); toast.success("Deleted"); await load(); }
+    catch { toast.error("Delete failed"); }
   };
 
   return (
-    <div className="admin-students-page animate-fade-in" style={{ padding: '0 0 40px', fontFamily: '"Outfit", sans-serif' }}>
-      <PageHeader title="Student Registry" breadcrumbs={['Lexa', 'Admin', 'Directory']} />
-      
-      {/* COMPACT STATS & SEARCH */}
-      <div className="registry-compact-header">
-         <div className="compact-stats">
-            <div className="stat-node">
-               <span className="l">Total Enrollment</span>
-               <span className="v">{studentTotal}</span>
-            </div>
-            <div className="stat-sep"></div>
-            <div className="stat-node">
-               <span className="l">Status</span>
-               <span className="v ok">Active</span>
-            </div>
-         </div>
-         <div className="compact-actions">
-            <div className="mini-search">
-               <Search size={14} />
-               <input type="text" placeholder="Filter directory..." value={searchText} onChange={e=>applyFilter(e.target.value)} />
-            </div>
-         </div>
+    <div style={{ paddingBottom: 40 }}>
+      <Toaster position="top-right" />
+      <PageHeader title="Students" breadcrumbs={["Admin", "Students"]} />
+
+      {/* Toolbar */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 22, flexWrap: "wrap" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: 200, maxWidth: 440 }}>
+          <Search size={15} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#adb5bd" }} />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search name, email, program…"
+            style={{ width: "100%", paddingLeft: 36, height: 40, border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+        </div>
+        <select value={programFilter} onChange={e => setProgramFilter(e.target.value)}
+          style={{ height: 40, padding: "0 14px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", background: "#fff", cursor: "pointer", minWidth: 150 }}>
+          <option value="">All Programs</option>
+          {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <button onClick={load} title="Refresh"
+          style={{ height: 40, width: 40, border: "1.5px solid #e2e8f0", background: "#fff", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <RefreshCw size={15} color="#5156be" />
+        </button>
+        <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>{students.length} total</span>
       </div>
 
-      <div className="registry-list-compact">
-        {loading ? (
-          <div className="reg-loader"><Loader2 className="spin-ico" size={32} /></div>
-        ) : filteredStudents.length === 0 ? (
-          <div className="reg-empty-state">
-             <GraduationCap size={48} />
-             <h5>No Student Records</h5>
-             <p>The student directory is currently empty or matches no filters.</p>
-          </div>
-        ) : (
-          filteredStudents.map((el: any) => (
-            <div key={el.id} className="reg-row-premium">
-              <div className="reg-col id-badge">
-                 <div className="s-avatar">{el.firstname?.[0]}{el.lastname?.[0]}</div>
-              </div>
-              <div className="reg-col info">
-                 <h6 className="t">{el.fullName}</h6>
-                 <div className="sub">
-                    <Fingerprint size={12} /> <span>{el.username}</span>
-                    <span className="dot" />
-                    <Mail size={12} /> <span>{el.email}</span>
-                 </div>
-              </div>
-              <div className="reg-col status">
-                 <span className="v-badge"><CheckCircle2 size={12} /> Verified</span>
-              </div>
-              <div className="reg-col acts">
-                 <button className="a-btn p" onClick={()=>openEdit(el.id)}><Edit size={14} /></button>
-                 <button className="a-btn d" onClick={()=>doDelete(el.id)}><Trash2 size={14} /></button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
+          <Loader2 size={36} color="#5156be" style={{ animation: "spin 1s linear infinite" }} />
+        </div>
+      ) : sortedLevels.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "#adb5bd" }}>
+          <Users size={40} style={{ marginBottom: 12 }} />
+          <p style={{ fontWeight: 700 }}>No students found</p>
+        </div>
+      ) : sortedLevels.map(level => {
+        const col   = colorFor(level);
+        const grp   = grouped[level];
+        const nxtG  = nextLvForGroup(level);
+        const bulky = promotingLv === level;
 
-      {/* PORTAL MODAL - Global Coverage */}
-      {editModal && createPortal(
-        <div className="fixed-global-overlay">
-          <div className="modal-lexa-container-compact animate-scale-up" style={{ width: 600 }}>
-            <div className="modal-lexa-header-mini">
-              <h6 className="m-0">Update Registry Profile</h6>
-              <button className="m-close" onClick={()=>setEditModal(false)}><X size={16}/></button>
-            </div>
-            <div style={{ padding: '30px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div className="form-grid-2">
-                   <div className="f-grp-mini">
-                      <label>First Name</label>
-                      <input className="mini-input" value={studentEdit.firstname||''} onChange={e=>setStudentEdit({...studentEdit,firstname:e.target.value})} placeholder="First name..."/>
-                   </div>
-                   <div className="f-grp-mini">
-                      <label>Last Name</label>
-                      <input className="mini-input" value={studentEdit.lastname||''} onChange={e=>setStudentEdit({...studentEdit,lastname:e.target.value})} placeholder="Last name..."/>
-                   </div>
-                </div>
-                <div className="f-grp-mini">
-                   <label>Email Address</label>
-                   <input className="mini-input" value={studentEdit.email||''} onChange={e=>setStudentEdit({...studentEdit,email:e.target.value})} placeholder="student@email.com"/>
-                </div>
-                <div className="f-grp-mini">
-                   <label>Registry Index (ID)</label>
-                   <input className="mini-input id-lock" value={studentEdit.username||''} onChange={e=>setStudentEdit({...studentEdit,username:e.target.value})} placeholder="Index number..."/>
-                </div>
+        return (
+          <div key={level} style={{ marginBottom: 28, borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+            {/* Level header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: col.bg, borderBottom: `2px solid ${col.badge}30`, padding: "13px 18px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ background: col.badge, color: "#fff", fontWeight: 800, fontSize: 13,
+                  padding: "4px 14px", borderRadius: 20 }}>Level {level}</span>
+                <span style={{ fontSize: 13, color: col.text, fontWeight: 600 }}>
+                  {grp.length} student{grp.length !== 1 ? "s" : ""}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {programFilter ? (
+                  <>
+                    <button onClick={() => promoteSemesterAll(level)} disabled={promotingSem === level || bulky}
+                      style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(42,181,125,0.15)",
+                        color: "#065f46", border: "1px solid #2ab57d", padding: "6px 14px", borderRadius: 8,
+                        fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: promotingSem === level ? 0.7 : 1 }}>
+                      {promotingSem === level ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <ArrowRight size={13} />}
+                      Promote Semester
+                    </button>
+                    {nxtG ? (
+                      <button onClick={() => promoteAll(level, nxtG)} disabled={bulky || promotingSem === level}
+                        style={{ display: "flex", alignItems: "center", gap: 6, background: col.badge,
+                          color: "#fff", border: "none", padding: "7px 16px", borderRadius: 8,
+                          fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: bulky ? 0.7 : 1 }}>
+                        {bulky
+                          ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
+                          : <ChevronsUp size={13} />}
+                        Promote Level {nxtG}
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: 11, color: col.text, opacity: 0.55, fontWeight: 600 }}>
+                        {isSuper ? "Final level (Super Admin can demote)" : "Final Level"}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span style={{ fontSize: 11, color: col.text, opacity: 0.7, fontWeight: 600, fontStyle: "italic" }}>
+                    Select a Program to enable bulk promotion
+                  </span>
+                )}
               </div>
             </div>
-            <div className="modal-lexa-footer-mini">
-               <button className="m-btn-sec" onClick={()=>setEditModal(false)}>Discard</button>
-               <button className="m-btn-pri" onClick={doUpdate} disabled={saving}>{saving ? '...' : 'Synchronize Profile'}</button>
+
+            {/* Student rows */}
+            {grp.map((s, idx) => {
+              const name  = s.fullName ?? `${s.firstname ?? ""} ${s.lastname ?? ""}`.trim();
+              const nxt   = nextLv(s);
+              const prv   = prevLv(s);
+              const isPro = promotingId === s.id;
+
+              return (
+                <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12,
+                  padding: "12px 18px", background: "#fff",
+                  borderBottom: idx < grp.length - 1 ? "1px solid #f1f5f7" : "none" }}>
+                  {/* Avatar */}
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+                    background: `linear-gradient(135deg,${col.badge},${col.badge}99)`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#fff", fontWeight: 800, fontSize: 15 }}>
+                    {name.charAt(0).toUpperCase()}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "#1e293b",
+                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 3 }}>
+                      {s.email && <span style={{ fontSize: 11, color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
+                        <Mail size={10} />{s.email}</span>}
+                      {s.program && <span style={{ fontSize: 11, color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
+                        <GraduationCap size={10} />{s.program}</span>}
+                      {s.currentSemester > 0 && <span style={{ fontSize: 11, color: col.badge, fontWeight: 700 }}>
+                        Sem {s.currentSemester}</span>}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: 5, flexShrink: 0, alignItems: "center" }}>
+                    {isSuper && prv && (
+                      <button onClick={() => promoteOne(s, prv)} disabled={isPro} title={`Demote to ${prv}`}
+                        style={{ padding: "5px 10px", borderRadius: 7, border: "1.5px solid #f59e0b",
+                          background: "rgba(245,158,11,0.07)", color: "#b45309", cursor: "pointer",
+                          fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+                        <ArrowRight size={10} style={{ transform: "rotate(180deg)" }} />L{prv}
+                      </button>
+                    )}
+                    {nxt && (
+                      <button onClick={() => promoteOne(s, nxt)} disabled={isPro} title={`Promote to ${nxt}`}
+                        style={{ padding: "5px 10px", borderRadius: 7, border: `1.5px solid ${col.badge}`,
+                          background: col.bg, color: col.text, cursor: "pointer",
+                          fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+                        {isPro ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : "?"}
+                        L{nxt}
+                      </button>
+                    )}
+                    <button onClick={() => openEdit(s.id)} title="Edit"
+                      style={{ width: 30, height: 30, borderRadius: 7, border: "1.5px solid #e2e8f0",
+                        background: "#f8fafc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Edit size={13} color="#5156be" />
+                    </button>
+                    <button onClick={() => remove(s.id, name)} title="Delete"
+                      style={{ width: 30, height: 30, borderRadius: 7, border: "1.5px solid #fee2e2",
+                        background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Trash2 size={13} color="#fd625e" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+
+      {/* Edit Modal */}
+      {editModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 540 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Edit Student</h3>
+              <button onClick={() => setEditModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px 16px" }}>
+              {[
+                { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
+                { key: "email", label: "Email" }, { key: "username", label: "Username" }, { key: "phone", label: "Phone" },
+                { key: "programId", label: "Program", type: "programSelect" },
+                { key: "currentLevel", label: "Level", type: "select", options: [100, 200, 300, 400, 500, 600] },
+                { key: "currentSemester", label: "Semester", type: "select", options: [1, 2, 3] },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>{f.label}</label>
+                  {(f as any).type === "select" ? (
+                    <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
+                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
+                      <option value="" disabled>Select {f.label}</option>
+                      {(f as any).options.map((opt: number) => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  ) : (f as any).type === "programSelect" ? (
+                    <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
+                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
+                      <option value="" disabled>Select Program</option>
+                      {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  ) : (
+                    <input type={(f as any).type || "text"} value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: e.target.value }))}
+                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button onClick={() => setEditModal(false)}
+                style={{ flex: 1, height: 40, border: "1.5px solid #e2e8f0", background: "#f8fafc", borderRadius: 8, cursor: "pointer", fontWeight: 700 }}>Cancel</button>
+              <button onClick={saveEdit} disabled={saving}
+                style={{ flex: 1, height: 40, border: "none", background: "#5156be", color: "#fff", borderRadius: 8, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}Save
+              </button>
             </div>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
-
-      <style>{`
-        .registry-compact-header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 25px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #f1f5f9; }
-        .compact-stats { display: flex; align-items: center; gap: 20px; }
-        .stat-node { display: flex; flex-direction: column; }
-        .stat-node .l { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
-        .stat-node .v { font-size: 16px; font-weight: 900; color: #1e293b; }
-        .stat-node .v.ok { color: #10b981; }
-        .stat-sep { width: 1px; height: 24px; background: #f1f5f9; }
-
-        .compact-actions { display: flex; align-items: center; gap: 12px; }
-        .mini-search { height: 36px; width: 260px; background: #f8fafc; border-radius: 10px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid #f1f5f9; }
-        .mini-search input { background: none; border: none; outline: none; font-size: 11px; font-weight: 600; color: #475569; width: 100%; }
-
-        .reg-row-premium { background: #fff; border-radius: 15px; padding: 10px 25px; display: grid; grid-template-columns: 60px 1fr 120px 100px; gap: 15px; align-items: center; border: 1px solid #f1f5f9; margin-bottom: 8px; transition: 0.2s; }
-        .reg-row-premium:hover { border-color: #e2e8f0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        
-        .s-avatar { width: 38px; height: 38px; border-radius: 10px; background: rgba(99, 102, 241, 0.08); color: #6366f1; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; }
-        .reg-col.info .t { margin: 0; font-size: 14px; font-weight: 800; color: #1e293b; }
-        .reg-col.info .sub { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #94a3b8; font-weight: 600; margin-top: 2px; }
-        .reg-col.info .sub .dot { width: 3px; height: 3px; border-radius: 50%; background: #cbd5e1; }
-        
-        .v-badge { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; background: rgba(16, 185, 129, 0.05); padding: 4px 10px; border-radius: 6px; }
-
-        .reg-col.acts { display: flex; gap: 6px; justify-content: flex-end; }
-        .a-btn { width: 32px; height: 32px; border-radius: 8px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .a-btn.p { background: #eff6ff; color: #2563eb; }
-        .a-btn.d { background: #fef2f2; color: #dc2626; }
-        .a-btn:hover { filter: brightness(0.95); transform: translateY(-1px); }
-
-        .reg-empty-state { padding: 80px 0; text-align: center; color: #cbd5e1; }
-        .reg-empty-state h5 { margin: 15px 0 5px; color: #1e293b; font-weight: 800; }
-        .reg-empty-state p { font-size: 13px; font-weight: 600; }
-
-        .fixed-global-overlay { position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 99999; }
-        .modal-lexa-container-compact { background: #fff; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); overflow: hidden; }
-        .modal-lexa-header-mini { padding: 15px 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fcfdfe; }
-        .modal-lexa-header-mini h6 { margin: 0; font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em; }
-        .m-close { background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; }
-        .m-close:hover { background: #f1f5f9; color: #f43f5e; }
-
-        .f-grp-mini { display: flex; flex-direction: column; gap: 6px; }
-        .f-grp-mini label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; padding-left: 2px; }
-        .mini-input { border-radius: 10px; border: 1.5px solid #f1f5f9; background: #f8fafc; padding: 11px 15px; font-size: 13px; font-weight: 600; color: #1e293b; outline: none; transition: 0.2s; }
-        .mini-input:focus { border-color: #6366f1; background: #fff; }
-        .id-lock { font-weight: 800; color: #02a4af; background: rgba(2, 164, 175, 0.02); }
-
-        .modal-lexa-footer-mini { padding: 15px 25px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; background: #fcfdfe; }
-        .m-btn-sec { background: none; border: none; font-size: 12px; font-weight: 700; color: #94a3b8; cursor: pointer; padding: 0 15px; height: 38px; }
-        .m-btn-pri { height: 38px; padding: 0 25px; background: #1e293b; color: #fff; border: none; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; }
-        .m-btn-pri:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-
-        .animate-scale-up { animation: scaleUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes scaleUp { from { transform: scale(0.97); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .spin-ico { animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
-        @media (max-width: 768px) {
-          .registry-compact-header { flex-direction: column; align-items: stretch; gap: 15px; padding: 15px; }
-          .compact-stats { justify-content: center; }
-          .compact-actions { flex-direction: column; align-items: stretch; width: 100%; }
-          .mini-search { width: 100%; }
-          .reg-row-premium { 
-            grid-template-columns: 1fr; 
-            position: relative; 
-            padding: 15px; 
-            gap: 10px;
-          }
-          .reg-col.id-badge { display: none; }
-          .reg-col.status { position: absolute; top: 15px; right: 15px; }
-          .reg-col.acts { justify-content: flex-start; margin-top: 5px; }
-          .modal-lexa-container-compact { width: 95vw !important; max-width: none !important; }
-          .form-grid-2 { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
+
+
+
+
+
+
+
