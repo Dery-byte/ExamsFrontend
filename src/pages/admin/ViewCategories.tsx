@@ -22,6 +22,13 @@ export default function ViewCategories() {
   const [lecturers, setLecturers] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [programs, setPrograms] = useState<any[]>([]);
+
+  useEffect(() => {
+    import('../../api/endpoints').then(({ getPrograms }) => {
+      getPrograms().then(data => { if (Array.isArray(data)) setPrograms(data); }).catch(() => {});
+    });
+  }, []);
 
   useEffect(() => {
     if (editModal || assignModal) {
@@ -58,7 +65,16 @@ export default function ViewCategories() {
     setSaving(true);
     const loadingToast = toast.loading('Synchronizing registry...');
     try {
-      await adminUpdateCategory(categoryEdit.cid, categoryEdit);
+      // Explicitly pick fields so programIds (List<Long>) is sent cleanly
+      const payload = {
+        title: categoryEdit.title,
+        courseCode: categoryEdit.courseCode,
+        description: categoryEdit.description,
+        level: categoryEdit.level,
+        semester: categoryEdit.semester,
+        programIds: categoryEdit.programIds || [],
+      };
+      await adminUpdateCategory(categoryEdit.cid, payload);
       toast.success('Registry updated successfully', { id: loadingToast });
       qc.invalidateQueries({ queryKey: ['categories'] });
       setEditModal(false);
@@ -136,7 +152,10 @@ export default function ViewCategories() {
               <div className="reg-col code"><span className="c-badge">{el.courseCode}</span></div>
               <div className="reg-col title">
                  <h6 className="t">{el.title}</h6>
-                 <span className="m">{el.level} • {el.description?.substring(0, 60)}...</span>
+                 <span className="m" style={{ color: '#64748b' }}>
+                    <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.join(', ') || 'General / All Programs'}</span>
+                    {' • '}{el.level}{' • '}{el.description?.substring(0, 60)}...
+                 </span>
               </div>
               <div className="reg-col lead">
                  {el.user ? (
@@ -189,6 +208,40 @@ export default function ViewCategories() {
                    <label>Synopsis</label>
                    <textarea className="mini-area" rows={3} value={categoryEdit.description||''} onChange={e=>setCategoryEdit({...categoryEdit,description:e.target.value})} placeholder="Description..."/>
                 </div>
+                {programs.length > 0 && (
+                  <div className="f-grp-mini">
+                     <label>Registered Programs (Select all that apply)</label>
+                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
+                        {programs.map(p => {
+                          const isSelected = (categoryEdit.programIds || []).includes(p.id);
+                          return (
+                            <label key={p.id} style={{
+                              display: 'flex', alignItems: 'center', gap: '8px', padding: '8px',
+                              border: isSelected ? '1px solid #6366f1' : '1px solid #e2e8f0',
+                              borderRadius: '6px', background: isSelected ? '#6366f10a' : '#fff',
+                              cursor: 'pointer'
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  const currentIds = categoryEdit.programIds || [];
+                                  const newIds = e.target.checked 
+                                    ? [...currentIds, p.id] 
+                                    : currentIds.filter((id: number) => id !== p.id);
+                                  setCategoryEdit({ ...categoryEdit, programIds: newIds });
+                                }}
+                                style={{ accentColor: '#6366f1' }}
+                              />
+                              <span style={{ fontSize: '12px', fontWeight: isSelected ? 600 : 500, color: '#334155' }}>
+                                {p.name}
+                              </span>
+                            </label>
+                          );
+                        })}
+                     </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="modal-lexa-footer-mini">

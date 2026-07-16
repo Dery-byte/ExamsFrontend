@@ -52,6 +52,7 @@ export default function AdminLayout() {
         { to: '/admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
         { to: '/admin/quizzes', icon: <ClipboardList size={20} />, label: 'Quizzes' },
         { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
+        { to: '/admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' },
       ]
     },
     { 

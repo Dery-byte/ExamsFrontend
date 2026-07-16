@@ -25,7 +25,7 @@ const INFO_ITEMS = [
 
 export default function AddCategory() {
   const navigate = useNavigate();
-  const [category, setCategory] = useState({ title: '', courseCode: '', level: '', description: '', semester: '', programId: '' });
+  const [category, setCategory] = useState<{title: string, courseCode: string, level: string, description: string, semester: string, programIds: number[]}>({ title: '', courseCode: '', level: '', description: '', semester: '', programIds: [] });
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[] }[]>([]);
@@ -34,8 +34,8 @@ export default function AddCategory() {
     getPrograms().then(data => { if (Array.isArray(data)) setPrograms(data); }).catch(() => {});
   }, []);
 
-  const availableLevels = category.programId
-    ? (programs.find(p => p.id === Number(category.programId))?.configuredLevels || []).map(l => String(l))
+  const availableLevels = category.programIds.length > 0
+    ? (programs.find(p => p.id === category.programIds[0])?.configuredLevels || []).map(l => String(l))
     : ['100', '200', '300', '400'];
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -48,7 +48,7 @@ export default function AddCategory() {
     const loadingToast = toast.loading('Registering course...');
     setLoading(true);
     try {
-      await addCategory({ ...category, programId: category.programId ? Number(category.programId) : undefined });
+      await addCategory({ ...category });
       toast.success('Course registered successfully', { id: loadingToast });
       setTimeout(() => navigate('/admin/courses'), 1200);
     } catch (err: any) {
@@ -153,19 +153,42 @@ export default function AddCategory() {
               </div>
             </div>
 
-            {/* Row 2: Program */}
+            {/* Row 2: Programs (Multi-Select) */}
             {programs.length > 0 && (
               <div className="acp-field">
                 <label className="acp-label">
-                  <GraduationCap size={13} /> Program
+                  <GraduationCap size={13} /> Registered Programs
+                  <span className="acp-hint" style={{ marginLeft: '8px' }}>(Select all that apply)</span>
                 </label>
-                <div className={`acp-input-wrap ${focused === 'programId' ? 'is-focused' : ''}`}>
-                  <select className="acp-input" value={category.programId} onChange={set('programId')}
-                    onFocus={() => setFocused('programId')} onBlur={() => setFocused(null)}
-                    style={{ background: 'transparent' }}>
-                    <option value="">-- All Programs / Not Linked --</option>
-                    {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
+                <div className="acp-programs-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px' }}>
+                  {programs.map(p => {
+                    const isSelected = category.programIds.includes(p.id);
+                    return (
+                      <label key={p.id} style={{
+                        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px',
+                        border: isSelected ? '1px solid #5156be' : '1px solid #e2e8f0',
+                        borderRadius: '6px', background: isSelected ? '#5156be0a' : '#fff',
+                        cursor: 'pointer', transition: 'all 0.2s'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            setCategory(c => {
+                              const newIds = e.target.checked 
+                                ? [...c.programIds, p.id] 
+                                : c.programIds.filter(id => id !== p.id);
+                              return { ...c, programIds: newIds };
+                            });
+                          }}
+                          style={{ width: '16px', height: '16px', accentColor: '#5156be' }}
+                        />
+                        <span style={{ fontSize: '14px', fontWeight: isSelected ? 600 : 500, color: '#334155' }}>
+                          {p.name}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}

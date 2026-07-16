@@ -34,6 +34,7 @@ export default function LecturerLayout() {
     { to: '/lect/add-course', icon: <Layout size={20} />, title: 'Add Course' },
     { to: '/lect/add-quizes', icon: <Briefcase size={20} />, title: 'Create Quiz' },
     { to: '/lect/quiz-review', icon: <Eye size={20} />, title: 'Quiz Review' },
+    { to: '/lect/manual-marks', icon: <FileText size={20} />, title: 'Manual Marks' },
   ];
 
   return (

@@ -45,6 +45,7 @@ import LectQuizReview from './pages/lecturer/LectQuizReview';
 import LectAddQuiz from './pages/lecturer/LectAddQuiz';
 import LectViewQuizQuestions from './pages/lecturer/LectViewQuizQuestions';
 import LectAddQuestion from './pages/lecturer/LectAddQuestion';
+import ManualMarksEntry from './pages/lecturer/ManualMarksEntry';
 
 // User
 import UserDashboard from './pages/user/UserDashboard';
@@ -55,6 +56,11 @@ import LoadQuiz from './pages/user/LoadQuiz';
 import Instructions from './pages/user/Instructions';
 import StartQuiz from './pages/user/StartQuiz';
 import PrintQuiz from './pages/user/PrintQuiz';
+import SemesterReportCard from './pages/user/SemesterReportCard';
+
+// Shared
+import MarksSheetManager from './pages/admin/MarksSheetManager';
+
 export default function App() {
   return (
     <AuthProvider>
@@ -97,6 +103,7 @@ export default function App() {
           <Route path="student-semester" element={<ManageStudentLevel />} />
           <Route path="students" element={<Students />} />
           <Route path="enroll-student" element={<EnrollStudent />} />
+          <Route path="marks-sheets" element={<MarksSheetManager />} />
         </Route>
 
         {/* Admin */}
@@ -113,6 +120,7 @@ export default function App() {
           <Route path="lecturers" element={<Lecturers />} />
           <Route path="quiz-review" element={<QuizReview />} />
           <Route path="enroll-student" element={<EnrollStudent />} />
+          <Route path="marks-sheets" element={<MarksSheetManager />} />
         </Route>
 
         {/* Lecturer */}
@@ -126,6 +134,7 @@ export default function App() {
           <Route path="view-quetions/:qId/:qTitle" element={<LectViewQuizQuestions />} />
           <Route path="add-question/:qId/:title" element={<LectAddQuestion />} />
           <Route path="quiz-review" element={<LectQuizReview />} />
+          <Route path="manual-marks" element={<ManualMarksEntry />} />
         </Route>
 
         {/* Student */}
@@ -137,6 +146,7 @@ export default function App() {
           <Route path="courses" element={<CoursesRegistered />} />
           <Route path="quizzes" element={<AvailableQuizzes />} />
           <Route path="history" element={<LoadQuiz />} />
+          <Route path="report-cards" element={<SemesterReportCard />} />
 
           <Route path="instructions/:qid" element={<Instructions />} />
         </Route>

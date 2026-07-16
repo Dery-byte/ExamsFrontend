@@ -46,6 +46,12 @@ export default function SuperAdminLayout() {
         { to: '/super-admin/enroll-student', icon: <BookOpen size={20} />, label: 'Enroll Student' },
       ]
     },
+    {
+      label: 'Academic Performance',
+      items: [
+        { to: '/super-admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' },
+      ]
+    },
   ];
 
   return (

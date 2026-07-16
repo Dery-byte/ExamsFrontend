@@ -34,6 +34,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
       items: [
         { to: '/user-dashboard/quizzes', label: 'Assessments',        icon: ClipboardCheck },
         { to: '/user-dashboard/history', label: 'Performance History', icon: History        },
+        { to: '/user-dashboard/report-cards', label: 'Report Cards', icon: BookOpen        },
       ]
     },
     {
