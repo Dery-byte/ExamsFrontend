@@ -303,10 +303,11 @@ export const getAvailableLlmProviders = () => client.get('/llm/providers').then(
 export const getQuizLlmProvider = (quizId: number | string) => client.get(`/llm/quiz/${quizId}/provider`).then(r => r.data);
 export const setQuizLlmProvider = (quizId: number | string, provider: string) => client.put(`/llm/quiz/${quizId}/provider`, { provider }).then(r => r.data);
 
-// ── Programs (read-only — available to all authenticated users) ────────────
+// ── Programs & Departments (read-only — available to all authenticated users) ────────────
 export const getPrograms = () => client.get('/programs').then(r => r.data);
 export const getProgramsByDept = (deptId: number) => client.get(`/programs/department/${deptId}`).then(r => r.data);
 export const getProgramById = (id: number) => client.get(`/programs/${id}`).then(r => r.data);
+export const getDepartments = () => client.get('/departments').then(r => r.data);
 
 // ── Student filtered courses ───────────────────────────────────────────────
 export const getCoursesForStudent = () => client.get('/categories/for-student').then(r => r.data);
@@ -367,6 +368,12 @@ export const saEnrollStudent      = (studentId: number, categoryId: number) =>
 export const saGetCoursesForProgram = (programId: number) =>
   saClient.get(`/courses-for-program/${programId}`).then(r => r.data);
 
+// ── Super Admin — System Settings ─────────────────────────────────────────
+export const saGetSystemSettings = () =>
+  saClient.get('/settings').then(r => r.data);
+export const saUpdateSystemSettings = (data: Record<string, string>) =>
+  saClient.put('/settings', data).then(r => r.data);
+
 // ── HOD (Admin) — Student Promotion (forward-only) ────────────────────────
 export const adminPromoteStudent    = (id: number, targetLevel: number) =>
   client.put(`/admin/student/${id}/promote`, { targetLevel }).then(r => r.data);
@@ -389,3 +396,13 @@ export const adminGetCoursesForProgram = (programId: number) =>
 export const registerSuperAdmin = (data: object) => client.post('/register/super-admin', data).then(r => r.data);
 
 
+
+export const getAdminDashboardStats = () => client.get('/admin/dashboard-stats').then(r => r.data);
+
+// ── Marks Entry ───────────────────────────────────────────────────────────
+export const syncMarksForStudent = (sheetId: number | string, studentId: number) =>
+  client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sync-marks/${studentId}`).then(r => r.data);
+
+export const syncMarksBulk = (sheetId: number | string) =>
+  client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sync-marks/bulk`).then(r => r.data);
+export const getAdminDepartmentCategoriesAndQuizzes = () => client.get('/admin/department-reports').then(r => extractCategoriesAndQuizzes(r.data));

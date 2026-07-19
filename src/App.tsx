@@ -31,6 +31,7 @@ import EnrollStudent from './pages/admin/EnrollStudent';
 
 // Super Admin
 import SuperAdminWelcome from './pages/superadmin/SuperAdminWelcome';
+import SuperAdminConfiguration from './pages/superadmin/SuperAdminConfiguration';
 import Departments from './pages/superadmin/Departments';
 import Programs from './pages/superadmin/Programs';
 import ManageHODs from './pages/superadmin/ManageHODs';
@@ -96,6 +97,7 @@ export default function App() {
         {/* Super Admin */}
         <Route path="/super-admin" element={<ProtectedRoute role="SUPER_ADMIN"><SuperAdminLayout /></ProtectedRoute>}>
           <Route index element={<SuperAdminWelcome />} />
+          <Route path="configuration" element={<SuperAdminConfiguration />} />
           <Route path="profile" element={<Profile />} />
           <Route path="departments" element={<Departments />} />
           <Route path="programs" element={<Programs />} />

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllUsers, getUniqueCategoriesAndQuizzes, getReportByQuizId, getStudentCount, getLecturerCount, loadQuizzes } from '../../api/endpoints';
+import { getAllUsers, getAdminDepartmentCategoriesAndQuizzes, getReportByQuizId, getAdminDashboardStats } from '../../api/endpoints';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -24,10 +24,9 @@ export default function AdminWelcome() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartType, setChartType] = useState<AdminChartType>('bar');
 
-  const { data: cateGory = [] } = useQuery({ queryKey: ['adminCatReport'], queryFn: getUniqueCategoriesAndQuizzes });
-  const { data: allQuizzes = [] } = useQuery({ queryKey: ['allQuizzes'], queryFn: loadQuizzes });
-  const { data: stuData } = useQuery({ queryKey: ['stuCount'], queryFn: getStudentCount });
-  const { data: lectData } = useQuery({ queryKey: ['lectCount'], queryFn: getLecturerCount });
+  const { data: cateGory = [] } = useQuery({ queryKey: ['adminDeptCatReport'], queryFn: getAdminDepartmentCategoriesAndQuizzes });
+  const { data: dashStatsData } = useQuery({ queryKey: ['adminDashboardStats'], queryFn: getAdminDashboardStats });
+  const dashStats: any = dashStatsData;
 
   const selectCategory = (cid: number | null) => {
     setSelCatId(cid);
@@ -141,10 +140,10 @@ export default function AdminWelcome() {
       {/* Stats Row */}
       <div className="stats-grid-compact">
         {[
-          { label: 'Modules', value: (cateGory as any[]).length || '0', icon: <Book size={26} />, bg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
-          { label: 'Assessments', value: (allQuizzes as any[]).length || '0', icon: <Zap size={26} />, bg: 'linear-gradient(135deg, #0ea5e9 0%, #2dd4bf 100%)' },
-          { label: 'Candidates', value: stuData?.count ?? '0', icon: <GraduationCap size={26} />, bg: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)' },
-          { label: 'Personnel', value: lectData?.count ?? '0', icon: <Users size={26} />, bg: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' },
+          { label: 'Modules', value: dashStats?.modules ?? '0', icon: <Book size={26} />, bg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
+          { label: 'Assessments', value: dashStats?.assessments ?? '0', icon: <Zap size={26} />, bg: 'linear-gradient(135deg, #0ea5e9 0%, #2dd4bf 100%)' },
+          { label: 'Candidates', value: dashStats?.candidates ?? '0', icon: <GraduationCap size={26} />, bg: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)' },
+          { label: 'Personnel', value: dashStats?.personnel ?? '0', icon: <Users size={26} />, bg: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' },
         ].map((stat, i) => (
           <div key={i} className="stat-card-premium" style={{ background: stat.bg }}>
             <div className="s-icon-circle">{stat.icon}</div>

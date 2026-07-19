@@ -14,11 +14,12 @@ export interface AuthUser {
   role: UserRole;
   enabled?: boolean;
   accountNonExpired?: boolean;
-  accountNonLocked?: boolean;
   credentialsNonExpired?: boolean;
+  accountNonLocked?: boolean;
   authorities?: { authority: string }[];
   profilePicture?: string;
   bio?: string;
+  department?: { id: number; name: string; description?: string };
 }
 
 interface AuthCtx {
@@ -133,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastname: resp.lastname,
         role,
         authorities,
+        department: (resp as any).department ?? payload?.department,
       };
     }
 
@@ -188,3 +190,4 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth outside AuthProvider');
   return ctx;
 }
+

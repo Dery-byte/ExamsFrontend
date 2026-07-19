@@ -27,6 +27,7 @@ export default function SuperAdminLayout() {
       label: 'Main Dashboard',
       items: [
         { to: '/super-admin', exact: true, icon: <LayoutDashboard size={20} />, label: 'Overview' },
+        { to: '/super-admin/configuration', icon: <Settings size={20} />, label: 'Configuration' },
         { to: '/super-admin/profile', icon: <UserCircle size={20} />, label: 'My Profile' },
       ]
     },

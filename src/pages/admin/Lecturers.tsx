@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { getAllLecturersCounts, getLecturerById, updateLecturer, deleteLecturer, registerLecturer } from '../../api/endpoints';
+import { getAllLecturersCounts, getLecturerById, updateLecturer, deleteLecturer, registerLecturer, getDepartments } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
@@ -11,7 +11,7 @@ import {
   Lock, Key
 } from 'lucide-react';
 
-const emptyLecturer = { firstname:'', lastname:'', username:'', email:'', phone:'', password:'' };
+const emptyLecturer = { firstname:'', lastname:'', username:'', email:'', phone:'', password:'', departmentId:'' };
 
 export default function Lecturers() {
   const [lecturers, setLecturers]       = useState<any[]>([]);
@@ -24,6 +24,7 @@ export default function Lecturers() {
   const [newLect, setNewLect]           = useState(emptyLecturer);
   const [loading, setLoading]           = useState(false);
   const [saving, setSaving]             = useState(false);
+  const [departments, setDepartments]   = useState<any[]>([]);
 
   const fetchLecturers = async () => {
     setLoading(true);
@@ -35,7 +36,10 @@ export default function Lecturers() {
     } catch {} finally { setLoading(false); }
   };
   
-  useEffect(()=>{ fetchLecturers(); },[]);
+  useEffect(()=>{ 
+    fetchLecturers(); 
+    getDepartments().then(res => setDepartments(res)).catch(()=>{});
+  },[]);
 
   useEffect(() => {
     if (editModal || addModal) document.body.style.overflow = 'hidden';
@@ -202,6 +206,13 @@ export default function Lecturers() {
                    <label>Email Address</label>
                    <input className="mini-input" value={lecturerEdit.email||''} onChange={e=>setLecturerEdit({...lecturerEdit,email:e.target.value})}/>
                 </div>
+                <div className="f-grp-mini">
+                   <label>Department</label>
+                   <select className="mini-input" value={lecturerEdit.departmentId||''} onChange={e=>setLecturerEdit({...lecturerEdit,departmentId:e.target.value})}>
+                     <option value="">-- No Department --</option>
+                     {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                   </select>
+                </div>
               </div>
             </div>
             <div className="modal-lexa-footer-mini">
@@ -229,6 +240,13 @@ export default function Lecturers() {
                   <div className="f-grp-mini"><label>Registry Email</label><input className="mini-input" required type="email" value={newLect.email} onChange={setN('email')}/></div>
                   <div className="f-grp-mini"><label>Contact</label><input className="mini-input" value={newLect.phone} onChange={setN('phone')}/></div>
                   <div className="f-grp-mini"><label>Credential (Pass)</label><input className="mini-input" required type="password" value={newLect.password} onChange={setN('password')}/></div>
+                  <div className="f-grp-mini">
+                    <label>Department</label>
+                    <select className="mini-input" value={newLect.departmentId} onChange={setN('departmentId')}>
+                      <option value="">-- No Department --</option>
+                      {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div className="enroll-protocol-box">
                    <Lock size={16} />

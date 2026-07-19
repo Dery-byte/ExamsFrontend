@@ -68,7 +68,7 @@ export default function AdminLayout() {
       items: [
         { to: '/admin/quiz-review', icon: <Eye size={20} />, label: 'Quiz Review Panel' },
       ]
-    },
+    }
   ];
 
   return (
@@ -81,7 +81,7 @@ export default function AdminLayout() {
               <ShieldCheck size={24} />
             </div>
             <div className="lexa-brand-text">
-              <span className="main">OTC</span>
+              <span className="main" style={{ fontSize: '14px', lineHeight: '1.2' }}>{user?.department?.name || 'OTC'}</span>
               <span className="sub">ADMIN PORTAL</span>
             </div>
           </div>

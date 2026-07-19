@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import client from '../../api/client';
 import { toast } from 'react-hot-toast';
+import { syncMarksForStudent, syncMarksBulk } from '../../api/endpoints';
+import { DownloadCloud, RefreshCw } from 'lucide-react';
 
 const ManualMarksEntry = () => {
     const [sheets, setSheets] = useState([]);
     const [selectedSheetId, setSelectedSheetId] = useState('');
     const [sheetData, setSheetData] = useState<any>(null);
     const [userContext, setUserContext] = useState<any>(null);
+    const [syncingStudent, setSyncingStudent] = useState<number | null>(null);
+    const [bulkSyncing, setBulkSyncing] = useState(false);
 
     useEffect(() => {
         const u = localStorage.getItem('user');
@@ -103,6 +107,36 @@ const ManualMarksEntry = () => {
         }
     };
 
+    const handleSyncStudent = async (studentId: number) => {
+        if (!selectedSheetId) return;
+        setSyncingStudent(studentId);
+        try {
+            await syncMarksForStudent(selectedSheetId, studentId);
+            toast.success("Marks fetched successfully!");
+            await loadSheet(selectedSheetId);
+        } catch (error) {
+            toast.error("Failed to fetch marks");
+        } finally {
+            setSyncingStudent(null);
+        }
+    };
+
+    const handleBulkSync = async () => {
+        if (!selectedSheetId) return;
+        if (!window.confirm("This will fetch and overwrite CA/Assessment marks for ALL students in this sheet. Continue?")) return;
+        
+        setBulkSyncing(true);
+        try {
+            await syncMarksBulk(selectedSheetId);
+            toast.success("Bulk fetch completed successfully!");
+            await loadSheet(selectedSheetId);
+        } catch (error) {
+            toast.error("Failed to perform bulk fetch");
+        } finally {
+            setBulkSyncing(false);
+        }
+    };
+
     if (!sheetData) {
         return (
             <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -132,6 +166,11 @@ const ManualMarksEntry = () => {
                     <h5 style={{ fontWeight: '700', color: '#2a3142', margin: 0 }}>Sheet Data (Level {sheetData.level}, Sem {sheetData.semester})</h5>
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button onClick={() => setSheetData(null)} style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Back</button>
+                        {!isReadOnly && (
+                            <button onClick={handleBulkSync} disabled={bulkSyncing} style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: bulkSyncing ? 'not-allowed' : 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', opacity: bulkSyncing ? 0.7 : 1 }}>
+                                <DownloadCloud size={16} /> {bulkSyncing ? 'Fetching...' : 'Bulk Fetch Marks'}
+                            </button>
+                        )}
                         {!isReadOnly && <button onClick={handleSave} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Save Progress</button>}
                         {!isReadOnly && <button onClick={handleSubmit} style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Submit Final</button>}
                     </div>
@@ -171,8 +210,22 @@ const ManualMarksEntry = () => {
                             {sheetData.studentMarks.map((student: any, sIdx: number) => (
                                 <tr key={student.studentId} style={{ borderBottom: '1px solid #e5e7eb' }}>
                                     <td style={{ padding: '12px', border: '1px solid #e5e7eb' }}>
-                                        <div style={{ fontWeight: '600', color: '#111827' }}>{student.studentName}</div>
-                                        <div style={{ fontSize: '12px', color: '#6b7280' }}>{student.username}</div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div>
+                                                <div style={{ fontWeight: '600', color: '#111827' }}>{student.studentName}</div>
+                                                <div style={{ fontSize: '12px', color: '#6b7280' }}>{student.username}</div>
+                                            </div>
+                                            {!isReadOnly && (
+                                                <button 
+                                                    onClick={() => handleSyncStudent(student.studentId)}
+                                                    disabled={syncingStudent === student.studentId}
+                                                    title="Fetch System Marks"
+                                                    style={{ background: 'transparent', border: 'none', cursor: syncingStudent === student.studentId ? 'not-allowed' : 'pointer', color: '#8b5cf6', padding: '4px' }}
+                                                >
+                                                    <RefreshCw size={16} className={syncingStudent === student.studentId ? 'spin' : ''} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                     {student.courseMarks.map((cMark: any, cIdx: number) => (
                                         <React.Fragment key={cMark.courseId}>
@@ -203,6 +256,10 @@ const ManualMarksEntry = () => {
                     </table>
                 </div>
             </div>
+            <style>{`
+                .spin { animation: spin 1s linear infinite; }
+                @keyframes spin { 100% { transform: rotate(360deg); } }
+            `}</style>
         </div>
     );
 };
