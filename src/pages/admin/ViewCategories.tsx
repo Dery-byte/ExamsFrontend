@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  getCategories, getCategory, getAllLecturers, assignCourseToLecturer,
+  getCategories, getCategory, getLecturersByDepartment, assignCourseToLecturer,
   adminUpdateCategory, deleteCategory
 } from '../../api/endpoints';
 import Swal from 'sweetalert2';
@@ -54,7 +54,7 @@ export default function ViewCategories() {
 
   const openAssign = async (cid: number) => {
     try {
-      const [cat, lects] = await Promise.all([getCategory(cid), getAllLecturers()]);
+      const [cat, lects] = await Promise.all([getCategory(cid), getLecturersByDepartment()]);
       setCategoryEdit(cat); 
       setLecturers(lects); 
       setAssignModal(true);

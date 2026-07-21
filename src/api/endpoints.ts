@@ -85,6 +85,7 @@ export const deleteCategory = (id: number) => client.delete(`/category/${id}`).t
 export const assignCourseToLecturer = (courseId: number, lecturerId: number) =>
   client.put(`/courses/${courseId}/assign/${lecturerId}`, {}).then(r => r.data);
 export const getAllLecturers = () => client.get('/all/lecturers').then(r => r.data);
+export const getLecturersByDepartment = () => client.get('/lecturers/by-department').then(r => r.data);
 export const getAllStudents = () => client.get('/all/students').then(r => r.data);
 export const getLecturerCoursesWithQuizzes = (lecturerId: number | string) => 
   client.get(`/category/lecturer/${lecturerId}/with-quizzes`).then(r => r.data);
@@ -400,9 +401,15 @@ export const registerSuperAdmin = (data: object) => client.post('/register/super
 export const getAdminDashboardStats = () => client.get('/admin/dashboard-stats').then(r => r.data);
 
 // ── Marks Entry ───────────────────────────────────────────────────────────
-export const syncMarksForStudent = (sheetId: number | string, studentId: number) =>
-  client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sync-marks/${studentId}`).then(r => r.data);
+export const syncMarksForStudent = (sheetId: number | string, studentId: number, sectionId: number) =>
+  client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sync-marks/${studentId}?sectionId=${sectionId}`).then(r => r.data);
 
-export const syncMarksBulk = (sheetId: number | string) =>
-  client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sync-marks/bulk`).then(r => r.data);
+export const syncMarksBulk = (sheetId: number | string, sectionId: number) =>
+  client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sync-marks/bulk?sectionId=${sectionId}`).then(r => r.data);
+
+export const addSheetSection = (sheetId: number | string, data: { sectionName: string, maxScore: number }) =>
+  client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sections`, data).then(r => r.data);
+
+export const deleteSheetSection = (sheetId: number | string, sectionId: number) =>
+  client.delete(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sections/${sectionId}`).then(r => r.data);
 export const getAdminDepartmentCategoriesAndQuizzes = () => client.get('/admin/department-reports').then(r => extractCategoriesAndQuizzes(r.data));

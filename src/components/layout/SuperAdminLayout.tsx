@@ -45,6 +45,7 @@ export default function SuperAdminLayout() {
         { to: '/super-admin/student-semester', icon: <GraduationCap size={20} />, label: 'Student Semesters' },
         { to: '/super-admin/students', icon: <Users size={20} />, label: 'Students & Levels' },
         { to: '/super-admin/enroll-student', icon: <BookOpen size={20} />, label: 'Enroll Student' },
+        { to: '/super-admin/lecturers', icon: <Users size={20} />, label: 'Enroll Staff' },
       ]
     },
     {

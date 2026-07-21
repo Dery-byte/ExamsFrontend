@@ -108,7 +108,7 @@ function SheetSelector({ sheets, onSelect }: { sheets: any[]; onSelect: (s: any)
                 <div style={{ fontSize: 13, color: '#64748b', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <span>📚 Level {s.level}</span>
                   <span>🗓 Semester {s.semester}</span>
-                  {s.courseNames && <span style={{ color: '#94a3b8' }}>{s.courseNames}</span>}
+                  {s.courseName && <span style={{ color: '#94a3b8' }}>{s.courseName}</span>}
                 </div>
               </div>
 

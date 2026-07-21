@@ -106,6 +106,7 @@ export default function App() {
           <Route path="students" element={<Students />} />
           <Route path="enroll-student" element={<EnrollStudent />} />
           <Route path="marks-sheets" element={<MarksSheetManager />} />
+          <Route path="lecturers" element={<Lecturers />} />
         </Route>
 
         {/* Admin */}

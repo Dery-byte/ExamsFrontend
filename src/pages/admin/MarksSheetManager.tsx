@@ -102,7 +102,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ color: '#fff', fontWeight: 800, fontSize: 16, lineHeight: 1.2 }}>
-              Marks Review — {sheet.courseNames || 'Sheet'}
+              Marks Review — {sheet.courseName || 'Sheet'}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
               Level {sheet.level} &bull; Sem {sheet.semester} &bull; {sheet.programName}
@@ -354,9 +354,11 @@ interface SheetCardProps {
   onAction: (action: string, sheetId: number) => void;
   actionLoading: string | null;
   onViewMarks: (sheet: any) => void;
+  onEdit: (sheet: any) => void;
+  onDelete: (sheetId: number) => void;
 }
 
-function SheetCard({ sheet, onAction, actionLoading, onViewMarks }: SheetCardProps) {
+function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDelete }: SheetCardProps) {
   const isLoading = (act: string) => actionLoading === `${act}-${sheet.id}`;
 
   const canApprove  = sheet.status === 'SUBMITTED';
@@ -387,7 +389,7 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks }: SheetCardPro
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b', lineHeight: 1.3, marginBottom: 4 }}>
-              {sheet.courseNames || 'Unnamed Sheet'}
+              {sheet.courseName || 'Unnamed Sheet'}
             </div>
             <div style={{ fontSize: 12, color: '#64748b' }}>
               {sheet.programName} &bull; Level {sheet.level} &bull; Semester {sheet.semester}
@@ -542,6 +544,34 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks }: SheetCardPro
             {isLoading('enroll') ? <Loader2 size={12} style={{ animation: 'rSpin 1s linear infinite' }} /> : <UserPlus size={13} />}
             Enroll
           </button>
+
+          {/* Edit / Delete */}
+          {['DRAFT', 'ACTIVE'].includes(sheet.status) && (
+              <>
+                  <button
+                      onClick={() => onEdit(sheet)}
+                      style={{
+                          display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px',
+                          border: '1.5px solid #e0f2fe', borderRadius: 8,
+                          background: '#f0f9ff', color: '#0369a1', fontWeight: 600, fontSize: 12,
+                          cursor: 'pointer'
+                      }}
+                  >
+                      <PlusCircle size={13} /> Edit
+                  </button>
+                  <button
+                      onClick={() => onDelete(sheet.id)}
+                      style={{
+                          display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px',
+                          border: '1.5px solid #fee2e2', borderRadius: 8,
+                          background: '#fef2f2', color: '#b91c1c', fontWeight: 600, fontSize: 12,
+                          cursor: 'pointer'
+                      }}
+                  >
+                      <Trash2 size={13} /> Delete
+                  </button>
+              </>
+          )}
         </div>
       </div>
     </div>
@@ -560,11 +590,12 @@ const MarksSheetManager = () => {
   const [classTeacherId, setClassTeacherId] = useState('');
   const [restrictLecturer, setRestrictLecturer] = useState(true);
   const [availableCourses, setAvailableCourses] = useState<any[]>([]);
-  const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
-  const [sections, setSections] = useState([{ sectionName: 'Section A', maxScore: 50 }, { sectionName: 'Section B', maxScore: 50 }]);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [sections, setSections] = useState<any[]>([{ sectionName: 'Exam', maxScore: 60, deletable: false }, { sectionName: 'CA', maxScore: 40, deletable: true }]);
   const [sheets, setSheets] = useState([]);
   const [availableLevels, setAvailableLevels] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingSheetId, setEditingSheetId] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewingSheet, setViewingSheet] = useState<any>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -572,8 +603,8 @@ const MarksSheetManager = () => {
   const marksBase = client.defaults.baseURL!.replace('/v1/auth', '');
 
   useEffect(() => {
-    client.get('/programs').then(res => setPrograms(res.data)).catch(() => {});
-    client.get('/all/lecturers').then(res => setLecturers(res.data)).catch(() => {});
+    client.get('/programs/my-department').then(res => setPrograms(res.data)).catch(() => {});
+    client.get('/lecturers/by-department').then(res => setLecturers(res.data)).catch(() => {});
     fetchSheets();
   }, []);
 
@@ -584,36 +615,85 @@ const MarksSheetManager = () => {
   useEffect(() => {
     if (programId && level && semester) {
       client.get(`/admin/courses-for-sheet?programId=${programId}&level=${level}&semester=${semester}`)
-        .then(res => { setAvailableCourses(res.data); setSelectedCourseIds([]); })
+        .then(res => { setAvailableCourses(res.data); setSelectedCourseId(''); })
         .catch(() => setAvailableCourses([]));
     } else {
       setAvailableCourses([]);
-      setSelectedCourseIds([]);
+      setSelectedCourseId('');
     }
   }, [programId, level, semester]);
 
-  const handleCourseToggle = (courseId: number) => {
-    setSelectedCourseIds(prev => prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId]);
-  };
-
   const handleActivateSheet = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedCourseIds.length === 0) { toast.error('Please select at least one course.'); return; }
+    if (!selectedCourseId) { toast.error('Please select a course.'); return; }
+    
+    // Validate total is 100
+    const totalScore = sections.reduce((sum, sec) => sum + (Number(sec.maxScore) || 0), 0);
+    if (totalScore !== 100) {
+      toast.error(`Total section marks must equal 100. Current total is ${totalScore}.`);
+      return;
+    }
+    
     setFormLoading(true);
     try {
-      await client.post(`${marksBase}/marks/sheet/activate`, {
+      const payload = {
         programId: Number(programId), level, semester: Number(semester),
         classTeacherId: classTeacherId ? Number(classTeacherId) : null,
         restrictLecturerToAssignedCourses: restrictLecturer,
-        courseIds: selectedCourseIds, sections
-      });
-      toast.success('Sheet activated!');
+        courseId: Number(selectedCourseId), sections
+      };
+
+      if (editingSheetId) {
+        await client.put(`${marksBase}/marks/sheet/${editingSheetId}`, payload);
+        toast.success('Sheet updated!');
+      } else {
+        await client.post(`${marksBase}/marks/sheet/activate`, payload);
+        toast.success('Sheet activated!');
+      }
       setShowCreateForm(false);
+      setEditingSheetId(null);
       fetchSheets();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to activate sheet.');
+      toast.error(error.response?.data?.message || 'Failed to save sheet.');
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const handleEditSheet = (sheet: any) => {
+    setEditingSheetId(sheet.id);
+    setProgramId(sheet.programId.toString());
+    const p = programs.find((p: any) => p.id === sheet.programId) as any;
+    setAvailableLevels(p?.configuredLevels || [100, 200, 300, 400] as any);
+    setLevel(sheet.level.toString());
+    setSemester(sheet.semester.toString());
+    setClassTeacherId(sheet.classTeacherId ? sheet.classTeacherId.toString() : '');
+    setRestrictLecturer(sheet.restrictLecturerToAssignedCourses);
+    
+    // We must wait for courses to load to set courseId, but for now we set it hoping it matches later
+    // or we fetch the course list first. useEffect will fetch courses and clear selectedCourseId
+    // so we need a workaround: we use a timeout or a ref to set the courseId after courses load.
+    // Actually, setting it directly and relying on the user to re-select if needed is safer,
+    // but better to fetch courses immediately here.
+    client.get(`/admin/courses-for-sheet?programId=${sheet.programId}&level=${sheet.level}&semester=${sheet.semester}`)
+        .then(res => { 
+            setAvailableCourses(res.data); 
+            setSelectedCourseId(sheet.courseId ? sheet.courseId.toString() : '');
+        });
+
+    setSections(sheet.sections?.length ? sheet.sections : [{ sectionName: 'Exam', maxScore: 60, deletable: false }, { sectionName: 'CA', maxScore: 40, deletable: true }]);
+    setShowCreateForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteSheet = async (sheetId: number) => {
+    if (!window.confirm("Are you sure you want to delete this sheet? All marks will be lost!")) return;
+    try {
+        await client.delete(`${marksBase}/marks/sheet/${sheetId}`);
+        toast.success('Sheet deleted!');
+        fetchSheets();
+    } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to delete sheet.');
     }
   };
 
@@ -705,9 +785,21 @@ const MarksSheetManager = () => {
       {/* ── Create Form (collapsible) ── */}
       {showCreateForm && (
         <div style={{ background: '#fff', borderRadius: 18, boxShadow: '0 8px 30px rgba(0,0,0,0.1)', marginBottom: 32, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-          <div style={{ padding: '20px 28px 0', borderBottom: '1px solid #f1f5f9', marginBottom: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <PlusCircle size={18} color="#5156be" />
-            <h3 style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: 16 }}>Activate New Semester Sheet</h3>
+          <div style={{ padding: '20px 28px 0', borderBottom: '1px solid #f1f5f9', marginBottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <PlusCircle size={18} color="#5156be" />
+              <h3 style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: 16 }}>
+                {editingSheetId ? 'Edit Semester Sheet' : 'Activate New Semester Sheet'}
+              </h3>
+            </div>
+            {editingSheetId && (
+                <button type="button" onClick={() => {
+                  setEditingSheetId(null);
+                  setShowCreateForm(false);
+                  setProgramId(''); setLevel(''); setSemester(''); setSelectedCourseId('');
+                  setClassTeacherId(''); setSections([{ sectionName: 'Exam', maxScore: 60, deletable: false }, { sectionName: 'CA', maxScore: 40, deletable: true }]);
+                }} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Cancel Edit</button>
+            )}
           </div>
           <div style={{ padding: '24px 28px' }}>
             <form onSubmit={handleActivateSheet}>
@@ -746,20 +838,17 @@ const MarksSheetManager = () => {
               {availableCourses.length > 0 && (
                 <div style={{ marginBottom: 20, padding: '18px 20px', background: '#f8faff', borderRadius: 12, border: '1.5px solid #dbeafe' }}>
                   <label style={{ ...labelStyle, color: '#1d4ed8', marginBottom: 12 }}>
-                    Select Courses for this Sheet
-                    <span style={{ fontWeight: 500, fontSize: 12, color: '#6b7280', marginLeft: 8 }}>
-                      ({selectedCourseIds.length} of {availableCourses.length} selected)
-                    </span>
+                    Select Course for this Sheet
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
                     {availableCourses.map((c: any) => (
                       <label key={c.cid} style={{
                         display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                        borderRadius: 10, border: `1.5px solid ${selectedCourseIds.includes(c.cid) ? '#3b82f6' : '#e5e7eb'}`,
-                        background: selectedCourseIds.includes(c.cid) ? '#eff6ff' : '#fff',
+                        borderRadius: 10, border: `1.5px solid ${selectedCourseId == c.cid ? '#3b82f6' : '#e5e7eb'}`,
+                        background: selectedCourseId == c.cid ? '#eff6ff' : '#fff',
                         cursor: 'pointer', transition: 'all 0.15s'
                       }}>
-                        <input type="checkbox" checked={selectedCourseIds.includes(c.cid)} onChange={() => handleCourseToggle(c.cid)} style={{ width: 16, height: 16, accentColor: '#3b82f6' }} />
+                        <input type="radio" name="courseSelect" checked={selectedCourseId == c.cid} onChange={() => setSelectedCourseId(c.cid.toString())} style={{ width: 16, height: 16, accentColor: '#3b82f6' }} />
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 13, color: '#111827' }}>{c.courseCode}</div>
                           <div style={{ fontSize: 11, color: '#6b7280' }}>{c.title}</div>
@@ -810,15 +899,18 @@ const MarksSheetManager = () => {
                     onChange={e => { const s = [...sections]; s[idx] = { ...s[idx], maxScore: Number(e.target.value) }; setSections(s); }}
                     required min={1}
                   />
-                  {sections.length > 1 && (
+                  {sections.length > 1 && sec.deletable !== false && (
                     <button type="button" onClick={() => setSections(sections.filter((_, i) => i !== idx))}
                       style={{ padding: '10px 14px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>
                       <Trash2 size={14} />
                     </button>
                   )}
+                  {sec.deletable === false && (
+                    <div style={{ padding: '10px 14px', color: '#9ca3af', fontSize: 12, fontWeight: 500, fontStyle: 'italic' }}>Required</div>
+                  )}
                 </div>
               ))}
-              <button type="button" onClick={() => setSections([...sections, { sectionName: '', maxScore: 0 }])}
+              <button type="button" onClick={() => setSections([...sections, { sectionName: '', maxScore: 0, deletable: true }])}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f8fafc', color: '#5156be', border: '1.5px dashed #c7d2fe', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, marginBottom: 28 }}>
                 <PlusCircle size={14} /> Add Section
               </button>
@@ -853,6 +945,8 @@ const MarksSheetManager = () => {
               onAction={handleAction}
               actionLoading={actionLoading}
               onViewMarks={s => setViewingSheet(s)}
+              onEdit={handleEditSheet}
+              onDelete={handleDeleteSheet}
             />
           ))}
         </div>

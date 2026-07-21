@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import client from '../../api/client';
 import { toast } from 'react-hot-toast';
-import { syncMarksForStudent, syncMarksBulk } from '../../api/endpoints';
-import { DownloadCloud, RefreshCw } from 'lucide-react';
+import { syncMarksForStudent, syncMarksBulk, addSheetSection, deleteSheetSection } from '../../api/endpoints';
+import { DownloadCloud, RefreshCw, Plus, Trash2 } from 'lucide-react';
 
 const ManualMarksEntry = () => {
     const [sheets, setSheets] = useState([]);
@@ -11,6 +11,10 @@ const ManualMarksEntry = () => {
     const [userContext, setUserContext] = useState<any>(null);
     const [syncingStudent, setSyncingStudent] = useState<number | null>(null);
     const [bulkSyncing, setBulkSyncing] = useState(false);
+    const [showAddSection, setShowAddSection] = useState(false);
+    const [newSectionName, setNewSectionName] = useState('');
+    const [newSectionMax, setNewSectionMax] = useState('');
+    const [addingSection, setAddingSection] = useState(false);
 
     useEffect(() => {
         const u = localStorage.getItem('user');
@@ -22,7 +26,7 @@ const ManualMarksEntry = () => {
 
     const fetchSheets = async () => {
         try {
-            const res = await client.get(client.defaults.baseURL!.replace('/v1/auth', '') + '/marks/sheet/all');
+            const res = await client.get(client.defaults.baseURL!.replace('/v1/auth', '') + '/marks/sheet/my-sheets');
             // Lecturers should only see sheets that are ACTIVE or DRAFT (not submitted, approved, or published)
             setSheets(res.data.filter((s: any) => s.status === 'ACTIVE' || s.status === 'DRAFT'));
         } catch (error) {
@@ -108,10 +112,23 @@ const ManualMarksEntry = () => {
     };
 
     const handleSyncStudent = async (studentId: number) => {
-        if (!selectedSheetId) return;
+        if (!selectedSheetId || !sheetData?.sections?.length) return;
+        
+        let targetSectionId = sheetData.sections[0].id;
+        if (sheetData.sections.length > 1) {
+            const res = window.prompt("Enter the exact name of the section you want to fetch these marks into:\n" + sheetData.sections.map((s:any)=>s.sectionName).join(", "));
+            if (!res) return;
+            const match = sheetData.sections.find((s:any) => s.sectionName.toLowerCase() === res.toLowerCase());
+            if (!match) {
+                toast.error("Invalid section name");
+                return;
+            }
+            targetSectionId = match.id;
+        }
+
         setSyncingStudent(studentId);
         try {
-            await syncMarksForStudent(selectedSheetId, studentId);
+            await syncMarksForStudent(selectedSheetId, studentId, targetSectionId);
             toast.success("Marks fetched successfully!");
             await loadSheet(selectedSheetId);
         } catch (error) {
@@ -122,18 +139,69 @@ const ManualMarksEntry = () => {
     };
 
     const handleBulkSync = async () => {
-        if (!selectedSheetId) return;
-        if (!window.confirm("This will fetch and overwrite CA/Assessment marks for ALL students in this sheet. Continue?")) return;
+        if (!selectedSheetId || !sheetData?.sections?.length) return;
+        
+        let targetSectionId = sheetData.sections[0].id;
+        if (sheetData.sections.length > 1) {
+            const res = window.prompt("Enter the exact name of the section you want to fetch these marks into:\n" + sheetData.sections.map((s:any)=>s.sectionName).join(", "));
+            if (!res) return;
+            const match = sheetData.sections.find((s:any) => s.sectionName.toLowerCase() === res.toLowerCase());
+            if (!match) {
+                toast.error("Invalid section name");
+                return;
+            }
+            targetSectionId = match.id;
+        }
+
+        if (!window.confirm("This will fetch and overwrite marks for ALL students into that section. Continue?")) return;
         
         setBulkSyncing(true);
         try {
-            await syncMarksBulk(selectedSheetId);
+            await syncMarksBulk(selectedSheetId, targetSectionId);
             toast.success("Bulk fetch completed successfully!");
             await loadSheet(selectedSheetId);
         } catch (error) {
             toast.error("Failed to perform bulk fetch");
         } finally {
             setBulkSyncing(false);
+        }
+    };
+
+    const handleAddSection = async () => {
+        if (!newSectionName || !newSectionMax || !selectedSheetId || !sheetData?.sections) return;
+        
+        const newMax = parseFloat(newSectionMax);
+        const currentTotal = sheetData.sections.reduce((sum: number, sec: any) => sum + (sec.maxScore || 0), 0);
+        if (currentTotal + newMax > 100) {
+            toast.error(`Adding this section exceeds the maximum 100 total marks. Current total: ${currentTotal}. Please delete an existing section first.`);
+            return;
+        }
+
+        setAddingSection(true);
+        try {
+            await addSheetSection(selectedSheetId, { sectionName: newSectionName, maxScore: parseFloat(newSectionMax) });
+            toast.success("Section added successfully!");
+            setShowAddSection(false);
+            setNewSectionName('');
+            setNewSectionMax('');
+            await loadSheet(selectedSheetId);
+        } catch(e: any) {
+            const msg = e?.response?.data?.message || e?.message || "Failed to add section";
+            toast.error(msg);
+        } finally {
+            setAddingSection(false);
+        }
+    };
+
+    const handleDeleteSection = async (sectionId: number) => {
+        if (!window.confirm("Are you sure? This will delete this section and all associated student marks.")) return;
+        try {
+            await deleteSheetSection(selectedSheetId, sectionId);
+            toast.success("Section deleted!");
+            await loadSheet(selectedSheetId);
+        } catch(e: any) {
+            const msg = e?.response?.data?.message || e?.message || "Failed to delete section";
+            toast.error(msg);
         }
     };
 
@@ -146,7 +214,7 @@ const ManualMarksEntry = () => {
                         <option value="">Select an active semester sheet</option>
                         {sheets.map((s: any) => (
                             <option key={s.id} value={s.id}>
-                                {s.courseNames || s.courseName || `Sheet #${s.id}`} — Level {s.level} | Sem {s.semester} | {s.status}
+                                {s.courseName || `Sheet #${s.id}`} — Level {s.level} | Sem {s.semester} | {s.status}
                             </option>
                         ))}
                     </select>
@@ -167,7 +235,12 @@ const ManualMarksEntry = () => {
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button onClick={() => setSheetData(null)} style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Back</button>
                         {!isReadOnly && (
-                            <button onClick={handleBulkSync} disabled={bulkSyncing} style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: bulkSyncing ? 'not-allowed' : 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', opacity: bulkSyncing ? 0.7 : 1 }}>
+                            <button onClick={() => setShowAddSection(!showAddSection)} style={{ background: '#f59e0b', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Plus size={16} /> Add Section
+                            </button>
+                        )}
+                        {!isReadOnly && (
+                            <button onClick={handleBulkSync} disabled={bulkSyncing || !sheetData.sections?.length} style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: bulkSyncing || !sheetData.sections?.length ? 'not-allowed' : 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', opacity: bulkSyncing || !sheetData.sections?.length ? 0.7 : 1 }}>
                                 <DownloadCloud size={16} /> {bulkSyncing ? 'Fetching...' : 'Bulk Fetch Marks'}
                             </button>
                         )}
@@ -175,6 +248,16 @@ const ManualMarksEntry = () => {
                         {!isReadOnly && <button onClick={handleSubmit} style={{ background: '#10b981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Submit Final</button>}
                     </div>
                 </div>
+
+                {showAddSection && !isReadOnly && (
+                    <div style={{ padding: '16px', background: '#fef3c7', borderRadius: '8px', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <input type="text" placeholder="Section Name (e.g. CA, Exam)" value={newSectionName} onChange={e => setNewSectionName(e.target.value)} style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #d1d5db', outline: 'none' }} />
+                        <input type="number" placeholder="Max Score" value={newSectionMax} onChange={e => setNewSectionMax(e.target.value)} style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #d1d5db', outline: 'none', width: '120px' }} />
+                        <button onClick={handleAddSection} disabled={addingSection} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: '500' }}>
+                            {addingSection ? 'Saving...' : 'Save Section'}
+                        </button>
+                    </div>
+                )}
                 
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ minWidth: '1000px', width: '100%', borderCollapse: 'collapse', border: '1px solid #e5e7eb' }}>
@@ -193,7 +276,10 @@ const ManualMarksEntry = () => {
                                     <React.Fragment key={c.courseId}>
                                         {sheetData.sections.map((sec: any) => (
                                             <th key={`${c.courseId}-${sec.id}`} style={{ padding: '8px', border: '1px solid #e5e7eb', textAlign: 'center', fontSize: '12px', color: '#4b5563' }}>
-                                                {sec.sectionName} (/{sec.maxScore})
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                    {sec.sectionName} (/{sec.maxScore})
+                                                    {!isReadOnly && sec.deletable !== false && <Trash2 size={12} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => handleDeleteSection(sec.id)} />}
+                                                </div>
                                             </th>
                                         ))}
                                         <th key={`${c.courseId}-total`} style={{ padding: '8px', border: '1px solid #e5e7eb', textAlign: 'center', fontSize: '12px', color: '#111827', fontWeight: 'bold' }}>
