@@ -588,6 +588,7 @@ const MarksSheetManager = () => {
   const [level, setLevel] = useState('');
   const [semester, setSemester] = useState('');
   const [classTeacherId, setClassTeacherId] = useState('');
+  const [defaultClassTeacherId, setDefaultClassTeacherId] = useState('');
   const [restrictLecturer, setRestrictLecturer] = useState(true);
   const [availableCourses, setAvailableCourses] = useState<any[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState('');
@@ -848,7 +849,16 @@ const MarksSheetManager = () => {
                         background: selectedCourseId == c.cid ? '#eff6ff' : '#fff',
                         cursor: 'pointer', transition: 'all 0.15s'
                       }}>
-                        <input type="radio" name="courseSelect" checked={selectedCourseId == c.cid} onChange={() => setSelectedCourseId(c.cid.toString())} style={{ width: 16, height: 16, accentColor: '#3b82f6' }} />
+                        <input type="radio" name="courseSelect" checked={selectedCourseId == c.cid} onChange={() => {
+                          setSelectedCourseId(c.cid.toString());
+                          if (c.user && c.user.id) {
+                            setClassTeacherId(c.user.id.toString());
+                            setDefaultClassTeacherId(c.user.id.toString());
+                          } else {
+                            setClassTeacherId('');
+                            setDefaultClassTeacherId('');
+                          }
+                        }} style={{ width: 16, height: 16, accentColor: '#3b82f6' }} />
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 13, color: '#111827' }}>{c.courseCode}</div>
                           <div style={{ fontSize: 11, color: '#6b7280' }}>{c.title}</div>
@@ -872,6 +882,11 @@ const MarksSheetManager = () => {
                     <option value="">None</option>
                     {lecturers.map((l: any) => <option key={l.id} value={l.id}>{l.firstname} {l.lastname}</option>)}
                   </select>
+                  {selectedCourseId && defaultClassTeacherId && classTeacherId && classTeacherId !== defaultClassTeacherId && (
+                    <div style={{ marginTop: 8, padding: '10px 14px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 8, color: '#be123c', fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>
+                      ⚠️ <strong>Warning:</strong> You have selected a different lecturer than the one assigned to this course. This sheet will be managed by the selected Class Teacher.
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', marginTop: 26 }}>
                   <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
