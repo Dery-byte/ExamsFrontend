@@ -3,7 +3,7 @@ import {
   adminGetAllStudents, getStudentById, updateStudent, deleteStudent,
   adminPromoteStudent, adminPromoteAllAtLevel, adminPromoteSemesterAllAtLevel,
   saGetAllStudents, saPromoteStudent, saPromoteAllAtLevel, saPromoteSemesterAllAtLevel,
-  getPrograms,
+  getPrograms, registerStudent
 } from "../../api/endpoints";
 import { useAuth } from "../../contexts/AuthContext";
 import Swal from "sweetalert2";
@@ -11,7 +11,7 @@ import toast, { Toaster } from "react-hot-toast";
 import PageHeader from "../../components/PageHeader";
 import {
   Users, Search, Edit, Trash2, GraduationCap, Mail,
-  X, Save, Loader2, ChevronsUp, ArrowRight, RefreshCw,
+  X, Save, Loader2, ChevronsUp, ArrowRight, RefreshCw, UserPlus,
 } from "lucide-react";
 
 const LEVEL_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
@@ -40,6 +40,10 @@ export default function Students() {
   const [promotingLv, setPromotingLv]   = useState<string | null>(null);
   const [promotingSem, setPromotingSem] = useState<string | null>(null);
   const [programFilter, setProgramFilter]= useState<string>("");
+  const emptyStudent = { firstname: "", lastname: "", username: "", email: "", phone: "", password: "", programId: "", currentLevel: "", currentSemester: "" };
+  const [addModal, setAddModal]         = useState(false);
+  const [newStudent, setNewStudent]     = useState<any>(emptyStudent);
+  const [adding, setAdding]             = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,10 +54,18 @@ export default function Students() {
       ]);
       const stu = Array.isArray(stuRaw) ? stuRaw : stuRaw?.students ?? [];
       setStudents(stu);
-      setPrograms(Array.isArray(progRaw) ? progRaw : []);
+      
+      let allowedProgs = Array.isArray(progRaw) ? progRaw : [];
+      if (auth.user?.role === "ADMIN" && auth.user?.department?.id) {
+        allowedProgs = allowedProgs.filter((p: any) => 
+          p.departmentId === auth.user.department.id || 
+          p.department?.id === auth.user.department.id
+        );
+      }
+      setPrograms(allowedProgs);
     } catch { toast.error("Failed to load students"); }
     finally { setLoading(false); }
-  }, [isSuper]);
+  }, [isSuper, auth.user]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -183,6 +195,25 @@ export default function Students() {
     catch { toast.error("Delete failed"); }
   };
 
+  const saveNewStudent = async () => {
+    if (!newStudent.firstname || !newStudent.lastname || !newStudent.username || !newStudent.password || !newStudent.programId || !newStudent.currentLevel || !newStudent.currentSemester) {
+      toast.error("Please fill in all required fields (Name, Student ID, Password, Program, Level, Semester)");
+      return;
+    }
+    setAdding(true);
+    try {
+      await registerStudent({ ...newStudent, programId: Number(newStudent.programId), currentLevel: Number(newStudent.currentLevel), currentSemester: Number(newStudent.currentSemester) });
+      toast.success("Student added successfully");
+      setAddModal(false);
+      setNewStudent(emptyStudent);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Failed to add student");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <div style={{ paddingBottom: 40 }}>
       <Toaster position="top-right" />
@@ -205,7 +236,11 @@ export default function Students() {
           style={{ height: 40, width: 40, border: "1.5px solid #e2e8f0", background: "#fff", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <RefreshCw size={15} color="#5156be" />
         </button>
-        <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>{students.length} total</span>
+        <button onClick={() => setAddModal(true)} title="Add Student"
+          style={{ height: 40, padding: "0 16px", border: "none", background: "#5156be", color: "#fff", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13 }}>
+          <UserPlus size={15} /> Add Student
+        </button>
+        <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600, marginLeft: "auto" }}>{students.length} total</span>
       </div>
 
       {loading ? (
@@ -382,6 +417,64 @@ export default function Students() {
               <button onClick={saveEdit} disabled={saving}
                 style={{ flex: 1, height: 40, border: "none", background: "#5156be", color: "#fff", borderRadius: 8, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Add Modal */}
+      {addModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 540 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Add New Student</h3>
+              <button onClick={() => setAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px 16px" }}>
+              {(() => {
+                const selectedProg = programs.find((p: any) => p.id === Number(newStudent.programId));
+                const dynamicLevels = selectedProg?.configuredLevels ?? [100, 200, 300, 400, 500, 600];
+                return [
+                  { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
+                  { key: "email", label: "Email (Optional)" }, { key: "phone", label: "Phone (Optional)" },
+                  { key: "username", label: "Student ID (Username)" }, { key: "password", label: "Password", type: "password" },
+                  { key: "programId", label: "Program", type: "programSelect" },
+                  { key: "currentLevel", label: "Level", type: "select", options: dynamicLevels },
+                  { key: "currentSemester", label: "Semester", type: "select", options: [1, 2, 3] },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>
+                      {f.label} {!f.label.includes("Optional") && <span style={{color: "#fd625e"}}>*</span>}
+                    </label>
+                    {(f as any).type === "select" ? (
+                      <select value={newStudent[f.key] ?? ""} onChange={e => setNewStudent((p: any) => ({ ...p, [f.key]: e.target.value }))}
+                        style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
+                        <option value="" disabled>Select {f.label}</option>
+                        {(f as any).options.map((opt: number) => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                  ) : (f as any).type === "programSelect" ? (
+                    <select value={newStudent[f.key] ?? ""} onChange={e => setNewStudent((p: any) => ({ ...p, [f.key]: e.target.value }))}
+                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
+                      <option value="" disabled>Select Program</option>
+                      {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  ) : (
+                    <input type={(f as any).type || "text"} value={newStudent[f.key] ?? ""} onChange={e => setNewStudent((p: any) => ({ ...p, [f.key]: e.target.value }))}
+                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
+                  )}
+                </div>
+              ))
+            })()}
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button onClick={() => setAddModal(false)}
+                style={{ flex: 1, height: 40, border: "1.5px solid #e2e8f0", background: "#f8fafc", borderRadius: 8, cursor: "pointer", fontWeight: 700 }}>Cancel</button>
+              <button onClick={saveNewStudent} disabled={adding}
+                style={{ flex: 1, height: 40, border: "none", background: "#5156be", color: "#fff", borderRadius: 8, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {adding ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <UserPlus size={14} />} Add Student
               </button>
             </div>
           </div>
