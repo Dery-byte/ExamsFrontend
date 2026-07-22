@@ -338,6 +338,8 @@ export const saGetProgramsByDept = (deptId: number) => saClient.get(`/programs/d
 export const saCreateProgram     = (data: object) => saClient.post('/programs', data).then(r => r.data);
 export const saUpdateProgram     = (id: number, data: object) => saClient.put(`/programs/${id}`, data).then(r => r.data);
 export const saDeleteProgram     = (id: number) => saClient.delete(`/programs/${id}`).then(r => r.data);
+/** Toggle a program's enabled/disabled state. Returns the updated ProgramDTO. */
+export const saToggleProgram     = (id: number) => saClient.patch(`/programs/${id}/toggle`).then(r => r.data);
 
 // ── Super Admin — HODs ─────────────────────────────────────────────────────
 export const saGetAllHods = () => saClient.get('/admins').then(r => r.data);
