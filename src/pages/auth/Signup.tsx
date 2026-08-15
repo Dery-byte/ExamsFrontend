@@ -12,7 +12,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [hidePass, setHidePass] = useState(true);
   const [hideConfirm, setHideConfirm] = useState(true);
-  
+
   const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[] }[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState<number | ''>('');
   const [selectedLevel, setSelectedLevel] = useState<number | ''>('');

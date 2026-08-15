@@ -4,6 +4,7 @@ import {
   saGetAllStudents, adminGetAllStudents,
   adminGetCoursesForProgram, saGetCoursesForProgram,
   adminEnrollStudent, adminGetEnrolledCourseIds, adminUnenrollStudent, saEnrollStudent, saGetEnrolledCourseIds, saUnenrollStudent,
+  getProgramsByDept, saGetPrograms,
 } from "../../api/endpoints";
 import toast, { Toaster } from "react-hot-toast";
 import PageHeader from "../../components/PageHeader";
@@ -11,6 +12,7 @@ import { BookMarked, BookOpen, CheckCircle2, GraduationCap, Loader2, Search, Use
 
 export default function EnrollStudent() {
   const auth    = useAuth() as any;
+  const { user } = useAuth();
   const isSuper = typeof auth.isSuperAdmin === "function" ? auth.isSuperAdmin() : false;
 
   const [students, setStudents]         = useState<any[]>([]);
@@ -25,18 +27,34 @@ export default function EnrollStudent() {
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<number[]>([]);
   const [loadingStu, setLoadingStu]     = useState(false);
   const [loadingCrs, setLoadingCrs]     = useState(false);
+  const [deptPrograms, setDeptPrograms] = useState<any[]>([]);
 
-  // ── Load students (rich: includes programId, currentLevel, currentSemester) ──
+  // ── Load students ─────────────────────────────────────────────────────────
   useEffect(() => {
     setLoadingStu(true);
-    // adminGetAllStudents hits /api/v1/auth/admin/students which is accessible
-    // to both ADMIN and SUPER_ADMIN roles.
     const fn = isSuper ? saGetAllStudents : adminGetAllStudents;
     fn()
       .then((d: any) => setStudents(Array.isArray(d) ? d : []))
       .catch(() => toast.error("Failed to load students"))
       .finally(() => setLoadingStu(false));
   }, [isSuper]);
+
+  // ── Load programs: ALL for Super Admin, department-scoped for HOD ────────
+  useEffect(() => {
+    if (isSuper) {
+      // Super Admin sees every program in the system
+      saGetPrograms()
+        .then((d: any) => setDeptPrograms(Array.isArray(d) ? d : []))
+        .catch(() => {});
+    } else {
+      // HOD sees only programs belonging to their department
+      const deptId = user?.department?.id;
+      if (!deptId) return;
+      getProgramsByDept(deptId)
+        .then((d: any) => setDeptPrograms(Array.isArray(d) ? d : []))
+        .catch(() => {});
+    }
+  }, [isSuper, user]);
 
   // ── Load courses when a student is selected ───────────────────────────────
   useEffect(() => {
@@ -83,7 +101,11 @@ export default function EnrollStudent() {
            (s.program ?? "").toLowerCase().includes(q);
   });
 
-  const uniquePrograms = Array.from(new Map(students.filter(s => s.programId).map(s => [s.programId, s.program])).entries());
+  // Use department-scoped programs for the filter dropdown.
+  // Fall back to deriving from student data if the dept fetch returned nothing.
+  const uniquePrograms: [number, string][] = deptPrograms.length > 0
+    ? deptPrograms.map((p: any) => [p.id, p.name])
+    : Array.from(new Map(students.filter(s => s.programId).map(s => [s.programId, s.program])).entries()) as [number, string][];
 
   const filteredCourses = courses.filter(c => {
     const q = courseSearch.toLowerCase();

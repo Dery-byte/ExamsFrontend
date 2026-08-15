@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
-import { loadQuizzesForUser, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus } from '../../api/endpoints';
+import { loadQuizzesForUser, getCategoriesForUser, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import { Plus, X, Save, Loader2, Database, Settings, Trash2, Eye, EyeOff, ShieldCheck, Clock, Calendar, Layers, ChevronRight, CheckCircle, Edit, Smartphone, Terminal } from 'lucide-react';
@@ -29,7 +29,20 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
   );
 
   const set = (k: string, v: any) => setQuiz((q: any) => ({ ...q, [k]: v }));
-  const save = async () => { try { await updateQuiz(quiz); toast.success('Quiz updated'); onSave(); onClose(); } catch { toast.error('Failed to sync'); } };
+  const save = async () => {
+    try {
+      const payload = {
+        ...quiz,
+        categoryId: quiz.category?.cid ?? null,
+      };
+      await updateQuiz(payload);
+      toast.success('Quiz updated');
+      onSave();
+      onClose();
+    } catch {
+      toast.error('Failed to sync');
+    }
+  };
 
   const Toggle = ({ label, icon, k }: any) => (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderRadius:'10px', border:'1px solid #eff0f2', background:'#fff' }}>
@@ -62,7 +75,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'12px' }}>
             <div><label style={lbl}>Quiz Title</label><input style={inp} value={quiz.title||''} onChange={e=>set('title',e.target.value)}/></div>
-            <div><label style={lbl}>Category</label><select style={{...inp,minWidth:'130px'}} value={quiz.category?.cid||''} onChange={e=>set('category',{...quiz.category,cid:Number(e.target.value)})}>{categories.map((c:any)=><option key={c.cid} value={c.cid}>{c.title}</option>)}</select></div>
+            <div><label style={lbl}>Category</label><select style={{...inp,minWidth:'130px'}} value={quiz.category?.cid||''} onChange={e=>{const chosen=categories.find((c:any)=>c.cid===Number(e.target.value));set('category',chosen?{cid:chosen.cid,title:chosen.title}:{cid:Number(e.target.value),title:''}); }}>{categories.map((c:any)=><option key={c.cid} value={c.cid}>{c.title}</option>)}</select></div>
           </div>
 
           <div><label style={lbl}>Description / Instructions</label><textarea style={{...inp,resize:'vertical',minHeight:'65px',lineHeight:'1.6'}} value={quiz.description||''} onChange={e=>set('description',e.target.value)}/></div>
@@ -133,7 +146,7 @@ export default function LectViewQuizzes() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { data: quizzes = [], isLoading } = useQuery({ queryKey: ['lectQuizzes'], queryFn: loadQuizzesForUser });
-  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
+  const { data: categories = [] } = useQuery({ queryKey: ['lectCategories'], queryFn: getCategoriesForUser });
   const [editQuizId, setEditQuizId] = useState<number|null>(null);
   const [statusMap, setStatusMap] = useState<Record<number,string>>({});
   const [updatingMap, setUpdatingMap] = useState<Record<number,boolean>>({});

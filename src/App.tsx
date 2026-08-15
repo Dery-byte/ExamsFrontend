@@ -40,7 +40,6 @@ import ManageStudentLevel from './pages/superadmin/ManageStudentLevel';
 // Lecturer
 import LectWelcome from './pages/lecturer/LectWelcome';
 import ViewCourse from './pages/lecturer/ViewCourse';
-import AddCourse from './pages/lecturer/AddCourse';
 import LectViewQuizzes from './pages/lecturer/LectViewQuizzes';
 import LectQuizReview from './pages/lecturer/LectQuizReview';
 import LectAddQuiz from './pages/lecturer/LectAddQuiz';
@@ -131,7 +130,6 @@ export default function App() {
           <Route index element={<LectWelcome />} />
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCourse />} />
-          <Route path="add-course" element={<AddCourse />} />
           <Route path="quizes" element={<LectViewQuizzes />} />
           <Route path="add-quizes" element={<LectAddQuiz />} />
           <Route path="view-quetions/:qId/:qTitle" element={<LectViewQuizQuestions />} />

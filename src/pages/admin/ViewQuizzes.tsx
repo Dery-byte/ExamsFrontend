@@ -71,7 +71,11 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
     if (!quiz.category?.cid) { toast.error('Please select a course category'); return; }
     setSaving(true);
     try {
-      await updateQuiz(quiz);
+      const payload = {
+        ...quiz,
+        categoryId: quiz.category?.cid ?? null,
+      };
+      await updateQuiz(payload);
       toast.success('Quiz settings saved successfully');
       onSave(); onClose();
     } catch { toast.error('Failed to save settings'); }
