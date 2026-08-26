@@ -156,7 +156,7 @@ export default function EnrollStudent() {
       <Toaster position="top-right" />
       <PageHeader title="Enroll Student in Course" breadcrumbs={["Admin", "Enroll Student"]} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, alignItems: "start" }}>
+      <div className="enroll-grid">
 
         {/* ── LEFT: Student picker ─────────────────────────────────────── */}
         <div style={card}>
@@ -399,7 +399,18 @@ export default function EnrollStudent() {
         </div>
       </div>
 
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{`
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .enroll-grid{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+        .enroll-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+        .enroll-filters>div:first-child{flex:1;min-width:140px}
+        @media(max-width:900px){
+          .enroll-grid{grid-template-columns:1fr}
+        }
+        @media(max-width:600px){
+          .enroll-filters>select,.enroll-filters>span{width:100%}
+        }
+      `}</style>
     </div>
   );
 }

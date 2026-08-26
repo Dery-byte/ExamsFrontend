@@ -50,12 +50,12 @@ export default function SuperAdminWelcome() {
     <div style={{ color: '#fff' }}>
       {/* Welcome header */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
           <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(124,58,237,0.4)' }}>
             <ShieldCheck size={24} color="#fff" />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, background: 'linear-gradient(135deg,#a78bfa,#818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <h1 className="sa-title">
               Super Admin Dashboard
             </h1>
             <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>University-wide system management overview</p>
@@ -64,7 +64,7 @@ export default function SuperAdminWelcome() {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 32 }}>
+      <div className="sa-stat-grid">
         {statCards.map(sc => (
           <div key={sc.label} onClick={() => navigate(sc.to)}
             style={{ ...card(), cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
@@ -87,7 +87,7 @@ export default function SuperAdminWelcome() {
 
       {/* Quick Actions */}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>Quick Actions</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 14 }}>
+      <div className="sa-action-grid">
         {quickActions.map(qa => (
           <div key={qa.label} onClick={() => navigate(qa.to)}
             style={{ ...card(), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
@@ -105,7 +105,11 @@ export default function SuperAdminWelcome() {
           </div>
         ))}
       </div>
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.sa-title{font-size:26px;margin:0;font-weight:800;background:linear-gradient(135deg,#a78bfa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sa-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.sa-action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+@media(max-width:480px){.sa-title{font-size:20px}.sa-stat-grid{grid-template-columns:repeat(2,1fr)}.sa-action-grid{grid-template-columns:1fr}}`}</style>
     </div>
   );
 }

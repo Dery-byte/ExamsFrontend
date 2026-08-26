@@ -737,7 +737,7 @@ const MarksSheetManager = () => {
   sheets.forEach((s: any) => { statusCounts[s.status] = (statusCounts[s.status] || 0) + 1; });
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
+    <div className="ms-container">
       {/* ── Page Header ── */}
       <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
@@ -952,7 +952,7 @@ const MarksSheetManager = () => {
           <p style={{ color: '#94a3b8', fontSize: 14, margin: 0 }}>Click "Activate New Sheet" to get started.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 520px), 1fr))', gap: 20 }}>
+        <div className="ms-card-grid">
           {sheets.map((sheet: any) => (
             <SheetCard
               key={sheet.id}
@@ -982,6 +982,12 @@ const MarksSheetManager = () => {
       <style>{`
         @keyframes rSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         select:focus, input:focus { border-color: #5156be !important; box-shadow: 0 0 0 3px rgba(81,86,190,0.12); }
+        .ms-container { padding: 24px; max-width: 1200px; margin: 0 auto; }
+        .ms-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 20px; }
+        @media(max-width: 768px) {
+          .ms-container { padding: 12px; }
+          .ms-card-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
     </div>
   );

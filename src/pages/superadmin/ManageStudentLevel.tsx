@@ -100,7 +100,7 @@ export default function ManageStudentLevel() {
       </div>
 
       {/* Search */}
-      <div style={{ ...card, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ ...card, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <Search size={18} color="rgba(139,92,246,0.7)" />
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -136,11 +136,8 @@ export default function ManageStudentLevel() {
             const levels = getLevels(student.programId);
             const isDirty = edits[student.id] !== undefined;
             return (
-              <div key={student.id} style={{
+              <div key={student.id} className="sml-row" style={{
                 ...card,
-                display: 'grid',
-                gridTemplateColumns: '1fr 180px 180px 120px',
-                alignItems: 'center', gap: 16,
                 border: isDirty ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(139,92,246,0.12)',
                 transition: 'all 0.2s',
               }}>
@@ -214,7 +211,19 @@ export default function ManageStudentLevel() {
         </div>
       )}
 
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .sml-row{display:grid;grid-template-columns:1fr 160px 160px 110px;align-items:center;gap:16px}
+        @media(max-width:900px){
+          .sml-row{grid-template-columns:1fr 1fr}
+          .sml-row>:first-child{grid-column:1/-1}
+          .sml-row>:last-child{grid-column:1/-1}
+        }
+        @media(max-width:480px){
+          .sml-row{grid-template-columns:1fr}
+          .sml-row>*{grid-column:auto}
+        }
+      `}</style>
     </div>
   );
 }

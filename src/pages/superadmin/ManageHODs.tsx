@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { saGetAllHods, saCreateHod, saUpdateHod, saDeleteHod, saGetDepartments } from '../../api/endpoints';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -103,14 +103,14 @@ export default function ManageHODs() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
+      <div className="hod-grid">
         {/* Create Form */}
         <form onSubmit={handleCreate} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 16, padding: '24px', backdropFilter: 'blur(12px)' }}>
           <h2 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: 8 }}>
             <Plus size={18} /> Register New HOD
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="hod-name-grid">
               <div>
                 <label style={labelStyle}>First Name *</label>
                 {iconInput(<User size={14} />, <input style={inputStyle} value={form.firstname} onChange={e => setForm(p => ({ ...p, firstname: e.target.value }))} placeholder="Jane" />)}
@@ -173,7 +173,7 @@ export default function ManageHODs() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {hods.map(h => (
-                <div key={h.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, transition: 'all 0.2s' }}
+                <div key={h.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, transition: 'all 0.2s', flexWrap: 'wrap' }}
                   onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(16,185,129,0.3)'}
                   onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(16,185,129,0.15)'}
                 >
@@ -196,17 +196,17 @@ export default function ManageHODs() {
               ))}
             </div>
           )}
-        </div>`n      </div>`n      `n      {/* Edit Modal */}
+        </div></div>   {/* Edit Modal */}
       {editingHod && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-          <form onSubmit={handleUpdate} style={{ background: '#12122a', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 20, padding: 24, width: '90%', maxWidth: 500, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+          <form onSubmit={handleUpdate} style={{ background: '#12122a', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 20, padding: 24, width: '90%', maxWidth: 500, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ margin: 0, fontSize: 18, color: '#a78bfa' }}>Edit HOD Account</h2>
               <button type="button" onClick={() => setEditingHod(null)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="hod-grid">
                 <div><label style={labelStyle}>First Name *</label>{iconInput(<User size={14} />, <input style={inputStyle} value={editForm.firstname} onChange={e => setEditForm(p => ({ ...p, firstname: e.target.value }))} />)}</div>
                 <div><label style={labelStyle}>Last Name *</label>{iconInput(<User size={14} />, <input style={inputStyle} value={editForm.lastname} onChange={e => setEditForm(p => ({ ...p, lastname: e.target.value }))} />)}</div>
               </div>
@@ -240,7 +240,15 @@ export default function ManageHODs() {
         </div>
       )}
 
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+      <style>{`
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        .hod-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+        .hod-name-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        @media(max-width:768px){
+          .hod-grid{grid-template-columns:1fr}
+          .hod-name-grid{grid-template-columns:1fr}
+        }
+      `}</style>
     </div>
   );
 }
