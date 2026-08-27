@@ -243,8 +243,7 @@ export default function UserDashboard() {
       <div className="lexa-card" style={{ marginBottom: 0, minWidth: 0 }}>
         <div className="lexa-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h5 className="lexa-card-title" style={{ margin: 0 }}>Recent Academic Attainments</h5>
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#adb5bd' }}>Verified results from your latest examination attempts</p>
+            <h5 className="lexa-card-title" style={{ margin: 0 }}>Recent Quiz Performances</h5>
           </div>
           <button className="btn-lexa btn-lexa-primary" onClick={() => navigate('/user-dashboard/history')} style={{ borderRadius: 8 }}>
             Full Transcript
@@ -255,7 +254,7 @@ export default function UserDashboard() {
             <table className="table-lexa">
               <thead style={{ background: '#fcfdfe' }}>
                 <tr>
-                  <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assessment Title</th>
+                  <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Name</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Code</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Performance</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Review Status</th>
@@ -273,7 +272,7 @@ export default function UserDashboard() {
                   return (
                     <tr key={i} className="row-hover-lexa">
                       <td style={{ padding: '10px 16px' }}>
-                        <div style={{ fontWeight: 800, color: '#2a3142', fontSize: 13 }}>{r.quiz?.title}</div>
+                        <div style={{ fontWeight: 800, color: '#2a3142', fontSize: 13 }}>{r.quiz?.category?.title}</div>
                         <div style={{ fontSize: 10, color: '#adb5bd', fontWeight: 600 }}>Secure Examination Session</div>
                       </td>
                       <td style={{ padding: '10px 16px' }}>

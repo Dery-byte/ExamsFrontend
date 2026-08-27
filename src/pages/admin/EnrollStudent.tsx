@@ -162,10 +162,10 @@ export default function EnrollStudent() {
         <div style={card}>
           {/* Header */}
           <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid #f1f5f7" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <div className="enroll-stu-header">
               <Users size={16} color="#5156be" />
               <span style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>Select Student</span>
-              <span style={{ marginLeft: "auto", fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>
+              <span className="enroll-stu-count">
                 {students.length} total
               </span>
             </div>
@@ -271,11 +271,8 @@ export default function EnrollStudent() {
           {selected && (
             <div style={card}>
               {/* Filters row */}
-              <div style={{
-                padding: "12px 14px", borderBottom: "1px solid #f1f5f7",
-                display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center",
-              }}>
-                <div style={{ position: "relative", flex: 1, minWidth: 160 }}>
+              <div className="enroll-filters">
+                <div style={{ position: "relative", minWidth: 160 }}>
                   <Search size={13} style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#adb5bd" }} />
                   <input
                     value={courseSearch} onChange={e => setCourseSearch(e.target.value)}
@@ -286,7 +283,7 @@ export default function EnrollStudent() {
                 {uniqueLevels.length > 0 && (
                   <select
                     value={lvFilter} onChange={e => setLvFilter(e.target.value)}
-                    style={{ height: 34, border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, padding: "0 10px", background: "#f8fafc", cursor: "pointer" }}
+                    className="enroll-filter-select"
                   >
                     <option value="">All Levels</option>
                     {uniqueLevels.map(l => <option key={l} value={l}>Level {l}</option>)}
@@ -295,7 +292,7 @@ export default function EnrollStudent() {
                 {uniqueSems.length > 0 && (
                   <select
                     value={semFilter} onChange={e => setSemFilter(e.target.value)}
-                    style={{ height: 34, border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, padding: "0 10px", background: "#f8fafc", cursor: "pointer" }}
+                    className="enroll-filter-select"
                   >
                     <option value="">All Semesters</option>
                     {uniqueSems.map(s => <option key={s} value={s}>Semester {s}</option>)}
@@ -331,11 +328,10 @@ export default function EnrollStudent() {
                   const isAlreadyEnrolled = enrolledCourseIds.includes(c.cid);
 
                   return (
-                    <div key={c.cid} style={{
-                      display: "flex", alignItems: "center", gap: 14,
-                      padding: "13px 16px",
-                      borderBottom: idx < filteredCourses.length - 1 ? "1px solid #f1f5f7" : "none",
-                    }}>
+                    <div key={c.cid}
+                      className="enroll-course-row"
+                      style={{ borderBottom: idx < filteredCourses.length - 1 ? "1px solid #f1f5f7" : "none" }}
+                    >
                       {/* Icon */}
                       <div style={{
                         width: 42, height: 42, borderRadius: 10, flexShrink: 0,
@@ -348,9 +344,9 @@ export default function EnrollStudent() {
                       </div>
 
                       {/* Info */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="enroll-course-info">
                         <div style={{ fontWeight: 700, fontSize: 14, color: "#1e293b" }}>{c.title}</div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 4 }}>
+                        <div className="enroll-course-meta">
                           {c.courseCode && (
                             <span style={{ fontSize: 11, background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
                               {c.courseCode}
@@ -401,14 +397,63 @@ export default function EnrollStudent() {
 
       <style>{`
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-        .enroll-grid{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
-        .enroll-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-        .enroll-filters>div:first-child{flex:1;min-width:140px}
-        @media(max-width:900px){
-          .enroll-grid{grid-template-columns:1fr}
+
+        /* ── Main grid ── */
+        .enroll-grid {
+          display: grid;
+          grid-template-columns: 300px 1fr;
+          gap: 20px;
+          align-items: start;
+          padding: 0 0 40px;
         }
-        @media(max-width:600px){
-          .enroll-filters>select,.enroll-filters>span{width:100%}
+
+        /* ── Student list ── */
+        .enroll-stu-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 10px;
+          flex-wrap: wrap;
+        }
+        .enroll-stu-count {
+          margin-left: auto;
+          font-size: 12px;
+          color: #94a3b8;
+          font-weight: 600;
+        }
+
+        /* ── Course row ── */
+        .enroll-course-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 13px 16px;
+        }
+        .enroll-course-info { flex: 1; min-width: 0; }
+        .enroll-course-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+        /* ── Filters ── */
+        .enroll-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 14px; border-bottom: 1px solid #f1f5f7; }
+        .enroll-filters > div:first-child { flex: 1; min-width: 140px; }
+        .enroll-filter-select { height: 34px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; padding: 0 10px; background: #f8fafc; cursor: pointer; outline: none; }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+          .enroll-grid { grid-template-columns: 260px 1fr; }
+        }
+        @media (max-width: 768px) {
+          .enroll-grid { grid-template-columns: 1fr; gap: 16px; }
+          .enroll-stu-count { width: 100%; margin-left: 0; }
+        }
+        @media (max-width: 600px) {
+          .enroll-filters { flex-direction: column; align-items: stretch; }
+          .enroll-filters > div:first-child { min-width: unset; }
+          .enroll-filter-select { width: 100%; }
+          .enroll-course-row { flex-wrap: wrap; gap: 10px; }
+          .enroll-course-row > button { width: 100%; justify-content: center; }
+        }
+        @media (max-width: 480px) {
+          .enroll-course-row { padding: 12px; }
         }
       `}</style>
     </div>

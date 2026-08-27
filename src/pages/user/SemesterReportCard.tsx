@@ -159,62 +159,16 @@ const SemesterReportCard = () => {
         </button>
       </div>
 
-      {/* ── Global Header (UCC Logo etc) ── */}
+      {/* ── Student Info Card ── */}
       <div style={{
-        background: '#fff', borderRadius: 20,
-        boxShadow: '0 4px 30px rgba(0,0,0,0.1)',
+        background: '#fff', borderRadius: 16,
+        boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
         overflow: 'hidden', border: '1px solid #e2e8f0',
         marginBottom: 32
       }}>
         <div style={{
-          background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4c1d95 100%)',
-          padding: '32px 40px 28px', position: 'relative', overflow: 'hidden'
-        }}>
-          {/* Decorative circles */}
-          <div style={{ position: 'absolute', top: -30, right: -30, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
-          <div style={{ position: 'absolute', top: 20, right: 60, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', position: 'relative' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
-              {/* UCC Logo placeholder */}
-              <div style={{
-                width: 64, height: 64, borderRadius: 16, flexShrink: 0,
-                background: 'rgba(255,255,255,0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid rgba(255,255,255,0.25)',
-                fontWeight: 900, fontSize: 18, color: '#fff', letterSpacing: -1
-              }}>
-                UCC
-              </div>
-              <div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', marginBottom: 4 }}>
-                  University of Cape Coast
-                </div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  School of Physical Sciences • Dept. of CS &amp; IT
-                </div>
-                <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 14px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.9)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Official Cumulative Academic Report
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Ref box */}
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.1)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.15)' }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Generated</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Student Info Grid ── */}
-        <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
           borderBottom: '1px solid #f1f5f9',
           background: '#fff'
         }}>
@@ -228,7 +182,8 @@ const SemesterReportCard = () => {
               key={i}
               style={{
                 padding: '20px 24px',
-                borderRight: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none'
+                borderRight: i < arr.length - 1 ? '1px solid #f1f5f9' : 'none',
+                borderBottom: '1px solid #f1f5f9'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -407,7 +362,7 @@ const SemesterReportCard = () => {
       }}>
         <CheckCircle size={15} color="#059669" />
         <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>
-          Official Academic Record — University of Cape Coast Examination Portal
+          Official Academic Record — Examination Portal
         </span>
       </div>
 

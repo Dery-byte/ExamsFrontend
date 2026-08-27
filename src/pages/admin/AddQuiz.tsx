@@ -105,7 +105,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
       <div className="aq-layout">
         {/* ── Main Form ── */}
         <div className="aq-main">
-          <form onSubmit={handleSubmit}>
+          <form id="aq-form" onSubmit={handleSubmit}>
 
             {/* Section: Identity */}
             <div className="aq-section aq-section-blue">
@@ -264,8 +264,8 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
               </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="aq-footer">
+            {/* Footer Actions — desktop only; mobile uses sticky bar below */}
+            <div className="aq-footer aq-footer-inline">
               <button type="button" className="aq-btn-ghost" onClick={() => navigate(backPath)}>Cancel</button>
               <button type="submit" className="aq-btn-primary" disabled={loading}>
                 {loading ? <Loader2 className="aq-spin" size={17} /> : <ShieldEllipsis size={17} />}
@@ -342,6 +342,15 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
         </div>
       </div>
 
+      {/* ── Mobile sticky footer bar (mirrors Edit Quiz modal pattern) ── */}
+      <div className="aq-footer-sticky">
+        <button type="button" className="aq-btn-ghost" onClick={() => navigate(backPath)}>Cancel</button>
+        <button type="submit" form="aq-form" className="aq-btn-primary" disabled={loading}>
+          {loading ? <Loader2 className="aq-spin" size={17} /> : <ShieldEllipsis size={17} />}
+          <span>{loading ? 'Creating...' : 'Create Assessment'}</span>
+        </button>
+      </div>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         .aq-page { min-height:100vh; background:#f0f2f8; font-family:'Inter',sans-serif; display:flex; flex-direction:column; color:#1e293b; }
@@ -353,6 +362,9 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
         .aq-breadcrumb .active { color:#5156be; font-weight:700; }
 
         .aq-layout { display:grid; grid-template-columns:1fr 320px; gap:24px; padding:28px; flex:1; align-items:start; }
+
+        /* Sticky mobile footer bar — always at bottom on small screens */
+        .aq-footer-sticky { display:none; }
 
         /* Sections */
         .aq-section { background:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 20px -4px rgba(0,0,0,0.06); margin-bottom:20px; overflow:hidden; }
@@ -471,14 +483,23 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
           .aq-card-danger { grid-column:span 2; }
         }
         @media (max-width:768px) {
-          .aq-layout { padding:16px; gap:16px; }
+          .aq-layout { padding:16px; gap:16px; padding-bottom:90px; }
           .aq-grid-2-1 { grid-template-columns:1fr; }
           .aq-grid-3 { grid-template-columns:1fr 1fr; }
           .aq-sidebar { grid-template-columns:1fr; }
           .aq-card-danger { grid-column:span 1; }
           .aq-type-row { flex-wrap:wrap; }
-          .aq-footer { flex-direction:column-reverse; }
-          .aq-btn-primary, .aq-btn-ghost { width:100%; justify-content:center; }
+          .aq-footer-inline { display:none; }
+          .aq-footer-sticky {
+            display:flex; justify-content:flex-end; gap:12px;
+            position:fixed; bottom:0; left:0; right:0;
+            background:#fff; border-top:1px solid #e8eaf0;
+            padding:14px 16px;
+            z-index:40;
+            box-shadow:0 -4px 16px rgba(0,0,0,0.08);
+          }
+          .aq-footer-sticky .aq-btn-primary,
+          .aq-footer-sticky .aq-btn-ghost { flex:1; justify-content:center; }
           .aq-topbar { padding:10px 16px; }
           .aq-breadcrumb { display:none; }
         }
@@ -486,6 +507,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
           .aq-grid-3 { grid-template-columns:1fr; }
           .aq-section-head { padding:16px; }
           .aq-grid-2-1, .aq-section .aq-grid-3 { padding:16px; }
+          .aq-footer-sticky { flex-direction:column-reverse; gap:10px; }
         }
       `}</style>
     </div>

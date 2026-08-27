@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRegCourses, deleteRegCourse } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import PageHeader from '../../components/PageHeader';
-import { Search, Loader2, BookOpen, Trash2, Info, ChevronRight, Filter, Download, Plus, Activity } from 'lucide-react';
+import { Search, Loader2, BookOpen, Trash2, ChevronRight, Filter, Download, Activity } from 'lucide-react';
 
 export default function CoursesRegistered() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [userRecords, setUserRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading]     = useState(false);
   const [isDeleting, setIsDeleting]   = useState(false);
@@ -78,7 +79,7 @@ export default function CoursesRegistered() {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
-      <PageHeader title="Curriculum Management" breadcrumbs={['Lexa', 'Portal', 'My Courses']} />
+      <PageHeader title="My Courses" breadcrumbs={['Lexa', 'Portal', 'My Courses']} />
 
       <div className="lexa-card">
         <div className="lexa-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 15 }}>
@@ -106,9 +107,7 @@ export default function CoursesRegistered() {
             <button className="btn-lexa btn-lexa-outline" style={{ width: 42, height: 42, padding: 0, borderRadius: 8, flexShrink: 0 }}>
               <Download size={18} />
             </button>
-            <Link to="/user-dashboard/register" className="btn-lexa btn-lexa-primary" style={{ textDecoration: 'none', borderRadius: 8, flexShrink: 0 }}>
-              <Plus size={18} /> Add Module
-            </Link>
+
           </div>
         </div>
 
@@ -126,9 +125,9 @@ export default function CoursesRegistered() {
               </div>
               <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>Empty Curriculum</h4>
               <p style={{ color: '#74788d', fontSize: 15, maxWidth: 450, margin: '0 auto 30px', lineHeight: 1.6 }}>You haven't enrolled in any academic modules for the current session. Start by browsing the course catalog to build your schedule.</p>
-              <Link to="/user-dashboard/register" className="btn-lexa btn-lexa-primary" style={{ textDecoration: 'none', borderRadius: 8, padding: '12px 30px' }}>
+              <button onClick={() => navigate('/user-dashboard/register')} className="btn-lexa btn-lexa-primary" style={{ borderRadius: 8, padding: '12px 30px' }}>
                 Explore Course Catalog <ChevronRight size={18} />
-              </Link>
+              </button>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -137,7 +136,7 @@ export default function CoursesRegistered() {
                   <tr>
                     <th style={{ paddingLeft: 24, width: 80, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</th>
                     <th style={{ width: 150, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Code</th>
-                    <th style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Curriculum Detail</th>
+                    <th style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Name</th>
                     <th style={{ paddingRight: 24, textAlign: 'right', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                   </tr>
                 </thead>
@@ -175,18 +174,6 @@ export default function CoursesRegistered() {
               </table>
             </div>
           )}
-        </div>
-
-        <div className="lexa-card-body" style={{ background: '#fcfdfe', borderTop: '1px solid #f1f5f7', padding: '20px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(56, 164, 248, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Info size={18} />
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#2a3142' }}>Regulatory Compliance</div>
-              <div style={{ fontSize: 11, color: '#74788d' }}>Enrollment records are synchronized with the central Registry. Academic integrity verification is active for all session interactions.</div>
-            </div>
-          </div>
         </div>
       </div>
 
