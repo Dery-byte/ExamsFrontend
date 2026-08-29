@@ -28,7 +28,7 @@ export default function AddCategory() {
   const [category, setCategory] = useState<{title: string, courseCode: string, level: string, description: string, semester: string, programIds: number[]}>({ title: '', courseCode: '', level: '', description: '', semester: '', programIds: [] });
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
-  const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[] }[]>([]);
+  const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[]; semestersPerLevel: Record<number, number> }[]>([]);
 
   useEffect(() => {
     getPrograms().then(data => { if (Array.isArray(data)) setPrograms(data); }).catch(() => {});
