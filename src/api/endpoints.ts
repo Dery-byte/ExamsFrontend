@@ -360,6 +360,8 @@ export const saPromoteAllAtLevel  = (programId: number, level: number, targetLev
   saClient.put(`/students/promote-all/${programId}/${level}`, { targetLevel }).then(r => r.data);
 export const saPromoteSemesterAllAtLevel = (programId: number, level: number) =>
   saClient.put(`/students/promote-semester-all/${programId}/${level}`).then(r => r.data);
+export const saDemoteSemesterAllAtLevel = (programId: number, level: number) =>
+  saClient.put(`/students/demote-semester-all/${programId}/${level}`).then(r => r.data);
 
 // ── Super Admin — Enroll student in course ────────────────────────────────
 export const saUnenrollStudent = (studentId: number, categoryId: number) =>
@@ -384,6 +386,8 @@ export const adminPromoteAllAtLevel = (programId: number, level: number, targetL
   client.put(`/admin/students/promote-all/${programId}/${level}`, { targetLevel }).then(r => r.data);
 export const adminPromoteSemesterAllAtLevel = (programId: number, level: number) =>
   client.put(`/admin/students/promote-semester-all/${programId}/${level}`).then(r => r.data);
+export const adminDemoteSemesterAllAtLevel = (programId: number, level: number) =>
+  client.put(`/admin/students/demote-semester-all/${programId}/${level}`).then(r => r.data);
 
 // ── HOD (Admin) — Enroll student in course ────────────────────────────────
 export const adminUnenrollStudent = (studentId: number, categoryId: number) =>

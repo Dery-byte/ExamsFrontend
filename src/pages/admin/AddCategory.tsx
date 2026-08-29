@@ -228,21 +228,26 @@ export default function AddCategory() {
               <label className="acp-label">
                 <Calendar size={13} /> Semester <span className="acp-required">*</span>
               </label>
-              <div style={{ display: 'flex', gap: 12 }}>
-                {[{ val: '1', label: 'Semester 1', sub: 'First Half' }, { val: '2', label: 'Semester 2', sub: 'Second Half' }].map(s => (
-                  <button key={s.val} type="button"
-                    onClick={() => setCategory(c => ({ ...c, semester: s.val }))}
-                    className={`acp-level-btn ${category.semester === s.val ? 'is-active' : ''}`}
-                    style={category.semester === s.val ? { '--lv-color': '#5156be', borderColor: '#5156be', background: 'rgba(81,86,190,0.08)', flex: 1 } as any : { '--lv-color': '#5156be', flex: 1 } as any}
-                  >
-                    <span className="acp-level-dot" style={{ background: '#5156be' }} />
-                    <div className="acp-level-info">
-                      <span className="acp-level-name">{s.label}</span>
-                      <span className="acp-level-sub">{s.sub}</span>
-                    </div>
-                    {category.semester === s.val && <CheckCircle2 size={16} className="acp-level-check" style={{ color: '#5156be' }} />}
-                  </button>
-                ))}
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {Array.from({ length: (programs.find(p => p.id === category.programIds[0])?.semestersPerLevel?.[Number(category.level)] || 2) }, (_, i) => {
+                  const val = String(i + 1);
+                  const label = `Semester ${val}`;
+                  const sub = i === 0 ? 'First Half' : i === 1 ? 'Second Half' : `Part ${val}`;
+                  return (
+                    <button key={val} type="button"
+                      onClick={() => setCategory(c => ({ ...c, semester: val }))}
+                      className={`acp-level-btn ${category.semester === val ? 'is-active' : ''}`}
+                      style={category.semester === val ? { '--lv-color': '#5156be', borderColor: '#5156be', background: 'rgba(81,86,190,0.08)', flex: 1, minWidth: 120 } as any : { '--lv-color': '#5156be', flex: 1, minWidth: 120 } as any}
+                    >
+                      <span className="acp-level-dot" style={{ background: '#5156be' }} />
+                      <div className="acp-level-info">
+                        <span className="acp-level-name">{label}</span>
+                        <span className="acp-level-sub">{sub}</span>
+                      </div>
+                      {category.semester === val && <CheckCircle2 size={16} className="acp-level-check" style={{ color: '#5156be' }} />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

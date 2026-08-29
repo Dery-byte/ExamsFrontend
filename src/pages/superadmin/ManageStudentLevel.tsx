@@ -20,6 +20,7 @@ interface Program {
   id: number;
   name: string;
   configuredLevels: number[];
+  semestersPerLevel: Record<number, number>;
 }
 
 const card = {
@@ -183,8 +184,9 @@ export default function ManageStudentLevel() {
                       color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
-                    <option value={1} style={{ background: '#1a1a35' }}>Semester 1</option>
-                    <option value={2} style={{ background: '#1a1a35' }}>Semester 2</option>
+                    {Array.from({ length: (programs.find(p => p.id === student.programId)?.semestersPerLevel?.[edit.currentLevel] || 2) }, (_, i) => i + 1).map(sem => (
+                      <option key={sem} value={sem} style={{ background: '#1a1a35' }}>Semester {sem}</option>
+                    ))}
                   </select>
                 </div>
 

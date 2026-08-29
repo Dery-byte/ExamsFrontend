@@ -4,9 +4,9 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { BookMarked, Plus, Pencil, Trash2, X, Save, Calendar, Building2, Power, PowerOff } from 'lucide-react';
 
-interface Program { id: number; name: string; code: string; durationYears: number; departmentId: number; departmentName: string; configuredLevels: number[]; enabled: boolean; }
+interface Program { id: number; name: string; code: string; durationYears: number; departmentId: number; departmentName: string; configuredLevels: number[]; enabled: boolean; semestersPerLevel: Record<number, number>; }
 interface Department { id: number; name: string; code: string; }
-interface FormState { name: string; code: string; durationYears: number; departmentId: number | ''; }
+interface FormState { name: string; code: string; durationYears: number; departmentId: number | ''; semestersPerLevel: Record<number, number>; }
 
 const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139,92,246,0.25)', color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' };
 const labelStyle: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 };
@@ -22,7 +22,7 @@ export default function Programs() {
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<'create' | 'edit'>('create');
   const [editId, setEditId] = useState<number | null>(null);
-  const [form, setForm] = useState<FormState>({ name: '', code: '', durationYears: 4, departmentId: '' });
+  const [form, setForm] = useState<FormState>({ name: '', code: '', durationYears: 4, departmentId: '', semestersPerLevel: {} });
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
@@ -38,16 +38,24 @@ export default function Programs() {
     finally { setLoading(false); }
   };
 
-  const openCreate = () => { setForm({ name: '', code: '', durationYears: 4, departmentId: departments[0]?.id || '' }); setMode('create'); setEditId(null); setModalOpen(true); };
-  const openEdit = (p: Program) => { setForm({ name: p.name, code: p.code, durationYears: p.durationYears, departmentId: p.departmentId }); setMode('edit'); setEditId(p.id); setModalOpen(true); };
+  const openCreate = () => { setForm({ name: '', code: '', durationYears: 4, departmentId: departments[0]?.id || '', semestersPerLevel: {} }); setMode('create'); setEditId(null); setModalOpen(true); };
+  const openEdit = (p: Program) => { setForm({ name: p.name, code: p.code, durationYears: p.durationYears, departmentId: p.departmentId, semestersPerLevel: p.semestersPerLevel || {} }); setMode('edit'); setEditId(p.id); setModalOpen(true); };
 
   const previewLevels = Array.from({ length: form.durationYears }, (_, i) => (i + 1) * 100);
+
+  const updateSemester = (level: number, delta: number) => {
+    setForm(prev => {
+      const current = prev.semestersPerLevel[level] || 2;
+      const next = Math.max(1, Math.min(6, current + delta));
+      return { ...prev, semestersPerLevel: { ...prev.semestersPerLevel, [level]: next } };
+    });
+  };
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.code.trim() || !form.departmentId) { toast.error('All fields are required.'); return; }
     setSaving(true);
     try {
-      const payload = { name: form.name, code: form.code.toUpperCase(), durationYears: form.durationYears, departmentId: form.departmentId };
+      const payload = { name: form.name, code: form.code.toUpperCase(), durationYears: form.durationYears, departmentId: form.departmentId, semestersPerLevel: form.semestersPerLevel };
       if (mode === 'create') {
         const created = await saCreateProgram(payload);
         setPrograms(prev => [...prev, created]);
@@ -235,11 +243,14 @@ export default function Programs() {
                 <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{p.durationYears} Year{p.durationYears > 1 ? 's' : ''} Programme</span>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {p.configuredLevels?.map((lv, i) => (
-                  <span key={lv} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: `${levelColors[i % levelColors.length]}22`, border: `1px solid ${levelColors[i % levelColors.length]}44`, color: levelColors[i % levelColors.length] }}>
-                    Level {lv}
-                  </span>
-                ))}
+                {p.configuredLevels?.map((lv, i) => {
+                  const sems = p.semestersPerLevel?.[lv] || 2;
+                  return (
+                    <span key={lv} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: `${levelColors[i % levelColors.length]}22`, border: `1px solid ${levelColors[i % levelColors.length]}44`, color: levelColors[i % levelColors.length] }}>
+                      Level {lv} <span style={{ opacity: 0.6, fontSize: 10, marginLeft: 2 }}>({sems} sems)</span>
+                    </span>
+                  );
+                })}
               </div>
               {/* Disabled overlay note */}
               {!p.enabled && (
@@ -288,6 +299,22 @@ export default function Programs() {
                       </span>
                     ))}
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Semesters per Level</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {previewLevels.map(lv => (
+                    <div key={lv} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>Level {lv}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={() => updateSemester(lv, -1)} style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                        <span style={{ fontSize: 14, fontWeight: 700, width: 20, textAlign: 'center', color: '#38bdf8' }}>{form.semestersPerLevel[lv] || 2}</span>
+                        <button onClick={() => updateSemester(lv, 1)} style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>

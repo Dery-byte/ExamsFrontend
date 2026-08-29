@@ -173,6 +173,31 @@ export default function Students() {
     } finally { setPromotingSem(null); }
   };
 
+  const demoteSemesterAll = async (level: string) => {
+    if (!programFilter) {
+      toast.error("Please select a Program first before demoting in bulk.");
+      return;
+    }
+    const count = grouped[level]?.length ?? 0;
+    const conf  = await Swal.fire({
+      title: "Demote Semester",
+      html: `Demote all <b>${count}</b> Level ${level} students in the selected program to the previous semester?`,
+      icon: "warning", showCancelButton: true,
+      confirmButtonText: `Demote Semester (${count})`,
+      confirmButtonColor: "#f59e0b", cancelButtonColor: "#adb5bd",
+    });
+    if (!conf.isConfirmed) return;
+    setPromotingSem(level + "-demote");
+    try {
+      const { saDemoteSemesterAllAtLevel, adminDemoteSemesterAllAtLevel } = await import("../../api/endpoints");
+      const res = await (isSuper ? saDemoteSemesterAllAtLevel : adminDemoteSemesterAllAtLevel)(Number(programFilter), Number(level));
+      toast.success(res?.message ?? `${count} students demoted to previous semester!`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Bulk demotion failed");
+    } finally { setPromotingSem(null); }
+  };
+
   const openEdit = async (id: number) => {
     try { setStudentEdit(await getStudentById(id)); setEditModal(true); } catch {}
   };
@@ -270,6 +295,13 @@ export default function Students() {
                   {grp.length} student{grp.length !== 1 ? "s" : ""}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {programFilter ? (
                   <>
+                    <button onClick={() => demoteSemesterAll(level)} disabled={promotingSem === level + "-demote" || bulky}
+                      style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(245,158,11,0.15)",
+                        color: "#92400e", border: "1px solid #f59e0b", padding: "6px 14px", borderRadius: 8,
+                        fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: promotingSem === level + "-demote" ? 0.7 : 1 }}>
+                      {promotingSem === level + "-demote" ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <ArrowRight size={13} style={{ transform: "rotate(180deg)" }} />}
+                      Demote Semester
+                    </button>
                     <button onClick={() => promoteSemesterAll(level)} disabled={promotingSem === level || bulky}
                       style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(42,181,125,0.15)",
                         color: "#065f46", border: "1px solid #2ab57d", padding: "6px 14px", borderRadius: 8,
@@ -383,33 +415,39 @@ export default function Students() {
               </button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px 16px" }}>
-              {[
-                { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
-                { key: "email", label: "Email" }, { key: "username", label: "Username" }, { key: "phone", label: "Phone" },
-                { key: "programId", label: "Program", type: "programSelect" },
-                { key: "currentLevel", label: "Level", type: "select", options: [100, 200, 300, 400, 500, 600] },
-                { key: "currentSemester", label: "Semester", type: "select", options: [1, 2, 3] },
-              ].map(f => (
-                <div key={f.key}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>{f.label}</label>
-                  {(f as any).type === "select" ? (
-                    <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
-                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
-                      <option value="" disabled>Select {f.label}</option>
-                      {(f as any).options.map((opt: number) => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                  ) : (f as any).type === "programSelect" ? (
-                    <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
-                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
-                      <option value="" disabled>Select Program</option>
-                      {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                  ) : (
-                    <input type={(f as any).type || "text"} value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: e.target.value }))}
-                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-                  )}
-                </div>
-              ))}
+              {(() => {
+                const selectedProg = programs.find((p: any) => p.id === Number(studentEdit.programId));
+                const dynamicLevels = selectedProg?.configuredLevels ?? [100, 200, 300, 400, 500, 600];
+                const semsCount = selectedProg?.semestersPerLevel?.[Number(studentEdit.currentLevel)] ?? 2;
+                const dynamicSems = Array.from({ length: semsCount }, (_, i) => i + 1);
+                return [
+                  { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
+                  { key: "email", label: "Email" }, { key: "username", label: "Username" }, { key: "phone", label: "Phone" },
+                  { key: "programId", label: "Program", type: "programSelect" },
+                  { key: "currentLevel", label: "Level", type: "select", options: dynamicLevels },
+                  { key: "currentSemester", label: "Semester", type: "select", options: dynamicSems },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>{f.label}</label>
+                    {(f as any).type === "select" ? (
+                      <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
+                        style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
+                        <option value="" disabled>Select {f.label}</option>
+                        {(f as any).options.map((opt: number) => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (f as any).type === "programSelect" ? (
+                      <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
+                        style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
+                        <option value="" disabled>Select Program</option>
+                        {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    ) : (
+                      <input type={(f as any).type || "text"} value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: e.target.value }))}
+                        style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
+                    )}
+                  </div>
+                ))
+              })()}
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <button onClick={() => setEditModal(false)}
@@ -437,13 +475,15 @@ export default function Students() {
               {(() => {
                 const selectedProg = programs.find((p: any) => p.id === Number(newStudent.programId));
                 const dynamicLevels = selectedProg?.configuredLevels ?? [100, 200, 300, 400, 500, 600];
+                const semsCount = selectedProg?.semestersPerLevel?.[Number(newStudent.currentLevel)] ?? 2;
+                const dynamicSems = Array.from({ length: semsCount }, (_, i) => i + 1);
                 return [
                   { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
                   { key: "email", label: "Email (Optional)" }, { key: "phone", label: "Phone (Optional)" },
                   { key: "username", label: "Student ID (Username)" }, { key: "password", label: "Password", type: "password" },
                   { key: "programId", label: "Program", type: "programSelect" },
                   { key: "currentLevel", label: "Level", type: "select", options: dynamicLevels },
-                  { key: "currentSemester", label: "Semester", type: "select", options: [1, 2, 3] },
+                  { key: "currentSemester", label: "Semester", type: "select", options: dynamicSems },
                 ].map(f => (
                   <div key={f.key}>
                     <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>
