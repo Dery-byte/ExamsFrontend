@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, Trash2, List, Zap, Loader2, Layers, Trophy, Clock, CheckCircle2 } from 'lucide-react';
+import { Settings, Trash2, List, Zap, Loader2, Layers, Trophy, Clock, CheckCircle2, Link2 } from 'lucide-react';
+import { copyQuizLink } from '../../utils/quizLink';
 import './AssessmentCard.css';
 
 interface AssessmentCardProps {
@@ -51,13 +52,23 @@ export default function AssessmentCard({
             <span className="status-text">{status}</span>
           </div>
         </div>
-        <div className="card-top-right">
-          <button className="icon-btn" onClick={() => onEdit(qId)} title="Settings">
-            <Settings size={16} />
+        <div className="card-top-actions">
+          <button
+            className="icon-btn link"
+            onClick={() => copyQuizLink(qId, { title, courseTitle: category?.title })}
+            title="Copy student link"
+            aria-label="Copy student link"
+          >
+            <Link2 size={16} />
           </button>
-          <button className="icon-btn delete" onClick={() => onDelete(qId)} title="Delete">
-            <Trash2 size={16} />
-          </button>
+          <div className="card-top-right">
+            <button className="icon-btn" onClick={() => onEdit(qId)} title="Settings">
+              <Settings size={16} />
+            </button>
+            <button className="icon-btn delete" onClick={() => onDelete(qId)} title="Delete">
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
       </div>
 

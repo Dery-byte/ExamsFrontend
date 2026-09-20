@@ -5,7 +5,8 @@ import {
   getQuizTimer, saveQuizTimer, updateQuizAnswer, getQuizAnswersByQuiz,
   saveTheoryAnswers, loadTheoryAnswers, clearTheoryAnswers,
   evalQuiz, evalTheory, addSectionBMarks,
-  deleteQuizTimer, clearQuizAnswers, getViolationDelay, getViolationCount
+  deleteQuizTimer, clearQuizAnswers, getViolationDelay, getViolationCount,
+  beginQuizAttempt, finishQuizAttempt
 } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuizProtection } from '../../hooks/useQuizProtection';
@@ -194,6 +195,23 @@ export default function StartQuiz() {
 
   const loadAll = async () => {
     try {
+      // Start a new attempt, or resume the one in progress. The server refuses (409) when the student
+      // has used every attempt, so a direct /start link can't bypass the limit.
+      try {
+        await beginQuizAttempt(qid!);
+      } catch (e: any) {
+        await Swal.fire({
+          title: 'Cannot start this quiz',
+          text: e?.response?.data?.message || 'This quiz is not available for you right now.',
+          icon: 'warning',
+          confirmButtonColor: '#7a6fbe',
+        });
+        (window as any).__allow_unload = true;
+        if (window.opener && !window.opener.closed) window.close();
+        else navigate('/user-dashboard/quizzes', { replace: true });
+        return;
+      }
+
       const [quizData, rawQs, theoryRaw, nqArr, savedTime, savedAns, savedTh, savedDelay, savedViolationCount] = await Promise.all([
         getQuiz(qid!),
         getQuestionsForStudent(qid!).catch(() => []),
@@ -460,6 +478,7 @@ export default function StartQuiz() {
 
       // ── Cleanup ───────────────────────────────────────────────────────────
       addLog('Cleaning up session data…', 'info');
+      await finishQuizAttempt(qid!).catch(() => { });   // closes this attempt so a further one can be started
       await deleteQuizTimer(qid!).catch(() => { });
       clearQuizAnswers(qid!).catch(() => { });
       clearTheoryAnswers(qid!).catch(() => { });

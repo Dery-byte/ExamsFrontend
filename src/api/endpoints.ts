@@ -306,7 +306,9 @@ export const setQuizLlmProvider = (quizId: number | string, provider: string) =>
 
 // ── Programs & Departments (read-only — available to all authenticated users) ────────────
 export const getPrograms = () => client.get('/programs').then(r => r.data);
-export const getProgramsByDept = (deptId: number) => client.get(`/programs/department/${deptId}`).then(r => r.data);
+/** Enabled programs in the logged-in admin/HOD's own department. */
+export const getMyDepartmentPrograms = () => client.get('/programs/my-department').then(r => r.data);
+export const getProgramsByDept =(deptId: number) => client.get(`/programs/department/${deptId}`).then(r => r.data);
 export const getProgramById = (id: number) => client.get(`/programs/${id}`).then(r => r.data);
 export const getDepartments = () => client.get('/departments').then(r => r.data);
 
@@ -419,3 +421,19 @@ export const addSheetSection = (sheetId: number | string, data: { sectionName: s
 export const deleteSheetSection = (sheetId: number | string, sectionId: number) =>
   client.delete(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}/sections/${sectionId}`).then(r => r.data);
 export const getAdminDepartmentCategoriesAndQuizzes = () => client.get('/admin/department-reports').then(r => extractCategoriesAndQuizzes(r.data));
+
+// ── Quiz attempts ─────────────────────────────────────────────────────────
+/** Student: where I stand on this quiz (max, used, remaining, canStart). */
+export const getMyAttemptStatus = (qid: number | string) =>
+  client.get(`/quiz-attempts/${qid}/my-status`).then(r => r.data);
+/** Student: start a new attempt or resume the one in progress. Rejects with 409 if none is left. */
+export const beginQuizAttempt = (qid: number | string) =>
+  client.post(`/quiz-attempts/${qid}/begin`).then(r => r.data);
+export const finishQuizAttempt = (qid: number | string) =>
+  client.post(`/quiz-attempts/${qid}/finish`).then(r => r.data);
+/** Staff: every attempt of every student for a quiz, each with its own marks. */
+export const getQuizAttempts = (qid: number | string) =>
+  client.get(`/quiz-attempts/quiz/${qid}`).then(r => r.data);
+/** Staff: allow one student to take the quiz again. */
+export const allowQuizRetake = (qid: number | string, studentId: number, reason?: string) =>
+  client.post(`/quiz-attempts/quiz/${qid}/student/${studentId}/retake`, { reason }).then(r => r.data);

@@ -226,3 +226,22 @@
 .spin {
   animation: spin 1s linear infinite;
 }
+
+/* Copy-link button: always visible (the settings/delete group above only appears on hover) */
+.card-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.icon-btn.link {
+  color: #5156be;
+  background: #eef2ff;
+}
+.icon-btn.link:hover {
+  background: #e0e7ff;
+  color: #3d41a8;
+}
+/* Touch screens have no hover, so keep the other actions visible there */
+@media (hover: none) {
+  .card-top-right { opacity: 1; }
+}

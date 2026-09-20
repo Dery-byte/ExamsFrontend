@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { forgotPassword } from '../../api/endpoints';
 import {
@@ -28,6 +28,10 @@ type RecoveryChannel = 'phone' | 'email';
 
 export default function Login() {
   const { login } = useAuth();
+  // Set by ProtectedRoute / the shared quiz link: where to go once signed in.
+  const location = useLocation();
+  const fromState = (location.state as any) ?? {};
+  const redirectTo: string | undefined = fromState.from ? (fromState.from.pathname ?? '') + (fromState.from.search ?? '') : undefined;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [hidePass, setHidePass] = useState(true);
@@ -73,7 +77,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    try { await login(username, password); }
+    try { await login(username, password, redirectTo); }
     catch (err: any) {
       setError(err?.response?.data?.message ?? 'Invalid credentials. Please try again.');
       setLoading(false);
@@ -279,6 +283,12 @@ export default function Login() {
                 {typed}<span style={{ color: 'var(--primary)', fontWeight: 700, marginLeft: 2, animation: 'pulse 1s infinite' }}>|</span>
               </p>
             </div>
+
+            {fromState.quizLink && (
+              <div style={{ padding: '12px 16px', background: 'var(--primary-bg, #eef2ff)', color: 'var(--primary)', borderRadius: '14px', marginBottom: 24, fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
+                Sign in to continue to your quiz.
+              </div>
+            )}
 
             {error && (
               <div style={{

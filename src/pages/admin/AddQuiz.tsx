@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getCategories, addQuiz, addLecturerQuiz, getCategoriesForUser, getAvailableLlmProviders } from '../../api/endpoints';
+import { getCategories, addQuiz, addLecturerQuiz, getCategoriesForUser, getAvailableLlmProviders, getMyDepartmentPrograms, saGetPrograms } from '../../api/endpoints';
+import { useAuth } from '../../contexts/AuthContext';
+import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
+import { showQuizLinkDialog } from '../../utils/quizLink';
+import AttemptsField from '../../components/ui/AttemptsField';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock, Layers,
@@ -22,7 +26,9 @@ const defaultQuiz = () => ({
   startTime: '', quizDate: '', attempted: false, active: true, category: { cid: '' }, quizType: '',
   violationAction: 'NONE', delaySeconds: 0, autoSubmitCountdownSeconds: 5, maxViolations: 3,
   delayMultiplier: 1.5, enableFullscreenLock: true, enableWatermark: true,
-  enableScreenshotBlocking: true, enableDevToolsBlocking: true, llmProvider: 'GPT'
+  enableScreenshotBlocking: true, enableDevToolsBlocking: true, llmProvider: 'GPT',
+  programIds: [] as number[],
+  maxAttempts: 1
 });
 
 export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
@@ -34,7 +40,35 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     queryKey: lectMode ? ['lectCategories'] : ['categories'], 
     queryFn: lectMode ? getCategoriesForUser : getCategories 
   });
-  
+
+  // Programs allowed to take the quiz: HOD → own department only, Super Admin → every program.
+  // (The server re-validates this; the filtering here is just for the picker.)
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const { data: adminPrograms = [] } = useQuery<any[]>({
+    queryKey: ['quizProgramOptions', isSuperAdmin ? 'all' : 'department'],
+    queryFn: isSuperAdmin ? saGetPrograms : getMyDepartmentPrograms,
+    enabled: !lectMode && !!user,
+  });
+
+  // Lecturers: only the programs attached to the selected course.
+  const coursePrograms: any[] = lectMode
+    ? ((categories as any[]).find((c: any) => String(c.cid) === String(quiz.category.cid))?.programs ?? [])
+        .filter((p: any) => p.enabled !== false)
+    : [];
+  const programs: any[] = lectMode ? coursePrograms : adminPrograms;
+
+  const handleCategoryChange = (cid: string) => {
+    if (lectMode) {
+      // Default to every program of the newly chosen course; the lecturer can untick.
+      const course = (categories as any[]).find((c: any) => String(c.cid) === String(cid));
+      const ids = (course?.programs ?? []).filter((p: any) => p.enabled !== false).map((p: any) => p.id);
+      setQuiz(q => ({ ...q, category: { cid }, programIds: ids }));
+    } else {
+      set('category', { cid });
+    }
+  };
+
   const { data: providersData } = useQuery({
     queryKey: ['llmProviders'],
     queryFn: getAvailableLlmProviders,
@@ -61,16 +95,21 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     e.preventDefault();
     if (!quiz.quizType) { toast.error('Please select a quiz type'); return; }
     if (!quiz.category.cid) { toast.error('Please select a category'); return; }
+    // Admin/HOD/SA always need a program; a lecturer needs one only if the course has programs.
+    if (programs.length > 0 && quiz.programIds.length === 0) { toast.error('Please select at least one program'); return; }
+    if (!lectMode && programs.length === 0) { toast.error('No programs available to assign this quiz to'); return; }
     setLoading(true);
     try {
-      if (lectMode) {
-        await addLecturerQuiz(quiz);
+      const created = lectMode ? await addLecturerQuiz(quiz) : await addQuiz(quiz);
+      if (created?.qId) {
+        // The response's category is only the id we sent, so take the course name from the list.
+        const course = (categories as any[]).find((c: any) => String(c.cid) === String(quiz.category.cid));
+        await showQuizLinkDialog(created.qId, { title: created.title ?? quiz.title, courseTitle: course?.title });
       } else {
-        await addQuiz(quiz);
+        toast.success('Assessment created successfully!');
       }
-      toast.success('Assessment created successfully!');
-      setTimeout(() => navigate(backPath), 1200);
-    } catch { toast.error('Failed to create assessment'); }
+      navigate(backPath);
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to create assessment'); }
     finally { setLoading(false); }
   };
 
@@ -128,13 +167,22 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                   <label className="aq-label">Course Category</label>
                   <div className="aq-iw">
                     <span className="aq-ii"><Layers size={15} /></span>
-                    <select className="aq-input" required value={quiz.category.cid} onChange={e => set('category', { cid: e.target.value })}>
+                    <select className="aq-input" required value={quiz.category.cid} onChange={e => handleCategoryChange(e.target.value)}>
                       <option value="">Select category...</option>
                       {(categories as any[]).map((c: any) => <option key={c.cid} value={c.cid}>{c.title}</option>)}
                     </select>
                   </div>
                 </div>
               </div>
+              <QuizProgramPicker
+                programs={programs}
+                selectedIds={quiz.programIds}
+                onChange={ids => set('programIds', ids)}
+                showDepartment={isSuperAdmin}
+                emptyText={lectMode
+                  ? (quiz.category.cid ? 'This course has no programs attached, so the quiz is open to all students registered for it.' : 'Select a course to choose which of its programs can take this quiz.')
+                  : (isSuperAdmin ? 'No programs available.' : 'No programs available for your department.')}
+              />
               <div className="aq-field mt-4">
                 <label className="aq-label">Instructions & Guidelines</label>
                 <textarea className="aq-input aq-textarea" rows={3} value={quiz.description} onChange={e => set('description', e.target.value)} placeholder="Provide student instructions and syllabus guidelines..." />
@@ -261,6 +309,9 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                     <button type="button" className="aq-eye" onClick={() => setHide(!hide)}>{hide ? <Eye size={15} /> : <EyeOff size={15} />}</button>
                   </div>
                 </div>
+              </div>
+              <div className="aq-grid-3">
+                <AttemptsField value={quiz.maxAttempts} onChange={n => set('maxAttempts', n)} />
               </div>
             </div>
 
@@ -430,7 +481,6 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
         .aq-eye { position:absolute; right:12px; background:none; border:none; color:#94a3b8; cursor:pointer; display:flex; align-items:center; }
         .aq-eye:hover { color:#5156be; }
 
-        /* Type Buttons */
         .aq-type-row { display:flex; gap:10px; margin-bottom:12px; }
         .aq-type-btn { flex:1; padding:11px 8px; border-radius:10px; border:1.5px solid #e2e8f0; background:#fff; display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; font-weight:700; color:#64748b; cursor:pointer; transition:.25s; }
         .aq-type-btn.active { background:#1e293b; border-color:#1e293b; color:#fff; transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,0.12); }

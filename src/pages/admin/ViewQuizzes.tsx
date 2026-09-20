@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders } from '../../api/endpoints';
+import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders, getMyDepartmentPrograms, saGetPrograms } from '../../api/endpoints';
+import { useAuth } from '../../contexts/AuthContext';
+import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
+import AttemptsField from '../../components/ui/AttemptsField';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
@@ -31,12 +34,21 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
     getQuiz(qId).then(data => {
       if (data) {
         if (!data.category) data.category = { cid: '' };
-        setQuiz({ ...data });
+        setQuiz({ ...data, programIds: (data.programs ?? []).map((p: any) => p.id) });
       } else {
         onClose();
       }
     }).catch(() => onClose());
   }, [qId]);
+
+  // HOD → programs of their own department; Super Admin → every program.
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const { data: programOptions = [] } = useQuery<any[]>({
+    queryKey: ['quizProgramOptions', isSuperAdmin ? 'all' : 'department'],
+    queryFn: isSuperAdmin ? saGetPrograms : getMyDepartmentPrograms,
+    enabled: !!user,
+  });
 
   const { data: providersData } = useQuery({
     queryKey: ['llmProviders'],
@@ -78,7 +90,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
       await updateQuiz(payload);
       toast.success('Quiz settings saved successfully');
       onSave(); onClose();
-    } catch { toast.error('Failed to save settings'); }
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to save settings'); }
     setSaving(false);
   };
 
@@ -148,7 +160,14 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                   </div>
                 </div>
                 <div style={{ padding: '0 24px 24px' }}>
-                  <div className="aq-field">
+                  <QuizProgramPicker
+                    programs={programOptions}
+                    selectedIds={quiz.programIds ?? []}
+                    onChange={ids => set('programIds', ids)}
+                    showDepartment={isSuperAdmin}
+                    emptyText={isSuperAdmin ? 'No programs available.' : 'No programs available for your department.'}
+                  />
+                  <div className="aq-field" style={{ marginTop: 16 }}>
                     <label className="aq-label">Instructions &amp; Guidelines</label>
                     <textarea
                       className="aq-input aq-textarea"
@@ -293,6 +312,9 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                     </div>
                   </div>
                 </div>
+                  <div className="aq-grid-3" style={{ paddingTop: 0, paddingBottom: 24 }}>
+                    <AttemptsField value={quiz.maxAttempts ?? 1} onChange={n => set('maxAttempts', n)} />
+                  </div>
               </div>
             </div>
 

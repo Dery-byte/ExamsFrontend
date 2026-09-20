@@ -4,13 +4,16 @@ import { useNavigate, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { loadQuizzesForUser, getCategoriesForUser, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders } from '../../api/endpoints';
 import Swal from 'sweetalert2';
+import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
+import AttemptsField from '../../components/ui/AttemptsField';
+import { copyQuizLink } from '../../utils/quizLink';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   Plus, X, Save, Loader2, Database, Settings, Trash2, Eye, EyeOff,
   ShieldCheck, Clock, Calendar, Layers, ChevronRight, CheckCircle,
   Smartphone, Terminal, ShieldAlert, Zap, BookOpen, Activity,
   List, FileText, LayoutGrid, Award, Hash, Timer, Tag, Key, Info,
-  Monitor, Bot,
+  Monitor, Bot, Link2,
 } from 'lucide-react';
 
 const VIOLATION_OPTIONS = [
@@ -32,7 +35,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
     getQuiz(qId).then(data => {
       if (data) {
         if (!data.category) data.category = { cid: '' };
-        setQuiz({ ...data });
+        setQuiz({ ...data, programIds: (data.programs ?? []).map((p: any) => p.id) });
       } else {
         onClose();
       }
@@ -67,6 +70,10 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
 
   const set = (k: string, v: any) => setQuiz((q: any) => ({ ...q, [k]: v }));
 
+  // A lecturer can only assign programs attached to the quiz's course.
+  const coursePrograms = (categories.find((c: any) => String(c.cid) === String(quiz.category?.cid))?.programs ?? [])
+    .filter((p: any) => p.enabled !== false);
+
   const save = async () => {
     if (!quiz.quizType)       { toast.error('Please select a quiz type'); return; }
     if (!quiz.category?.cid)  { toast.error('Please select a course category'); return; }
@@ -76,7 +83,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
       await updateQuiz(payload);
       toast.success('Quiz settings saved successfully');
       onSave(); onClose();
-    } catch { toast.error('Failed to save settings'); }
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to save settings'); }
     setSaving(false);
   };
 
@@ -140,7 +147,12 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                       <span className="aq-ii"><Layers size={15} /></span>
                       <select className="aq-input" required value={quiz.category?.cid || ''} onChange={e => {
                         const chosen = categories.find((c: any) => String(c.cid) === String(e.target.value));
-                        set('category', chosen ? { cid: chosen.cid, title: chosen.title } : { cid: e.target.value });
+                        setQuiz((q: any) => ({
+                          ...q,
+                          category: chosen ? { cid: chosen.cid, title: chosen.title } : { cid: e.target.value },
+                          // new course → default to all of its programs; lecturer can untick
+                          programIds: (chosen?.programs ?? []).filter((p: any) => p.enabled !== false).map((p: any) => p.id),
+                        }));
                       }}>
                         <option value="">Select category...</option>
                         {categories.map((c: any) => <option key={c.cid} value={c.cid}>{c.title}</option>)}
@@ -149,7 +161,15 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                   </div>
                 </div>
                 <div style={{ padding: '0 24px 24px' }}>
-                  <div className="aq-field">
+                  <QuizProgramPicker
+                    programs={coursePrograms}
+                    selectedIds={quiz.programIds ?? []}
+                    onChange={ids => set('programIds', ids)}
+                    emptyText={quiz.category?.cid
+                      ? 'This course has no programs attached, so the quiz is open to all students registered for it.'
+                      : 'Select a course to choose which of its programs can take this quiz.'}
+                  />
+                  <div className="aq-field" style={{ marginTop: 16 }}>
                     <label className="aq-label">Instructions &amp; Guidelines</label>
                     <textarea
                       className="aq-input aq-textarea"
@@ -293,6 +313,9 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                     </div>
                   </div>
                 </div>
+                  <div className="aq-grid-3" style={{ paddingTop: 0, paddingBottom: 24 }}>
+                    <AttemptsField value={quiz.maxAttempts ?? 1} onChange={n => set('maxAttempts', n)} />
+                  </div>
               </div>
             </div>
 
@@ -458,6 +481,8 @@ export default function LectViewQuizzes() {
                   {q.category?.title && <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.72)', marginTop: '3px', display: 'block' }}>{q.category.title}</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <button style={{ width: 30, height: 30, borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                    title="Copy student link" onClick={() => copyQuizLink(q.qId, { title: q.title, courseTitle: q.category?.title })} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.35)')} onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}><Link2 size={14} /></button>
                   <button style={{ width: 30, height: 30, borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
                     title="Configure" onClick={() => setEditQuizId(q.qId)} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.35)')} onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}><Settings size={14} /></button>
                   <button style={{ width: 30, height: 30, borderRadius: '8px', border: 'none', background: 'rgba(253,98,94,0.35)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}

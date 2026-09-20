@@ -4,14 +4,15 @@ import { createPortal } from 'react-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   loadQuizzes, getReportByQuizId, getTheoryQuestions,
-  addSectionBMarks, getMyCoursesWithQuizzes
+  addSectionBMarks, getMyCoursesWithQuizzes, getQuizAttempts
 } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
 import client from '../../api/client';
+import QuizAttemptsModal, { AttemptRow } from '../../components/ui/QuizAttemptsModal';
 import {
   ChevronDown, ChevronRight, X, Loader2, FileText,
   MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye,
-  CheckSquare, AlertTriangle
+  CheckSquare, AlertTriangle, RotateCcw
 } from 'lucide-react';
 
 const RESPONSIVE_CSS = `
@@ -521,6 +522,17 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
 
+  // Every attempt of every student for this quiz (one request), grouped by student.
+  const { data: attemptRows = [] } = useQuery<any[]>({
+    queryKey: ['quiz-attempts', quiz.qId],
+    queryFn: () => getQuizAttempts(quiz.qId),
+    enabled: expanded,
+    retry: false,
+  });
+  const attemptsByStudent = new Map<number, AttemptRow[]>();
+  (attemptRows as AttemptRow[]).forEach(a => attemptsByStudent.set(a.userId, [...(attemptsByStudent.get(a.userId) ?? []), a]));
+  const [attemptsTarget, setAttemptsTarget] = useState<{ id: number; name: string } | null>(null);
+
   const totalTaken = reports.length;
   const totalReviewed = reports.filter((r: any) => r.isReviewed).length;
   const notReviewed = totalTaken - totalReviewed;
@@ -630,7 +642,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
               <table className="resp-table">
                 <thead>
                   <tr>
-                    {['Student', 'Submission', 'Sec A', 'Sec B', 'Grade', 'Action'].map(h => (
+                    {['Student', 'Submission', 'Sec A', 'Sec B', 'Grade', 'Attempts', 'Action'].map(h => (
                       <th key={h}>{h}</th>
                     ))}
                   </tr>
@@ -677,8 +689,28 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                             )}
                           </div>
                         </td>
-                        <td data-label="Action">
+                        <td data-label="Attempts">
                           <div className="resp-td-content">
+                            {(() => {
+                              const mine = attemptsByStudent.get(r.user?.id) ?? [];
+                              const used = mine.filter(a => a.status !== 'VOIDED').length;
+                              const max = quiz.maxAttempts ?? 1;
+                              return (
+                                <span style={{ fontWeight: 700, fontSize: 13, color: '#334155' }}>
+                                  {mine.length === 0 ? '—' : `${used} / ${max}`}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        </td>
+                        <td data-label="Action">
+                          <div className="resp-td-content" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => setAttemptsTarget({ id: r.user?.id, name })}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px solid #c7d2fe', borderRadius: 8, background: '#fff', color: '#5156be', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              <RotateCcw size={13} /> Attempts
+                            </button>
                             <button
                               onClick={() => onReview(r)}
                               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#5156be,#3d41a8)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
@@ -695,6 +727,17 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
             </>
           )}
         </div>
+      )}
+
+      {attemptsTarget && (
+        <QuizAttemptsModal
+          quiz={quiz}
+          student={attemptsTarget}
+          attempts={attemptsByStudent.get(attemptsTarget.id) ?? []}
+          reviewed={!!(reports as any[]).find((r: any) => r.user?.id === attemptsTarget.id)?.isReviewed}
+          onClose={() => setAttemptsTarget(null)}
+          onChanged={() => queryClient.invalidateQueries({ queryKey: ['quiz-attempts', quiz.qId] })}
+        />
       )}
 
       {/* Bulk Confirm Modal */}

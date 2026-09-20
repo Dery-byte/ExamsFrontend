@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getQuiz, getNumberOfTheoryToAnswer, loadReportSummary } from '../../api/endpoints';
+import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import PageHeader from '../../components/PageHeader';
 import { 
@@ -31,7 +31,9 @@ export default function Instructions() {
   const { user }   = useAuth();
   const [quiz, setQuiz]                           = useState<any>(null);
   const [isLoading, setIsLoading]                 = useState(true);
-  const [isLegible, setIsLegible]                 = useState(false);
+  // The caller's own attempt position (limit / used / remaining) — replaces downloading every report.
+  const [attempts, setAttempts]                 = useState<any>(null);
+  const [loadError, setLoadError]                 = useState<string | null>(null);
   const [timerAll, setTimerAll]                   = useState(0);
   const [numberOfQuestionsToAnswer, setNqta]      = useState(0);
 
@@ -44,7 +46,11 @@ export default function Instructions() {
       setQuiz(data);
       const o = (data.quizTime ?? 0) * 1;
       setTimerAll(o * 60);
-    }).catch(() => {}).finally(() => { isLoadingQuiz = false; check(); });
+    }).catch((err: any) => {
+      setLoadError(err?.response?.status === 403
+        ? 'This quiz is not available for your program.'
+        : 'This quiz could not be found. The link may be wrong or the quiz may have been removed.');
+    }).finally(() => { isLoadingQuiz = false; check(); });
 
     getNumberOfTheoryToAnswer(qid).then((data: any) => {
       const arr = Array.isArray(data) ? data : [];
@@ -54,13 +60,8 @@ export default function Instructions() {
       setTimerAll(prev => prev + (tt * 60));
     }).catch(() => {}).finally(() => { isLoadingQ = false; check(); });
 
-    loadReportSummary().then((report: any) => {
-      const arr = Array.isArray(report) ? report : [];
-      const userId = user?.id;
-      const qIdNum = parseInt(qid);
-      const found = arr.some((e: any) => e.user?.id === userId && e.quiz?.qId === qIdNum);
-      setIsLegible(found);
-    }).catch(() => {}).finally(() => { isLoadingRep = false; check(); });
+    getMyAttemptStatus(qid).then((s: any) => setAttempts(s))
+      .catch(() => {}).finally(() => { isLoadingRep = false; check(); });
   }, [qid, user?.id]);
 
   useEffect(() => {
@@ -159,6 +160,24 @@ export default function Instructions() {
     );
   }
 
+  if (loadError || !quiz) {
+    return (
+      <div className="animate-fade-in">
+        <PageHeader title="Examination Brief" breadcrumbs={['Lexa', 'User', 'Instructions']} />
+        <div className="lexa-card">
+          <div className="lexa-card-body" style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <AlertCircle size={40} style={{ color: 'var(--danger)', marginBottom: 12 }} />
+            <h5 style={{ margin: '0 0 8px', color: '#495057' }}>Quiz unavailable</h5>
+            <p style={{ margin: '0 0 20px', color: '#6c757d', fontSize: 14 }}>{loadError ?? 'This quiz could not be loaded.'}</p>
+            <button className="btn-lexa btn-lexa-primary" onClick={() => navigate('/user-dashboard/quizzes')}>
+              Browse available quizzes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       <PageHeader title="Examination Brief" breadcrumbs={['Lexa', 'User', 'Instructions']} />
@@ -234,6 +253,7 @@ export default function Instructions() {
                   { label: 'Time Allowed', value: getFormattedTime(), icon: Clock },
                   { label: 'Total Questions', value: `${quiz?.numberOfQuestions || 0} Items`, icon: HelpCircle },
                   { label: 'Maximum Marks', value: `${quiz?.maxMarks || 0} Points`, icon: Award, highlight: true },
+                  ...(attempts ? [{ label: 'Attempts', value: `${attempts.attemptsUsed} of ${attempts.maxAttempts} used`, icon: Play }] : []),
                 ].map((stat, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', background: '#f8f9fa', borderRadius: 4 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#adb5bd', fontWeight: 600 }}>
@@ -244,32 +264,54 @@ export default function Instructions() {
                 ))}
               </div>
 
-              {quiz?.status === 'CLOSED' ? (
+              {!quiz?.active ? (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ width: '100%', padding: '14px', borderRadius: 4, background: '#f1f5f7', color: '#adb5bd', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                    <Lock size={18} /> NOT YET PUBLISHED
+                  </div>
+                </div>
+              ) : quiz?.status === 'CLOSED' ? (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ width: '100%', padding: '14px', borderRadius: 4, background: '#f1f5f7', color: '#adb5bd', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                     <Lock size={18} /> ASSESSMENT CLOSED
                   </div>
                 </div>
-              ) : (quiz?.attempted || isLegible) ? (
+              ) : (attempts && !attempts.canStart) ? (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ width: '100%', padding: '14px', borderRadius: 4, background: 'rgba(40, 187, 227, 0.1)', color: 'var(--success)', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                    <CheckCircle2 size={18} /> ATTEMPT COMPLETED
+                    <CheckCircle2 size={18} /> {
+                      attempts?.resultReviewed && attempts.attemptsRemaining > 0 ? 'RESULT REVIEWED'
+                      : attempts?.maxAttempts > 1 ? `ALL ${attempts.maxAttempts} ATTEMPTS USED`
+                      : 'ATTEMPT COMPLETED'
+                    }
                   </div>
                   <button 
-                    onClick={() => navigate('/user-dashboard/available-quizzes')}
+                    onClick={() => navigate('/user-dashboard/quizzes')}
                     style={{ marginTop: 15, background: 'none', border: 'none', color: 'var(--primary)', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, margin: '15px auto 0' }}
                   >
                     Browse Others <ChevronRight size={14} />
                   </button>
                 </div>
               ) : (
-                <button 
-                  className="btn-lexa btn-lexa-primary" 
-                  style={{ width: '100%', padding: '14px', fontSize: 14, fontWeight: 700, justifyContent: 'center' }} 
-                  onClick={startQuiz}
-                >
-                  <Play size={16} /> INITIALIZE SESSION
-                </button>
+                <>
+                  {attempts?.retakeGranted && (
+                    <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 4, background: 'rgba(122, 111, 190, 0.1)', color: 'var(--primary)', fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
+                      Your lecturer has allowed you to retake this quiz. Your new marks will replace your previous result.
+                    </div>
+                  )}
+                  <button
+                    className="btn-lexa btn-lexa-primary"
+                    style={{ width: '100%', padding: '14px', fontSize: 14, fontWeight: 700, justifyContent: 'center' }}
+                    onClick={startQuiz}
+                  >
+                    <Play size={16} /> {
+                      attempts?.activeAttemptNumber ? `RESUME ATTEMPT ${attempts.activeAttemptNumber}`
+                      : attempts?.retakeGranted ? 'RETAKE QUIZ'
+                      : attempts?.attemptsUsed > 0 ? `START ATTEMPT ${attempts.attemptsUsed + 1} OF ${attempts.maxAttempts}`
+                      : 'INITIALIZE SESSION'
+                    }
+                  </button>
+                </>
               )}
             </div>
           </div>

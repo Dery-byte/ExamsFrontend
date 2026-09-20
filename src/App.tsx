@@ -57,6 +57,7 @@ import Instructions from './pages/user/Instructions';
 import StartQuiz from './pages/user/StartQuiz';
 import PrintQuiz from './pages/user/PrintQuiz';
 import SemesterReportCard from './pages/user/SemesterReportCard';
+import QuizLink from './pages/user/QuizLink';
 
 // Shared
 import MarksSheetManager from './pages/admin/MarksSheetManager';
@@ -92,6 +93,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/quiz/:qid" element={<QuizLink />} />
+        {/* The readable part is decorative; the quiz is found by :qid */}
+        <Route path="/quiz/:qid/:slug" element={<QuizLink />} />
 
         {/* Super Admin */}
         <Route path="/super-admin" element={<ProtectedRoute role="SUPER_ADMIN"><SuperAdminLayout /></ProtectedRoute>}>

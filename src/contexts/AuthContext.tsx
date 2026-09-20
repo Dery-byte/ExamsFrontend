@@ -25,7 +25,7 @@ export interface AuthUser {
 interface AuthCtx {
   user: AuthUser | null;
   isLoggedIn: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, redirectTo?: string) => Promise<void>;
   logout: () => void;
   getToken: () => string | null;
   isAdmin: () => boolean;
@@ -51,6 +51,17 @@ function fmtCountdown(ms: number): string {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+/** Sections of the app each role may be sent back to after login (mirrors the ProtectedRoute roles in App.tsx). */
+const ROLE_HOMES: Record<UserRole, string[]> = {
+  SUPER_ADMIN: ['/super-admin', '/admin'],
+  ADMIN: ['/admin'],
+  LECTURER: ['/lect'],
+  NORMAL: ['/user-dashboard'],
+};
+function canVisit(role: UserRole, path: string): boolean {
+  return (ROLE_HOMES[role] ?? []).some(base => path === base || path.startsWith(base + '/'));
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -111,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []); // eslint-disable-line
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, redirectTo?: string) => {
     const resp = await apiAuth({ username, password });
     const token: string = resp.token;
     if (!token) throw new Error('No token');
@@ -148,7 +159,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(authUser);
     startCountdown(token);
 
-    if (authUser.role === 'SUPER_ADMIN') navigate('/super-admin', { replace: true });
+    if (redirectTo && canVisit(authUser.role, redirectTo)) navigate(redirectTo, { replace: true });
+    else if (authUser.role === 'SUPER_ADMIN') navigate('/super-admin', { replace: true });
     else if (authUser.role === 'ADMIN') navigate('/admin', { replace: true });
     else if (authUser.role === 'LECTURER') navigate('/lect', { replace: true });
     else navigate('/user-dashboard/user-dashboard', { replace: true });
