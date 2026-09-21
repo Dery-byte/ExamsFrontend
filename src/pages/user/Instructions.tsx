@@ -47,9 +47,12 @@ export default function Instructions() {
       const o = (data.quizTime ?? 0) * 1;
       setTimerAll(o * 60);
     }).catch((err: any) => {
-      setLoadError(err?.response?.status === 403
-        ? 'This quiz is not available for your program.'
-        : 'This quiz could not be found. The link may be wrong or the quiz may have been removed.');
+      // The server now says exactly why (wrong program vs. not enrolled in the course); fall back
+      // to a generic message only if that reason is missing.
+      setLoadError(err?.response?.data?.message
+        || (err?.response?.status === 403
+          ? 'This quiz is not available to you.'
+          : 'This quiz could not be found. The link may be wrong or the quiz may have been removed.'));
     }).finally(() => { isLoadingQuiz = false; check(); });
 
     getNumberOfTheoryToAnswer(qid).then((data: any) => {
@@ -269,6 +272,11 @@ export default function Instructions() {
                   <div style={{ width: '100%', padding: '14px', borderRadius: 4, background: '#f1f5f7', color: '#adb5bd', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                     <Lock size={18} /> NOT YET PUBLISHED
                   </div>
+                  {quiz?.autoOpen && quiz?.quizDate && (
+                    <p style={{ marginTop: 10, fontSize: 12, color: '#adb5bd' }}>
+                      Opens automatically on {quiz.quizDate}{quiz.startTimeAMPM ? ` at ${quiz.startTimeAMPM}` : ''} — just come back then.
+                    </p>
+                  )}
                 </div>
               ) : quiz?.status === 'CLOSED' ? (
                 <div style={{ textAlign: 'center' }}>

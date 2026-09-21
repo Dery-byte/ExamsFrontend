@@ -6,6 +6,8 @@ import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuiz
 import { useAuth } from '../../contexts/AuthContext';
 import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
 import AttemptsField from '../../components/ui/AttemptsField';
+import AutoOpenField from '../../components/ui/AutoOpenField';
+import AutoCloseField from '../../components/ui/AutoCloseField';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
@@ -315,6 +317,22 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                   <div className="aq-grid-3" style={{ paddingTop: 0, paddingBottom: 24 }}>
                     <AttemptsField value={quiz.maxAttempts ?? 1} onChange={n => set('maxAttempts', n)} />
                   </div>
+                  <div style={{ paddingBottom: 24 }}>
+                    <AutoOpenField checked={quiz.autoOpen ?? false} onChange={on => setQuiz((q: any) => ({ ...q, autoOpen: on, active: on ? false : q.active }))} quizDate={quiz.quizDate} startTime={quiz.startTime} />
+                  </div>
+                  <div style={{ paddingBottom: 24 }}>
+                    <AutoCloseField
+                      checked={quiz.autoClose ?? false}
+                      onChange={on => set('autoClose', on)}
+                      fraction={quiz.autoCloseFraction ?? 'HALF'}
+                      onFractionChange={f => set('autoCloseFraction', f)}
+                      quizType={quiz.quizType}
+                      quizTime={quiz.quizTime}
+                      publishedAt={quiz.publishedAt}
+                      quizDate={quiz.quizDate}
+                      startTime={quiz.startTime}
+                    />
+                  </div>
               </div>
             </div>
 
@@ -327,15 +345,34 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                   <div className="aq-section-icon amber"><Zap size={16} /></div>
                   <h6 className="aq-sidebar-title">Deployment</h6>
                 </div>
-                <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={() => set('active', !quiz.active)}>
-                  <div className="aq-deploy-icon">
-                    {quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}
+                {quiz.autoOpen && !quiz.active ? (
+                  // Still waiting on its scheduled time — nothing to publish yet, so no manual toggle.
+                  <div className="aq-deploy-toggle scheduled">
+                    <div className="aq-deploy-icon"><Clock size={20} /></div>
+                    <div>
+                      <p className="aq-deploy-status">SCHEDULED</p>
+                      <p className="aq-deploy-hint">
+                        {quiz.quizDate && quiz.startTime ? `Auto-publishes ${quiz.quizDate} at ${quiz.startTime}` : 'Set a date & time to auto-publish'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
-                    <p className="aq-deploy-hint">{quiz.active ? 'Visible to students' : 'Private – not published'}</p>
+                ) : (
+                  // Already live (whether published manually or by the schedule) — same toggle either way,
+                  // so a lecturer can still take it back to draft if needed.
+                  <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={() => set('active', !quiz.active)}>
+                    <div className="aq-deploy-icon">
+                      {quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}
+                    </div>
+                    <div>
+                      <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
+                      <p className="aq-deploy-hint">
+                        {quiz.active
+                          ? (quiz.publishedAt ? `Published ${new Date(quiz.publishedAt).toLocaleString()}` : 'Visible to students')
+                          : 'Private – not published'}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Integrity Controls */}
@@ -602,8 +639,10 @@ export default function ViewQuizzes() {
         /* ── Deployment toggle ── */
         .aq-deploy-toggle { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 12px; border: 2px dashed #e2e8f0; cursor: pointer; transition: .3s; }
         .aq-deploy-toggle.live { border-style: solid; border-color: #10b981; background: #f0fdf4; }
+        .aq-deploy-toggle.scheduled { border-style: solid; border-color: #f59e0b; background: #fffbeb; cursor: default; }
         .aq-deploy-icon { width: 44px; height: 44px; border-radius: 12px; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; transition: .3s; flex-shrink: 0; }
         .aq-deploy-toggle.live .aq-deploy-icon { background: #10b981; color: #fff; }
+        .aq-deploy-toggle.scheduled .aq-deploy-icon { background: #f59e0b; color: #fff; }
         .aq-deploy-status { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0 0 2px; }
         .aq-deploy-hint   { font-size: 11px; color: #94a3b8; margin: 0; font-weight: 500; }
 

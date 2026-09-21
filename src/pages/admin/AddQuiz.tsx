@@ -6,6 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
 import { showQuizLinkDialog } from '../../utils/quizLink';
 import AttemptsField from '../../components/ui/AttemptsField';
+import AutoOpenField from '../../components/ui/AutoOpenField';
+import AutoCloseField from '../../components/ui/AutoCloseField';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock, Layers,
@@ -28,7 +30,10 @@ const defaultQuiz = () => ({
   delayMultiplier: 1.5, enableFullscreenLock: true, enableWatermark: true,
   enableScreenshotBlocking: true, enableDevToolsBlocking: true, llmProvider: 'GPT',
   programIds: [] as number[],
-  maxAttempts: 1
+  maxAttempts: 1,
+  autoOpen: false,
+  autoClose: false,
+  autoCloseFraction: 'HALF' as 'HALF' | 'QUARTER'
 });
 
 export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
@@ -90,6 +95,11 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
   const backPath = lectMode ? '/lect/quizes' : '/admin/quizzes';
 
   const set = (k: string, v: any) => setQuiz(q => ({ ...q, [k]: v }));
+
+  const toggleAutoOpen = (on: boolean) =>
+    // Turning it on hands "go live" over to the schedule, so a manually-LIVE quiz doesn't fight
+    // with it; turning it off is left as a plain flag flip — the lecturer picks LIVE/DRAFT again.
+    setQuiz(q => ({ ...q, autoOpen: on, active: on ? false : q.active }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -313,6 +323,21 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
               <div className="aq-grid-3">
                 <AttemptsField value={quiz.maxAttempts} onChange={n => set('maxAttempts', n)} />
               </div>
+              <div style={{ padding: '0 24px 24px' }}>
+                <AutoOpenField checked={quiz.autoOpen} onChange={toggleAutoOpen} quizDate={quiz.quizDate} startTime={quiz.startTime} />
+              </div>
+              <div style={{ padding: '0 24px 24px' }}>
+                <AutoCloseField
+                  checked={quiz.autoClose}
+                  onChange={on => set('autoClose', on)}
+                  fraction={quiz.autoCloseFraction}
+                  onFractionChange={f => set('autoCloseFraction', f)}
+                  quizType={quiz.quizType}
+                  quizTime={quiz.quizTime}
+                  quizDate={quiz.quizDate}
+                  startTime={quiz.startTime}
+                />
+              </div>
             </div>
 
             {/* Footer Actions — desktop only; mobile uses sticky bar below */}
@@ -334,15 +359,29 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
               <div className="aq-section-icon amber"><Zap size={16} /></div>
               <h6 className="aq-sidebar-title">Deployment</h6>
             </div>
-            <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={() => set('active', !quiz.active)}>
-              <div className="aq-deploy-icon">
-                {quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}
+            {quiz.autoOpen && !quiz.active ? (
+              <div className="aq-deploy-toggle scheduled">
+                <div className="aq-deploy-icon"><Clock size={20} /></div>
+                <div>
+                  <p className="aq-deploy-status">SCHEDULED</p>
+                  <p className="aq-deploy-hint">
+                    {quiz.quizDate && quiz.startTime
+                      ? `Auto-publishes ${quiz.quizDate} at ${quiz.startTime}`
+                      : 'Set a date & time below to auto-publish'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
-                <p className="aq-deploy-hint">{quiz.active ? 'Visible to students' : 'Private – not published'}</p>
+            ) : (
+              <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={() => set('active', !quiz.active)}>
+                <div className="aq-deploy-icon">
+                  {quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}
+                </div>
+                <div>
+                  <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
+                  <p className="aq-deploy-hint">{quiz.active ? 'Visible to students' : 'Private – not published'}</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Integrity Controls */}
@@ -448,8 +487,10 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
         /* Deployment toggle */
         .aq-deploy-toggle { display:flex; align-items:center; gap:14px; padding:16px; border-radius:12px; border:2px dashed #e2e8f0; cursor:pointer; transition:.3s; }
         .aq-deploy-toggle.live { border-style:solid; border-color:#10b981; background:#f0fdf4; }
+        .aq-deploy-toggle.scheduled { border-style:solid; border-color:#f59e0b; background:#fffbeb; cursor:default; }
         .aq-deploy-icon { width:44px; height:44px; border-radius:12px; background:#f1f5f9; color:#94a3b8; display:flex; align-items:center; justify-content:center; transition:.3s; flex-shrink:0; }
         .aq-deploy-toggle.live .aq-deploy-icon { background:#10b981; color:#fff; }
+        .aq-deploy-toggle.scheduled .aq-deploy-icon { background:#f59e0b; color:#fff; }
         .aq-deploy-status { font-size:14px; font-weight:800; color:#1e293b; margin:0 0 2px 0; }
         .aq-deploy-hint { font-size:11px; color:#94a3b8; margin:0; font-weight:500; }
 
