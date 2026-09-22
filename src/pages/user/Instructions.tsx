@@ -77,14 +77,38 @@ export default function Instructions() {
     setQuizOpen(live || stored);
 
     const ch = new BroadcastChannel(EXAM_CHANNEL);
+    let pingTimer: ReturnType<typeof setTimeout> | null = null;
+
     ch.onmessage = (e) => {
       if (e.data?.type === 'EXAM_ENDED') {
+        // Quiz window closed or submitted — clear everything.
+        if (pingTimer) clearTimeout(pingTimer);
         sessionStorage.removeItem(EXAM_SESSION_KEY);
         _activeQuizWindow = null;
         setQuizOpen(false);
       }
+      if (e.data?.type === 'PONG') {
+        // Quiz window is alive — cancel the "assume dead" timeout.
+        if (pingTimer) clearTimeout(pingTimer);
+      }
     };
-    return () => ch.close();
+
+    // When we only have a sessionStorage flag (page was refreshed, or stale
+    // mobile session), ping the quiz window to verify it is still running.
+    // If no PONG arrives within 3 s we assume the window is gone and clear.
+    if (!live && stored) {
+      ch.postMessage({ type: 'PING' });
+      pingTimer = setTimeout(() => {
+        sessionStorage.removeItem(EXAM_SESSION_KEY);
+        _activeQuizWindow = null;
+        setQuizOpen(false);
+      }, 3000);
+    }
+
+    return () => {
+      if (pingTimer) clearTimeout(pingTimer);
+      ch.close();
+    };
   }, []);   // once per mount
 
   // Poll every second while the exam window is open.
@@ -433,14 +457,17 @@ export default function Instructions() {
                     <div
                       onClick={() => {
                         if (_activeQuizWindow && !_activeQuizWindow.closed) {
-                          // Window ref is alive (same session, no refresh) — focus directly.
+                          // Live ref — focus directly.
                           _activeQuizWindow.focus();
                         } else {
-                          // After a page refresh the Window ref is gone. Use the
-                          // BroadcastChannel to ask the quiz window to focus itself.
+                          // Post-refresh: Window ref is gone.
+                          // FOCUS_EXAM asks the quiz window to self-focus.
+                          // PING verifies it is still alive; if PONG arrives the
+                          // mount-effect channel cancels any pending dead-timer.
                           try {
                             const ch = new BroadcastChannel(EXAM_CHANNEL);
                             ch.postMessage({ type: 'FOCUS_EXAM' });
+                            ch.postMessage({ type: 'PING' });
                             ch.close();
                           } catch (_) {}
                         }

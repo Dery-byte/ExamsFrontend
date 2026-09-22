@@ -188,6 +188,11 @@ export default function StartQuiz() {
       if (e.data?.type === 'FOCUS_EXAM') {
         window.focus();
       }
+      // Instructions page pings to verify this window is still alive.
+      // Reply with PONG so it cancels its "assume dead" timeout.
+      if (e.data?.type === 'PING') {
+        ch.postMessage({ type: 'PONG' });
+      }
     };
 
     const signal = () => {
