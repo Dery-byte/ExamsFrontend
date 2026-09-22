@@ -16,7 +16,8 @@ export default function QuizLink() {
   const target = quizInstructionsPath(qid);
 
   if (!isLoggedIn) {
-    return <Navigate to="/login" state={{ from: { pathname: target }, quizLink: true }} replace />;
+    // qid rides along so the login page can show which program(s) this quiz is for.
+    return <Navigate to="/login" state={{ from: { pathname: target }, quizLink: true, qid }} replace />;
   }
   if (user?.role === 'NORMAL') return <Navigate to={target} replace />;
 

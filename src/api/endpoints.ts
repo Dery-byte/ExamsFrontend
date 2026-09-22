@@ -96,6 +96,8 @@ export const getMyCoursesWithQuizzes = () =>
 export const loadQuizzes = () => client.get('/getQuizzes').then(r => r.data);
 export const loadQuizzesForUser = () => client.get('/user/getQuiz').then(r => r.data);
 export const getQuiz = (id: number | string) => client.get(`/singleQuiz/${id}`).then(r => r.data);
+/** Title + allowed program names only — safe to call before login, for the shared quiz link's sign-in page. */
+export const getQuizPublicSummary = (id: number | string) => client.get(`/quiz/${id}/public-summary`).then(r => r.data);
 export const addQuiz = (data: object) => client.post('/addQuiz', data).then(r => r.data);
 export const addLecturerQuiz = (data: object) => client.post('/lecturer/addQuiz', data).then(r => r.data);
 export const addUserQuiz = (data: object) => client.post('/user/addQuiz', data).then(r => r.data);

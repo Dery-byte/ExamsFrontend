@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { forgotPassword } from '../../api/endpoints';
+import { forgotPassword, getQuizPublicSummary } from '../../api/endpoints';
 import {
   User,
   Lock,
@@ -26,6 +26,10 @@ const PHRASES = [
 
 type RecoveryChannel = 'phone' | 'email';
 
+/** 'A' | 'A and B' | 'A, B and C' */
+const joinWithAnd = (items: string[]) =>
+  items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+
 export default function Login() {
   const { login } = useAuth();
   // Set by ProtectedRoute / the shared quiz link: where to go once signed in.
@@ -46,6 +50,15 @@ export default function Login() {
   const [apiErr, setApiErr] = useState('');
   const [success, setSuccess] = useState(false);
   const [successIdentifier, setSuccessIdentifier] = useState('');
+  const [quizSummary, setQuizSummary] = useState<{ title?: string; programNames?: string[] } | null>(null);
+
+  useEffect(() => {
+    if (!fromState.quizLink || !fromState.qid) return;
+    let cancelled = false;
+    getQuizPublicSummary(fromState.qid).then(data => { if (!cancelled) setQuizSummary(data); }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromState.qid]);
 
   // Typing effect
   const phIdx = useRef(0);
@@ -286,7 +299,13 @@ export default function Login() {
 
             {fromState.quizLink && (
               <div style={{ padding: '12px 16px', background: 'var(--primary-bg, #eef2ff)', color: 'var(--primary)', borderRadius: '14px', marginBottom: 24, fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
-                Sign in to continue to your quiz.
+                <div>Sign in to continue to your quiz{quizSummary?.title ? ` — ${quizSummary.title}` : ''}.</div>
+                {!!quizSummary?.programNames?.length && (
+                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 500, opacity: 0.9 }}>
+                    <GraduationCap size={13} style={{ flexShrink: 0 }} />
+                    <span>This quiz is for {joinWithAnd(quizSummary.programNames)} students.</span>
+                  </div>
+                )}
               </div>
             )}
 
