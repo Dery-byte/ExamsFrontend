@@ -188,6 +188,7 @@ export default function LecturerLayout() {
         /* Main Wrapper */
         .main-wrapper {
           flex: 1;
+          min-width: 0;
           margin-left: 220px;
           display: flex;
           flex-direction: column;
@@ -337,6 +338,8 @@ export default function LecturerLayout() {
         .page-content {
           padding: 24px;
           flex: 1;
+          min-width: 0;
+          overflow-x: hidden;
         }
 
         .sidebar-overlay {
