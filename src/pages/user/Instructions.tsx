@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus } from '../../api/endpoints';
+import { decodeParam, startQuizPath } from '../../utils/quizLink';
 import Swal from 'sweetalert2';
 import PageHeader from '../../components/PageHeader';
 import { 
@@ -29,6 +30,10 @@ export default function Instructions() {
   const { qid }    = useParams();
   const navigate   = useNavigate();
   const { user }   = useAuth();
+
+  // Decode the obfuscated URL token → real numeric quiz ID
+  const realId = qid ? decodeParam(qid) : null;
+
   const [quiz, setQuiz]                           = useState<any>(null);
   const [isLoading, setIsLoading]                 = useState(true);
   // The caller's own attempt position (limit / used / remaining) — replaces downloading every report.
@@ -38,11 +43,11 @@ export default function Instructions() {
   const [numberOfQuestionsToAnswer, setNqta]      = useState(0);
 
   useEffect(() => {
-    if (!qid) return;
+    if (!realId) return;
     let isLoadingQuiz = true, isLoadingQ = true, isLoadingRep = true;
     const check = () => { if (!isLoadingQuiz && !isLoadingQ && !isLoadingRep) setIsLoading(false); };
 
-    getQuiz(qid).then((data: any) => {
+    getQuiz(realId).then((data: any) => {
       setQuiz(data);
       const o = (data.quizTime ?? 0) * 1;
       setTimerAll(o * 60);
@@ -55,7 +60,7 @@ export default function Instructions() {
           : 'This quiz could not be found. The link may be wrong or the quiz may have been removed.'));
     }).finally(() => { isLoadingQuiz = false; check(); });
 
-    getNumberOfTheoryToAnswer(qid).then((data: any) => {
+    getNumberOfTheoryToAnswer(realId).then((data: any) => {
       const arr = Array.isArray(data) ? data : [];
       const nqta = arr[0]?.totalQuestToAnswer ?? 0;
       const tt   = arr[0]?.timeAllowed ?? 0;
@@ -63,9 +68,9 @@ export default function Instructions() {
       setTimerAll(prev => prev + (tt * 60));
     }).catch(() => {}).finally(() => { isLoadingQ = false; check(); });
 
-    getMyAttemptStatus(qid).then((s: any) => setAttempts(s))
+    getMyAttemptStatus(realId).then((s: any) => setAttempts(s))
       .catch(() => {}).finally(() => { isLoadingRep = false; check(); });
-  }, [qid, user?.id]);
+  }, [realId, user?.id]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -95,26 +100,13 @@ export default function Instructions() {
     return hr > 0 ? `${hr} hr ${mm} min` : `${mm} minutes`;
   };
 
-  const openQuizInNewWindow = () => {
-    const fullUrl = `${window.location.origin}/start/${qid}`;
-    const features = `width=${screen.width},height=${screen.height},top=0,left=0,fullscreen=yes,toolbar=no,location=no,menubar=no,scrollbars=yes,resizable=yes`;
-    const quizWindow = window.open(fullUrl, 'QuizWindow', features);
-
-    if (!quizWindow || quizWindow.closed) {
-      Swal.fire({
-        title: 'Access Restricted',
-        text: 'The portal requires pop-ups to be enabled for the secure examination environment.',
-        icon: 'warning',
-        confirmButtonColor: 'var(--primary)',
-        customClass: { popup: 'swal2-premium-popup' }
-      });
-      return;
-    }
-    quizWindow.focus();
-  };
-
   const startQuiz = () => {
     if (!quiz) return;
+
+    const fullUrl  = `${window.location.origin}${startQuizPath(realId!)}`;
+    const features = `width=${screen.width},height=${screen.height},top=0,left=0,fullscreen=yes,toolbar=no,location=no,menubar=no,scrollbars=yes,resizable=yes`;
+
+    // Step 1 — password prompt. No window opened yet.
     Swal.fire({
       title: 'Security Verification',
       text: 'Please enter the access code provided by your instructor.',
@@ -133,7 +125,33 @@ export default function Instructions() {
         return value;
       }
     }).then(result => {
-      if (result.isConfirmed && result.value === quiz.quizpassword) {
+      if (!result.isConfirmed) return;
+
+      if (result.value !== quiz.quizpassword) {
+        Swal.fire({
+          title: 'Authorization Failed',
+          text: 'The code provided does not match our records.',
+          icon: 'error',
+          confirmButtonColor: 'var(--danger)',
+          customClass: { popup: 'swal2-premium-popup' }
+        });
+        return;
+      }
+
+      // Step 2 — correct password.
+      //
+      // Chrome / Firefox / Edge carry the user-activation token through async
+      // .then() chains, so window.open() works here directly — no extra click.
+      //
+      // Safari (WebKit) does NOT carry activation across async boundaries and
+      // returns null. We detect that and show a minimal one-tap fallback whose
+      // preConfirm calls window.open() synchronously inside the button-click
+      // event, which Safari permits. ✅
+      const quizWindow = window.open(fullUrl, 'QuizWindow', features);
+
+      if (quizWindow && !quizWindow.closed) {
+        // ── Opened immediately (Chrome, Firefox, Edge, etc.) ──────────────────
+        quizWindow.focus();
         Swal.fire({
           title: 'Authorization Successful',
           text: 'The examination session is now being initialized.',
@@ -141,14 +159,38 @@ export default function Instructions() {
           timer: 1500,
           showConfirmButton: false,
           customClass: { popup: 'swal2-premium-popup' }
-        }).then(() => openQuizInNewWindow());
-      } else if (result.isConfirmed) {
-        Swal.fire({ 
-          title: 'Authorization Failed', 
-          text: 'The code provided does not match our records.',
-          icon: 'error', 
-          confirmButtonColor: 'var(--danger)',
-          customClass: { popup: 'swal2-premium-popup' }
+        });
+      } else {
+        // ── Blocked (Safari / WebKit) — need one explicit user tap ────────────
+        Swal.fire({
+          title: 'One more step',
+          html: `
+            <p style="color:#6c757d;font-size:14px;margin:0 0 8px">
+              Your browser requires explicit permission to open the exam window.
+            </p>
+            <p style="color:#adb5bd;font-size:12px;margin:0">
+              Tap <strong>Continue to Exam</strong> and then tap
+              <em>Allow</em> if Safari asks for confirmation.
+            </p>`,
+          icon: 'info',
+          confirmButtonText: 'Continue to Exam',
+          confirmButtonColor: 'var(--primary)',
+          showCancelButton: false,
+          allowOutsideClick: false,
+          customClass: { popup: 'swal2-premium-popup' },
+          // preConfirm fires synchronously on the button-click DOM event —
+          // Safari sees this as a fresh user gesture and allows window.open().
+          preConfirm: () => {
+            const w = window.open(fullUrl, 'QuizWindow', features);
+            if (!w || w.closed) {
+              Swal.showValidationMessage(
+                'Pop-ups are still blocked. In Safari go to Settings → Safari → Block Pop-ups and turn it off, then try again.'
+              );
+              return false;
+            }
+            w.focus();
+            return true;
+          }
         });
       }
     });

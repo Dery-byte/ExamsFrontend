@@ -1,23 +1,29 @@
 import { Navigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { quizInstructionsPath } from '../../utils/quizLink';
+import { quizInstructionsPath, decodeQuizId } from '../../utils/quizLink';
 
 /**
  * Entry point for shared quiz links (/quiz/:qid).
  *  - signed out      → login, then straight to the quiz's start (Instructions) page
  *  - signed in student → straight to the start page
  *  - signed in as anyone else → explain that the link is for students
+ *
+ * :qid is an obfuscated base64url token (never a raw integer) so the DB ID
+ * is not visible in the URL.
  */
 export default function QuizLink() {
   const { qid } = useParams();
   const { isLoggedIn, user, logout } = useAuth();
 
-  if (!qid || !/^\d+$/.test(qid)) return <Navigate to="/" replace />;
-  const target = quizInstructionsPath(qid);
+  // Decode the obfuscated token → real numeric ID
+  const realId = qid ? decodeQuizId(qid) : null;
+  if (!realId) return <Navigate to="/" replace />;
+
+  const target = quizInstructionsPath(realId);
 
   if (!isLoggedIn) {
-    // qid rides along so the login page can show which program(s) this quiz is for.
-    return <Navigate to="/login" state={{ from: { pathname: target }, quizLink: true, qid }} replace />;
+    // realId rides along so the login page can show which program(s) this quiz is for.
+    return <Navigate to="/login" state={{ from: { pathname: target }, quizLink: true, qid: realId }} replace />;
   }
   if (user?.role === 'NORMAL') return <Navigate to={target} replace />;
 
@@ -33,3 +39,4 @@ export default function QuizLink() {
     </div>
   );
 }
+

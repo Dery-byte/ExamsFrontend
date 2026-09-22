@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRegCourses, getActiveQuizzesOfCategory, getReport } from '../../api/endpoints';
+import { quizInstructionsPath } from '../../utils/quizLink';
 import PageHeader from '../../components/PageHeader';
 import { Search, Loader2, BookOpen, AlertCircle, HelpCircle, Award, X, Clock, PlayCircle, FileText, ChevronRight, Activity, Calendar, Filter, PieChart, BarChart2, CheckCircle, TrendingUp } from 'lucide-react';
 
@@ -216,7 +217,7 @@ export default function AvailableQuizzes() {
                   History
                 </button>
                 <Link 
-                  to={`/user-dashboard/instructions/${q.qId}`} 
+                  to={quizInstructionsPath(q.qId, { courseTitle: q.category?.title, title: q.title })} 
                   className="btn-lexa btn-lexa-primary"
                   style={{ flex: 1.5, padding: '10px', fontSize: 13, textDecoration: 'none', borderRadius: 6 }}
                 >

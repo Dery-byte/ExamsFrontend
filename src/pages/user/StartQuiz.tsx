@@ -8,6 +8,7 @@ import {
   deleteQuizTimer, clearQuizAnswers, getViolationDelay, getViolationCount,
   beginQuizAttempt, finishQuizAttempt
 } from '../../api/endpoints';
+import { decodeParam } from '../../utils/quizLink';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuizProtection } from '../../hooks/useQuizProtection';
 import Swal from 'sweetalert2';
@@ -97,6 +98,9 @@ export default function StartQuiz() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Decode the obfuscated URL token → real numeric quiz ID string
+  const realId = qid ? (decodeParam(qid) ?? '') : '';
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
@@ -137,7 +141,7 @@ export default function StartQuiz() {
   const mainRef = useRef<HTMLElement>(null);
 
   useQuizProtection(quizConfig ? {
-    quizId: qid!,
+    quizId: realId,
     violationAction: quizConfig.violationAction ?? 'NONE',
     maxViolations: quizConfig.maxViolations ?? 3,
     delaySeconds: quizConfig.delaySeconds ?? 30,
@@ -152,7 +156,7 @@ export default function StartQuiz() {
     _pendingViolationDelay: quizConfig._pendingViolationDelay ?? 0,
     _savedViolationCount: quizConfig._savedViolationCount ?? 0,
   } : {
-    quizId: qid ?? '', violationAction: 'NONE' as const,
+    quizId: realId, violationAction: 'NONE' as const,
     maxViolations: 0, delaySeconds: 0, delayMultiplier: 3,
     autoSubmitCountdownSeconds: 5,
     enableFullscreenLock: false, enableWatermark: false,
@@ -170,14 +174,14 @@ export default function StartQuiz() {
   }, []);
 
   useEffect(() => {
-    if (!qid) return;
+    if (!realId) return;
     loadAll();
     const onBlur = () => {
       if (isTimerLoaded.current && timerVal.current > 0) {
-        saveQuizTimer(qid!, timerVal.current).catch(() => { });
+        saveQuizTimer(realId, timerVal.current).catch(() => { });
         // Read directly from ref — always fresh regardless of closure age
         const answers = sectionBAllRef.current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
-        if (answers.length > 0) saveTheoryAnswers(qid!, answers).catch(() => { });
+        if (answers.length > 0) saveTheoryAnswers(realId, answers).catch(() => { });
       }
     };
     window.addEventListener('blur', onBlur);
@@ -187,7 +191,7 @@ export default function StartQuiz() {
       if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
       window.removeEventListener('blur', onBlur);
     };
-  }, [qid]);
+  }, [realId]);
 
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -198,7 +202,7 @@ export default function StartQuiz() {
       // Start a new attempt, or resume the one in progress. The server refuses (409) when the student
       // has used every attempt, so a direct /start link can't bypass the limit.
       try {
-        await beginQuizAttempt(qid!);
+        await beginQuizAttempt(realId);
       } catch (e: any) {
         await Swal.fire({
           title: 'Cannot start this quiz',
@@ -213,15 +217,15 @@ export default function StartQuiz() {
       }
 
       const [quizData, rawQs, theoryRaw, nqArr, savedTime, savedAns, savedTh, savedDelay, savedViolationCount] = await Promise.all([
-        getQuiz(qid!),
-        getQuestionsForStudent(qid!).catch(() => []),
-        getTheoryQuestions(qid!).catch(() => []),
-        getNumberOfTheoryToAnswer(qid!).catch(() => []),
-        getQuizTimer(qid!).catch(() => null),
-        getQuizAnswersByQuiz(qid!).catch(() => ({})),
-        loadTheoryAnswers(qid!).catch(() => []),
-        getViolationDelay(qid!).catch(() => null),
-        getViolationCount(qid!).catch(() => null),
+        getQuiz(realId),
+        getQuestionsForStudent(realId).catch(() => []),
+        getTheoryQuestions(realId).catch(() => []),
+        getNumberOfTheoryToAnswer(realId).catch(() => []),
+        getQuizTimer(realId).catch(() => null),
+        getQuizAnswersByQuiz(realId).catch(() => ({})),
+        loadTheoryAnswers(realId).catch(() => []),
+        getViolationDelay(realId).catch(() => null),
+        getViolationCount(realId).catch(() => null),
       ]);
       setQuiz(quizData);
       setQuizConfig({
@@ -303,7 +307,7 @@ export default function StartQuiz() {
       autoSaveRef.current = setInterval(() => {
         if (isTimerLoaded.current) {
           saveTheory().catch(() => { });
-          saveQuizTimer(qid!, timerVal.current).catch(() => { });
+          saveQuizTimer(realId, timerVal.current).catch(() => { });
         }
       }, 60_000);
       isTimerLoaded.current = true;
@@ -336,8 +340,8 @@ export default function StartQuiz() {
     const current = sectionBAllRef.current;
     if (current.length === 0) return;
     const answers = current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
-    await saveTheoryAnswers(qid!, answers).catch(() => { });
-  }, [qid]); // no sectionBAll dep — ref is always current
+    await saveTheoryAnswers(realId, answers).catch(() => { });
+  }, [realId]); // no sectionBAll dep — ref is always current
 
   const updateTheoryAnswer = (quesNo: string, val: string) => {
     setSectionBAll(prev => {
@@ -349,7 +353,7 @@ export default function StartQuiz() {
     if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
     autoSaveDebounceRef.current = setTimeout(() => {
       const answers = sectionBAllRef.current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
-      if (answers.length > 0) saveTheoryAnswers(qid!, answers).catch(() => { });
+      if (answers.length > 0) saveTheoryAnswers(realId, answers).catch(() => { });
     }, 2000);
   };
 
@@ -365,17 +369,17 @@ export default function StartQuiz() {
     if (checked && !ans.includes(option)) ans.push(option);
     else if (!checked) { const i = ans.indexOf(option); if (i > -1) ans.splice(i, 1); }
     setQuestions(prev => prev.map(pq => pq.quesId === q.quesId ? { ...pq, givenAnswer: ans } : pq));
-    updateQuizAnswer({ questionId: q.quesId, option, checked, quizId: parseInt(qid!) }).catch(() => { });
+    updateQuizAnswer({ questionId: q.quesId, option, checked, quizId: parseInt(realId) }).catch(() => { });
   };
 
   const setTFAnswer = (q: any, val: string) => {
     const desel = (q.givenAnswer ?? [])[0] === val;
     setQuestions(prev => prev.map(pq => pq.quesId === q.quesId ? { ...pq, givenAnswer: desel ? [] : [val] } : pq));
-    updateQuizAnswer({ questionId: q.quesId, option: val, checked: !desel, quizId: parseInt(qid!) }).catch(() => { });
+    updateQuizAnswer({ questionId: q.quesId, option: val, checked: !desel, quizId: parseInt(realId) }).catch(() => { });
   };
 
   const setMatchAnswer = (q: any, pairIdx: number, answer: string | null) => {
-    updateQuizAnswer({ questionId: q.quesId, option: answer ?? '', checked: !!answer, quizId: parseInt(qid!), pairIndex: pairIdx }).catch(() => { });
+    updateQuizAnswer({ questionId: q.quesId, option: answer ?? '', checked: !!answer, quizId: parseInt(realId), pairIndex: pairIdx }).catch(() => { });
     setQuestions(prev => prev.map(pq => {
       if (pq.quesId !== q.quesId) return pq;
       const ma = [...(pq.matchingAnswers ?? new Array(pq.matchingPairs?.length ?? 0).fill(''))];
@@ -414,7 +418,7 @@ export default function StartQuiz() {
       // ── Section A: Objective ──────────────────────────────────────────────
       if ((quizType === 'OBJ' || quizType === 'BOTH') && questions.length > 0) {
         addLog(`Submitting ${questions.length} objective question(s)…`, 'info');
-        await evalQuiz(qid!, questions.map(q => ({
+        await evalQuiz(realId, questions.map(q => ({
           ...q,
           givenAnswer: q.questionType === 'MATCHING' 
             ? (q.matchingAnswers ?? []) 
@@ -448,7 +452,7 @@ export default function StartQuiz() {
           const theoryResult: any = await evalTheory({
             contents: [{
               parts: selQs.map(item => ({
-                text: `quizId ${qid}: tqid ${item.tqId || item.tqid || item.quesId}: Question Number ${item.quesNo}: ${item.question} Answer: ${item.givenAnswer || 'No answer provided'} Marks: ${item.marks || 10} Criteria: ${item.evaluationCriteria || item.criteria || 'Standard evaluation'}`,
+                text: `quizId ${realId}: tqid ${item.tqId || item.tqid || item.quesId}: Question Number ${item.quesNo}: ${item.question} Answer: ${item.givenAnswer || 'No answer provided'} Marks: ${item.marks || 10} Criteria: ${item.evaluationCriteria || item.criteria || 'Standard evaluation'}`,
               })),
             }],
           }).catch((e: any) => {
@@ -478,10 +482,10 @@ export default function StartQuiz() {
 
       // ── Cleanup ───────────────────────────────────────────────────────────
       addLog('Cleaning up session data…', 'info');
-      await finishQuizAttempt(qid!).catch(() => { });   // closes this attempt so a further one can be started
-      await deleteQuizTimer(qid!).catch(() => { });
-      clearQuizAnswers(qid!).catch(() => { });
-      clearTheoryAnswers(qid!).catch(() => { });
+      await finishQuizAttempt(realId).catch(() => { });   // closes this attempt so a further one can be started
+      await deleteQuizTimer(realId).catch(() => { });
+      clearQuizAnswers(realId).catch(() => { });
+      clearTheoryAnswers(realId).catch(() => { });
       addLog('Session finalised ✓', 'ok');
 
       // Brief pause so student can see final log
@@ -503,7 +507,7 @@ export default function StartQuiz() {
       setSubmitting(false);
       // We don't clear logs here so the user can see what failed
     }
-  }, [quizType, questions, sectionBAll, selectedPfx, qid, saveTheory]);
+  }, [quizType, questions, sectionBAll, selectedPfx, realId, saveTheory]);
   submitAllRef.current = submitAll;
 
   const currentQs = useMemo(() => sectionBAll.filter(q => {

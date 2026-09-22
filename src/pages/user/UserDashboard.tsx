@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRegCourses, getReportsByUser, getActiveQuizzes } from '../../api/endpoints';
+import { quizInstructionsPath } from '../../utils/quizLink';
 import {
   BookOpen,
   ClipboardCheck,
@@ -212,7 +213,7 @@ export default function UserDashboard() {
                   <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 600 }}>No sessions found</p>
                 </div>
               ) : activeQuizzes.map((q, idx) => (
-                <div key={idx} className="dashboard-item-hover" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: idx < activeQuizzes.length - 1 ? '1px solid #f1f5f7' : 'none', cursor: 'pointer' }} onClick={() => navigate(`/instructions/${q.qId}`)}>
+                <div key={idx} className="dashboard-item-hover" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: idx < activeQuizzes.length - 1 ? '1px solid #f1f5f7' : 'none', cursor: 'pointer' }} onClick={() => navigate(quizInstructionsPath(q.qId, { courseTitle: q.category?.title, title: q.title }))}>
                   <div style={{
                     width: 36, height: 36, borderRadius: '10px', background: 'rgba(40, 187, 227, 0.08)',
                     color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center'
