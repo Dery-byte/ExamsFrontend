@@ -173,6 +173,33 @@ export default function StartQuiz() {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
+  // Broadcast EXAM_ENDED when the exam window is closed by the student.
+  // The Instructions page listens on this channel so it can clear the
+  // sessionStorage flag and re-enable the start button — even when it was
+  // refreshed and lost the Window reference.
+  // Note: on a normal submit, __allow_unload is set to true first and the
+  // submission code broadcasts separately, so this listener won't double-fire.
+  useEffect(() => {
+    const ch = new BroadcastChannel('exam-session');
+
+    // Instructions page asks us to bring the exam window to the front
+    // (happens after the parent page was refreshed and lost our Window ref).
+    ch.onmessage = (e) => {
+      if (e.data?.type === 'FOCUS_EXAM') {
+        window.focus();
+      }
+    };
+
+    const signal = () => {
+      ch.postMessage({ type: 'EXAM_ENDED' });
+    };
+    window.addEventListener('beforeunload', signal);
+    return () => {
+      window.removeEventListener('beforeunload', signal);
+      ch.close();
+    };
+  }, []);
+
   useEffect(() => {
     if (!realId) return;
     loadAll();
@@ -493,6 +520,15 @@ export default function StartQuiz() {
 
       // Bypass the beforeunload protection so we can leave smoothly
       (window as any).__allow_unload = true;
+
+      // Signal the Instructions page to clear its sessionStorage exam flag.
+      // This works even when the Instructions page was refreshed and lost
+      // the Window reference — BroadcastChannel reaches it across the refresh.
+      try {
+        const ch = new BroadcastChannel('exam-session');
+        ch.postMessage({ type: 'EXAM_ENDED' });
+        ch.close();
+      } catch (_) { /* graceful degradation — postMessage fallback still fires */ }
 
       // If opened in a new window, notify the main window to show confirmation and close this popup
       if (window.opener && !window.opener.closed) {

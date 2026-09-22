@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus } from '../../api/endpoints';
@@ -26,6 +26,16 @@ import {
   PlayCircle
 } from 'lucide-react';
 
+// ─── Module-level quiz window store ──────────────────────────────────────────
+// _activeQuizWindow  — survives SPA navigation (module scope).
+// sessionStorage key — survives page refresh (cleared when exam ends/submits).
+// BroadcastChannel   — quiz window signals EXAM_ENDED so the instructions page
+//                      can clear the sessionStorage flag even after a refresh.
+// ─────────────────────────────────────────────────────────────────────────────
+const EXAM_SESSION_KEY = 'examInProgress';
+const EXAM_CHANNEL     = 'exam-session';
+let _activeQuizWindow: Window | null = null;
+
 export default function Instructions() {
   const { qid }    = useParams();
   const navigate   = useNavigate();
@@ -42,17 +52,49 @@ export default function Instructions() {
   const [timerAll, setTimerAll]                   = useState(0);
   const [numberOfQuestionsToAnswer, setNqta]      = useState(0);
 
-  // Tracks the quiz window so we can prevent duplicates and re-focus it.
-  const quizWindowRef = useRef<Window | null>(null);
-  const [quizOpen, setQuizOpen]                   = useState(false);
+  // quizOpen drives the button ↔ in-progress banner swap.
+  // Two persistence layers:
+  //  • Module variable  — survives SPA navigation (cleared on module reload)
+  //  • sessionStorage   — survives page refresh (cleared when exam ends)
+  const [quizOpen, setQuizOpen] = useState(
+    () =>
+      (!!_activeQuizWindow && !_activeQuizWindow.closed) ||
+      sessionStorage.getItem(EXAM_SESSION_KEY) === '1'
+  );
 
-  // Poll every second: if the student closed the quiz window manually,
-  // re-enable the start button so they can re-open.
+  // On every mount:
+  //  1. Wipe module var if the window closed while navigating.
+  //  2. Re-sync quizOpen from both the module var and sessionStorage.
+  //  3. Open a BroadcastChannel: when the quiz window broadcasts EXAM_ENDED
+  //     (on submit or close), clear the sessionStorage flag and hide the banner
+  //     — this works even if this page was refreshed and lost the Window ref.
+  useEffect(() => {
+    if (_activeQuizWindow?.closed) {
+      _activeQuizWindow = null;
+    }
+    const live   = !!_activeQuizWindow && !_activeQuizWindow.closed;
+    const stored = sessionStorage.getItem(EXAM_SESSION_KEY) === '1';
+    setQuizOpen(live || stored);
+
+    const ch = new BroadcastChannel(EXAM_CHANNEL);
+    ch.onmessage = (e) => {
+      if (e.data?.type === 'EXAM_ENDED') {
+        sessionStorage.removeItem(EXAM_SESSION_KEY);
+        _activeQuizWindow = null;
+        setQuizOpen(false);
+      }
+    };
+    return () => ch.close();
+  }, []);   // once per mount
+
+  // Poll every second while the exam window is open.
+  // Detects when the student manually closes the window.
   useEffect(() => {
     if (!quizOpen) return;
     const id = setInterval(() => {
-      if (quizWindowRef.current?.closed) {
-        quizWindowRef.current = null;
+      if (_activeQuizWindow?.closed) {
+        _activeQuizWindow = null;
+        sessionStorage.removeItem(EXAM_SESSION_KEY);
         setQuizOpen(false);
       }
     }, 1000);
@@ -95,6 +137,9 @@ export default function Instructions() {
       if (event.origin !== window.location.origin) return;
       
       if (event.data === 'QUIZ_SUBMITTED') {
+        // Clear the persistent exam flag so the banner doesn't reappear after reload.
+        sessionStorage.removeItem(EXAM_SESSION_KEY);
+        _activeQuizWindow = null;
         Swal.fire({
           title: 'Submitted!',
           text: 'Your assessment has been successfully submitted for grading.',
@@ -120,9 +165,11 @@ export default function Instructions() {
   const startQuiz = () => {
     if (!quiz) return;
 
-    // If the quiz window is already open, just bring it to the front.
-    if (quizWindowRef.current && !quizWindowRef.current.closed) {
-      quizWindowRef.current.focus();
+    // If THIS quiz's window is already open, just bring it to the front.
+    // If any exam window is already open, just bring it to the front.
+    // This enforces single-quiz-at-a-time across ALL quiz pages.
+    if (_activeQuizWindow && !_activeQuizWindow.closed) {
+      _activeQuizWindow.focus();
       return;
     }
 
@@ -131,7 +178,8 @@ export default function Instructions() {
 
     // Helper — called as soon as we have a confirmed open window handle.
     const registerWindow = (w: Window) => {
-      quizWindowRef.current = w;
+      _activeQuizWindow = w;                          // survives SPA navigation
+      sessionStorage.setItem(EXAM_SESSION_KEY, '1'); // survives page refresh
       setQuizOpen(true);
       w.focus();
     };
@@ -184,7 +232,7 @@ export default function Instructions() {
         registerWindow(quizWindow);
         Swal.fire({
           title: 'Authorization Successful',
-          text: 'The quiz session is now being initialized.',
+          text: 'The examination session is now being initialized.',
           icon: 'success',
           timer: 1500,
           showConfirmButton: false,
@@ -381,9 +429,22 @@ export default function Instructions() {
                   )}
 
                   {quizOpen ? (
-                    /* ── Quiz window is open — prevent a second one ── */
+                    /* ── Any exam window is open — focus it; no second window allowed ── */
                     <div
-                      onClick={() => { quizWindowRef.current?.focus(); }}
+                      onClick={() => {
+                        if (_activeQuizWindow && !_activeQuizWindow.closed) {
+                          // Window ref is alive (same session, no refresh) — focus directly.
+                          _activeQuizWindow.focus();
+                        } else {
+                          // After a page refresh the Window ref is gone. Use the
+                          // BroadcastChannel to ask the quiz window to focus itself.
+                          try {
+                            const ch = new BroadcastChannel(EXAM_CHANNEL);
+                            ch.postMessage({ type: 'FOCUS_EXAM' });
+                            ch.close();
+                          } catch (_) {}
+                        }
+                      }}
                       style={{
                         width: '100%', padding: '14px', borderRadius: 4, cursor: 'pointer',
                         background: 'rgba(40, 187, 100, 0.12)', border: '1.5px solid rgba(40, 187, 100, 0.35)',
@@ -399,9 +460,10 @@ export default function Instructions() {
                         boxShadow: '0 0 0 0 rgba(40,187,100,0.5)',
                         animation: 'examPulse 1.4s ease-in-out infinite',
                       }} />
-                      QUIZ IN PROGRESS — TAP TO SWITCH
+                      EXAM IN PROGRESS — TAP TO SWITCH
                     </div>
                   ) : (
+                    /* ── No exam window open — show the start button ── */
                     <button
                       className="btn-lexa btn-lexa-primary"
                       style={{ width: '100%', padding: '14px', fontSize: 14, fontWeight: 700, justifyContent: 'center' }}
@@ -415,7 +477,6 @@ export default function Instructions() {
                       }
                     </button>
                   )}
-
                 </>
               )}
             </div>
