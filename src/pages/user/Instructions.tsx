@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus } from '../../api/endpoints';
@@ -41,6 +41,23 @@ export default function Instructions() {
   const [loadError, setLoadError]                 = useState<string | null>(null);
   const [timerAll, setTimerAll]                   = useState(0);
   const [numberOfQuestionsToAnswer, setNqta]      = useState(0);
+
+  // Tracks the quiz window so we can prevent duplicates and re-focus it.
+  const quizWindowRef = useRef<Window | null>(null);
+  const [quizOpen, setQuizOpen]                   = useState(false);
+
+  // Poll every second: if the student closed the quiz window manually,
+  // re-enable the start button so they can re-open.
+  useEffect(() => {
+    if (!quizOpen) return;
+    const id = setInterval(() => {
+      if (quizWindowRef.current?.closed) {
+        quizWindowRef.current = null;
+        setQuizOpen(false);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [quizOpen]);
 
   useEffect(() => {
     if (!realId) return;
@@ -103,8 +120,21 @@ export default function Instructions() {
   const startQuiz = () => {
     if (!quiz) return;
 
+    // If the quiz window is already open, just bring it to the front.
+    if (quizWindowRef.current && !quizWindowRef.current.closed) {
+      quizWindowRef.current.focus();
+      return;
+    }
+
     const fullUrl  = `${window.location.origin}${startQuizPath(realId!)}`;
     const features = `width=${screen.width},height=${screen.height},top=0,left=0,fullscreen=yes,toolbar=no,location=no,menubar=no,scrollbars=yes,resizable=yes`;
+
+    // Helper — called as soon as we have a confirmed open window handle.
+    const registerWindow = (w: Window) => {
+      quizWindowRef.current = w;
+      setQuizOpen(true);
+      w.focus();
+    };
 
     // Step 1 — password prompt. No window opened yet.
     Swal.fire({
@@ -151,10 +181,10 @@ export default function Instructions() {
 
       if (quizWindow && !quizWindow.closed) {
         // ── Opened immediately (Chrome, Firefox, Edge, etc.) ──────────────────
-        quizWindow.focus();
+        registerWindow(quizWindow);
         Swal.fire({
           title: 'Authorization Successful',
-          text: 'The examination session is now being initialized.',
+          text: 'The quiz session is now being initialized.',
           icon: 'success',
           timer: 1500,
           showConfirmButton: false,
@@ -188,7 +218,7 @@ export default function Instructions() {
               );
               return false;
             }
-            w.focus();
+            registerWindow(w);
             return true;
           }
         });
@@ -349,18 +379,43 @@ export default function Instructions() {
                       Your lecturer has allowed you to retake this quiz. Your new marks will replace your previous result.
                     </div>
                   )}
-                  <button
-                    className="btn-lexa btn-lexa-primary"
-                    style={{ width: '100%', padding: '14px', fontSize: 14, fontWeight: 700, justifyContent: 'center' }}
-                    onClick={startQuiz}
-                  >
-                    <Play size={16} /> {
-                      attempts?.activeAttemptNumber ? `RESUME ATTEMPT ${attempts.activeAttemptNumber}`
-                      : attempts?.retakeGranted ? 'RETAKE QUIZ'
-                      : attempts?.attemptsUsed > 0 ? `START ATTEMPT ${attempts.attemptsUsed + 1} OF ${attempts.maxAttempts}`
-                      : 'INITIALIZE SESSION'
-                    }
-                  </button>
+
+                  {quizOpen ? (
+                    /* ── Quiz window is open — prevent a second one ── */
+                    <div
+                      onClick={() => { quizWindowRef.current?.focus(); }}
+                      style={{
+                        width: '100%', padding: '14px', borderRadius: 4, cursor: 'pointer',
+                        background: 'rgba(40, 187, 100, 0.12)', border: '1.5px solid rgba(40, 187, 100, 0.35)',
+                        color: '#1a9e50', fontSize: 14, fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                        userSelect: 'none',
+                      }}
+                      title="Click to switch to the exam window"
+                    >
+                      <span style={{
+                        width: 10, height: 10, borderRadius: '50%',
+                        background: '#28bb64', display: 'inline-block', flexShrink: 0,
+                        boxShadow: '0 0 0 0 rgba(40,187,100,0.5)',
+                        animation: 'examPulse 1.4s ease-in-out infinite',
+                      }} />
+                      QUIZ IN PROGRESS — TAP TO SWITCH
+                    </div>
+                  ) : (
+                    <button
+                      className="btn-lexa btn-lexa-primary"
+                      style={{ width: '100%', padding: '14px', fontSize: 14, fontWeight: 700, justifyContent: 'center' }}
+                      onClick={startQuiz}
+                    >
+                      <Play size={16} /> {
+                        attempts?.activeAttemptNumber ? `RESUME ATTEMPT ${attempts.activeAttemptNumber}`
+                        : attempts?.retakeGranted ? 'RETAKE QUIZ'
+                        : attempts?.attemptsUsed > 0 ? `START ATTEMPT ${attempts.attemptsUsed + 1} OF ${attempts.maxAttempts}`
+                        : 'INITIALIZE SESSION'
+                      }
+                    </button>
+                  )}
+
                 </>
               )}
             </div>
@@ -385,6 +440,12 @@ export default function Instructions() {
       <style>{`
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        @keyframes examPulse {
+          0%   { box-shadow: 0 0 0 0   rgba(40,187,100,0.55); }
+          70%  { box-shadow: 0 0 0 8px rgba(40,187,100,0);    }
+          100% { box-shadow: 0 0 0 0   rgba(40,187,100,0);    }
+        }
 
         .instructions-grid {
           display: grid;
