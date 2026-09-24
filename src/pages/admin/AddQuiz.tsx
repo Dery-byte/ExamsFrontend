@@ -27,7 +27,7 @@ const defaultQuiz = () => ({
   title: '', description: '', maxMarks: '', numberOfQuestions: '', quizpassword: '', quizTime: '',
   startTime: '', quizDate: '', attempted: false, active: true, category: { cid: '' }, quizType: '',
   violationAction: 'NONE', delaySeconds: 0, autoSubmitCountdownSeconds: 5, maxViolations: 3,
-  delayMultiplier: 1.5, enableFullscreenLock: true, enableWatermark: true,
+  delayMultiplier: 1.5, enableFullscreenLock: true, enableWatermark: true, emailReportOnReview: false,
   enableScreenshotBlocking: true, enableDevToolsBlocking: true, llmProvider: 'GPT',
   programIds: [] as number[],
   maxAttempts: 1,

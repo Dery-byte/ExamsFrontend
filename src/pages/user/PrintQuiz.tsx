@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import QuestionImage from '../../components/ui/QuestionImage';
 import { getReport, getQuestionsForText, getTheoryReport, getResultsDetails, getNumberOfTheoryToAnswer } from '../../api/endpoints';
 import { Printer, ArrowLeft, Download, CheckCircle, XCircle, Info, Award, User, Clock, Calendar, FileText, ChevronRight, Loader2 } from 'lucide-react';
 
@@ -304,9 +305,12 @@ export default function PrintQuiz() {
                 {mcqs.map((q: any, i: number) => (
                   <div key={i} style={{ padding: '25px', border: '1px solid #f1f5f7', borderRadius: 12, background: '#fff' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 25, marginBottom: 20 }}>
-                      <div style={{ display: 'flex', gap: 15 }}>
+                      <div style={{ display: 'flex', gap: 15, flex: 1, minWidth: 0 }}>
                         <span style={{ fontWeight: 800, color: '#adb5bd', fontSize: 15 }}>{String(i + 1).padStart(2, '0')}.</span>
-                        <div className="ql-content" style={{ fontSize: 15, color: '#2a3142', fontWeight: 600, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: q.content }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <QuestionImage src={q.image} />
+                          <div className="ql-content" style={{ fontSize: 15, color: '#2a3142', fontWeight: 600, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: q.content }} />
+                        </div>
                       </div>
                       <StatusBadge status={q.status} />
                     </div>

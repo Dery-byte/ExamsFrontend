@@ -255,23 +255,37 @@ export default function LoadQuiz() {
 
   const handleDownloadPdf = async (q: any) => {
     setDownloadingId(q.qId);
+    let blob: Blob | null = null;
     try {
       const res = await downloadReportPdf(q.qId);
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      blob = res.data instanceof Blob ? res.data : new Blob([res.data], { type: 'application/pdf' });
+    } catch (err: any) {
+      // With responseType 'blob' the server's error text arrives as a Blob — read it so the real cause is visible.
+      let detail = '';
+      try {
+        const data = err?.response?.data;
+        detail = data instanceof Blob ? await data.text() : (typeof data === 'string' ? data : '');
+      } catch { /* ignore */ }
+      console.error('PDF request failed', err?.response?.status, detail || err?.message, err);
+      alert('Could not generate the result slip. Please try again.' + (detail ? ' ' + detail : ''));
+      setDownloadingId(null);
+      return;
+    }
+
+    // The PDF was received. Saving it is best-effort and must never show the "could not generate" alert.
+    try {
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      const courseTitle = q.category?.title || 'Course';
-      const quizTitle = q.title || 'Quiz';
-      const safeCourse = courseTitle.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const safeQuiz = quizTitle.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const safeCourse = String(q.category?.title || 'Course').replace(/[^a-zA-Z0-9.-]/g, '_');
+      const safeQuiz = String(q.title || 'Quiz').replace(/[^a-zA-Z0-9.-]/g, '_');
       link.setAttribute('download', `ResultsSlip_${safeCourse}_${safeQuiz}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
+      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
     } catch (err) {
-      console.error('PDF download failed', err);
-      alert('Could not generate the result slip. Please try again.');
+      console.error('PDF was received but saving it failed', err);
     } finally {
       setDownloadingId(null);
     }

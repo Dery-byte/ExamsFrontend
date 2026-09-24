@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getQuiz, addQuestion, uploadQuestions,
-  uploadTheoryQuestions, addNumberOfTheoryToAnswer, addTheoryQuestion
+  uploadTheoryQuestions, addNumberOfTheoryToAnswer, addTheoryQuestion, uploadQuestionImage
 } from '../../api/endpoints';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -11,6 +11,7 @@ import {
   Layers, CheckSquare, ToggleLeft, Link2, X, Check, Plus, Trash2
 } from 'lucide-react';
 import RichTextEditor from '../../components/ui/RichTextEditor';
+import QuestionImageField from '../../components/ui/QuestionImageField';
 
 // Strip HTML tags for validation
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim();
@@ -83,6 +84,12 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
   const [tfForm, setTfForm]             = useState<any>(blankTF(qId));
   const [matchForm, setMatchForm]       = useState<any>(blankMatching(qId));
 
+  // Optional image per form (uploaded & converted to WebP on submit)
+  const [mcqImage, setMcqImage]       = useState<File | null>(null);
+  const [tfImage, setTfImage]         = useState<File | null>(null);
+  const [matchImage, setMatchImage]   = useState<File | null>(null);
+  const [theoryImage, setTheoryImage] = useState<File | null>(null);
+
   // ── Theory state ─────────────────────────────────────────────────────────────
   const [theoryForm, setTheoryForm] = useState({
     quiz: { qId }, quesNo: '', question: '', marks: '', evaluationCriteria: ''
@@ -153,9 +160,9 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
   // ─── Reset form for a given type ─────────────────────────────────────────────
   const selectType = (type: string) => {
     setQuestionType(type);
-    if (type === 'MCQ')        setMcqForm(blankMCQ(qId));
-    else if (type === 'TRUE_FALSE') setTfForm(blankTF(qId));
-    else if (type === 'MATCHING')   setMatchForm(blankMatching(qId));
+    if (type === 'MCQ')        { setMcqForm(blankMCQ(qId)); setMcqImage(null); }
+    else if (type === 'TRUE_FALSE') { setTfForm(blankTF(qId)); setTfImage(null); }
+    else if (type === 'MATCHING')   { setMatchForm(blankMatching(qId)); setMatchImage(null); }
   };
 
   // ─── Submit handlers ──────────────────────────────────────────────────────────
@@ -166,10 +173,12 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
     if (!mcqForm.correct_answer.length) { toast.error('Mark at least one correct answer'); return; }
     setLoading(true);
     try {
-      await addQuestion(mcqForm);
+      const image = mcqImage ? await uploadQuestionImage(mcqImage) : null;
+      await addQuestion({ ...mcqForm, image });
       toast.success('MCQ question added!');
       setMcqForm(blankMCQ(qId));
-    } catch { toast.error('Failed to add question'); }
+      setMcqImage(null);
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
     finally { setLoading(false); }
   };
 
@@ -179,10 +188,12 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
     if (!tfForm.correct_answer.length) { toast.error('Select True or False as the correct answer'); return; }
     setLoading(true);
     try {
-      await addQuestion(tfForm);
+      const image = tfImage ? await uploadQuestionImage(tfImage) : null;
+      await addQuestion({ ...tfForm, image });
       toast.success('True/False question added!');
       setTfForm(blankTF(qId));
-    } catch { toast.error('Failed to add question'); }
+      setTfImage(null);
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
     finally { setLoading(false); }
   };
 
@@ -194,10 +205,12 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
     if (incomplete) { toast.error('All pairs must have both a prompt and an answer'); return; }
     setLoading(true);
     try {
-      await addQuestion(matchForm);
+      const image = matchImage ? await uploadQuestionImage(matchImage) : null;
+      await addQuestion({ ...matchForm, image });
       toast.success('Matching question added!');
       setMatchForm(blankMatching(qId));
-    } catch { toast.error('Failed to add question'); }
+      setMatchImage(null);
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
     finally { setLoading(false); }
   };
 
@@ -213,11 +226,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
         ...theoryForm,
         marks: String(theoryForm.marks),
         evaluationCriteria: theoryForm.evaluationCriteria?.trim() || null,
+        image: theoryImage ? await uploadQuestionImage(theoryImage) : null,
       };
       await addTheoryQuestion(payload);
       toast.success('Theory question added!');
+      setTheoryImage(null);
       setTheoryForm(t => ({ ...t, quesNo: '', question: '', marks: '', evaluationCriteria: '' }));
-    } catch { toast.error('Failed to add question'); }
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
     finally { setLoading(false); }
   };
 
@@ -365,6 +380,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                     <form onSubmit={handleAddMCQ} className="addq-form-body">
                       <div className="addq-field">
                         <label className="addq-label"><Hash size={13} />Question</label>
+                        <QuestionImageField file={mcqImage} onFileChange={setMcqImage} />
                         <RichTextEditor
                           value={mcqForm.content}
                           onChange={val => setMcq('content', val)}
@@ -435,6 +451,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                     <form onSubmit={handleAddTF} className="addq-form-body">
                       <div className="addq-field">
                         <label className="addq-label"><Hash size={13} />Question</label>
+                        <QuestionImageField file={tfImage} onFileChange={setTfImage} />
                         <RichTextEditor
                           value={tfForm.content}
                           onChange={val => setTfForm((f: any) => ({ ...f, content: val }))}
@@ -479,6 +496,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                     <form onSubmit={handleAddMatching} className="addq-form-body">
                       <div className="addq-field">
                         <label className="addq-label"><Hash size={13} />Question / Instructions</label>
+                        <QuestionImageField file={matchImage} onFileChange={setMatchImage} />
                         <RichTextEditor
                           value={matchForm.content}
                           onChange={val => setMatchForm((f: any) => ({ ...f, content: val }))}
@@ -581,6 +599,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                 </div>
                 <div className="addq-field">
                   <label className="addq-label"><FileText size={13} />Question Content</label>
+                  <QuestionImageField file={theoryImage} onFileChange={setTheoryImage} />
                   <RichTextEditor
                     value={theoryForm.question}
                     onChange={val => setTheoryForm(t => ({ ...t, question: val }))}

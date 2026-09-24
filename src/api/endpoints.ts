@@ -103,6 +103,8 @@ export const addLecturerQuiz = (data: object) => client.post('/lecturer/addQuiz'
 export const addUserQuiz = (data: object) => client.post('/user/addQuiz', data).then(r => r.data);
 export const updateQuiz = (data: object) => client.put('/update', data).then(r => r.data);
 export const deleteQuiz = (id: number) => client.delete(`/delete/quiz/${id}`).then(r => r.data);
+export const setQuizEmailReport = (id: number, enabled: boolean): Promise<boolean> =>
+  client.put(`/quiz/${id}/email-report`, { enabled }).then(r => !!r.data?.enabled);
 export const updateQuizStatus = (id: number, status: string) =>
   client.put(`/quiz/status/${id}`, { status }).then(r => r.data);
 export const getActiveQuizzes = () => client.get('/active/quizzes').then(r => r.data);
@@ -439,3 +441,18 @@ export const getQuizAttempts = (qid: number | string) =>
 /** Staff: allow one student to take the quiz again. */
 export const allowQuizRetake = (qid: number | string, studentId: number, reason?: string) =>
   client.post(`/quiz-attempts/quiz/${qid}/student/${studentId}/retake`, { reason }).then(r => r.data);
+
+// ── Question images (PNG/JPG/JPEG are converted to WebP by the backend) ────────
+export const uploadQuestionImage = (file: File): Promise<string> => {
+  const form = new FormData();
+  form.append('file', file);
+  return client
+    .post('/question-images/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+    .then(r => r.data.image as string);
+};
+
+// ── Email result slips to students after lecturer review (Admin / Super Admin toggle) ──
+export const getReportEmailSetting = (): Promise<boolean> =>
+  client.get('/report-email-setting').then(r => !!r.data?.enabled);
+export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
+  client.put('/report-email-setting', { enabled }).then(r => !!r.data?.enabled);

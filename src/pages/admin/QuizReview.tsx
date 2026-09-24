@@ -8,6 +8,9 @@ import {
 } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
 import client from '../../api/client';
+import QuestionImage from '../../components/ui/QuestionImage';
+import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
+import QuizEmailReportToggle from '../../components/ui/QuizEmailReportToggle';
 import QuizAttemptsModal, { AttemptRow } from '../../components/ui/QuizAttemptsModal';
 import {
   ChevronDown, ChevronRight, X, Loader2, FileText,
@@ -236,6 +239,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
                       <span style={{ background: '#5156be', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{tq.quesNo}</span>
                       <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Theory Question</span>
                     </div>
+                    <QuestionImage src={tq.image} />
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: tq.question }} />
                     {tq.evaluationCriteria && (
                       <div style={{ marginTop: 8, padding: '8px 12px', background: '#ecfdf5', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#166534' }}>
@@ -475,6 +479,8 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
         </div>
       </div>
 
+      {adminMode && <div style={{ marginBottom: 24 }}><ReportEmailToggle /></div>}
+
       {/* Quiz List */}
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: 80 }}>
@@ -593,6 +599,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
             <span style={{ color: '#ef4444', fontWeight: 600 }}>Not Reviewed: {notReviewed}</span>
           </div>
         </div>
+        <QuizEmailReportToggle quizId={quiz.qId} initial={!!quiz.emailReportOnReview} />
         <div className="quiz-row-stats">
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#1e293b' }}>{quiz.numberOfQuestions || 0}</div>

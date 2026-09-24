@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { saGetSystemSettings, saUpdateSystemSettings, saGetPrograms, saToggleProgram } from '../../api/endpoints';
 import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
 
 interface Program { id: number; name: string; code: string; departmentName: string; enabled: boolean; }
 
@@ -121,6 +122,10 @@ export default function SuperAdminConfiguration() {
           </button>
         </div>
       </div>
+
+      {/* ── Result Slips ────────────────────────────────────────────────── */}
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>Result Slips</h2>
+      <div style={{ marginBottom: 40 }}><ReportEmailToggle dark /></div>
 
       {/* ── Program Visibility ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>

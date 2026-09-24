@@ -5,7 +5,7 @@ import {
   getQuestionsForAdmin, getQuestionsForLecturer, getTheoryQuestions, getNumberOfTheoryToAnswer,
   getQuestion, updateQuestion, deleteQuestion,
   getTheoryQuestion, updateTheoryQuestion, deleteTheoryQuestion,
-  setCompulsoryQuestion, updateNumberOfTheoryToAnswer
+  setCompulsoryQuestion, updateNumberOfTheoryToAnswer, uploadQuestionImage
 } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
@@ -17,6 +17,8 @@ import {
   ChevronDown, MinusCircle, PlusCircle, Check
 } from 'lucide-react';
 import RichTextEditor from '../../components/ui/RichTextEditor';
+import QuestionImage from '../../components/ui/QuestionImage';
+import QuestionImageField from '../../components/ui/QuestionImageField';
 
 export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: boolean }) {
   const { qId, qTitle } = useParams();
@@ -39,6 +41,8 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   const [editCountModal, setEditCountModal] = useState(false);
   const [countData, setCountData] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  const [objImageFile, setObjImageFile] = useState<File | null>(null);
+  const [theoryImageFile, setTheoryImageFile] = useState<File | null>(null);
   const [isModalLoading, setIsModalLoading] = useState(false);
 
   useEffect(() => {
@@ -104,6 +108,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
     // Clear previous and open immediately
     setSpecificObj({ questionType: (fallbackType || 'MCQ').toUpperCase(), correctAnswer: [], matchingPairs: [] });
+    setObjImageFile(null);
     setEditObjModal(true);
     setIsModalLoading(true);
 
@@ -139,9 +144,18 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
   const updateObjQuestion = async () => {
     setSaving(true);
+    let image: string | null = specificObj.image || null;
+    try {
+      if (objImageFile) image = await uploadQuestionImage(objImageFile);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Image upload failed');
+      setSaving(false);
+      return;
+    }
     const payload: any = {
       quesId: specificObj.quesId,
       content: specificObj.content,
+      image,
       questionType: specificObj.questionType,
       correct_answer: specificObj.correctAnswer,
       marks: specificObj.marks
@@ -185,6 +199,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
     console.log("Immediate Theory Modal Trigger for ID:", idToUse);
 
     setTheory({});
+    setTheoryImageFile(null);
     setEditTheoryModal(true);
     setIsModalLoading(true);
 
@@ -225,7 +240,8 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   const updateTheoryAction = async () => {
     setSaving(true);
     try {
-      await updateTheoryQuestion(theory);
+      const image = theoryImageFile ? await uploadQuestionImage(theoryImageFile) : (theory.image ?? '');
+      await updateTheoryQuestion({ ...theory, image });
       toast.success('Theory protocol updated');
       setEditTheoryModal(false);
       loadData();
@@ -392,6 +408,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
                       {/* Body: Question */}
                       <div className="vqq-obj-body">
+                        <QuestionImage src={q.image} />
                         <p className="vqq-obj-question ql-content" dangerouslySetInnerHTML={{ __html: q.content }} />
 
                         {/* MCQ Options */}
@@ -544,6 +561,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
                           {/* Content */}
                           <div className="vqq-q-content">
+                            <QuestionImage src={q.image} />
                             <div className="vqq-q-text ql-content" dangerouslySetInnerHTML={{ __html: q.question }} />
                             {q.evaluationCriteria && (
                               <div className="vqq-eval-box">
@@ -635,6 +653,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
               {/* Question Text */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Question Text</label>
+                {!isModalLoading && (
+                  <QuestionImageField
+                    file={objImageFile}
+                    onFileChange={setObjImageFile}
+                    existing={specificObj.image}
+                    onRemoveExisting={() => setSpecificObj((prev: any) => ({ ...prev, image: null }))}
+                  />
+                )}
                 {!isModalLoading && (
                   <RichTextEditor
                     key={`obj-content-${specificObj.quesId}`}
@@ -784,6 +810,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
               {/* Question Text */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Theoretical Prompt</label>
+                {!isModalLoading && (
+                  <QuestionImageField
+                    file={theoryImageFile}
+                    onFileChange={setTheoryImageFile}
+                    existing={theory.image}
+                    onRemoveExisting={() => setTheory((prev: any) => ({ ...prev, image: '' }))}
+                  />
+                )}
                 {!isModalLoading && (
                   <RichTextEditor
                     key={`theory-q-${theory.tqId}`}

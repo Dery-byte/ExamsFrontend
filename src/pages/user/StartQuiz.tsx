@@ -11,6 +11,7 @@ import {
 import { decodeParam } from '../../utils/quizLink';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuizProtection } from '../../hooks/useQuizProtection';
+import QuestionImage from '../../components/ui/QuestionImage';
 import Swal from 'sweetalert2';
 import {
   Clock,
@@ -707,6 +708,7 @@ export default function StartQuiz() {
                 {pagedObjQs.map(q => (
                   <div key={q.quesId} className="lexa-card" style={{ background: theme.card }}>
                     <div className="lexa-card-body">
+                      <QuestionImage src={q.image} />
                       <div style={{ display: 'flex', gap: 12, marginBottom: 15 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: '#7a6fbe', background: 'rgba(122, 111, 190, 0.1)', padding: '2px 8px', borderRadius: 4, height: 'fit-content' }}>Q{q.count}</span>
                         <div className="ql-content" style={{ fontSize: 15, fontWeight: 600, color: theme.title, lineHeight: 1.7, userSelect: 'none', WebkitUserSelect: 'none' }} dangerouslySetInnerHTML={{ __html: q.content }} />
@@ -804,6 +806,7 @@ export default function StartQuiz() {
                         <span className="lexa-badge badge-soft-primary">{q.quesNo}</span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: theme.muted }}>{q.marks} Marks</span>
                       </div>
+                      <QuestionImage src={q.image} />
                       <div
                         className="ql-content"
                         style={{ fontSize: 15, fontWeight: 600, color: theme.title, marginBottom: 15, lineHeight: 1.7, userSelect: 'none', WebkitUserSelect: 'none' }}
