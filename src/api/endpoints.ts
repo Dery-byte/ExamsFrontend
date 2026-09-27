@@ -456,3 +456,8 @@ export const getReportEmailSetting = (): Promise<boolean> =>
   client.get('/report-email-setting').then(r => !!r.data?.enabled);
 export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
   client.put('/report-email-setting', { enabled }).then(r => !!r.data?.enabled);
+
+// ── Feature flags (set by Super Admin, readable by every role) ────────────
+export interface FeatureFlags { marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean; }
+export const getFeatureFlags = (): Promise<FeatureFlags> =>
+  client.get('/feature-flags').then(r => r.data);

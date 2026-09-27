@@ -28,6 +28,7 @@ import Students from './pages/admin/Students';
 import Lecturers from './pages/admin/Lecturers';
 import QuizReview from './pages/admin/QuizReview';
 import EnrollStudent from './pages/admin/EnrollStudent';
+import FeatureGate from './components/FeatureGate';
 
 // Super Admin
 import SuperAdminWelcome from './pages/superadmin/SuperAdminWelcome';
@@ -108,6 +109,8 @@ export default function App() {
           <Route path="student-semester" element={<ManageStudentLevel />} />
           <Route path="students" element={<Students />} />
           <Route path="enroll-student" element={<EnrollStudent />} />
+          <Route path="courses" element={<ViewCategories />} />
+          <Route path="add-course" element={<AddCategory />} />
           <Route path="marks-sheets" element={<MarksSheetManager />} />
           <Route path="lecturers" element={<Lecturers />} />
         </Route>
@@ -126,7 +129,7 @@ export default function App() {
           <Route path="lecturers" element={<Lecturers />} />
           <Route path="quiz-review" element={<QuizReview />} />
           <Route path="enroll-student" element={<EnrollStudent />} />
-          <Route path="marks-sheets" element={<MarksSheetManager />} />
+          <Route path="marks-sheets" element={<FeatureGate flag="marksSheetAdmin" redirectTo="/admin"><MarksSheetManager /></FeatureGate>} />
         </Route>
 
         {/* Lecturer */}
@@ -139,7 +142,7 @@ export default function App() {
           <Route path="view-quetions/:qId/:qTitle" element={<LectViewQuizQuestions />} />
           <Route path="add-question/:qId/:title" element={<LectAddQuestion />} />
           <Route path="quiz-review" element={<LectQuizReview />} />
-          <Route path="manual-marks" element={<ManualMarksEntry />} />
+          <Route path="manual-marks" element={<FeatureGate flag="marksSheetLecturer" redirectTo="/lect"><ManualMarksEntry /></FeatureGate>} />
         </Route>
 
         {/* Student */}
@@ -151,7 +154,7 @@ export default function App() {
           <Route path="courses" element={<CoursesRegistered />} />
           <Route path="quizzes" element={<AvailableQuizzes />} />
           <Route path="history" element={<LoadQuiz />} />
-          <Route path="report-cards" element={<SemesterReportCard />} />
+          <Route path="report-cards" element={<FeatureGate flag="marksSheetStudent" redirectTo="/user-dashboard"><SemesterReportCard /></FeatureGate>} />
 
           <Route path="instructions/:qid" element={<Instructions />} />
         </Route>

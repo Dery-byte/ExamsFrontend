@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   LayoutDashboard, UserCircle, Building2, BookMarked,
   Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
-  Clock, ChevronRight, Settings, UserCog, BookOpen
+  Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library
 } from 'lucide-react';
 
 export default function SuperAdminLayout() {
@@ -36,6 +36,13 @@ export default function SuperAdminLayout() {
       items: [
         { to: '/super-admin/departments', icon: <Building2 size={20} />, label: 'Departments' },
         { to: '/super-admin/programs', icon: <BookMarked size={20} />, label: 'Programs & Levels' },
+      ]
+    },
+    {
+      label: 'Academic Registry',
+      items: [
+        { to: '/super-admin/courses', icon: <Library size={20} />, label: 'Courses' },
+        { to: '/super-admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
       ]
     },
     {

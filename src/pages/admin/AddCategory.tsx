@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addCategory, getPrograms } from '../../api/endpoints';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import {
   BookPlus, BookOpen, Layers, FileText, ArrowLeft,
   ShieldCheck, Loader2, BadgeCheck, GraduationCap,
-  Info, CheckCircle2, Award, Cpu, Sparkles, Calendar
+  Info, CheckCircle2, Award, Cpu, Sparkles, Calendar, Globe
 } from 'lucide-react';
 
 const LEVELS = [
@@ -25,6 +26,11 @@ const INFO_ITEMS = [
 
 export default function AddCategory() {
   const navigate = useNavigate();
+  const { isSuperAdmin } = useAuth();
+  const isSuper = isSuperAdmin();
+  const basePath = isSuper ? '/super-admin' : '/admin';
+  // Global courses (no programs) are open to every student; only the Super Admin can create them.
+  const [isGlobal, setIsGlobal] = useState(false);
   const [category, setCategory] = useState<{title: string, courseCode: string, level: string, description: string, semester: string, programIds: number[]}>({ title: '', courseCode: '', level: '', description: '', semester: '', programIds: [] });
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
@@ -34,8 +40,10 @@ export default function AddCategory() {
     getPrograms().then(data => { if (Array.isArray(data)) setPrograms(data); }).catch(() => {});
   }, []);
 
-  const availableLevels = category.programIds.length > 0
-    ? (programs.find(p => p.id === category.programIds[0])?.configuredLevels || []).map(l => String(l))
+  // Level/semester options follow the first selected program; global courses use the defaults
+  const leadProgram = isGlobal ? undefined : programs.find(p => p.id === category.programIds[0]);
+  const availableLevels = leadProgram
+    ? (leadProgram.configuredLevels || []).map(l => String(l))
     : ['100', '200', '300', '400'];
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -45,14 +53,18 @@ export default function AddCategory() {
     e.preventDefault();
     if (!category.level) { toast.error('Please select an academic level'); return; }
     if (!category.semester) { toast.error('Please select a semester'); return; }
+    if (!isGlobal && category.programIds.length === 0) {
+      toast.error(isSuper ? 'Select at least one program, or mark the course as Global' : 'Please select at least one program');
+      return;
+    }
     const loadingToast = toast.loading('Registering course...');
     setLoading(true);
     try {
-      await addCategory({ ...category });
+      await addCategory({ ...category, programIds: isGlobal ? [] : category.programIds });
       toast.success('Course registered successfully', { id: loadingToast });
-      setTimeout(() => navigate('/admin/courses'), 1200);
+      setTimeout(() => navigate(`${basePath}/courses`), 1200);
     } catch (err: any) {
-      toast.error('Registration failed', { id: loadingToast });
+      toast.error(err?.response?.data?.message ?? 'Registration failed', { id: loadingToast });
     } finally {
       setLoading(false);
     }
@@ -88,7 +100,7 @@ export default function AddCategory() {
                 <p className="acp-card-sub">Establish a new course in the academic registry</p>
               </div>
             </div>
-            <button className="acp-btn-back" onClick={() => navigate('/admin/courses')}>
+            <button className="acp-btn-back" onClick={() => navigate(`${basePath}/courses`)}>
               <ArrowLeft size={15} />
               <span>Course Catalog</span>
             </button>
@@ -153,11 +165,37 @@ export default function AddCategory() {
               </div>
             </div>
 
+            {/* Row 2a: Global course toggle (Super Admin only) */}
+            {isSuper && (
+              <div className="acp-field">
+                <label style={{
+                  display: 'flex', alignItems: 'center', gap: '10px', padding: '12px',
+                  border: isGlobal ? '1px solid #16a34a' : '1px solid #e2e8f0',
+                  borderRadius: '6px', background: isGlobal ? '#f0fdf4' : '#fff', cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={isGlobal}
+                    onChange={e => setIsGlobal(e.target.checked)}
+                    style={{ width: '16px', height: '16px', accentColor: '#16a34a' }}
+                  />
+                  <Globe size={16} color="#16a34a" />
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+                    Global course
+                    <span className="acp-hint" style={{ marginLeft: '8px', fontWeight: 400 }}>
+                      Open to every student regardless of program
+                    </span>
+                  </span>
+                </label>
+              </div>
+            )}
+
             {/* Row 2: Programs (Multi-Select) */}
-            {programs.length > 0 && (
+            {!isGlobal && programs.length > 0 && (
               <div className="acp-field">
                 <label className="acp-label">
                   <GraduationCap size={13} /> Registered Programs
+                  <span className="acp-required">*</span>
                   <span className="acp-hint" style={{ marginLeft: '8px' }}>(Select all that apply)</span>
                 </label>
                 <div className="acp-programs-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px' }}>
@@ -229,7 +267,7 @@ export default function AddCategory() {
                 <Calendar size={13} /> Semester <span className="acp-required">*</span>
               </label>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {Array.from({ length: (programs.find(p => p.id === category.programIds[0])?.semestersPerLevel?.[Number(category.level)] || 2) }, (_, i) => {
+                {Array.from({ length: (leadProgram?.semestersPerLevel?.[Number(category.level)] || 2) }, (_, i) => {
                   const val = String(i + 1);
                   const label = `Semester ${val}`;
                   const sub = i === 0 ? 'First Half' : i === 1 ? 'Second Half' : `Part ${val}`;
@@ -276,7 +314,7 @@ export default function AddCategory() {
 
             {/* Footer */}
             <div className="acp-footer">
-              <button type="button" className="acp-btn-discard" onClick={() => navigate('/admin/courses')}>
+              <button type="button" className="acp-btn-discard" onClick={() => navigate(`${basePath}/courses`)}>
                 Discard
               </button>
               <button type="submit" className="acp-btn-submit" disabled={loading}>

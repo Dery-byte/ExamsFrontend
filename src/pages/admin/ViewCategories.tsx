@@ -9,6 +9,7 @@ import {
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
+import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Edit, Trash2, UserPlus, BookOpen, User, Info, X, Loader2, Search, Filter, Book, ChevronRight, GraduationCap, Layers, ShieldCheck, Target, Award, ArrowRight, CheckCircle2, MoreVertical, LayoutGrid, List, Database, Activity, BadgeCheck } from 'lucide-react';
 
 export default function ViewCategories() {
@@ -47,7 +48,7 @@ export default function ViewCategories() {
   const openEdit = async (cid: number) => {
     try { 
       const cat = await getCategory(cid); 
-      setCategoryEdit(cat); 
+      setCategoryEdit({ ...cat, originalProgramIds: cat.programIds || [] }); 
       setEditModal(true); 
     } catch {}
   };
@@ -61,6 +62,12 @@ export default function ViewCategories() {
     } catch {}
   };
 
+  const { isSuperAdmin } = useAuth();
+  const isSuper = isSuperAdmin();
+  const basePath = isSuper ? '/super-admin' : '/admin';
+  // Only the Super Admin may change which programs a global course belongs to
+  const editingLockedGlobal = !isSuper && (categoryEdit?.originalProgramIds ?? []).length === 0;
+
   const updateCategory = async () => {
     setSaving(true);
     const loadingToast = toast.loading('Synchronizing registry...');
@@ -72,14 +79,20 @@ export default function ViewCategories() {
         description: categoryEdit.description,
         level: categoryEdit.level,
         semester: categoryEdit.semester,
-        programIds: categoryEdit.programIds || [],
+        // Omit programIds (leave unchanged) when the editor can't modify a global course's programs
+        programIds: editingLockedGlobal ? undefined : (categoryEdit.programIds || []),
       };
+      if (!isSuper && !editingLockedGlobal && payload.programIds!.length === 0) {
+        toast.error('Please select at least one program. Only the Super Admin can make a course global.', { id: loadingToast });
+        setSaving(false);
+        return;
+      }
       await adminUpdateCategory(categoryEdit.cid, payload);
       toast.success('Registry updated successfully', { id: loadingToast });
       qc.invalidateQueries({ queryKey: ['categories'] });
       setEditModal(false);
-    } catch { 
-      toast.error("Synchronization failed", { id: loadingToast }); 
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? "Synchronization failed", { id: loadingToast });
     }
     setSaving(false);
   };
@@ -137,7 +150,7 @@ export default function ViewCategories() {
                <Search size={14} />
                <input type="text" placeholder="Filter registry..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
             </div>
-            <button className="mini-add-btn" onClick={()=>navigate('/admin/add-course')}>
+            <button className="mini-add-btn" onClick={()=>navigate(`${basePath}/add-course`)}>
                <Plus size={16} /> <span>New</span>
             </button>
          </div>
@@ -153,7 +166,7 @@ export default function ViewCategories() {
               <div className="reg-col title">
                  <h6 className="t">{el.title}</h6>
                  <span className="m" style={{ color: '#64748b' }}>
-                    <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.join(', ') || 'General / All Programs'}</span>
+                    <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.length ? el.programNames.join(', ') : '🌐 Global (All Programs)'}</span>
                     {' • '}{el.level}{' • '}{el.description?.substring(0, 60)}...
                  </span>
               </div>
@@ -208,9 +221,16 @@ export default function ViewCategories() {
                    <label>Synopsis</label>
                    <textarea className="mini-area" rows={3} value={categoryEdit.description||''} onChange={e=>setCategoryEdit({...categoryEdit,description:e.target.value})} placeholder="Description..."/>
                 </div>
-                {programs.length > 0 && (
+                {editingLockedGlobal ? (
                   <div className="f-grp-mini">
-                     <label>Registered Programs (Select all that apply)</label>
+                     <label>Registered Programs</label>
+                     <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>
+                       🌐 Global course — only the Super Admin can change its programs.
+                     </span>
+                  </div>
+                ) : programs.length > 0 && (
+                  <div className="f-grp-mini">
+                     <label>Registered Programs (Select all that apply){isSuper && ' — leave empty for a Global course'}</label>
                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
                         {programs.map(p => {
                           const isSelected = (categoryEdit.programIds || []).includes(p.id);

@@ -323,7 +323,8 @@ export default function EnrollStudent() {
                 ) : filteredCourses.map((c, idx) => {
                   const lvl        = normLevel(c.level ?? "");
                   const isEnrolling = enrolling === c.cid;
-                  const isGlobal   = !c.program;
+                  const coursePrograms: any[] = Array.isArray(c.programs) ? c.programs : [];
+                  const isGlobal   = coursePrograms.length === 0;
 
                   const isAlreadyEnrolled = enrolledCourseIds.includes(c.cid);
 
@@ -360,11 +361,15 @@ export default function EnrollStudent() {
                           {c.semester && (
                             <span style={{ fontSize: 11, color: "#64748b" }}>Sem {c.semester}</span>
                           )}
-                          {isGlobal && (
+                          {isGlobal ? (
                             <span style={{ fontSize: 11, background: "#f0fdf4", color: "#16a34a", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
                               🌐 Global
                             </span>
-                          )}
+                          ) : coursePrograms.map((p: any) => (
+                            <span key={p.id} style={{ fontSize: 11, background: "#eef2ff", color: "#4338ca", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
+                              🎓 {p.name}
+                            </span>
+                          ))}
                         </div>
                       </div>
 

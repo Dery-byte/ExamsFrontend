@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react';
 import { saGetSystemSettings, saUpdateSystemSettings, saGetPrograms, saToggleProgram } from '../../api/endpoints';
-import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw } from 'lucide-react';
+import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
+
+/** Per-role switches for the Marks Sheet navigation entry (default on when never set). */
+const MARKS_SHEET_TOGGLES = [
+  { key: 'MARKS_SHEET_VISIBLE_ADMIN',    label: 'Admins (HODs)', sub: 'Show "Marks Sheets" in the Admin navigation.',         icon: <ClipboardList size={20} />, color: '#8b5cf6' },
+  { key: 'MARKS_SHEET_VISIBLE_LECTURER', label: 'Lecturers',     sub: 'Show "Marks Sheet" (marks entry) in the Lecturer navigation.', icon: <PenLine size={20} />,       color: '#0ea5e9' },
+  { key: 'MARKS_SHEET_VISIBLE_STUDENT',  label: 'Students',      sub: 'Show "Report Cards" (published marks) in the Student navigation.', icon: <GraduationCap size={20} />, color: '#10b981' },
+];
 
 interface Program { id: number; name: string; code: string; departmentName: string; enabled: boolean; }
 
@@ -19,6 +27,8 @@ const card = () => ({
 export default function SuperAdminConfiguration() {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const qc = useQueryClient();
 
   const [programs, setPrograms] = useState<Program[]>([]);
   const [programsLoading, setProgramsLoading] = useState(true);
@@ -54,6 +64,23 @@ export default function SuperAdminConfiguration() {
       console.error('Failed to update setting');
     } finally {
       setSettingsLoading(false);
+    }
+  };
+
+  const isOn = (key: string) => settings[key] !== 'false';
+
+  const handleToggleMarksSheet = async (key: string, label: string) => {
+    const next = !isOn(key);
+    setSavingKey(key);
+    try {
+      await saUpdateSystemSettings({ [key]: next.toString() });
+      setSettings(prev => ({ ...prev, [key]: next.toString() }));
+      qc.invalidateQueries({ queryKey: ['feature-flags'] });
+      toast.success(`Marks Sheet ${next ? 'shown to' : 'hidden from'} ${label}`);
+    } catch {
+      toast.error('Failed to update setting');
+    } finally {
+      setSavingKey(null);
     }
   };
 
@@ -126,6 +153,50 @@ export default function SuperAdminConfiguration() {
       {/* ── Result Slips ────────────────────────────────────────────────── */}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>Result Slips</h2>
       <div style={{ marginBottom: 40 }}><ReportEmailToggle dark /></div>
+
+      {/* ── Marks Sheet Visibility ──────────────────────────────────────── */}
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>Marks Sheet Visibility</h2>
+      <p style={{ margin: '0 0 16px', fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+        Choose which roles see the Marks Sheet in their navigation. When off, the page is hidden and its link is blocked.
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14, marginBottom: 40 }}>
+        {MARKS_SHEET_TOGGLES.map(t => {
+          const on = isOn(t.key);
+          const saving = savingKey === t.key;
+          return (
+            <div key={t.key} style={{ ...card(), display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: `${t.color}1a`, border: `1px solid ${t.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.color, flexShrink: 0 }}>
+                  {t.icon}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginBottom: 3 }}>{t.label}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>{t.sub}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleToggleMarksSheet(t.key, t.label)}
+                disabled={saving}
+                role="switch"
+                aria-checked={on}
+                aria-label={`Show Marks Sheet to ${t.label}`}
+                style={{
+                  background: on ? '#10b981' : 'rgba(255,255,255,0.1)',
+                  border: 'none', borderRadius: 20, width: 50, height: 26, position: 'relative', cursor: saving ? 'not-allowed' : 'pointer', transition: 'all 0.3s', flexShrink: 0, marginLeft: 16
+                }}
+              >
+                {saving && <Loader2 size={14} className="spin" style={{ position: 'absolute', top: 6, left: 18, color: '#fff' }} />}
+                <div style={{
+                  width: 20, height: 20, background: '#fff', borderRadius: '50%', position: 'absolute', top: 3,
+                  left: on ? 27 : 3, transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {on && !saving && <Check size={12} color="#10b981" />}
+                </div>
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       {/* ── Program Visibility ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>

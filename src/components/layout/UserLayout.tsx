@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
   LayoutDashboard, 
   GraduationCap, 
@@ -19,6 +20,7 @@ const SIDEBAR_W = 260;
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { logout } = useAuth();
+  const { marksSheetStudent } = useFeatureFlags();
 
   const menuGroups = [
     {
@@ -34,7 +36,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
       items: [
         { to: '/user-dashboard/quizzes', label: 'Assessments',        icon: ClipboardCheck },
         { to: '/user-dashboard/history', label: 'Performance History', icon: History        },
-        { to: '/user-dashboard/report-cards', label: 'Report Cards', icon: BookOpen        },
+        ...(marksSheetStudent ? [{ to: '/user-dashboard/report-cards', label: 'Report Cards', icon: BookOpen }] : []),
       ]
     },
     {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
   Home, 
   Grid, 
@@ -15,6 +16,7 @@ import {
 export default function LecturerLayout() {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { marksSheetLecturer } = useFeatureFlags();
 
   const navItems = [
     { to: '/lect', exact: true, icon: <Home size={20} />, title: 'Dashboard' },
@@ -23,7 +25,7 @@ export default function LecturerLayout() {
     { to: '/lect/profile', icon: <Users size={20} />, title: 'Profile' },
     { to: '/lect/add-quizes', icon: <Briefcase size={20} />, title: 'Create Quiz' },
     { to: '/lect/quiz-review', icon: <Eye size={20} />, title: 'Quiz Review' },
-    { to: '/lect/manual-marks', icon: <FileText size={20} />, title: 'Manual Marks' },
+    ...(marksSheetLecturer ? [{ to: '/lect/manual-marks', icon: <FileText size={20} />, title: 'Marks Sheet' }] : []),
   ];
 
   return (

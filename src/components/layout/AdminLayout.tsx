@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
   LayoutDashboard, 
   UserCircle, 
@@ -26,6 +27,7 @@ export default function AdminLayout() {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { marksSheetAdmin } = useFeatureFlags();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -52,7 +54,7 @@ export default function AdminLayout() {
         { to: '/admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
         { to: '/admin/quizzes', icon: <ClipboardList size={20} />, label: 'Quizzes' },
         { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
-        { to: '/admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' },
+        ...(marksSheetAdmin ? [{ to: '/admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' }] : []),
       ]
     },
     { 

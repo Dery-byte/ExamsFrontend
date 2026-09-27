@@ -31,7 +31,8 @@ export default function AddCourse() {
     if (!category.semester) { toast.error('Please select a semester'); return; }
     setLoading(true);
     try {
-      await addLecturerCategory({ ...category, programId: category.programId ? Number(category.programId) : undefined });
+      const { programId, ...rest } = category;
+      await addLecturerCategory({ ...rest, programIds: programId ? [Number(programId)] : [] });
       toast.success('Course added successfully!');
       setTimeout(() => navigate('/lect/courses'), 1000);
     } catch { toast.error('Failed to add course registry'); }
