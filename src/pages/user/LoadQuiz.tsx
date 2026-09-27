@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import RemarkControl from '../../components/examops/RemarkControl';
 import { getReport, getRegCourses, getReportsByUser, getTakenQuizzesOfCategoryByUser, downloadReportPdf } from '../../api/endpoints';
 import PageHeader from '../../components/PageHeader';
 import { 
@@ -236,6 +237,7 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
             : <><Download size={15} /> Result Slip</>}
         </button>
       </div>
+      <RemarkControl report={report} />
     </div>
   );
 }

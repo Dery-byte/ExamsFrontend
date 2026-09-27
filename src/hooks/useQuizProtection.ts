@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { saveViolationCount, saveViolationDelay, getViolationDelay } from '../api/endpoints';
+import { saveViolationCount, recordProctoringEvent, saveViolationDelay, getViolationDelay } from '../api/endpoints';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type ViolationAction =
@@ -702,6 +702,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     const c = cfgRef.current;
     if (st.current.autoSubmitDone) return;
     st.current.autoSubmitDone = true;
+    recordProctoringEvent(c.quizId, 'auto-submit').catch(()=>{});
     if (delayIv.current) { clearInterval(delayIv.current); delayIv.current = null; }
 
     const max = c.autoSubmitCountdownSeconds;
@@ -729,6 +730,8 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     s.isProcessing = true;
     s.totalViolations++;
     saveViolationCount(c.quizId, s.totalViolations).catch(()=>{});
+    // Timestamped event for the staff proctoring report
+    recordProctoringEvent(c.quizId, type, s.totalViolations).catch(()=>{});
 
     const remaining = c.maxViolations - s.totalViolations;
 

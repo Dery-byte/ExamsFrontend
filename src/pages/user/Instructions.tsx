@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus } from '../../api/endpoints';
+import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus, unlockQuiz } from '../../api/endpoints';
 import { decodeParam, startQuizPath } from '../../utils/quizLink';
 import Swal from 'sweetalert2';
 import PageHeader from '../../components/PageHeader';
@@ -222,23 +222,20 @@ export default function Instructions() {
       reverseButtons: true,
       background: '#fff',
       customClass: { popup: 'swal2-premium-popup' },
-      preConfirm: (value) => {
+      // The code is checked by the server — students never receive the real password
+      showLoaderOnConfirm: true,
+      preConfirm: async (value) => {
         if (!value) { Swal.showValidationMessage('Access code is required'); return false; }
-        return value;
+        try {
+          await unlockQuiz(realId!, value);
+          return value;
+        } catch (e: any) {
+          Swal.showValidationMessage(e?.response?.data?.message ?? 'Could not verify the access code. Please try again.');
+          return false;
+        }
       }
     }).then(result => {
       if (!result.isConfirmed) return;
-
-      if (result.value !== quiz.quizpassword) {
-        Swal.fire({
-          title: 'Authorization Failed',
-          text: 'The code provided does not match our records.',
-          icon: 'error',
-          confirmButtonColor: 'var(--danger)',
-          customClass: { popup: 'swal2-premium-popup' }
-        });
-        return;
-      }
 
       // Step 2 — correct password.
       //

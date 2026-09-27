@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationBell from '../NotificationBell';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
   Home, 
@@ -10,7 +11,11 @@ import {
   Briefcase, 
   Menu,
   LogOut,
-  Eye
+  Eye,
+  Megaphone,
+  CalendarDays,
+  Library,
+  MessageSquareWarning
 } from 'lucide-react';
 
 export default function LecturerLayout() {
@@ -22,9 +27,13 @@ export default function LecturerLayout() {
     { to: '/lect', exact: true, icon: <Home size={20} />, title: 'Dashboard' },
     { to: '/lect/courses', icon: <Grid size={20} />, title: 'Courses' },
     { to: '/lect/quizes', icon: <FileText size={20} />, title: 'Quizzes' },
+    { to: '/lect/announcements', icon: <Megaphone size={20} />, title: 'Announcements' },
     { to: '/lect/profile', icon: <Users size={20} />, title: 'Profile' },
     { to: '/lect/add-quizes', icon: <Briefcase size={20} />, title: 'Create Quiz' },
     { to: '/lect/quiz-review', icon: <Eye size={20} />, title: 'Quiz Review' },
+    { to: '/lect/remarks', icon: <MessageSquareWarning size={20} />, title: 'Re-mark Requests' },
+    { to: '/lect/question-bank', icon: <Library size={20} />, title: 'Question Bank' },
+    { to: '/lect/timetable', icon: <CalendarDays size={20} />, title: 'Exam Timetable' },
     ...(marksSheetLecturer ? [{ to: '/lect/manual-marks', icon: <FileText size={20} />, title: 'Marks Sheet' }] : []),
   ];
 
@@ -78,10 +87,7 @@ export default function LecturerLayout() {
             {/* <div className="header-icon flag-icon">🇺🇸</div> */}
             {/* <button className="header-icon"><Moon size={20} /></button> */}
             <button className="header-icon"><Grid size={0} /></button>
-            <button className="header-icon notification">
-              {/* <Bell size={20} /> */}
-              {/* <span className="badge">5</span> */}
-            </button>
+            <NotificationBell />
             {/* <button className="header-icon"><Settings size={20} /></button> */}
             <div className="user-profile">
               <div className="avatar">

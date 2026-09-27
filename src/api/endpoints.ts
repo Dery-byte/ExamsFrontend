@@ -360,8 +360,8 @@ export const saSetStudentSemester = (id: number, data: { currentSemester?: numbe
   saClient.put(`/student/${id}/level-semester`, data).then(r => r.data);
 
 // ── Super Admin — Student Promotion (forward + backward) ──────────────────
-export const saPromoteStudent     = (id: number, targetLevel: number) =>
-  saClient.put(`/student/${id}/promote`, { targetLevel }).then(r => r.data);
+export const saPromoteStudent     = (id: number, targetLevel: number, override = false) =>
+  saClient.put(`/student/${id}/promote`, override ? { targetLevel, override: 1 } : { targetLevel }).then(r => r.data);
 export const saPromoteAllAtLevel  = (programId: number, level: number, targetLevel: number) =>
   saClient.put(`/students/promote-all/${programId}/${level}`, { targetLevel }).then(r => r.data);
 export const saPromoteSemesterAllAtLevel = (programId: number, level: number) =>
@@ -461,3 +461,137 @@ export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
 export interface FeatureFlags { marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean; }
 export const getFeatureFlags = (): Promise<FeatureFlags> =>
   client.get('/feature-flags').then(r => r.data);
+
+// ── Communication & oversight (Phase 3) ───────────────────────────────────
+/** Root of the authenticated /api routes (outside the public /api/v1/auth prefix). */
+const apiRoot = () => client.defaults.baseURL!.replace('/v1/auth', '');
+
+export interface AppNotification {
+  id: number; type: string; title: string; message: string; link: string | null; read: boolean; createdAt: string;
+}
+export const getNotifications = (limit = 30): Promise<AppNotification[]> =>
+  client.get(`${apiRoot()}/notifications`, { params: { limit } }).then(r => r.data);
+export const getUnreadNotificationCount = (): Promise<number> =>
+  client.get(`${apiRoot()}/notifications/unread-count`).then(r => r.data?.count ?? 0);
+export const markNotificationRead = (id: number) =>
+  client.post(`${apiRoot()}/notifications/${id}/read`).then(r => r.data);
+export const markAllNotificationsRead = () =>
+  client.post(`${apiRoot()}/notifications/read-all`).then(r => r.data);
+
+export type AnnouncementAudience = 'ALL' | 'STUDENTS' | 'LECTURERS' | 'ADMINS' | 'STAFF';
+export interface Announcement {
+  id: number; title: string; body: string; audience: AnnouncementAudience;
+  departmentId: number | null; departmentName: string | null;
+  programId: number | null; programName: string | null; level: number | null;
+  pinned: boolean; expiresOn: string | null; createdAt: string;
+  authorName: string | null; authorRole: string | null;
+}
+export const getAnnouncements = (): Promise<Announcement[]> =>
+  client.get(`${apiRoot()}/announcements`).then(r => r.data);
+export const getManageableAnnouncements = (): Promise<Announcement[]> =>
+  client.get(`${apiRoot()}/announcements/manage`).then(r => r.data);
+export const postAnnouncement = (data: {
+  title: string; body: string; audience: AnnouncementAudience; departmentId?: number | null;
+  programId?: number | null; level?: number | null; pinned?: boolean; expiresOn?: string | null;
+}): Promise<Announcement> => client.post(`${apiRoot()}/announcements`, data).then(r => r.data);
+export const deleteAnnouncement = (id: number) =>
+  client.delete(`${apiRoot()}/announcements/${id}`).then(r => r.data);
+
+export const getAnalyticsOverview = (departmentId?: number | ''): Promise<any> =>
+  client.get(`${apiRoot()}/analytics/overview`, { params: departmentId ? { departmentId } : {} }).then(r => r.data);
+
+export interface AuditEntry {
+  id: number; actorId: number | null; actorName: string | null; actorRole: string | null; action: string;
+  httpMethod: string; path: string; entityId: string | null; details: string | null;
+  statusCode: number | null; ipAddress: string | null; createdAt: string;
+}
+export const saGetAuditLogs = (params: {
+  actor?: string; action?: string; role?: string; from?: string; to?: string; page?: number; size?: number;
+}): Promise<{ items: AuditEntry[]; page: number; size: number; totalItems: number; totalPages: number }> =>
+  saClient.get('/audit-logs', { params }).then(r => r.data);
+export const saGetAuditActions = (): Promise<string[]> => saClient.get('/audit-logs/actions').then(r => r.data);
+
+// ── Exam operations (Phase 2) ─────────────────────────────────────────────
+export const getTimetable = (params: { from?: string; to?: string; departmentId?: number | ''; programId?: number | ''; level?: string }) =>
+  client.get(`${apiRoot()}/timetable`, {
+    params: Object.fromEntries(Object.entries(params).filter(([, v]) => v !== '' && v != null)),
+  }).then(r => r.data);
+
+export const getBankCourses = () => client.get(`${apiRoot()}/question-bank/courses`).then(r => r.data);
+export const getBankForCourse = (courseId: number) => client.get(`${apiRoot()}/question-bank/course/${courseId}`).then(r => r.data);
+export const addBankQuestion = (courseId: number, data: object) =>
+  client.post(`${apiRoot()}/question-bank/course/${courseId}`, data).then(r => r.data);
+export const updateBankQuestion = (id: number, data: object) =>
+  client.put(`${apiRoot()}/question-bank/${id}`, data).then(r => r.data);
+export const deleteBankQuestion = (id: number) => client.delete(`${apiRoot()}/question-bank/${id}`).then(r => r.data);
+export const importQuizIntoBank = (quizId: number, data: { topic?: string; difficulty?: string }) =>
+  client.post(`${apiRoot()}/question-bank/import/quiz/${quizId}`, data).then(r => r.data);
+export const drawBankIntoQuiz = (quizId: number, data: { topic?: string; difficulty?: string; questionType?: string; count?: number; questionIds?: number[] }) =>
+  client.post(`${apiRoot()}/question-bank/draw/quiz/${quizId}`, data).then(r => r.data);
+
+/** Fire-and-forget: log one proctoring event from the exam page. */
+export const recordProctoringEvent = (quizId: number | string, type: string, violationNumber?: number) =>
+  client.post(`${apiRoot()}/proctoring/events`, { quizId: Number(quizId), type, violationNumber }).then(r => r.data);
+export const getProctoringReport = (quizId: number | string) =>
+  client.get(`${apiRoot()}/proctoring/quiz/${quizId}`).then(r => r.data);
+export const getProctoringTimeline = (quizId: number | string, studentId: number) =>
+  client.get(`${apiRoot()}/proctoring/quiz/${quizId}/student/${studentId}`).then(r => r.data);
+
+export const requestRemark = (reportId: number, reason: string) =>
+  client.post(`${apiRoot()}/remarks`, { reportId, reason }).then(r => r.data);
+export const getMyRemarks = () => client.get(`${apiRoot()}/remarks/mine`).then(r => r.data);
+export const getRemarksToManage = () => client.get(`${apiRoot()}/remarks/manage`).then(r => r.data);
+export const respondToRemark = (id: number, decision: 'RESOLVED' | 'REJECTED', response: string) =>
+  client.post(`${apiRoot()}/remarks/${id}/respond`, { decision, response }).then(r => r.data);
+
+
+// ── Academic core (Phase 1) ───────────────────────────────────────────────
+export const getSessions = () => client.get(`${apiRoot()}/academic/sessions`).then(r => r.data);
+export const createSession = (data: { name: string; startDate?: string; endDate?: string; makeCurrent?: boolean }) =>
+  client.post(`${apiRoot()}/academic/sessions`, data).then(r => r.data);
+export const updateSession = (id: number, data: { name: string; startDate?: string; endDate?: string }) =>
+  client.put(`${apiRoot()}/academic/sessions/${id}`, data).then(r => r.data);
+export const makeSessionCurrent = (id: number) => client.post(`${apiRoot()}/academic/sessions/${id}/current`).then(r => r.data);
+export const deleteSession = (id: number) => client.delete(`${apiRoot()}/academic/sessions/${id}`).then(r => r.data);
+
+export const getGradingSettings = () => client.get(`${apiRoot()}/academic/grading`).then(r => r.data);
+export const getGradingPreset = (key: string) => client.get(`${apiRoot()}/academic/grading/preset/${key}`).then(r => r.data);
+export const saveGradingSettings = (data: object) => client.put(`${apiRoot()}/academic/grading`, data).then(r => r.data);
+export const recalculateGrades = () => client.post(`${apiRoot()}/academic/grading/recalculate`).then(r => r.data);
+
+export const getMyTranscript = () => client.get(`${apiRoot()}/academic/me/transcript`).then(r => r.data);
+export const getStudentTranscript = (id: number) => client.get(`${apiRoot()}/academic/students/${id}/transcript`).then(r => r.data);
+export const getStudentEligibility = (id: number) => client.get(`${apiRoot()}/academic/students/${id}/eligibility`).then(r => r.data);
+export const getPromotionPreview = (programId: number, level: number) =>
+  client.get(`${apiRoot()}/academic/promotion-preview`, { params: { programId, level } }).then(r => r.data);
+
+/** Downloads a transcript PDF (own when studentId is omitted). */
+export const downloadTranscriptPdf = async (studentId?: number) => {
+  const path = studentId ? `/academic/students/${studentId}/transcript/pdf` : '/academic/me/transcript/pdf';
+  const res = await client.get(`${apiRoot()}${path}`, { responseType: 'blob' });
+  const name = /filename="([^"]+)"/.exec(res.headers['content-disposition'] ?? '')?.[1] ?? 'transcript.pdf';
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+};
+
+// ── Admin productivity (Phase 4) ──────────────────────────────────────────
+export type ImportType = 'students' | 'lecturers' | 'courses';
+export const importRows = (type: ImportType, rows: Record<string, string>[], commit: boolean) =>
+  client.post(`${apiRoot()}/admin-tools/import/${type}`, { rows }, { params: { commit } }).then(r => r.data);
+export const bulkEnroll = (data: { programId: number; level: number; semester?: number | null }, commit: boolean) =>
+  client.post(`${apiRoot()}/admin-tools/bulk-enroll`, data, { params: { commit } }).then(r => r.data);
+export const getResultsSummary = (programId: number, level?: number | '') =>
+  client.get(`${apiRoot()}/admin-tools/results-summary`, { params: level ? { programId, level } : { programId } }).then(r => r.data);
+export const deactivateAccount = (id: number, reason?: string) =>
+  client.post(`${apiRoot()}/accounts/${id}/deactivate`, { reason }).then(r => r.data);
+export const reactivateAccount = (id: number) =>
+  client.post(`${apiRoot()}/accounts/${id}/reactivate`).then(r => r.data);
+export const getMarksSheetData = (sheetId: number | string) =>
+  client.get(`${apiRoot()}/marks/sheet/${sheetId}`).then(r => r.data);
+
+// ── Security (Phase 0) ────────────────────────────────────────────────────
+/** Checks a quiz access code on the server; lets the student start one new attempt. */
+export const unlockQuiz = (quizId: number | string, password: string) =>
+  client.post(`/quiz/${quizId}/unlock`, { password }).then(r => r.data);

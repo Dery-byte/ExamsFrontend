@@ -6,11 +6,12 @@ import {
   getPrograms, registerStudent
 } from "../../api/endpoints";
 import { useAuth } from "../../contexts/AuthContext";
+import { toggleAccount } from '../../components/admin/accountActions';
 import Swal from "sweetalert2";
 import toast, { Toaster } from "react-hot-toast";
 import PageHeader from "../../components/PageHeader";
 import {
-  Users, Search, Edit, Trash2, GraduationCap, Mail,
+  Users, Search, Edit, Trash2, GraduationCap, Mail, Power,
   X, Save, Loader2, ChevronsUp, ArrowRight, RefreshCw, UserPlus,
 } from "lucide-react";
 
@@ -121,7 +122,30 @@ export default function Students() {
       toast.success(`Student moved to Level ${target}`);
       await load();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? "Promotion failed");
+      const body = e?.response?.data;
+      if (e?.response?.status === 409 && Array.isArray(body?.reasons)) {
+        // Blocked by the promotion rules — the Super Admin may override for this one student
+        const reasons = body.reasons.map((r: string) => `<li>${r.replace(/</g, "&lt;")}</li>`).join("");
+        const over = await Swal.fire({
+          title: "Held back by promotion rules",
+          html: `<ul style="text-align:left;margin:0">${reasons}</ul>`,
+          icon: "warning",
+          showCancelButton: body.canOverride,
+          showConfirmButton: body.canOverride,
+          confirmButtonText: "Promote anyway",
+          cancelButtonText: body.canOverride ? "Keep at current level" : "OK",
+          confirmButtonColor: "#f59e0b",
+        });
+        if (over.isConfirmed && isSuper) {
+          try {
+            await saPromoteStudent(s.id, target, true);
+            toast.success(`Student moved to Level ${target} (override)`);
+            await load();
+          } catch (e2: any) { toast.error(e2?.response?.data?.message ?? "Promotion failed"); }
+        }
+      } else {
+        toast.error(body?.message ?? "Promotion failed");
+      }
     } finally { setPromotingId(null); }
   };
 
@@ -142,7 +166,13 @@ export default function Students() {
     setPromotingLv(level);
     try {
       const res = await (isSuper ? saPromoteAllAtLevel : adminPromoteAllAtLevel)(Number(programFilter), Number(level), target);
-      toast.success(res?.message ?? `${count} students promoted!`);
+      const held: any[] = res?.heldBack ?? [];
+      if (held.length) {
+        const rows = held.map((h: any) => `<li><b>${String(h.name).replace(/</g, "&lt;")}</b> — ${h.reasons.join("; ").replace(/</g, "&lt;")}</li>`).join("");
+        await Swal.fire({ title: res.message, html: `<ul style="text-align:left;margin:0;max-height:300px;overflow:auto">${rows}</ul>`, icon: "info" });
+      } else {
+        toast.success(res?.message ?? `${count} students promoted!`);
+      }
       await load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? "Bulk promotion failed");
@@ -217,7 +247,7 @@ export default function Students() {
       confirmButtonColor: "#fd625e", cancelButtonColor: "#adb5bd" });
     if (!c.isConfirmed) return;
     try { await deleteStudent(id); toast.success("Deleted"); await load(); }
-    catch { toast.error("Delete failed"); }
+    catch (e: any) { toast.error(e?.response?.data?.message ?? "Delete failed", { duration: 6000 }); }
   };
 
   const saveNewStudent = async () => {
@@ -368,6 +398,11 @@ export default function Students() {
 
                   {/* Action buttons */}
                   <div style={{ display: "flex", gap: 5, flexShrink: 0, alignItems: "center" }}>
+                    {s.enabled === false && (
+                      <span title="This account can't sign in" style={{ fontSize: 10.5, fontWeight: 800, padding: "3px 8px", borderRadius: 6, background: "#fdeeee", color: "#9f1f1f" }}>
+                        Deactivated
+                      </span>
+                    )}
                     {isSuper && prv && (
                       <button onClick={() => promoteOne(s, prv)} disabled={isPro} title={`Demote to ${prv}`}
                         style={{ padding: "5px 10px", borderRadius: 7, border: "1.5px solid #f59e0b",
@@ -389,6 +424,12 @@ export default function Students() {
                       style={{ width: 30, height: 30, borderRadius: 7, border: "1.5px solid #e2e8f0",
                         background: "#f8fafc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Edit size={13} color="#5156be" />
+                    </button>
+                    <button onClick={() => toggleAccount(s, name, load)} title={s.enabled === false ? "Reactivate account" : "Deactivate account"}
+                      aria-label={s.enabled === false ? `Reactivate ${name}` : `Deactivate ${name}`}
+                      style={{ width: 30, height: 30, borderRadius: 7, border: `1.5px solid ${s.enabled === false ? "#bbf7d0" : "#fde68a"}`,
+                        background: s.enabled === false ? "#f0fdf4" : "#fffbeb", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Power size={13} color={s.enabled === false ? "#16a34a" : "#b45309"} />
                     </button>
                     <button onClick={() => remove(s.id, name)} title="Delete"
                       style={{ width: 30, height: 30, borderRadius: 7, border: "1.5px solid #fee2e2",

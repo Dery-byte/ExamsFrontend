@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationBell from '../NotificationBell';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
   LayoutDashboard, 
@@ -18,7 +19,14 @@ import {
   ShieldCheck,
   Clock,
   Eye,
-  BookMarked
+  BookMarked,
+  Megaphone,
+  BarChart3,
+  CalendarDays,
+  Library,
+  MessageSquareWarning,
+  FileText,
+  DatabaseZap
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -44,6 +52,8 @@ export default function AdminLayout() {
       label: 'Main Dashboard', 
       items: [
         { to: '/admin', exact: true, icon: <LayoutDashboard size={20} />, label: 'Overview' },
+        { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
+        { to: '/admin/announcements', icon: <Megaphone size={20} />, label: 'Announcements' },
         { to: '/admin/profile', icon: <UserCircle size={20} />, label: 'Admin Profile' },
       ]
     },
@@ -54,6 +64,8 @@ export default function AdminLayout() {
         { to: '/admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
         { to: '/admin/quizzes', icon: <ClipboardList size={20} />, label: 'Quizzes' },
         { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
+        { to: '/admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' },
+        { to: '/admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
         ...(marksSheetAdmin ? [{ to: '/admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' }] : []),
       ]
     },
@@ -62,13 +74,16 @@ export default function AdminLayout() {
       items: [
         { to: '/admin/students', icon: <GraduationCap size={20} />, label: 'Student Directory' },
         { to: '/admin/enroll-student', icon: <BookMarked size={20} />, label: 'Enroll Student' },
+        { to: '/admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' },
         { to: '/admin/lecturers', icon: <Users size={20} />, label: 'Faculty Directory' },
+        { to: '/admin/data-tools', icon: <DatabaseZap size={20} />, label: 'Data Tools' },
       ]
     },
     {
       label: 'Assessment Review',
       items: [
         { to: '/admin/quiz-review', icon: <Eye size={20} />, label: 'Quiz Review Panel' },
+        { to: '/admin/remarks', icon: <MessageSquareWarning size={20} />, label: 'Re-mark Requests' },
       ]
     }
   ];
@@ -142,6 +157,7 @@ export default function AdminLayout() {
             </div>
           </div>
           <div className="lexa-nav-right">
+            <div style={{ marginRight: 12 }}><NotificationBell /></div>
             {timeDisplay && (
               <div className={`lexa-status-badge ${timeDisplay.className}`} style={{ marginRight: 15 }}>
                 <Clock size={14} />

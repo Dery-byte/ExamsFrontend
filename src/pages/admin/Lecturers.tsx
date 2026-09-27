@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { toggleAccount } from '../../components/admin/accountActions';
 import { getAllLecturersCounts, getLecturerById, updateLecturer, deleteLecturer, registerLecturer, getDepartments } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import { 
-  Users, Search, Plus, Edit, Trash2, Mail, Phone, Fingerprint, X, 
+  Users, Search, Plus, Edit, Trash2, Mail, Phone, Fingerprint, X, Power, 
   Save, UserCheck, UserPlus, Filter, MoreVertical, Loader2, ArrowRight, 
   Shield, BadgeCheck, GraduationCap, ChevronRight, User, CheckCircle2,
   Lock, Key
@@ -128,7 +129,7 @@ export default function Lecturers() {
       deleteLecturer(id).then(()=>{ 
         toast.success('Personnel purged from registry'); 
         fetchLecturers(); 
-      }).catch(()=>toast.error('Removal protocol failed'));
+      }).catch((e: any)=>toast.error(e?.response?.data?.message ?? 'Removal protocol failed', { duration: 6000 }));
     });
   };
 
@@ -207,10 +208,16 @@ export default function Lecturers() {
                  </div>
               </div>
               <div className="reg-col status">
-                 <span className="p-badge"><Shield size={12} /> Personnel</span>
+                 {el.enabled === false
+                   ? <span className="p-badge" style={{ background: '#fdeeee', color: '#9f1f1f' }} title={el.deactivationReason ?? undefined}>Deactivated</span>
+                   : <span className="p-badge"><Shield size={12} /> Personnel</span>}
               </div>
               <div className="reg-col acts">
                  <button className="a-btn p" onClick={()=>openEdit(el.id)}><Edit size={14} /></button>
+                 <button className="a-btn p" onClick={()=>toggleAccount(el, el.fullName ?? el.username, fetchLecturers)}
+                   title={el.enabled === false ? 'Reactivate account' : 'Deactivate account'}
+                   aria-label={el.enabled === false ? 'Reactivate account' : 'Deactivate account'}
+                   style={{ color: el.enabled === false ? '#16a34a' : '#b45309' }}><Power size={14} /></button>
                  <button className="a-btn d" onClick={()=>doDelete(el.id)}><Trash2 size={14} /></button>
               </div>
             </div>

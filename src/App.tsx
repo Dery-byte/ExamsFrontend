@@ -29,6 +29,17 @@ import Lecturers from './pages/admin/Lecturers';
 import QuizReview from './pages/admin/QuizReview';
 import EnrollStudent from './pages/admin/EnrollStudent';
 import FeatureGate from './components/FeatureGate';
+import Announcements from './pages/shared/Announcements';
+import Analytics from './pages/shared/Analytics';
+import AuditLog from './pages/superadmin/AuditLog';
+import Timetable from './pages/shared/Timetable';
+import QuestionBank from './pages/shared/QuestionBank';
+import ProctoringReport from './pages/shared/ProctoringReport';
+import RemarkRequests from './pages/shared/RemarkRequests';
+import AcademicSettings from './pages/superadmin/AcademicSettings';
+import AcademicRecords from './pages/shared/AcademicRecords';
+import Transcript from './pages/user/Transcript';
+import DataTools from './pages/shared/DataTools';
 
 // Super Admin
 import SuperAdminWelcome from './pages/superadmin/SuperAdminWelcome';
@@ -102,6 +113,15 @@ export default function App() {
         <Route path="/super-admin" element={<ProtectedRoute role="SUPER_ADMIN"><SuperAdminLayout /></ProtectedRoute>}>
           <Route index element={<SuperAdminWelcome />} />
           <Route path="configuration" element={<SuperAdminConfiguration />} />
+          <Route path="academic-settings" element={<AcademicSettings />} />
+          <Route path="academic-records" element={<AcademicRecords />} />
+          <Route path="data-tools" element={<DataTools />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="audit-log" element={<AuditLog />} />
+          <Route path="timetable" element={<Timetable />} />
+          <Route path="question-bank" element={<QuestionBank />} />
+          <Route path="remarks" element={<RemarkRequests />} />
           <Route path="profile" element={<Profile />} />
           <Route path="departments" element={<Departments />} />
           <Route path="programs" element={<Programs />} />
@@ -118,6 +138,14 @@ export default function App() {
         {/* Admin */}
         <Route path="/admin" element={<ProtectedRoute role={['ADMIN','SUPER_ADMIN']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminWelcome />} />
+          <Route path="timetable" element={<Timetable />} />
+          <Route path="question-bank" element={<QuestionBank />} />
+          <Route path="proctoring/:qId" element={<ProctoringReport />} />
+          <Route path="remarks" element={<RemarkRequests />} />
+          <Route path="academic-records" element={<AcademicRecords />} />
+          <Route path="data-tools" element={<DataTools />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="analytics" element={<Analytics />} />
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCategories />} />
           <Route path="add-course" element={<AddCategory />} />
@@ -135,6 +163,11 @@ export default function App() {
         {/* Lecturer */}
         <Route path="/lect" element={<ProtectedRoute role="LECTURER"><LecturerLayout /></ProtectedRoute>}>
           <Route index element={<LectWelcome />} />
+          <Route path="timetable" element={<Timetable />} />
+          <Route path="question-bank" element={<QuestionBank />} />
+          <Route path="proctoring/:qId" element={<ProctoringReport />} />
+          <Route path="remarks" element={<RemarkRequests />} />
+          <Route path="announcements" element={<Announcements />} />
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCourse />} />
           <Route path="quizes" element={<LectViewQuizzes />} />
@@ -149,6 +182,9 @@ export default function App() {
         <Route path="/user-dashboard" element={<ProtectedRoute role="NORMAL"><UserLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="user-dashboard" replace />} />
           <Route path="user-dashboard" element={<UserDashboard />} />
+          <Route path="timetable" element={<Timetable />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="transcript" element={<FeatureGate flag="marksSheetStudent" redirectTo="/user-dashboard"><Transcript /></FeatureGate>} />
           <Route path="profile" element={<Profile />} />
           <Route path="register" element={<RegisterCourses />} />
           <Route path="courses" element={<CoursesRegistered />} />

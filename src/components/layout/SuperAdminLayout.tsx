@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationBell from '../NotificationBell';
 import {
   LayoutDashboard, UserCircle, Building2, BookMarked,
   Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
-  Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library
+  Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library,
+  Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap
 } from 'lucide-react';
 
 export default function SuperAdminLayout() {
@@ -28,6 +30,7 @@ export default function SuperAdminLayout() {
       items: [
         { to: '/super-admin', exact: true, icon: <LayoutDashboard size={20} />, label: 'Overview' },
         { to: '/super-admin/configuration', icon: <Settings size={20} />, label: 'Configuration' },
+        { to: '/super-admin/announcements', icon: <Megaphone size={20} />, label: 'Announcements' },
         { to: '/super-admin/profile', icon: <UserCircle size={20} />, label: 'My Profile' },
       ]
     },
@@ -36,6 +39,7 @@ export default function SuperAdminLayout() {
       items: [
         { to: '/super-admin/departments', icon: <Building2 size={20} />, label: 'Departments' },
         { to: '/super-admin/programs', icon: <BookMarked size={20} />, label: 'Programs & Levels' },
+        { to: '/super-admin/academic-settings', icon: <Scale size={20} />, label: 'Sessions & Grading' },
       ]
     },
     {
@@ -43,6 +47,9 @@ export default function SuperAdminLayout() {
       items: [
         { to: '/super-admin/courses', icon: <Library size={20} />, label: 'Courses' },
         { to: '/super-admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
+        { to: '/super-admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' },
+        { to: '/super-admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
+        { to: '/super-admin/remarks', icon: <MessageSquareWarning size={20} />, label: 'Re-mark Requests' },
       ]
     },
     {
@@ -53,12 +60,16 @@ export default function SuperAdminLayout() {
         { to: '/super-admin/students', icon: <Users size={20} />, label: 'Students & Levels' },
         { to: '/super-admin/enroll-student', icon: <BookOpen size={20} />, label: 'Enroll Student' },
         { to: '/super-admin/lecturers', icon: <Users size={20} />, label: 'Enroll Staff' },
+        { to: '/super-admin/data-tools', icon: <DatabaseZap size={20} />, label: 'Data Tools' },
       ]
     },
     {
       label: 'Academic Performance',
       items: [
         { to: '/super-admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' },
+        { to: '/super-admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' },
+        { to: '/super-admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
+        { to: '/super-admin/audit-log', icon: <ScrollText size={20} />, label: 'Audit Log' },
       ]
     },
   ];
@@ -188,6 +199,7 @@ export default function SuperAdminLayout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <ShieldCheck size={18} color="#a78bfa" />
             <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>Super Admin Portal</span>
+            <div style={{ marginLeft: 12 }}><NotificationBell dark /></div>
           </div>
         </div>
 

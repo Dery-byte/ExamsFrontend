@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ExportSheetButton from '../../components/admin/ExportSheetButton';
 import { createPortal } from 'react-dom';
 import client from '../../api/client';
 import { toast } from 'react-hot-toast';
@@ -257,7 +258,7 @@ const ManualMarksEntry = () => {
                         <option value="">Select an active semester sheet</option>
                         {sheets.map((s: any) => (
                             <option key={s.id} value={s.id}>
-                                {s.courseName || `Sheet #${s.id}`} — Level {s.level} | Sem {s.semester} | {s.status}
+                                {s.courseName || `Sheet #${s.id}`} — {s.sessionName ? `${s.sessionName} | ` : ''}Level {s.level} | Sem {s.semester} | {s.status}
                             </option>
                         ))}
                     </select>
@@ -282,13 +283,14 @@ const ManualMarksEntry = () => {
                             Manual Marks Entry {allCourses[0]?.courseCode ? `— ${allCourses[0].courseCode}` : ''}
                         </div>
                         <div className="mme-ov-subtitle">
-                            Level {sheetData.level} &bull; Sem {sheetData.semester}
+                            {sheetData.sessionName ? <>{sheetData.sessionName} &bull; </> : null}Level {sheetData.level} &bull; Sem {sheetData.semester}
                         </div>
                     </div>
                 </div>
 
                 <div className="mme-ov-header-right">
                     <StatusBadge status={sheetData.status} />
+                    <ExportSheetButton sheetId={selectedSheetId!} />
 
                     {!isReadOnly && (
                         <button onClick={() => setShowAddSection(!showAddSection)} className="mme-pill mme-pill-warning">

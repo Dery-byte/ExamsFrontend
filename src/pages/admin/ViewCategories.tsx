@@ -79,6 +79,7 @@ export default function ViewCategories() {
         description: categoryEdit.description,
         level: categoryEdit.level,
         semester: categoryEdit.semester,
+        creditUnits: categoryEdit.creditUnits === '' || categoryEdit.creditUnits == null ? undefined : Number(categoryEdit.creditUnits),
         // Omit programIds (leave unchanged) when the editor can't modify a global course's programs
         programIds: editingLockedGlobal ? undefined : (categoryEdit.programIds || []),
       };
@@ -206,6 +207,10 @@ export default function ViewCategories() {
                   <div style={{ width: 110, flexShrink: 0 }}>
                     <label style={{ display: 'block', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>Code</label>
                     <input className="mini-input" style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', fontWeight: 900, color: '#6366f1' }} value={categoryEdit.courseCode||''} onChange={e=>setCategoryEdit({...categoryEdit,courseCode:e.target.value.toUpperCase()})} placeholder="CODE"/>
+                  </div>
+                  <div style={{ width: 80, flexShrink: 0 }}>
+                    <label htmlFor="vc-cu" style={{ display: 'block', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>Credits</label>
+                    <input id="vc-cu" type="number" min={0} max={30} className="mini-input" style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center' }} value={categoryEdit.creditUnits ?? ''} onChange={e=>setCategoryEdit({...categoryEdit,creditUnits:e.target.value})} placeholder="3"/>
                   </div>
                 </div>
 

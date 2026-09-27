@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import client from '../../api/client';
+import ExportSheetButton from '../../components/admin/ExportSheetButton';
 import { toast } from 'react-hot-toast';
 import {
   BookOpen, Users, ChevronDown, ChevronUp, Eye, CheckCircle,
@@ -105,7 +106,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
               Marks Review — {sheet.courseName || 'Sheet'}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
-              Level {sheet.level} &bull; Sem {sheet.semester} &bull; {sheet.programName}
+              {sheet.sessionName ? <>{sheet.sessionName} &bull; </> : null}Level {sheet.level} &bull; Sem {sheet.semester} &bull; {sheet.programName}
             </div>
           </div>
         </div>
@@ -113,6 +114,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
         {/* Status + Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <StatusBadge status={sheet.status} />
+          <ExportSheetButton sheetId={sheet.id} />
 
           {canRevert && (
             <button
@@ -392,7 +394,7 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
               {sheet.courseName || 'Unnamed Sheet'}
             </div>
             <div style={{ fontSize: 12, color: '#64748b' }}>
-              {sheet.programName} &bull; Level {sheet.level} &bull; Semester {sheet.semester}
+              {sheet.sessionName ? <>{sheet.sessionName} &bull; </> : null}{sheet.programName} &bull; Level {sheet.level} &bull; Semester {sheet.semester}
             </div>
           </div>
           <StatusBadge status={sheet.status} />

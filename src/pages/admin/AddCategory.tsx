@@ -31,7 +31,7 @@ export default function AddCategory() {
   const basePath = isSuper ? '/super-admin' : '/admin';
   // Global courses (no programs) are open to every student; only the Super Admin can create them.
   const [isGlobal, setIsGlobal] = useState(false);
-  const [category, setCategory] = useState<{title: string, courseCode: string, level: string, description: string, semester: string, programIds: number[]}>({ title: '', courseCode: '', level: '', description: '', semester: '', programIds: [] });
+  const [category, setCategory] = useState<{title: string, courseCode: string, level: string, description: string, semester: string, programIds: number[], creditUnits: string}>({ title: '', courseCode: '', level: '', description: '', semester: '', programIds: [], creditUnits: '3' });
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[]; semestersPerLevel: Record<number, number> }[]>([]);
@@ -60,7 +60,11 @@ export default function AddCategory() {
     const loadingToast = toast.loading('Registering course...');
     setLoading(true);
     try {
-      await addCategory({ ...category, programIds: isGlobal ? [] : category.programIds });
+      await addCategory({
+        ...category,
+        programIds: isGlobal ? [] : category.programIds,
+        creditUnits: category.creditUnits === '' ? null : Number(category.creditUnits),
+      });
       toast.success('Course registered successfully', { id: loadingToast });
       setTimeout(() => navigate(`${basePath}/courses`), 1200);
     } catch (err: any) {
@@ -162,6 +166,14 @@ export default function AddCategory() {
                   />
                 </div>
                 <span className="acp-hint">Unique identifier</span>
+              </div>
+              <div className="acp-field" style={{ maxWidth: 140 }}>
+                <label className="acp-label" htmlFor="acp-cu">Credit Units</label>
+                <div className="acp-input-wrap is-filled">
+                  <input id="acp-cu" className="acp-input" type="number" min={0} max={30} value={category.creditUnits}
+                    onChange={e => setCategory(c => ({ ...c, creditUnits: e.target.value }))} />
+                </div>
+                <span className="acp-hint">Weight in GPA</span>
               </div>
             </div>
 

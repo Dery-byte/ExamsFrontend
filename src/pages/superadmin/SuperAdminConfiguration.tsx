@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { saGetSystemSettings, saUpdateSystemSettings, saGetPrograms, saToggleProgram } from '../../api/endpoints';
-import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap } from 'lucide-react';
+import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
@@ -84,6 +84,21 @@ export default function SuperAdminConfiguration() {
     }
   };
 
+  const handleToggleExamClock = async () => {
+    const key = 'EXAM_CLOCK_RUNS_WHILE_AWAY';
+    const next = !isOn(key);
+    setSavingKey(key);
+    try {
+      await saUpdateSystemSettings({ [key]: next.toString() });
+      setSettings(prev => ({ ...prev, [key]: next.toString() }));
+      toast.success(next ? 'Exam clock now keeps running while a student is away' : 'Exam clock now pauses while a student is away');
+    } catch {
+      toast.error('Failed to update setting');
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
   const handleToggleProgram = async (p: Program) => {
     setTogglingId(p.id);
     try {
@@ -148,6 +163,40 @@ export default function SuperAdminConfiguration() {
             </div>
           </button>
         </div>
+      </div>
+
+      {/* ── Exams ───────────────────────────────────────────────────────── */}
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>Exams</h2>
+      <div style={{ ...card(), display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(14,165,233,0.1)', border: '1px solid rgba(14,165,233,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8', flexShrink: 0 }}>
+            <Timer size={22} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginBottom: 4 }}>Exam clock keeps running while a student is away</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+              On: if a student closes the browser, loses power or drops offline, the time away still counts — they return to the time actually left (and the attempt is submitted if it has run out). Off: the clock resumes from their last save, up to 15 seconds before they left.
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={handleToggleExamClock}
+          disabled={savingKey === 'EXAM_CLOCK_RUNS_WHILE_AWAY'}
+          role="switch"
+          aria-checked={isOn('EXAM_CLOCK_RUNS_WHILE_AWAY')}
+          aria-label="Exam clock keeps running while a student is away"
+          style={{
+            background: isOn('EXAM_CLOCK_RUNS_WHILE_AWAY') ? '#10b981' : 'rgba(255,255,255,0.1)',
+            border: 'none', borderRadius: 20, width: 50, height: 26, position: 'relative', cursor: 'pointer', transition: 'all 0.3s', flexShrink: 0, marginLeft: 16
+          }}
+        >
+          <div style={{
+            width: 20, height: 20, background: '#fff', borderRadius: '50%', position: 'absolute', top: 3,
+            left: isOn('EXAM_CLOCK_RUNS_WHILE_AWAY') ? 27 : 3, transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {isOn('EXAM_CLOCK_RUNS_WHILE_AWAY') && <Check size={12} color="#10b981" />}
+          </div>
+        </button>
       </div>
 
       {/* ── Result Slips ────────────────────────────────────────────────── */}

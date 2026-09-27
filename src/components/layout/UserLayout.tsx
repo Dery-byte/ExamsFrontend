@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationBell from '../NotificationBell';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
   LayoutDashboard, 
@@ -13,7 +14,9 @@ import {
   Menu, 
   X,
   Clock,
-  Bell
+  Megaphone,
+  CalendarDays,
+  FileText
 } from 'lucide-react';
 
 const SIDEBAR_W = 260;
@@ -29,14 +32,19 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         { to: '/user-dashboard/user-dashboard', label: 'Dashboard',       icon: LayoutDashboard },
         { to: '/user-dashboard/register',        label: 'Register Course',  icon: GraduationCap   },
         { to: '/user-dashboard/courses',         label: 'My Courses',   icon: BookOpen         },
+        { to: '/user-dashboard/announcements',   label: 'Announcements', icon: Megaphone       },
       ]
     },
     {
       title: 'Academic Performance',
       items: [
         { to: '/user-dashboard/quizzes', label: 'Assessments',        icon: ClipboardCheck },
+        { to: '/user-dashboard/timetable', label: 'Exam Timetable',    icon: CalendarDays },
         { to: '/user-dashboard/history', label: 'Performance History', icon: History        },
-        ...(marksSheetStudent ? [{ to: '/user-dashboard/report-cards', label: 'Report Cards', icon: BookOpen }] : []),
+        ...(marksSheetStudent ? [
+          { to: '/user-dashboard/report-cards', label: 'Report Cards', icon: BookOpen },
+          { to: '/user-dashboard/transcript', label: 'Transcript & CGPA', icon: FileText },
+        ] : []),
       ]
     },
     {
@@ -150,10 +158,7 @@ export default function UserLayout() {
               </div>
             )}
 
-            <button className="user-topbar-icon-btn desktop-show" aria-label="Notifications">
-              <Bell size={20} />
-              <span className="user-notif-dot" />
-            </button>
+            <NotificationBell />
 
             <div className="user-topbar-profile">
               <div className="user-topbar-profile-text desktop-show">

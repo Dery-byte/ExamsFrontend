@@ -5,8 +5,9 @@ import {
   getQuestionsForAdmin, getQuestionsForLecturer, getTheoryQuestions, getNumberOfTheoryToAnswer,
   getQuestion, updateQuestion, deleteQuestion,
   getTheoryQuestion, updateTheoryQuestion, deleteTheoryQuestion,
-  setCompulsoryQuestion, updateNumberOfTheoryToAnswer, uploadQuestionImage
+  setCompulsoryQuestion, updateNumberOfTheoryToAnswer, uploadQuestionImage, getQuiz
 } from '../../api/endpoints';
+import QuizBankDialog from '../../components/examops/QuizBankDialog';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -14,7 +15,7 @@ import {
   ShieldCheck, Clock, Layers, X, Save, AlertCircle, BookOpen,
   Info, CheckCircle, HelpCircle, ChevronRight, FileText, Loader2,
   ArrowLeft, GripVertical, Award, Target, Hash, Zap, Cpu, Activity,
-  ChevronDown, MinusCircle, PlusCircle, Check
+  ChevronDown, MinusCircle, PlusCircle, Check, Shuffle, Upload, ShieldAlert
 } from 'lucide-react';
 import RichTextEditor from '../../components/ui/RichTextEditor';
 import QuestionImage from '../../components/ui/QuestionImage';
@@ -27,6 +28,11 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   const roleName = adminMode ? 'Admin' : 'Lecturer';
 
   const [questions, setQuestions] = useState<any[]>([]);
+  const [bankMode, setBankMode] = useState<'draw' | 'import' | null>(null);
+  const [courseId, setCourseId] = useState<number | null>(null);
+  useEffect(() => {
+    if (qId) getQuiz(qId).then((q: any) => setCourseId(q?.category?.cid ?? null)).catch(() => {});
+  }, [qId]);
   const [sectionB, setSectionB] = useState<any[]>([]);
   const [numberOfquestionsToAnswers, setNqta] = useState<any[]>([]);
   const [compulsoryPrefixes, setCompulsory] = useState<Record<string, boolean>>({});
@@ -305,10 +311,23 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
           <Link to={`${basePath}/quizzes`} className="vqq-btn-back">
             <ArrowLeft size={15} /><span>Registry</span>
           </Link>
+          <button className="vqq-btn-back" onClick={() => setBankMode('draw')} title="Add random questions from this course's question bank">
+            <Shuffle size={15} /><span>From bank</span>
+          </button>
+          <button className="vqq-btn-back" onClick={() => setBankMode('import')} title="Copy this quiz's questions into the course's question bank">
+            <Upload size={15} /><span>Save to bank</span>
+          </button>
+          <Link to={`${basePath}/proctoring/${qId}`} className="vqq-btn-back" title="Proctoring report for this quiz">
+            <ShieldAlert size={15} /><span>Proctoring</span>
+          </Link>
           <Link to={`${basePath}/add-question/${qId}/${qTitle}`} className="vqq-btn-add">
             <Plus size={16} /><span>Add Items</span>
           </Link>
         </div>
+        {bankMode && qId && (
+          <QuizBankDialog quizId={Number(qId)} courseId={courseId} mode={bankMode}
+            onClose={() => setBankMode(null)} onDone={loadData} />
+        )}
       </div>
 
       {/* ── QUIZ BANNER ── */}
@@ -1098,7 +1117,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .vqq-breadcrumb { display:flex; align-items:center; gap:5px; font-size:12px; color:#adb5bd; font-weight:500; flex-wrap:wrap; }
         .vqq-bc-active { color:#5156be; font-weight:700; }
         .vqq-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-        .vqq-btn-back { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:1.5px solid #e2e8f0; background:#fff; color:#5156be; font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 2px 6px rgba(0,0,0,0.04); }
+        .vqq-btn-back { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:1.5px solid #e2e8f0; background:#fff; color:#5156be; font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer; font-family:inherit; }
         .vqq-btn-back:hover { background:#f8f9ff; border-color:#c7caf5; }
         .vqq-btn-add { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:none; background:linear-gradient(135deg,#5156be,#6c70d4); color:#fff; font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 4px 12px rgba(81,86,190,0.28); }
         .vqq-btn-add:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(81,86,190,0.38); }

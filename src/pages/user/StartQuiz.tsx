@@ -218,7 +218,13 @@ export default function StartQuiz() {
       }
     };
     window.addEventListener('blur', onBlur);
+    // Also checkpoint when the tab is hidden or the page is being closed
+    const onHide = () => { if (document.visibilityState === 'hidden') onBlur(); };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onBlur);
     return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onBlur);
       if (timerRef.current) clearInterval(timerRef.current);
       if (autoSaveRef.current) clearInterval(autoSaveRef.current);
       if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
@@ -321,7 +327,10 @@ export default function StartQuiz() {
       const totalSec = (oMins + tMins) * 60 || oMins * 60 || 3600;
       let t0 = totalSec;
       
-      if (savedTime && typeof savedTime === 'object') {
+      // Time ran out while the student was away: start a 1-second clock so the normal expiry
+      // path submits the attempt (never restart the full duration).
+      const timeExpired = (savedTime as any)?.status === 'expired';
+      if (!timeExpired && savedTime && typeof savedTime === 'object') {
         const rTime = (savedTime as any).remainingTime ?? (savedTime as any).timeRemaining;
         const parsedTime = Number(rTime);
         if (!isNaN(parsedTime) && parsedTime > 0) {
@@ -330,19 +339,23 @@ export default function StartQuiz() {
       }
       
       // Safety fallback to prevent 0:0 immediate submission
-      if (!t0 || t0 <= 0) {
+      if (timeExpired) {
+        t0 = 1;
+      } else if (!t0 || t0 <= 0) {
         t0 = totalSec;
       }
 
       setTimer(t0);
       startTimer(t0, totalSec);
 
+      // Checkpoint every 15 s so a crash or dropped connection loses at most 15 s of clock
+      let tick = 0;
       autoSaveRef.current = setInterval(() => {
         if (isTimerLoaded.current) {
-          saveTheory().catch(() => { });
           saveQuizTimer(realId, timerVal.current).catch(() => { });
+          if (++tick % 4 === 0) saveTheory().catch(() => { });   // theory answers also save as the student types
         }
-      }, 60_000);
+      }, 15_000);
       isTimerLoaded.current = true;
     } catch (e) { console.error('loadAll error', e); } finally { setLoading(false); }
   };
