@@ -40,6 +40,7 @@ import AcademicSettings from './pages/superadmin/AcademicSettings';
 import AcademicRecords from './pages/shared/AcademicRecords';
 import Transcript from './pages/user/Transcript';
 import DataTools from './pages/shared/DataTools';
+import FeatureControls from './pages/shared/FeatureControls';
 
 // Super Admin
 import SuperAdminWelcome from './pages/superadmin/SuperAdminWelcome';
@@ -114,6 +115,7 @@ export default function App() {
           <Route index element={<SuperAdminWelcome />} />
           <Route path="configuration" element={<SuperAdminConfiguration />} />
           <Route path="academic-settings" element={<AcademicSettings />} />
+          <Route path="features" element={<FeatureControls />} />
           <Route path="academic-records" element={<AcademicRecords />} />
           <Route path="data-tools" element={<DataTools />} />
           <Route path="announcements" element={<Announcements />} />
@@ -138,14 +140,15 @@ export default function App() {
         {/* Admin */}
         <Route path="/admin" element={<ProtectedRoute role={['ADMIN','SUPER_ADMIN']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminWelcome />} />
+          <Route path="department-settings" element={<FeatureControls />} />
           <Route path="timetable" element={<Timetable />} />
-          <Route path="question-bank" element={<QuestionBank />} />
+          <Route path="question-bank" element={<FeatureGate feature="QUESTION_BANK" redirectTo="/admin"><QuestionBank /></FeatureGate>} />
           <Route path="proctoring/:qId" element={<ProctoringReport />} />
           <Route path="remarks" element={<RemarkRequests />} />
           <Route path="academic-records" element={<AcademicRecords />} />
-          <Route path="data-tools" element={<DataTools />} />
+          <Route path="data-tools" element={<FeatureGate feature="HOD_DATA_TOOLS" redirectTo="/admin"><DataTools /></FeatureGate>} />
           <Route path="announcements" element={<Announcements />} />
-          <Route path="analytics" element={<Analytics />} />
+          <Route path="analytics" element={<FeatureGate feature="HOD_ANALYTICS" redirectTo="/admin"><Analytics /></FeatureGate>} />
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCategories />} />
           <Route path="add-course" element={<AddCategory />} />
@@ -164,7 +167,7 @@ export default function App() {
         <Route path="/lect" element={<ProtectedRoute role="LECTURER"><LecturerLayout /></ProtectedRoute>}>
           <Route index element={<LectWelcome />} />
           <Route path="timetable" element={<Timetable />} />
-          <Route path="question-bank" element={<QuestionBank />} />
+          <Route path="question-bank" element={<FeatureGate feature="QUESTION_BANK" redirectTo="/lect"><QuestionBank /></FeatureGate>} />
           <Route path="proctoring/:qId" element={<ProctoringReport />} />
           <Route path="remarks" element={<RemarkRequests />} />
           <Route path="announcements" element={<Announcements />} />
@@ -182,11 +185,11 @@ export default function App() {
         <Route path="/user-dashboard" element={<ProtectedRoute role="NORMAL"><UserLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="user-dashboard" replace />} />
           <Route path="user-dashboard" element={<UserDashboard />} />
-          <Route path="timetable" element={<Timetable />} />
+          <Route path="timetable" element={<FeatureGate feature="STUDENT_TIMETABLE" redirectTo="/user-dashboard"><Timetable /></FeatureGate>} />
           <Route path="announcements" element={<Announcements />} />
-          <Route path="transcript" element={<FeatureGate flag="marksSheetStudent" redirectTo="/user-dashboard"><Transcript /></FeatureGate>} />
+          <Route path="transcript" element={<FeatureGate flag="marksSheetStudent" feature="STUDENT_TRANSCRIPT" redirectTo="/user-dashboard"><Transcript /></FeatureGate>} />
           <Route path="profile" element={<Profile />} />
-          <Route path="register" element={<RegisterCourses />} />
+          <Route path="register" element={<FeatureGate feature="STUDENT_COURSE_REGISTRATION" redirectTo="/user-dashboard"><RegisterCourses /></FeatureGate>} />
           <Route path="courses" element={<CoursesRegistered />} />
           <Route path="quizzes" element={<AvailableQuizzes />} />
           <Route path="history" element={<LoadQuiz />} />

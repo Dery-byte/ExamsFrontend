@@ -21,7 +21,7 @@ import {
 export default function LecturerLayout() {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { marksSheetLecturer } = useFeatureFlags();
+  const { marksSheetLecturer, features } = useFeatureFlags();
 
   const navItems = [
     { to: '/lect', exact: true, icon: <Home size={20} />, title: 'Dashboard' },
@@ -32,7 +32,7 @@ export default function LecturerLayout() {
     { to: '/lect/add-quizes', icon: <Briefcase size={20} />, title: 'Create Quiz' },
     { to: '/lect/quiz-review', icon: <Eye size={20} />, title: 'Quiz Review' },
     { to: '/lect/remarks', icon: <MessageSquareWarning size={20} />, title: 'Re-mark Requests' },
-    { to: '/lect/question-bank', icon: <Library size={20} />, title: 'Question Bank' },
+    ...(features?.QUESTION_BANK !== false ? [{ to: '/lect/question-bank', icon: <Library size={20} />, title: 'Question Bank' }] : []),
     { to: '/lect/timetable', icon: <CalendarDays size={20} />, title: 'Exam Timetable' },
     ...(marksSheetLecturer ? [{ to: '/lect/manual-marks', icon: <FileText size={20} />, title: 'Marks Sheet' }] : []),
   ];

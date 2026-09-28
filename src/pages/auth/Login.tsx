@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { forgotPassword, getQuizPublicSummary } from '../../api/endpoints';
+import { forgotPassword, getQuizPublicSummary, getPublicSettings } from '../../api/endpoints';
 import {
   User,
   Lock,
@@ -32,6 +32,8 @@ const joinWithAnd = (items: string[]) =>
 
 export default function Login() {
   const { login } = useAuth();
+  const [signupOpen, setSignupOpen] = useState(true);
+  useEffect(() => { getPublicSettings().then(s => setSignupOpen(s.studentSelfSignup)).catch(() => {}); }, []);
   // Set by ProtectedRoute / the shared quiz link: where to go once signed in.
   const location = useLocation();
   const fromState = (location.state as any) ?? {};
@@ -389,12 +391,14 @@ export default function Login() {
               </button>
             </form>
 
+            {signupOpen && (
             <div style={{ marginTop: 36, textAlign: 'center' }}>
               <span style={{ fontSize: 14, color: 'var(--gray-500)', fontWeight: 500 }}>New member? </span>
               <Link to="/signup" style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
                 Create Student Account
               </Link>
             </div>
+            )}
           </div>
 
           <div style={{ marginTop: 22, textAlign: 'center', fontSize: 12, color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.05em' }}>

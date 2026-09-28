@@ -6,7 +6,7 @@ import {
   LayoutDashboard, UserCircle, Building2, BookMarked,
   Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
   Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library,
-  Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap
+  Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight
 } from 'lucide-react';
 
 export default function SuperAdminLayout() {
@@ -30,6 +30,7 @@ export default function SuperAdminLayout() {
       items: [
         { to: '/super-admin', exact: true, icon: <LayoutDashboard size={20} />, label: 'Overview' },
         { to: '/super-admin/configuration', icon: <Settings size={20} />, label: 'Configuration' },
+        { to: '/super-admin/features', icon: <ToggleRight size={20} />, label: 'Feature Controls' },
         { to: '/super-admin/announcements', icon: <Megaphone size={20} />, label: 'Announcements' },
         { to: '/super-admin/profile', icon: <UserCircle size={20} />, label: 'My Profile' },
       ]

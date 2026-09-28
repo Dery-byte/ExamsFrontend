@@ -8,6 +8,7 @@ import {
   setCompulsoryQuestion, updateNumberOfTheoryToAnswer, uploadQuestionImage, getQuiz
 } from '../../api/endpoints';
 import QuizBankDialog from '../../components/examops/QuizBankDialog';
+import { useFeature } from '../../hooks/useFeatureFlags';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -29,6 +30,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
   const [questions, setQuestions] = useState<any[]>([]);
   const [bankMode, setBankMode] = useState<'draw' | 'import' | null>(null);
+  const bankOn = useFeature('QUESTION_BANK');
   const [courseId, setCourseId] = useState<number | null>(null);
   useEffect(() => {
     if (qId) getQuiz(qId).then((q: any) => setCourseId(q?.category?.cid ?? null)).catch(() => {});
@@ -311,12 +313,12 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
           <Link to={`${basePath}/quizzes`} className="vqq-btn-back">
             <ArrowLeft size={15} /><span>Registry</span>
           </Link>
-          <button className="vqq-btn-back" onClick={() => setBankMode('draw')} title="Add random questions from this course's question bank">
+          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('draw')} title="Add random questions from this course's question bank">
             <Shuffle size={15} /><span>From bank</span>
-          </button>
-          <button className="vqq-btn-back" onClick={() => setBankMode('import')} title="Copy this quiz's questions into the course's question bank">
+          </button>}
+          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('import')} title="Copy this quiz's questions into the course's question bank">
             <Upload size={15} /><span>Save to bank</span>
-          </button>
+          </button>}
           <Link to={`${basePath}/proctoring/${qId}`} className="vqq-btn-back" title="Proctoring report for this quiz">
             <ShieldAlert size={15} /><span>Proctoring</span>
           </Link>

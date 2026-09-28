@@ -458,7 +458,16 @@ export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
   client.put('/report-email-setting', { enabled }).then(r => !!r.data?.enabled);
 
 // ── Feature flags (set by Super Admin, readable by every role) ────────────
-export interface FeatureFlags { marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean; }
+/** Switchable features (see Feature Controls). */
+export type FeatureKey =
+  | 'STUDENT_SELF_SIGNUP' | 'HOD_ANALYTICS' | 'HOD_DATA_TOOLS' | 'HOD_PROMOTION' | 'HOD_ANNOUNCEMENTS'
+  | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'QUESTION_BANK';
+
+export interface FeatureFlags {
+  marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean;
+  /** Each feature's state for the signed-in user (system switch + their department's choice). */
+  features?: Partial<Record<FeatureKey, boolean>>;
+}
 export const getFeatureFlags = (): Promise<FeatureFlags> =>
   client.get('/feature-flags').then(r => r.data);
 
@@ -557,6 +566,11 @@ export const deleteSession = (id: number) => client.delete(`${apiRoot()}/academi
 export const getGradingSettings = () => client.get(`${apiRoot()}/academic/grading`).then(r => r.data);
 export const getGradingPreset = (key: string) => client.get(`${apiRoot()}/academic/grading/preset/${key}`).then(r => r.data);
 export const saveGradingSettings = (data: object) => client.put(`${apiRoot()}/academic/grading`, data).then(r => r.data);
+/** Save a grading scale as a named preset (Super Admin). */
+export const saveGradingPreset = (data: { name: string; description?: string; bands: object[]; classes: object[] }) =>
+  client.post(`${apiRoot()}/academic/grading/presets`, data).then(r => r.data);
+export const deleteGradingPreset = (id: number) =>
+  client.delete(`${apiRoot()}/academic/grading/presets/${id}`).then(r => r.data);
 export const recalculateGrades = () => client.post(`${apiRoot()}/academic/grading/recalculate`).then(r => r.data);
 
 export const getMyTranscript = () => client.get(`${apiRoot()}/academic/me/transcript`).then(r => r.data);
@@ -595,3 +609,14 @@ export const getMarksSheetData = (sheetId: number | string) =>
 /** Checks a quiz access code on the server; lets the student start one new attempt. */
 export const unlockQuiz = (quizId: number | string, password: string) =>
   client.post(`/quiz/${quizId}/unlock`, { password }).then(r => r.data);
+
+// ── Feature controls ──────────────────────────────────────────────────────
+export const getFeatures = () => client.get(`${apiRoot()}/features`).then(r => r.data);
+export const setFeatureSystemWide = (key: FeatureKey, enabled: boolean) =>
+  client.put(`${apiRoot()}/features/${key}`, { enabled }).then(r => r.data);
+/** enabled = null → the department follows the system-wide switch again. */
+export const setFeatureForDepartment = (key: FeatureKey, departmentId: number, enabled: boolean | null) =>
+  client.put(`${apiRoot()}/features/${key}/departments/${departmentId}`, { enabled }).then(r => r.data);
+/** Settings needed before sign-in (e.g. whether students may sign up). */
+export const getPublicSettings = (): Promise<{ studentSelfSignup: boolean }> =>
+  client.get('/public-settings').then(r => r.data);

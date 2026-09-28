@@ -26,7 +26,8 @@ import {
   Library,
   MessageSquareWarning,
   FileText,
-  DatabaseZap
+  DatabaseZap,
+  ToggleRight
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -35,7 +36,8 @@ export default function AdminLayout() {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { marksSheetAdmin } = useFeatureFlags();
+  const { marksSheetAdmin, features } = useFeatureFlags();
+  const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -52,7 +54,8 @@ export default function AdminLayout() {
       label: 'Main Dashboard', 
       items: [
         { to: '/admin', exact: true, icon: <LayoutDashboard size={20} />, label: 'Overview' },
-        { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
+        ...(on('HOD_ANALYTICS') ? [{ to: '/admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' }] : []),
+        { to: '/admin/department-settings', icon: <ToggleRight size={20} />, label: 'Department Settings' },
         { to: '/admin/announcements', icon: <Megaphone size={20} />, label: 'Announcements' },
         { to: '/admin/profile', icon: <UserCircle size={20} />, label: 'Admin Profile' },
       ]
@@ -64,7 +67,7 @@ export default function AdminLayout() {
         { to: '/admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
         { to: '/admin/quizzes', icon: <ClipboardList size={20} />, label: 'Quizzes' },
         { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
-        { to: '/admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' },
+        ...(on('QUESTION_BANK') ? [{ to: '/admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' }] : []),
         { to: '/admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
         ...(marksSheetAdmin ? [{ to: '/admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' }] : []),
       ]
@@ -76,7 +79,7 @@ export default function AdminLayout() {
         { to: '/admin/enroll-student', icon: <BookMarked size={20} />, label: 'Enroll Student' },
         { to: '/admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' },
         { to: '/admin/lecturers', icon: <Users size={20} />, label: 'Faculty Directory' },
-        { to: '/admin/data-tools', icon: <DatabaseZap size={20} />, label: 'Data Tools' },
+        ...(on('HOD_DATA_TOOLS') ? [{ to: '/admin/data-tools', icon: <DatabaseZap size={20} />, label: 'Data Tools' }] : []),
       ]
     },
     {

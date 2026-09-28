@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { registerStudent, getPrograms } from '../../api/endpoints';
+import { registerStudent, getPrograms, getPublicSettings } from '../../api/endpoints';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   User, Mail, Phone, Lock, Eye, EyeOff, Loader2, GraduationCap, ShieldCheck,
@@ -9,6 +9,8 @@ import {
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [signupOpen, setSignupOpen] = useState(true);
+  useEffect(() => { getPublicSettings().then(x => setSignupOpen(x.studentSelfSignup)).catch(() => {}); }, []);
   const [loading, setLoading] = useState(false);
   const [hidePass, setHidePass] = useState(true);
   const [hideConfirm, setHideConfirm] = useState(true);
@@ -70,6 +72,20 @@ export default function Signup() {
       setLoading(false);
     }
   };
+
+  if (!signupOpen) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: '#f8fafc' }}>
+        <div style={{ maxWidth: 420, width: '100%', background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 14, padding: 28, textAlign: 'center' }}>
+          <h1 style={{ fontSize: 20, margin: '0 0 8px', color: '#1e293b' }}>Sign-up is closed</h1>
+          <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: '0 0 18px' }}>
+            Student accounts are created by your department. Please contact your HOD or the examinations office to get your login details.
+          </p>
+          <Link to="/login" style={{ fontWeight: 700, color: 'var(--primary, #5156be)', textDecoration: 'none' }}>Back to sign in</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

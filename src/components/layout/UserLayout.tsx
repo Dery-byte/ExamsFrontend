@@ -23,14 +23,15 @@ const SIDEBAR_W = 260;
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { logout } = useAuth();
-  const { marksSheetStudent } = useFeatureFlags();
+  const { marksSheetStudent, features } = useFeatureFlags();
+  const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
   const menuGroups = [
     {
       title: 'Main',
       items: [
         { to: '/user-dashboard/user-dashboard', label: 'Dashboard',       icon: LayoutDashboard },
-        { to: '/user-dashboard/register',        label: 'Register Course',  icon: GraduationCap   },
+        ...(on('STUDENT_COURSE_REGISTRATION') ? [{ to: '/user-dashboard/register', label: 'Register Course', icon: GraduationCap }] : []),
         { to: '/user-dashboard/courses',         label: 'My Courses',   icon: BookOpen         },
         { to: '/user-dashboard/announcements',   label: 'Announcements', icon: Megaphone       },
       ]
@@ -39,11 +40,11 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
       title: 'Academic Performance',
       items: [
         { to: '/user-dashboard/quizzes', label: 'Assessments',        icon: ClipboardCheck },
-        { to: '/user-dashboard/timetable', label: 'Exam Timetable',    icon: CalendarDays },
+        ...(on('STUDENT_TIMETABLE') ? [{ to: '/user-dashboard/timetable', label: 'Exam Timetable', icon: CalendarDays }] : []),
         { to: '/user-dashboard/history', label: 'Performance History', icon: History        },
         ...(marksSheetStudent ? [
           { to: '/user-dashboard/report-cards', label: 'Report Cards', icon: BookOpen },
-          { to: '/user-dashboard/transcript', label: 'Transcript & CGPA', icon: FileText },
+          ...(on('STUDENT_TRANSCRIPT') ? [{ to: '/user-dashboard/transcript', label: 'Transcript & CGPA', icon: FileText }] : []),
         ] : []),
       ]
     },

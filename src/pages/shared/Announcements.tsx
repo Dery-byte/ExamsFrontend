@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { Megaphone, Pin, Send, Trash2, Loader2, Inbox, Settings2, CalendarClock } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFeature } from '../../hooks/useFeatureFlags';
 import {
   deleteAnnouncement, getAnnouncements, getManageableAnnouncements, getPrograms, getProgramsByDept,
   postAnnouncement, saGetDepartments, type Announcement, type AnnouncementAudience,
@@ -36,7 +37,8 @@ export default function Announcements() {
   const { user } = useAuth() as any;
   const role: string = user?.role ?? '';
   const isSuper = role === 'SUPER_ADMIN';
-  const canPost = isSuper || role === 'ADMIN';
+  const hodMayPost = useFeature('HOD_ANNOUNCEMENTS');
+  const canPost = isSuper || (role === 'ADMIN' && hodMayPost);
   const qc = useQueryClient();
 
   const [tab, setTab] = useState<'inbox' | 'manage'>('inbox');

@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import { CalendarRange, Scale, Plus, Trash2, Loader2, CheckCircle2, Star, RefreshCw, GraduationCap } from 'lucide-react';
+import { CalendarRange, Scale, Plus, Trash2, Loader2, CheckCircle2, Star, RefreshCw, GraduationCap, BookmarkPlus } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import {
   createSession, deleteSession, getGradingPreset, getGradingSettings, getSessions, makeSessionCurrent,
-  recalculateGrades, saveGradingSettings,
+  recalculateGrades, saveGradingSettings, saveGradingPreset, deleteGradingPreset,
 } from '../../api/endpoints';
 
 type Band = { letter: string; minScore: string; gradePoint: string; remark: string; passing: boolean };
@@ -155,6 +155,52 @@ function GradingCard() {
     } catch { toast.error('Could not load the preset'); }
   };
 
+  const allPresets: any[] = data?.presets ?? [];
+  const builtIn = allPresets.filter(p => p.builtIn);
+  const custom = allPresets.filter(p => !p.builtIn);
+  const selectedPreset = allPresets.find(p => p.key === preset);
+
+  const formBands = () => bands.map(b => ({ letter: b.letter, minScore: Number(b.minScore), gradePoint: Number(b.gradePoint), remark: b.remark, passing: b.passing }));
+  const formClasses = () => classes.map(c => ({ name: c.name, minCgpa: Number(c.minCgpa) }));
+
+  /** Saves the grades and classes currently in the form as a named preset. */
+  const savePresetFromForm = async () => {
+    const r = await Swal.fire({
+      title: 'Save as preset',
+      html: '<p style="margin:0 0 8px;font-size:14px">Saves the grades and classes shown below so you can load them again later.</p>'
+        + '<input id="ps-name" class="swal2-input" placeholder="Preset name, e.g. Mock exams scale" maxlength="80" style="margin:6px auto">'
+        + '<input id="ps-desc" class="swal2-input" placeholder="Short description (optional)" maxlength="300" style="margin:6px auto">',
+      showCancelButton: true, confirmButtonText: 'Save preset', confirmButtonColor: '#5156be', focusConfirm: false,
+      preConfirm: () => {
+        const name = (document.getElementById('ps-name') as HTMLInputElement).value.trim();
+        if (!name) { Swal.showValidationMessage('Give the preset a name'); return false; }
+        return { name, description: (document.getElementById('ps-desc') as HTMLInputElement).value.trim() };
+      },
+    });
+    if (!r.isConfirmed || !r.value) return;
+    try {
+      const next = await saveGradingPreset({ ...r.value, bands: formBands(), classes: formClasses() });
+      qc.setQueryData(['grading'], (old: any) => ({ ...(old ?? {}), presets: next.presets }));
+      toast.success(`Preset "${r.value.name}" saved`);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? 'Could not save the preset');
+    }
+  };
+
+  const removePreset = async () => {
+    if (!selectedPreset || selectedPreset.builtIn) return;
+    const ok = await Swal.fire({ title: `Delete "${selectedPreset.label}"?`, text: 'The current grading scale is not affected.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#e34948' });
+    if (!ok.isConfirmed) return;
+    try {
+      const next = await deleteGradingPreset(selectedPreset.id);
+      qc.setQueryData(['grading'], (old: any) => ({ ...(old ?? {}), presets: next.presets }));
+      setPreset('');
+      toast.success('Preset deleted');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? 'Could not delete the preset');
+    }
+  };
+
   const setBand = (i: number, k: keyof Band, v: any) => setBands(bs => bs.map((b, j) => j === i ? { ...b, [k]: v } : b));
   const setClass = (i: number, k: keyof Klass, v: string) => setClasses(cs => cs.map((c, j) => j === i ? { ...c, [k]: v } : c));
 
@@ -162,8 +208,8 @@ function GradingCard() {
     setSaving(true);
     try {
       await saveGradingSettings({
-        bands: bands.map(b => ({ letter: b.letter, minScore: Number(b.minScore), gradePoint: Number(b.gradePoint), remark: b.remark, passing: b.passing })),
-        classes: classes.map(c => ({ name: c.name, minCgpa: Number(c.minCgpa) })),
+        bands: formBands(),
+        classes: formClasses(),
         defaultCreditUnits: Number(credits),
         maxCarryoversForPromotion: maxCarry.trim() === '' ? -1 : Number(maxCarry),
         minCgpaForPromotion: minCgpa.trim() === '' ? 0 : Number(minCgpa),
@@ -194,13 +240,27 @@ function GradingCard() {
         <div><h2>Grading scale, classes & promotion</h2><p>Used for every course grade, GPA, CGPA, transcript and promotion decision.</p></div>
       </div>
       <div className="as-body">
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          <select aria-label="Preset" className="as-input" style={{ maxWidth: 420 }} value={preset} onChange={e => setPreset(e.target.value)}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+          <select aria-label="Preset" className="as-input" style={{ maxWidth: 460 }} value={preset} onChange={e => setPreset(e.target.value)}>
             <option value="">Start from a preset…</option>
-            {(data?.presets ?? []).map((p: any) => <option key={p.key} value={p.key}>{p.label}</option>)}
+            <optgroup label="Built-in">
+              {builtIn.map((p: any) => <option key={p.key} value={p.key}>{p.label}</option>)}
+            </optgroup>
+            {custom.length > 0 && (
+              <optgroup label="Saved by you">
+                {custom.map((p: any) => <option key={p.key} value={p.key}>{p.label}</option>)}
+              </optgroup>
+            )}
           </select>
           <button className="as-ghost" onClick={loadPreset} disabled={!preset}>Load preset</button>
+          {selectedPreset && !selectedPreset.builtIn && (
+            <button className="as-ghost" style={{ color: '#b42323' }} onClick={removePreset}><Trash2 size={13} /> Delete preset</button>
+          )}
+          <span style={{ flex: 1 }} />
+          <button className="as-ghost" onClick={savePresetFromForm}><BookmarkPlus size={13} /> Save as preset…</button>
         </div>
+        {selectedPreset?.description && <p className="as-note" style={{ marginBottom: 12 }}>{selectedPreset.description}</p>}
+        {!selectedPreset && <div style={{ height: 6 }} />}
 
         <div className="as-grid">
           <div>
@@ -226,7 +286,8 @@ function GradingCard() {
           </div>
 
           <div>
-            <div className="as-label"><GraduationCap size={12} /> Class of degree (by CGPA)</div>
+            <div className="as-label"><GraduationCap size={12} /> Class of degree (by CGPA) — optional</div>
+            {classes.length === 0 && <p className="as-note">No classes: transcripts won't show a class. Typical for primary, JHS and SHS.</p>}
             <table className="as-table">
               <thead><tr><th>Class</th><th>From CGPA</th><th /></tr></thead>
               <tbody>

@@ -7,6 +7,7 @@ import {
 } from "../../api/endpoints";
 import { useAuth } from "../../contexts/AuthContext";
 import { toggleAccount } from '../../components/admin/accountActions';
+import { useFeature } from '../../hooks/useFeatureFlags';
 import Swal from "sweetalert2";
 import toast, { Toaster } from "react-hot-toast";
 import PageHeader from "../../components/PageHeader";
@@ -29,6 +30,8 @@ const colorFor = (level: string | number) =>
 export default function Students() {
   const auth = useAuth() as any;
   const isSuper = typeof auth.isSuperAdmin === "function" ? auth.isSuperAdmin() : false;
+  const hodMayPromote = useFeature("HOD_PROMOTION");
+  const canPromote = isSuper || hodMayPromote;   // the Super Admin can switch HOD promotion off
 
   const [students, setStudents]         = useState<any[]>([]);
   const [programs, setPrograms]         = useState<any[]>([]);
@@ -323,7 +326,7 @@ export default function Students() {
                   padding: "4px 14px", borderRadius: 20 }}>Level {level}</span>
                 <span style={{ fontSize: 13, color: col.text, fontWeight: 600 }}>
                   {grp.length} student{grp.length !== 1 ? "s" : ""}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {programFilter ? (
+                {programFilter && canPromote ? (
                   <>
                     <button onClick={() => demoteSemesterAll(level)} disabled={promotingSem === level + "-demote" || bulky}
                       style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(245,158,11,0.15)",
@@ -411,7 +414,7 @@ export default function Students() {
                         <ArrowRight size={10} style={{ transform: "rotate(180deg)" }} />L{prv}
                       </button>
                     )}
-                    {nxt && (
+                    {nxt && canPromote && (
                       <button onClick={() => promoteOne(s, nxt)} disabled={isPro} title={`Promote to ${nxt}`}
                         style={{ padding: "5px 10px", borderRadius: 7, border: `1.5px solid ${col.badge}`,
                           background: col.bg, color: col.text, cursor: "pointer",

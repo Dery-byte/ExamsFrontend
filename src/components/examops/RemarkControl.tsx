@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { MessageSquareWarning, Loader2, X } from 'lucide-react';
 import { getMyRemarks, requestRemark } from '../../api/endpoints';
 import { REMARK_STATUS } from '../../pages/shared/RemarkRequests';
+import { useFeature } from '../../hooks/useFeatureFlags';
 
 /** Student: request a re-mark of a reviewed script, or see the status of an existing request. */
 export default function RemarkControl({ report }: { report: any }) {
@@ -14,6 +15,7 @@ export default function RemarkControl({ report }: { report: any }) {
   const [sending, setSending] = useState(false);
 
   const { data: mine = [] } = useQuery({ queryKey: ['remarks', 'mine'], queryFn: getMyRemarks, staleTime: 60_000 });
+  const requestsOpen = useFeature('REMARK_REQUESTS');
   if (!report?.id || !report?.isReviewed) return null;
   const existing = (mine as any[]).find(r => r.reportId === report.id);
 
@@ -43,6 +45,8 @@ export default function RemarkControl({ report }: { report: any }) {
       </div>
     );
   }
+
+  if (!requestsOpen) return null;   // switched off: existing requests above still show their status
 
   return (
     <div style={{ padding: '8px 24px 14px', borderTop: '1px solid #f1f5f7' }}>
