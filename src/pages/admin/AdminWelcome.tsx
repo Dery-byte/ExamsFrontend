@@ -9,6 +9,7 @@ import {
 import * as XLSX from 'xlsx';
 import PageHeader from '../../components/PageHeader';
 import { Book, Clipboard, Users, GraduationCap, Download, BarChart2, Filter, Loader2, Search, ArrowUpRight, TrendingUp, Info, Award, Calendar, Activity, ChevronRight, Zap, Target, ShieldCheck as ShieldIcon, Database, LineChart as LineChartIcon } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 type AdminChartType = 'bar' | 'line' | 'area' | 'radar';
 
@@ -169,7 +170,7 @@ export default function AdminWelcome() {
           <div className="h-controls">
             <div className="h-select-wrapper">
               <select className="premium-select" value={selCatId ?? ''} onChange={e => selectCategory(e.target.value ? Number(e.target.value) : null)}>
-                <option value="">Select Course Catalog</option>
+                <option value="">{tx("Select Course Catalog")}</option>
                 {catOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <select className="premium-select" value={selQuizId ?? ''} onChange={e => onQuizSelected(e.target.value ? Number(e.target.value) : null)} disabled={!selCatId}>
@@ -236,7 +237,7 @@ export default function AdminWelcome() {
             <div className="idle-state">
               <div className="idle-icon-glow"><Database size={48} /></div>
               <h3>Awaiting Selection</h3>
-              <p>Select Course and Quiz to filter assessment data distribution.</p>
+              <p>{tx("Select Course and Quiz to filter assessment data distribution.")}</p>
             </div>
           )}
         </div>

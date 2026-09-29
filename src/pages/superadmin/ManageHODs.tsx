@@ -3,6 +3,7 @@ import { saGetAllHods, saCreateHod, saUpdateHod, saDeleteHod, saGetDepartments }
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { UserCog, Plus, Trash2, Edit2, Eye, EyeOff, Building2, Mail, Phone, User, Key, X } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 interface Hod { id: number; firstname: string; lastname: string; email: string; username: string; phone: string; departmentId?: number; }
 interface Department { id: number; name: string; code: string; }
@@ -47,10 +48,10 @@ export default function ManageHODs() {
     setSaving(true);
     try {
       await saCreateHod({ ...form, departmentId: Number(form.departmentId) });
-      toast.success(`HOD account created for ${form.firstname} ${form.lastname}`);
+      toast.success(tx(`HOD account created for ${form.firstname} ${form.lastname}`));
       setForm({ firstname: '', lastname: '', email: '', phone: '', username: '', password: '', departmentId: String(departments[0]?.id || '') });
       await load();
-    } catch (e: any) { toast.error(e?.response?.data?.message || 'Failed to create HOD'); }
+    } catch (e: any) { toast.error(e?.response?.data?.message || tx('Failed to create HOD')); }
     finally { setSaving(false); }
   };
 
@@ -65,10 +66,10 @@ export default function ManageHODs() {
       const payload: any = { ...editForm, departmentId: Number(editForm.departmentId) };
       if (!payload.password) delete payload.password; // Don't send empty password if not changing
       await saUpdateHod(editingHod.id, payload);
-      toast.success('HOD account updated.');
+      toast.success(tx('HOD account updated.'));
       setEditingHod(null);
       await load();
-    } catch (e: any) { toast.error(e?.response?.data?.message || 'Failed to update HOD'); }
+    } catch (e: any) { toast.error(e?.response?.data?.message || tx('Failed to update HOD')); }
     finally { setSaving(false); }
   };
 
@@ -82,9 +83,9 @@ export default function ManageHODs() {
   };
 
   const handleDelete = async (h: Hod) => {
-    const res = await Swal.fire({ title: `Remove HOD "${h.firstname} ${h.lastname}"?`, text: 'The account will be permanently deleted.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Remove', confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', background: '#1a1a35', color: '#fff' });
+    const res = await Swal.fire({ title: tx(`Remove HOD "${h.firstname} ${h.lastname}"?`), text: 'The account will be permanently deleted.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Remove', confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', background: '#1a1a35', color: '#fff' });
     if (!res.isConfirmed) return;
-    try { await saDeleteHod(h.id); setHods(prev => prev.filter(x => x.id !== h.id)); toast.success('HOD removed.'); }
+    try { await saDeleteHod(h.id); setHods(prev => prev.filter(x => x.id !== h.id)); toast.success(tx('HOD removed.')); }
     catch (e: any) { toast.error(e?.response?.data?.message || 'Delete failed'); }
   };
 
@@ -98,8 +99,8 @@ export default function ManageHODs() {
           <UserCog size={20} color="#fff" />
         </div>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>HOD Accounts</h1>
-          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Manage Head of Department administrator accounts</p>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>{tx("HOD Accounts")}</h1>
+          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{tx("Manage Head of Department administrator accounts")}</p>
         </div>
       </div>
 
@@ -107,8 +108,7 @@ export default function ManageHODs() {
         {/* Create Form */}
         <form onSubmit={handleCreate} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 16, padding: '24px', backdropFilter: 'blur(12px)' }}>
           <h2 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Plus size={18} /> Register New HOD
-          </h2>
+            <Plus size={18} /> {tx("Register New HOD")}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="hod-name-grid">
               <div>
@@ -151,7 +151,7 @@ export default function ManageHODs() {
               ))}
             </div>
             <button type="submit" disabled={saving} style={{ width: '100%', padding: '11px', borderRadius: 10, background: 'linear-gradient(135deg,#10b981,#059669)', border: 'none', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer', opacity: saving ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <UserCog size={16} />{saving ? 'Creating…' : 'Create HOD Account'}
+              <UserCog size={16} />{saving ? 'Creating…' : tx('Create HOD Account')}
             </button>
           </div>
         </form>
@@ -159,7 +159,7 @@ export default function ManageHODs() {
         {/* HOD List */}
         <div>
           <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: 'rgba(255,255,255,0.7)' }}>
-            Existing HODs ({hods.length})
+            {tx("Existing HODs (")}{hods.length})
           </h2>
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -168,7 +168,7 @@ export default function ManageHODs() {
           ) : hods.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '50px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 14, border: '1px dashed rgba(139,92,246,0.2)' }}>
               <UserCog size={36} style={{ color: 'rgba(139,92,246,0.3)', marginBottom: 10 }} />
-              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>No HOD accounts yet.</p>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>{tx("No HOD accounts yet.")}</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -201,7 +201,7 @@ export default function ManageHODs() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
           <form onSubmit={handleUpdate} style={{ background: '#12122a', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 20, padding: 24, width: '90%', maxWidth: 500, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 18, color: '#a78bfa' }}>Edit HOD Account</h2>
+              <h2 style={{ margin: 0, fontSize: 18, color: '#a78bfa' }}>{tx("Edit HOD Account")}</h2>
               <button type="button" onClick={() => setEditingHod(null)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
             </div>
             

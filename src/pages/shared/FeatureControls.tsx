@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   getFeatures, saGetDepartments, setFeatureForDepartment, setFeatureSystemWide, type FeatureKey,
 } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 type Feature = {
   key: FeatureKey; label: string; description: string; audience: string; scope: 'SYSTEM' | 'DEPARTMENT';
@@ -75,7 +76,7 @@ export default function FeatureControls() {
 
       <p className="fc-intro">
         {isSuper
-          ? <>Switch features on or off for the whole system. <b>Department-level</b> features can also be switched per department, by you or by that department's HOD, as long as the system switch is on.</>
+          ? <>Switch features on or off for the whole system. <b>{tx("Department-level")}</b> {tx("features can also be switched per department, by you or by that department's HOD, as long as the system switch is on.")}</>
           : <>Choose which features are available in <b>{data[0]?.departmentName ?? 'your department'}</b>. A feature the Super Admin has turned off can't be switched on here.</>}
       </p>
 
@@ -85,7 +86,7 @@ export default function FeatureControls() {
         <div className="fc-empty">{(error as any)?.response?.data?.message ?? 'Could not load the settings.'}</div>
       ) : groups.map(([audience, list]) => (
         <section key={audience} className="fc-group">
-          <h2>{audience === 'HODs' ? 'For HODs' : audience === 'Staff' ? 'For lecturers & HODs' : `For ${audience.toLowerCase()}`}</h2>
+          <h2>{audience === 'HODs' ? tx('For HODs') : audience === 'Staff' ? tx('For lecturers & HODs') : `For ${audience.toLowerCase()}`}</h2>
           {list.map(f => {
             const hodView = !isSuper;
             const on = hodView ? !!f.effective : f.systemEnabled;
@@ -98,7 +99,7 @@ export default function FeatureControls() {
                     <div className="fc-title">
                       {f.label}
                       <span className={`fc-scope ${f.scope === 'SYSTEM' ? 'sys' : 'dep'}`}>
-                        {f.scope === 'SYSTEM' ? <><Globe size={11} /> System-wide</> : <><Building2 size={11} /> Department-level</>}
+                        {f.scope === 'SYSTEM' ? <><Globe size={11} /> System-wide</> : <><Building2 size={11} /> {tx("Department-level")}</>}
                       </span>
                     </div>
                     <p className="fc-desc">{f.description}</p>

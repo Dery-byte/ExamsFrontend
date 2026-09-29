@@ -65,8 +65,8 @@ export const updateMyProfile = (_id: number, _role: string, data: { firstname?: 
 
 
 // Change password for the currently logged-in user
-export const changeMyPassword = (newPassword: string) =>
-  client.put('/updatepassword', { password: newPassword }).then(r => r.data);
+export const changeMyPassword = (newPassword: string, currentPassword?: string) =>
+  client.put('/updatepassword', { password: newPassword, ...(currentPassword ? { currentPassword } : {}) }).then(r => r.data);
 
 export const deleteStudent = (id: number) => client.delete(`/student/${id}`).then(r => r.data);
 export const deleteLecturer = (id: number) => client.delete(`/lecturer/${id}`).then(r => r.data);
@@ -253,6 +253,7 @@ export const updateQuizAnswer = (data: {
   checked: boolean;
   quizId?: number;
   pairIndex?: number;   // MATCHING only: 0-based pair index
+  replace?: boolean;    // FILL_BLANK / NUMERIC: the typed text replaces the saved answer
 }) =>
   client.post('/quiz-progress/update', data).then(r => r.data);
 export const getQuizAnswersByQuiz = (quizId: number | string) =>
@@ -461,7 +462,8 @@ export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
 /** Switchable features (see Feature Controls). */
 export type FeatureKey =
   | 'STUDENT_SELF_SIGNUP' | 'HOD_ANALYTICS' | 'HOD_DATA_TOOLS' | 'HOD_PROMOTION' | 'HOD_ANNOUNCEMENTS'
-  | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'QUESTION_BANK';
+  | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'QUESTION_BANK'
+  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION';
 
 export interface FeatureFlags {
   marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean;
@@ -620,3 +622,55 @@ export const setFeatureForDepartment = (key: FeatureKey, departmentId: number, e
 /** Settings needed before sign-in (e.g. whether students may sign up). */
 export const getPublicSettings = (): Promise<{ studentSelfSignup: boolean }> =>
   client.get('/public-settings').then(r => r.data);
+
+// ── Institution profile, document verification, report-card remarks ──────
+const superAdminRootUrl = () => client.defaults.baseURL!.replace('/auth', '/super-admin');
+
+/** Public: name, type (UNIVERSITY / SCHOOL) and wording. */
+export const getInstitution = () => client.get('/institution').then(r => r.data);
+export const institutionLogoUrl = () => `${client.defaults.baseURL}/institution/logo`;
+export const updateInstitution = (data: object) =>
+  client.put(`${superAdminRootUrl()}/institution`, data).then(r => r.data);
+export const uploadInstitutionLogo = (file: File) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  return client.post(`${superAdminRootUrl()}/institution/logo`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
+};
+export const deleteInstitutionLogo = () => client.delete(`${superAdminRootUrl()}/institution/logo`).then(r => r.data);
+
+/** Public: check a code printed on a transcript or report card. */
+export const verifyDocument = (code: string) =>
+  client.get(`/verify/${encodeURIComponent(code)}`).then(r => r.data);
+export const getIssuedDocuments = (q?: string) =>
+  client.get(`${superAdminRootUrl()}/documents`, { params: q ? { q } : {} }).then(r => r.data);
+export const setDocumentRevoked = (id: number, revoked: boolean, reason?: string) =>
+  client.post(`${superAdminRootUrl()}/documents/${id}/revoke`, { revoked, reason }).then(r => r.data);
+
+export const getTermRemarks = (sheetId: number) =>
+  client.get(`${apiRoot()}/marks/sheet/${sheetId}/term-remarks`).then(r => r.data);
+export const saveTermRemarks = (sheetId: number, rows: object[]) =>
+  client.put(`${apiRoot()}/marks/sheet/${sheetId}/term-remarks`, { rows }).then(r => r.data);
+export const getAllMarkSheets = () => client.get(`${apiRoot()}/marks/sheet/all`).then(r => r.data);
+export const getMyMarkSheets = () => client.get(`${apiRoot()}/marks/sheet/my-sheets`).then(r => r.data);
+
+// ── Developer: sign-in by emailed code, system mode, health, errors ───────
+const developerRootUrl = () => client.defaults.baseURL!.replace('/auth', '/developer');
+
+export const requestDeveloperCode = (email: string) =>
+  client.post('/developer/request-code', { email }).then(r => r.data);
+export const verifyDeveloperCode = (email: string, code: string): Promise<{ token: string }> =>
+  client.post('/developer/verify', { email, code }).then(r => r.data);
+export const getSystemMode = () => client.get(`${developerRootUrl()}/mode`).then(r => r.data);
+export const setSystemMode = (mode: string) => client.put(`${developerRootUrl()}/mode`, { mode }).then(r => r.data);
+export const getSystemHealth = () => client.get(`${developerRootUrl()}/health`).then(r => r.data);
+export const getErrorEvents = (filter: 'open' | 'resolved' | 'all') =>
+  client.get(`${developerRootUrl()}/errors`, { params: { filter } }).then(r => r.data);
+export const setErrorResolved = (id: number, resolved: boolean) =>
+  client.post(`${developerRootUrl()}/errors/${id}/resolve`, { resolved }).then(r => r.data);
+export const clearResolvedErrors = () => client.delete(`${developerRootUrl()}/errors/resolved`).then(r => r.data);
+export const sendTestAlert = () => client.post(`${developerRootUrl()}/alerts/test`).then(r => r.data);
+export const reportClientError = (data: { page: string; message: string; stack?: string }) =>
+  client.post('/client-errors', data);
+
+// Developers: read-only list (rows are added directly in the developer_email table)
+export const getDevelopers = () => client.get(`${developerRootUrl()}/developers`).then(r => r.data);

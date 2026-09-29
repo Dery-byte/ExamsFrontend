@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RotateCcw } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export const MAX_ATTEMPTS_LIMIT = 10;
 
@@ -90,7 +91,7 @@ export default function AttemptsField({ value, onChange }: Props) {
         >+</button>
       </div>
       <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
-        How many times each student may take this quiz (1–{MAX_ATTEMPTS_LIMIT}). Every attempt's marks are kept.
+        {tx("How many times each student may take this quiz (1–")}{MAX_ATTEMPTS_LIMIT}). Every attempt's marks are kept.
       </span>
 
       {/* Hide the native browser number spinner — stepper buttons replace it */}

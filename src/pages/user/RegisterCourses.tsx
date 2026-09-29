@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import { Search, Loader2, CheckCircle2, BookOpen, Info, Filter, Plus, ChevronRight, GraduationCap, Calendar } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function RegisterCourses() {
   const { user } = useAuth();
@@ -68,8 +69,8 @@ export default function RegisterCourses() {
 
   const onEnrol = async (course: any) => {
     const result = await Swal.fire({
-      title: 'Course Registration',
-      html: `You are about to enrol in <b>${course.courseCode}: ${course.title}</b>.<br/><br/>This module will be added to your academic record for the current semester.`,
+      title: tx('Course Registration'),
+      html: tx(`You are about to enrol in <b>${course.courseCode}: ${course.title}</b>.<br/><br/>This module will be added to your academic record for the current semester.`),
       icon: 'info',
       showCancelButton: true,
       confirmButtonText: 'Confirm Enrolment',
@@ -110,7 +111,7 @@ export default function RegisterCourses() {
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
       <Toaster position="top-right" />
-      <PageHeader title="Course Registration" breadcrumbs={['Lexa', 'Portal', 'Enrolment']} />
+      <PageHeader title={tx("Course Registration")} breadcrumbs={['Lexa', 'Portal', 'Enrolment']} />
 
       {/* Semester context banner */}
       {(user as any)?.currentLevel && (
@@ -125,10 +126,10 @@ export default function RegisterCourses() {
           <GraduationCap size={18} style={{ color: '#7c3aed', flexShrink: 0 }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: '#5b21b6' }}>
             Showing courses for&nbsp;
-            <strong>Level {(user as any).currentLevel}</strong>
+            <strong>{tx("Level ")}{(user as any).currentLevel}</strong>
             {(user as any).currentSemester && (
               <>&nbsp;· <Calendar size={13} style={{ display:'inline', verticalAlign:'middle' }} />&nbsp;
-              <strong>Semester {(user as any).currentSemester}</strong></>
+              <strong>{tx("Semester ")}{(user as any).currentSemester}</strong></>
             )}
             &nbsp;— courses for subsequent levels/semesters are hidden.
           </span>
@@ -158,8 +159,7 @@ export default function RegisterCourses() {
                   letterSpacing: '0.05em'
                 }}
               >
-                {l} Level
-              </button>
+                {l} {tx("Level")}</button>
             ))}
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function RegisterCourses() {
             </div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#495057' }}>Catalog Filter</div>
-              <div style={{ fontSize: 11, color: '#adb5bd' }}>Found {displayedCourses.length} available courses for this level</div>
+              <div style={{ fontSize: 11, color: '#adb5bd' }}>Found {displayedCourses.length} {tx("available courses for this level")}</div>
             </div>
           </div>
 
@@ -179,7 +179,7 @@ export default function RegisterCourses() {
             <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }} size={16} />
             <input
               type="text"
-              placeholder="Search by course code or title..."
+              placeholder={tx("Search by course code or title...")}
               style={{
                 borderRadius: 8, padding: '10px 15px 10px 42px', fontSize: 14,
                 background: '#fff', border: '1px solid #e1e9f1', width: '100%', outline: 'none',
@@ -201,15 +201,13 @@ export default function RegisterCourses() {
           </div>
           <h4 style={{ fontWeight: 800, color: '#495057', marginBottom: 12 }}>Catalog Exhausted</h4>
           <p style={{ color: '#adb5bd', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
-            Excellent! It seems you've already enrolled in all available modules for the <strong>{selectedLevel}</strong> level, or no matching courses were found for your search.
-          </p>
+            Excellent! It seems you've already enrolled in all available modules for the <strong>{selectedLevel}</strong> {tx("level, or no matching courses were found for your search.")}</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 30 }}>
             <button onClick={() => setSearchQuery('')} className="btn-lexa btn-lexa-outline">
               Clear Search
             </button>
             <button onClick={() => window.location.href = '/user-dashboard/history'} className="btn-lexa btn-lexa-primary">
-              View Registered Courses
-            </button>
+              {tx("View Registered Courses")}</button>
           </div>
         </div>
       ) : (
@@ -265,7 +263,7 @@ export default function RegisterCourses() {
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: '#2a3142', marginBottom: 2 }}>Academic Enrolment Notice</div>
-              <div style={{ fontSize: 12, color: '#74788d' }}>Course registration is subject to credit load limits and prerequisite verification by your department coordinator.</div>
+              <div style={{ fontSize: 12, color: '#74788d' }}>{tx("Course registration is subject to credit load limits and prerequisite verification by your department coordinator.")}</div>
             </div>
           </div>
           <button 
@@ -273,7 +271,7 @@ export default function RegisterCourses() {
             className="btn-lexa btn-lexa-outline"
             style={{ borderRadius: 8, padding: '10px 20px' }}
           >
-            My Registered Courses <ChevronRight size={16} />
+            {tx("My Registered Courses ")}<ChevronRight size={16} />
           </button>
         </div>
       </div>

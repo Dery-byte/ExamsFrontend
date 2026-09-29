@@ -6,6 +6,7 @@ import {
   BookOpen, Save, ChevronRight, Loader2, Tag, Hash, AlignLeft,
   GraduationCap, ArrowLeft, Sparkles, CheckCircle, Calendar, Layers
 } from 'lucide-react';
+import { periodName, periodsPerLevel, tx } from '../../utils/terms';
 
 const LEVELS = ['Level 100', 'Level 200', 'Level 300', 'Level 400'];
 
@@ -28,20 +29,20 @@ export default function AddCourse() {
 
   const formSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category.semester) { toast.error('Please select a semester'); return; }
+    if (!category.semester) { toast.error(tx('Please select a semester')); return; }
     setLoading(true);
     try {
       const { programId, ...rest } = category;
       await addLecturerCategory({ ...rest, programIds: programId ? [Number(programId)] : [] });
-      toast.success('Course added successfully!');
+      toast.success(tx('Course added successfully!'));
       setTimeout(() => navigate('/lect/courses'), 1000);
-    } catch { toast.error('Failed to add course registry'); }
+    } catch { toast.error(tx('Failed to add course registry')); }
     finally { setLoading(false); }
   };
 
   const features = [
     { icon: <CheckCircle size={16} />, text: 'Automatically links to your quiz registry' },
-    { icon: <CheckCircle size={16} />, text: 'Track student performance per course' },
+    { icon: <CheckCircle size={16} />, text: tx('Track student performance per course') },
     { icon: <CheckCircle size={16} />, text: 'Generate theory & objective assessments' },
     { icon: <CheckCircle size={16} />, text: 'Manage enrollment and progress data' },
   ];
@@ -54,14 +55,14 @@ export default function AddCourse() {
       <div className="ac-topbar">
         <button className="ac-back-btn" onClick={() => navigate('/lect/courses')}>
           <ArrowLeft size={16} />
-          <span>Back to Courses</span>
+          <span>{tx("Back to Courses")}</span>
         </button>
         <div className="ac-breadcrumb">
-          <span>Lecturer Portal</span>
+          <span>{tx("Lecturer Portal")}</span>
           <ChevronRight size={13} />
-          <span>Courses</span>
+          <span>{tx("Courses")}</span>
           <ChevronRight size={13} />
-          <span className="active">Add Course</span>
+          <span className="active">{tx("Add Course")}</span>
         </div>
       </div>
 
@@ -72,11 +73,9 @@ export default function AddCourse() {
             <div className="ac-hero-icon">
               <BookOpen size={32} />
             </div>
-            <h2 className="ac-hero-title">Create a New Course</h2>
+            <h2 className="ac-hero-title">{tx("Create a New Course")}</h2>
             <p className="ac-hero-subtitle">
-              Register a new academic course to your curriculum. Once created, you can
-              link assessments, manage student enrollment, and track performance.
-            </p>
+              {tx("Register a new academic course to your curriculum. Once created, you can link assessments, manage student enrollment, and track performance.")}</p>
             <div className="ac-features">
               {features.map((f, i) => (
                 <div key={i} className="ac-feature-item">
@@ -103,7 +102,7 @@ export default function AddCourse() {
                 <GraduationCap size={20} />
               </div>
               <div>
-                <h5 className="ac-card-title">Course Details</h5>
+                <h5 className="ac-card-title">{tx("Course Details")}</h5>
                 <p className="ac-card-subtitle">Fill in the academic details below</p>
               </div>
             </div>
@@ -111,7 +110,7 @@ export default function AddCourse() {
             <form onSubmit={formSubmit} className="ac-form">
               {/* Course Title */}
               <div className="ac-field-group">
-                <label className="ac-label">Course Title</label>
+                <label className="ac-label">{tx("Course Title")}</label>
                 <div className="ac-input-wrap">
                   <span className="ac-input-icon"><Tag size={16} /></span>
                   <input
@@ -127,7 +126,7 @@ export default function AddCourse() {
               {/* Code + Level row */}
               <div className="ac-row">
                 <div className="ac-field-group">
-                  <label className="ac-label">Course Code</label>
+                  <label className="ac-label">{tx("Course Code")}</label>
                   <div className="ac-input-wrap">
                     <span className="ac-input-icon"><Hash size={16} /></span>
                     <input
@@ -140,7 +139,7 @@ export default function AddCourse() {
                   </div>
                 </div>
                 <div className="ac-field-group">
-                  <label className="ac-label">Academic Level</label>
+                  <label className="ac-label">{tx("Academic Level")}</label>
                   <div className="ac-input-wrap">
                     <span className="ac-input-icon"><Layers size={16} /></span>
                     <select
@@ -149,8 +148,8 @@ export default function AddCourse() {
                       value={category.level}
                       onChange={set('level')}
                     >
-                      <option value="">Select Level</option>
-                      {availableLevels.map(l => <option key={l} value={l}>Level {l}</option>)}
+                      <option value="">{tx("Select Level")}</option>
+                      {availableLevels.map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
                     </select>
                   </div>
                 </div>
@@ -160,7 +159,7 @@ export default function AddCourse() {
               <div className="ac-row">
                 {programs.length > 0 && (
                   <div className="ac-field-group">
-                    <label className="ac-label">Program</label>
+                    <label className="ac-label">{tx("Program")}</label>
                     <div className="ac-input-wrap">
                       <span className="ac-input-icon"><GraduationCap size={16} /></span>
                       <select className="ac-input ac-select" value={category.programId} onChange={set('programId')}>
@@ -171,13 +170,12 @@ export default function AddCourse() {
                   </div>
                 )}
                 <div className="ac-field-group">
-                  <label className="ac-label">Semester *</label>
+                  <label className="ac-label">{tx("Semester *")}</label>
                   <div className="ac-input-wrap">
                     <span className="ac-input-icon"><Calendar size={16} /></span>
                     <select className="ac-input ac-select" required value={category.semester} onChange={set('semester')}>
-                      <option value="">Select Semester</option>
-                      <option value="1">Semester 1 (First Half)</option>
-                      <option value="2">Semester 2 (Second Half)</option>
+                      <option value="">{tx("Select Semester")}</option>
+                      {Array.from({ length: periodsPerLevel() }, (_, i) => i + 1).map(n => <option key={n} value={n}>{periodName(n)}</option>)}
                     </select>
                   </div>
                 </div>
@@ -192,7 +190,7 @@ export default function AddCourse() {
                   rows={5}
                   value={category.description}
                   onChange={set('description')}
-                  placeholder="Describe the course scope, intended learning outcomes, and core concepts to be evaluated..."
+                  placeholder={tx("Describe the course scope, intended learning outcomes, and core concepts to be evaluated...")}
                 />
               </div>
 
@@ -207,7 +205,7 @@ export default function AddCourse() {
                 </button>
                 <button type="submit" className="ac-btn-primary" disabled={loading}>
                   {loading ? <Loader2 className="ac-spin" size={18} /> : <Save size={18} />}
-                  <span>{loading ? 'Saving...' : 'Add Course'}</span>
+                  <span>{loading ? 'Saving...' : tx('Add Course')}</span>
                 </button>
               </div>
             </form>

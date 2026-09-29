@@ -4,6 +4,7 @@ import { CalendarDays, Clock, AlertTriangle, Loader2, GraduationCap } from 'luci
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPrograms, getProgramsByDept, getTimetable, saGetDepartments } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 const iso = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -71,15 +72,15 @@ export default function Timetable() {
         )}
         {canFilterScope && (
           <>
-            <label className="tt-field"><span>Program</span>
+            <label className="tt-field"><span>{tx("Program")}</span>
               <select className="tt-input" value={programId} onChange={e => setProgramId(e.target.value ? Number(e.target.value) : '')}>
                 <option value="">All</option>
                 {programOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select></label>
-            <label className="tt-field"><span>Level</span>
+            <label className="tt-field"><span>{tx("Level")}</span>
               <select className="tt-input" value={level} onChange={e => setLevel(e.target.value)}>
                 <option value="">All</option>
-                {['100', '200', '300', '400', '500', '600'].map(l => <option key={l} value={l}>Level {l}</option>)}
+                {['100', '200', '300', '400', '500', '600'].map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
               </select></label>
           </>
         )}
@@ -88,7 +89,7 @@ export default function Timetable() {
       {data?.clashCount > 0 && (
         <div className="tt-alert" role="status">
           <AlertTriangle size={16} />
-          <span><strong>{data.clashCount}</strong> assessment{data.clashCount > 1 ? 's' : ''} overlap{isStudent ? ' in your timetable' : ' with another for the same program and level'}. They are marked below.</span>
+          <span><strong>{data.clashCount}</strong> assessment{data.clashCount > 1 ? 's' : ''} overlap{isStudent ? ' in your timetable' : tx(' with another for the same program and level')}. They are marked below.</span>
         </div>
       )}
 
@@ -118,7 +119,7 @@ export default function Timetable() {
                   <div className="tt-title">{i.courseCode && <strong>{i.courseCode}</strong>} {i.title}</div>
                   <div className="tt-meta">
                     {i.courseTitle && <span>{i.courseTitle}</span>}
-                    {i.level && <span><GraduationCap size={12} /> Level {i.level}</span>}
+                    {i.level && <span><GraduationCap size={12} /> {tx("Level ")}{i.level}</span>}
                     {!isStudent && i.programs?.length > 0 && <span>{i.programs.join(', ')}</span>}
                     {!isStudent && i.lecturer && <span>{i.lecturer}</span>}
                   </div>

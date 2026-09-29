@@ -8,22 +8,23 @@ import {
   bulkEnroll, getPrograms, getProgramsByDept, getResultsSummary, importRows, type ImportType,
 } from '../../api/endpoints';
 import { downloadWorkbook, readRows, slug } from '../../utils/spreadsheet';
+import { defaultLevels, periodName, periodsPerLevel, tx } from '../../utils/terms';
 
 const TEMPLATES: Record<ImportType, { label: string; columns: string[]; example: string[]; notes: string }> = {
   students: {
-    label: 'Students',
+    label: tx('Students'),
     columns: ['First Name', 'Last Name', 'Student ID', 'Email', 'Phone', 'Program', 'Level', 'Semester', 'Password'],
     example: ['Ama', 'Mensah', 'PS/CSC/24/0001', 'ama.mensah@stu.ucc.edu.gh', '0240000000', 'BCS', '100', '1', ''],
     notes: 'Program = program code or exact name. Semester defaults to 1. Leave Password empty to generate a temporary one.',
   },
   lecturers: {
-    label: 'Lecturers',
+    label: tx('Lecturers'),
     columns: ['First Name', 'Last Name', 'Staff ID', 'Email', 'Phone', 'Department', 'Password'],
     example: ['Kofi', 'Owusu', 'STF1024', 'k.owusu@ucc.edu.gh', '0200000000', 'CSIT', ''],
     notes: 'Department = department code or exact name. Leave Password empty to generate a temporary one.',
   },
   courses: {
-    label: 'Courses',
+    label: tx('Courses'),
     columns: ['Course Code', 'Title', 'Level', 'Semester', 'Credit Units', 'Programs', 'Lecturer', 'Description'],
     example: ['CSC201', 'Data Structures', '200', '1', '3', 'BCS;BIT', 'STF1024', ''],
     notes: 'Programs = codes separated by ";" (empty = global course, Super Admin only). Lecturer = staff ID (optional).',
@@ -233,19 +234,17 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
 function ProgramLevelPicker({ programs, programId, setProgramId, level, setLevel, requireLevel }: {
   programs: any[]; programId: number | ''; setProgramId: (v: number | '') => void; level: number | ''; setLevel: (v: number | '') => void; requireLevel: boolean;
 }) {
-  const levels: number[] = programs.find(p => p.id === programId)?.configuredLevels ?? [100, 200, 300, 400];
+  const levels: number[] = programs.find(p => p.id === programId)?.configuredLevels ?? defaultLevels();
   return (
     <>
-      <label className="dt-field">Program
-        <select className="dt-input" value={programId} onChange={e => { setProgramId(e.target.value ? Number(e.target.value) : ''); setLevel(''); }}>
-          <option value="">Choose a program…</option>
+      <label className="dt-field">{tx("Program")}<select className="dt-input" value={programId} onChange={e => { setProgramId(e.target.value ? Number(e.target.value) : ''); setLevel(''); }}>
+          <option value="">{tx("Choose a program…")}</option>
           {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </label>
-      <label className="dt-field" style={{ flex: '0 1 150px' }}>Level
-        <select className="dt-input" value={level} onChange={e => setLevel(e.target.value ? Number(e.target.value) : '')}>
-          <option value="">{requireLevel ? 'Choose…' : 'All levels'}</option>
-          {levels.map(l => <option key={l} value={l}>Level {l}</option>)}
+      <label className="dt-field" style={{ flex: '0 1 150px' }}>{tx("Level")}<select className="dt-input" value={level} onChange={e => setLevel(e.target.value ? Number(e.target.value) : '')}>
+          <option value="">{requireLevel ? 'Choose…' : tx('All levels')}</option>
+          {levels.map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
         </select>
       </label>
     </>
@@ -276,26 +275,25 @@ function EnrollPanel({ programs }: { programs: any[] }) {
     <section className="dt-card">
       <div className="dt-row">
         <ProgramLevelPicker programs={programs} programId={programId} setProgramId={setProgramId} level={level} setLevel={setLevel} requireLevel />
-        <label className="dt-field" style={{ flex: '0 1 150px' }}>Semester
-          <select className="dt-input" value={semester} onChange={e => setSemester(e.target.value ? Number(e.target.value) : '')}>
-            <option value="">Both semesters</option><option value={1}>Semester 1</option><option value={2}>Semester 2</option>
+        <label className="dt-field" style={{ flex: '0 1 150px' }}>{tx("Semester")}<select className="dt-input" value={semester} onChange={e => setSemester(e.target.value ? Number(e.target.value) : '')}>
+            <option value="">{tx("All semesters")}</option>{Array.from({ length: periodsPerLevel() }, (_, i) => i + 1).map(n => <option key={n} value={n}>{periodName(n)}</option>)}
           </select>
         </label>
         <button className="dt-ghost" disabled={!programId || !level || busy} onClick={() => run(false)}>Preview</button>
       </div>
-      <p className="dt-note">Enrols every active student at this program and level in all of the level's courses for the program. Existing enrolments are kept; deactivated students are skipped.</p>
+      <p className="dt-note">{tx("Enrols every active student at this program and level in all of the level's courses for the program. Existing enrolments are kept; deactivated students are skipped.")}</p>
 
       {busy && <div style={{ padding: 16, textAlign: 'center' }}><Loader2 size={22} color="#5156be" style={{ animation: 'spin 1s linear infinite' }} /></div>}
       {preview && !busy && (
         <>
           <div className="dt-stats">
-            <div className="dt-stat"><b>{preview.students}</b>students</div>
-            <div className="dt-stat"><b>{preview.courses.length}</b>courses</div>
+            <div className="dt-stat"><b>{preview.students}</b>{tx("students")}</div>
+            <div className="dt-stat"><b>{preview.courses.length}</b>{tx("courses")}</div>
             <div className="dt-stat"><b>{preview.alreadyEnrolled}</b>already enrolled</div>
             <div className="dt-stat"><b>{preview.committed ? preview.created : preview.toCreate}</b>{preview.committed ? 'created' : 'to create'}</div>
           </div>
           {preview.courses.length > 0 && (
-            <p className="dt-note"><b>Courses:</b> {preview.courses.map((c: any) => `${c.courseCode} ${c.title}`).join(' · ')}</p>
+            <p className="dt-note"><b>{tx("Courses:")}</b> {preview.courses.map((c: any) => `${c.courseCode} ${c.title}`).join(' · ')}</p>
           )}
           {!preview.committed && (
             <div className="dt-row" style={{ marginTop: 12 }}>
@@ -320,7 +318,7 @@ function ExportPanel({ programs }: { programs: any[] }) {
     setBusy(true);
     try {
       const rows: any[] = await getResultsSummary(programId, level);
-      if (!rows.length) { toast('No students found for that selection', { icon: 'ℹ️' }); return; }
+      if (!rows.length) { toast(tx('No students found for that selection'), { icon: 'ℹ️' }); return; }
       const program = programs.find(p => p.id === programId)?.name ?? 'program';
       downloadWorkbook(`results-${slug(program)}${level ? `-L${level}` : ''}`, [{
         name: 'Results',
@@ -331,7 +329,7 @@ function ExportPanel({ programs }: { programs: any[] }) {
           'Meets promotion rules': r.meetsPromotionRules, 'Account status': r.accountStatus,
         })),
       }]);
-      toast.success(`Exported ${rows.length} student(s)`);
+      toast.success(tx(`Exported ${rows.length} student(s)`));
     } catch (e: any) { toast.error(e?.response?.data?.message ?? 'Export failed'); }
     finally { setBusy(false); }
   };
@@ -344,7 +342,7 @@ function ExportPanel({ programs }: { programs: any[] }) {
           {busy ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={15} />} Download results (Excel)
         </button>
       </div>
-      <p className="dt-note">One row per student: credits attempted and earned, CGPA, class, outstanding courses and promotion standing. Includes approved as well as published results. Individual marks sheets can be exported from the Marks Sheets page.</p>
+      <p className="dt-note">{tx("One row per student: credits attempted and earned, CGPA, class, outstanding courses and promotion standing. Includes approved as well as published results. Individual marks sheets can be exported from the Marks Sheets page.")}</p>
     </section>
   );
 }

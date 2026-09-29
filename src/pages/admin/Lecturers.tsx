@@ -12,6 +12,7 @@ import {
   Lock, Key
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { tx } from '../../utils/terms';
 
 const emptyLecturer = { firstname:'', lastname:'', username:'', email:'', phone:'', password:'', departmentId:'', secondaryDepartmentIds: [] as number[] };
 
@@ -118,8 +119,8 @@ export default function Lecturers() {
 
   const doDelete = (id: number) => {
     Swal.fire({
-      title: 'Remove Faculty Member?',
-      text: "Permanent termination of administrative privileges and course access.",
+      title: tx('Remove Faculty Member?'),
+      text: tx("Permanent termination of administrative privileges and course access."),
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#f43f5e',
@@ -160,13 +161,13 @@ export default function Lecturers() {
 
   return (
     <div className="admin-lecturers-page animate-fade-in" style={{ padding: '0 0 40px', fontFamily: '"Outfit", sans-serif' }}>
-      <PageHeader title="Faculty Registry" breadcrumbs={['Lexa', 'Admin', 'Staffing']} />
+      <PageHeader title={tx("Faculty Registry")} breadcrumbs={['Lexa', 'Admin', 'Staffing']} />
       
       {/* COMPACT STATS & SEARCH */}
       <div className="registry-compact-header">
          <div className="compact-stats">
             <div className="stat-node">
-               <span className="l">Faculty Personnel</span>
+               <span className="l">{tx("Faculty Personnel")}</span>
                <span className="v">{total}</span>
             </div>
             <div className="stat-sep"></div>
@@ -249,7 +250,7 @@ export default function Lecturers() {
             <div className="lx-modal-body">
               <div className="lx-modal-top-bar">
                 <div>
-                  <p className="lx-modal-label-tag">Faculty Registry</p>
+                  <p className="lx-modal-label-tag">{tx("Faculty Registry")}</p>
                   <h4 className="lx-modal-heading">Synchronize Profile</h4>
                 </div>
                 <button className="lx-close-btn" onClick={() => setEditModal(false)}><X size={18}/></button>
@@ -318,7 +319,7 @@ export default function Lecturers() {
                       <span>Additional Departments</span>
                       <span className="lx-super-badge">Super Admin</span>
                     </div>
-                    <p className="lx-hint-text">This lecturer will be visible to HODs of every selected department.</p>
+                    <p className="lx-hint-text">{tx("This lecturer will be visible to HODs of every selected department.")}</p>
                     <div className="lx-dept-chips">
                       {departments.filter((d:any) => d.id.toString() !== lecturerEdit.departmentId?.toString()).map((d:any) => {
                         const sel = (lecturerEdit.secondaryDepartmentIds ?? []).includes(d.id);
@@ -368,7 +369,7 @@ export default function Lecturers() {
               </div>
               <div className="lx-aside-notice">
                 <Lock size={13}/>
-                <span>Personnel will inherit faculty-level access privileges.</span>
+                <span>{tx("Personnel will inherit faculty-level access privileges.")}</span>
               </div>
             </div>
 
@@ -376,7 +377,7 @@ export default function Lecturers() {
             <div className="lx-modal-body">
               <div className="lx-modal-top-bar">
                 <div>
-                  <p className="lx-modal-label-tag">Faculty Registry</p>
+                  <p className="lx-modal-label-tag">{tx("Faculty Registry")}</p>
                   <h4 className="lx-modal-heading">New Enrollment</h4>
                 </div>
                 <button className="lx-close-btn" onClick={() => setAddModal(false)}><X size={18}/></button>
@@ -453,7 +454,7 @@ export default function Lecturers() {
                         <span>Additional Departments</span>
                         <span className="lx-super-badge">Super Admin</span>
                       </div>
-                      <p className="lx-hint-text">This lecturer will be visible to HODs of every selected department.</p>
+                      <p className="lx-hint-text">{tx("This lecturer will be visible to HODs of every selected department.")}</p>
                       <div className="lx-dept-chips">
                         {departments.filter((d:any) => d.id.toString() !== newLect.departmentId?.toString()).map((d:any) => {
                           const sel = newLect.secondaryDepartmentIds.includes(d.id);

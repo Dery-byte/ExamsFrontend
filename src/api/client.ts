@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { tx } from '../utils/terms';
 
 export const BASE_URL: string =
   (import.meta as any).env?.VITE_API_URL ?? 'https://examsbackend.onrender.com/api/v1/auth';
@@ -15,10 +16,23 @@ client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// Auto-logout on 401
+// Auto-logout on 401; send users who still have a staff-set password to /change-password
+// Server messages are written in university words; show them in the system mode's words
+const translateMessage = (data: any) => {
+  if (data && typeof data === 'object' && typeof data.message === 'string') data.message = tx(data.message);
+};
+
 client.interceptors.response.use(
-  (res) => res,
+  (res) => { translateMessage(res.data); return res; },
   (err: AxiosError) => {
+    translateMessage(err.response?.data);
+    if (err.response?.status === 403 && (err.response.data as any)?.code === 'PASSWORD_CHANGE_REQUIRED') {
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || 'null');
+        if (u) localStorage.setItem('user', JSON.stringify({ ...u, mustChangePassword: true }));
+      } catch { /* ignore */ }
+      if (window.location.pathname !== '/change-password') window.location.href = '/change-password';
+    }
     if (err.response?.status === 401) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');

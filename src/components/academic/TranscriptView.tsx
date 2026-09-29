@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, RotateCcw } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 const fmtSem = (n: number) => (n === 1 ? 'First Semester' : n === 2 ? 'Second Semester' : `Semester ${n}`);
 
@@ -17,7 +18,7 @@ export default function TranscriptView({ t }: { t: any }) {
         <div className="tv-tile"><div className="tv-l">Class (current standing)</div><div className="tv-v" style={{ fontSize: 15 }}>{t.degreeClass ?? '—'}</div></div>
         <div className="tv-tile"><div className="tv-l">Credits earned / attempted</div><div className="tv-v">{t.creditsEarned} <span className="tv-max">/ {t.totalCreditUnits}</span></div></div>
         <div className="tv-tile">
-          <div className="tv-l">Outstanding courses</div>
+          <div className="tv-l">{tx("Outstanding courses")}</div>
           <div className="tv-v" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {outstanding.length}
             {outstanding.length === 0 ? <CheckCircle2 size={16} color="#0b7a0b" aria-label="None" /> : <AlertTriangle size={16} color="#b42323" aria-label="Carry-overs" />}
@@ -26,7 +27,7 @@ export default function TranscriptView({ t }: { t: any }) {
       </div>
 
       {t.includesApproved && (
-        <p className="tv-note">Staff view: includes approved results that aren't published to the student yet.</p>
+        <p className="tv-note">{tx("Staff view: includes approved results that aren't published to the student yet.")}</p>
       )}
 
       {outstanding.length > 0 && (
@@ -44,10 +45,10 @@ export default function TranscriptView({ t }: { t: any }) {
         <div className="tv-empty">No results yet.</div>
       ) : semesters.map((s, i) => (
         <section key={i} className="tv-sem">
-          <h3>{s.session ?? 'Session'} · Level {s.level} · {fmtSem(s.semester)}</h3>
+          <h3>{s.session ?? 'Session'} {tx("· Level ")}{s.level} · {fmtSem(s.semester)}</h3>
           <div style={{ overflowX: 'auto' }}>
             <table className="tv-table">
-              <thead><tr><th>Code</th><th>Course</th><th className="r">CU</th><th className="r">Score</th><th className="r">Grade</th><th className="r">GP</th></tr></thead>
+              <thead><tr><th>Code</th><th>{tx("Course")}</th><th className="r">CU</th><th className="r">Score</th><th className="r">Grade</th><th className="r">GP</th></tr></thead>
               <tbody>
                 {s.courses.map((c: any, j: number) => (
                   <tr key={j}>
@@ -65,7 +66,7 @@ export default function TranscriptView({ t }: { t: any }) {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={2}>Semester GPA <b>{s.gpa ?? '—'}</b> · CGPA <b>{s.cgpa ?? '—'}</b></td>
+                  <td colSpan={2}>{tx("Semester GPA ")}<b>{s.gpa ?? '—'}</b> · CGPA <b>{s.cgpa ?? '—'}</b></td>
                   <td className="r"><b>{s.creditUnits}</b></td>
                   <td colSpan={3} className="r" style={{ color: '#64748b' }}>{s.creditPoints} credit points</td>
                 </tr>
@@ -75,7 +76,7 @@ export default function TranscriptView({ t }: { t: any }) {
         </section>
       ))}
 
-      <p className="tv-note">GPA = total (credit units × grade point) ÷ total credit units. Every attempt at a course counts towards the CGPA.</p>
+      <p className="tv-note">{tx("GPA = total (credit units × grade point) ÷ total credit units. Every attempt at a course counts towards the CGPA.")}</p>
 
       <style>{`
         .tv-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }

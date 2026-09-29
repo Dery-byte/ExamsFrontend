@@ -6,6 +6,7 @@ import {
   User, Mail, Phone, Lock, Eye, EyeOff, Loader2, GraduationCap, ShieldCheck,
   ChevronRight, CheckCircle2, ArrowRight, BookOpen, Layers
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -79,8 +80,7 @@ export default function Signup() {
         <div style={{ maxWidth: 420, width: '100%', background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 14, padding: 28, textAlign: 'center' }}>
           <h1 style={{ fontSize: 20, margin: '0 0 8px', color: '#1e293b' }}>Sign-up is closed</h1>
           <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: '0 0 18px' }}>
-            Student accounts are created by your department. Please contact your HOD or the examinations office to get your login details.
-          </p>
+            {tx("Student accounts are created by your department. Please contact your HOD or the examinations office to get your login details.")}</p>
           <Link to="/login" style={{ fontWeight: 700, color: 'var(--primary, #5156be)', textDecoration: 'none' }}>Back to sign in</Link>
         </div>
       </div>
@@ -450,8 +450,7 @@ export default function Signup() {
             
             <h1 className="brand-headline">Begin your academic journey.</h1>
             <p className="brand-subheadline">
-              Join thousands of students on a seamless, secure, and intuitive examination platform.
-            </p>
+              {tx("Join thousands of students on a seamless, secure, and intuitive examination platform.")}</p>
 
             <div className="feature-list">
               <div className="feature-item">
@@ -472,7 +471,7 @@ export default function Signup() {
                 <div className="feature-icon"><Layers size={18} /></div>
                 <div className="feature-text">
                   <h4>Structured Learning</h4>
-                  <p>Courses perfectly organized by your academic program.</p>
+                  <p>{tx("Courses perfectly organized by your academic program.")}</p>
                 </div>
               </div>
             </div>
@@ -487,7 +486,7 @@ export default function Signup() {
         <div className="form-panel">
           <div className="form-header">
             <h2 className="form-title">Create Account</h2>
-            <p className="form-subtitle">Fill in your details to register as a student.</p>
+            <p className="form-subtitle">{tx("Fill in your details to register as a student.")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="form-grid">
@@ -527,7 +526,7 @@ export default function Signup() {
             </div>
 
             <div className="form-group full">
-              <label className="input-label">Student ID (Username)</label>
+              <label className="input-label">{tx("Student ID (Username)")}</label>
               <div className="input-wrapper">
                 <ShieldCheck size={18} className="input-icon" style={{ color: usernameError ? '#ef4444' : '#94a3b8' }} />
                 <input
@@ -553,7 +552,7 @@ export default function Signup() {
                 <input
                   type="email"
                   className="auth-input"
-                  placeholder="student@university.edu"
+                  placeholder={tx("student@university.edu")}
                   value={user.email}
                   onChange={set('email')}
                   required
@@ -583,7 +582,7 @@ export default function Signup() {
                 </div>
 
                 <div className="form-group full">
-                  <label className="input-label">Program of Study</label>
+                  <label className="input-label">{tx("Program of Study")}</label>
                   <div className="input-wrapper">
                     <GraduationCap size={18} className="input-icon" />
                     <select
@@ -602,7 +601,7 @@ export default function Signup() {
                 </div>
 
                 <div className="form-group full">
-                  <label className="input-label">Current Level / Year</label>
+                  <label className="input-label">{tx("Current Level / Year")}</label>
                   <div className="input-wrapper">
                     <Layers size={18} className="input-icon" />
                     <select
@@ -611,7 +610,7 @@ export default function Signup() {
                       onChange={e => setSelectedLevel(Number(e.target.value))}
                     >
                       {(programs.find(p => p.id === selectedProgramId)?.configuredLevels || []).map(lv => (
-                        <option key={lv} value={lv}>Level {lv}</option>
+                        <option key={lv} value={lv}>{tx("Level ")}{lv}</option>
                       ))}
                     </select>
                   </div>

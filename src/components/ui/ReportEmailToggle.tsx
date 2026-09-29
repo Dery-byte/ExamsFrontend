@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Mail, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getReportEmailSetting, setReportEmailSetting } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 /** Admin / Super Admin master switch for emailing result slips. Lecturers still choose per quiz. */
 export default function ReportEmailToggle({ dark = false }: { dark?: boolean }) {
@@ -18,7 +19,7 @@ export default function ReportEmailToggle({ dark = false }: { dark?: boolean }) 
     try {
       const next = await setReportEmailSetting(!enabled);
       setEnabled(next);
-      toast.success(next ? 'Lecturers can email result slips (per quiz)' : 'Emailing result slips is disabled system-wide');
+      toast.success(next ? tx('Lecturers can email result slips (per quiz)') : 'Emailing result slips is disabled system-wide');
     } catch {
       toast.error('Could not update the setting');
     } finally {
@@ -41,8 +42,7 @@ export default function ReportEmailToggle({ dark = false }: { dark?: boolean }) 
         <div>
           <div style={{ fontWeight: 700, fontSize: 14.5, color: c.title }}>Allow emailing of result slips</div>
           <div style={{ fontSize: 12, color: c.sub, lineHeight: 1.45 }}>
-            Master switch. When on, lecturers can choose per quiz to email students their PDF result slip right after review. When off, no result slips are emailed.
-          </div>
+            {tx("Master switch. When on, lecturers can choose per quiz to email students their PDF result slip right after review. When off, no result slips are emailed.")}</div>
         </div>
       </div>
       <button

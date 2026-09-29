@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Mail, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { setQuizEmailReport } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 /**
  * Per-quiz switch on the Quiz Review panel: email each student their PDF result slip
@@ -20,7 +21,7 @@ export default function QuizEmailReportToggle({ quizId, initial }: { quizId: num
     try {
       const next = await setQuizEmailReport(quizId, !on);
       setOn(next);
-      toast.success(next ? 'Students will be emailed their PDF report after review' : 'Automatic PDF emails turned off for this quiz');
+      toast.success(next ? tx('Students will be emailed their PDF report after review') : 'Automatic PDF emails turned off for this quiz');
     } catch {
       toast.error('Could not update this quiz');
     } finally {
@@ -35,7 +36,7 @@ export default function QuizEmailReportToggle({ quizId, initial }: { quizId: num
       aria-checked={on}
       onClick={toggle}
       disabled={saving}
-      title="Email each student their PDF result slip as soon as you finish reviewing them"
+      title={tx("Email each student their PDF result slip as soon as you finish reviewing them")}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px 6px 12px', flexShrink: 0,
         border: `1px solid ${on ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: 999, background: on ? '#f0fdf4' : '#f8fafc',

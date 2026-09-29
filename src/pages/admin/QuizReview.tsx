@@ -17,6 +17,7 @@ import {
   MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye,
   CheckSquare, AlertTriangle, RotateCcw
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 const RESPONSIVE_CSS = `
 @keyframes rSpin { to { transform: rotate(360deg); } }
@@ -225,7 +226,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
           ) : answeredTheoryQs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>
               <BookOpen size={40} style={{ marginBottom: 12 }} />
-              <p>No theory questions answered by this student.</p>
+              <p>{tx("No theory questions answered by this student.")}</p>
             </div>
           ) : answeredTheoryQs.map((tq: any, idx: number) => {
             const ans = getAnswer(tq.quesNo);
@@ -255,7 +256,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
 
                 {/* Student Answer */}
                 <div style={{ padding: '16px 20px', background: '#fff' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Student Response</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{tx("Student Response")}</div>
                   <div style={{ padding: '12px 16px', background: ans ? '#fafafa' : '#fff7ed', border: `1px solid ${ans ? '#e2e8f0' : '#fed7aa'}`, borderRadius: 8, minHeight: 80, fontSize: 14, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', overflowX: 'auto' }}>
                     {ans?.studentAnswer || <span style={{ color: '#f97316', fontStyle: 'italic', fontSize: 13 }}>No response submitted</span>}
                   </div>
@@ -474,7 +475,7 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#1e293b' }}>Quiz Review Panel</h1>
-            <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Review student submissions and assign marks</p>
+            <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>{tx("Review student submissions and assign marks")}</p>
           </div>
         </div>
       </div>
@@ -608,7 +609,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
           <div style={{ width: 1, height: 36, background: '#e2e8f0' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#5156be' }}>
             <Users size={16} />
-            <span style={{ fontWeight: 700, fontSize: 14 }}>Students</span>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{tx("Students")}</span>
           </div>
           {expanded ? <ChevronDown size={18} color="#94a3b8" /> : <ChevronRight size={18} color="#94a3b8" />}
         </div>
@@ -620,12 +621,12 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
           {isLoading ? (
             <div style={{ padding: 32, textAlign: 'center' }}>
               <Loader2 size={24} style={{ animation: 'rSpin 1s linear infinite', color: '#5156be' }} />
-              <p style={{ color: '#64748b', marginTop: 8, fontSize: 13 }}>Loading student submissions...</p>
+              <p style={{ color: '#64748b', marginTop: 8, fontSize: 13 }}>{tx("Loading student submissions...")}</p>
             </div>
           ) : reports.length === 0 ? (
             <div style={{ padding: 32, textAlign: 'center' }}>
               <Users size={32} color="#cbd5e1" />
-              <p style={{ color: '#94a3b8', marginTop: 8, fontSize: 13 }}>No students have taken this quiz yet.</p>
+              <p style={{ color: '#94a3b8', marginTop: 8, fontSize: 13 }}>{tx("No students have taken this quiz yet.")}</p>
             </div>
           ) : (
             <>

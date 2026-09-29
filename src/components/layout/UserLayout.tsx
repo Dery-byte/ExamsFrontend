@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useInstitution } from '../../hooks/useInstitution';
 import NotificationBell from '../NotificationBell';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
@@ -18,11 +19,13 @@ import {
   CalendarDays,
   FileText
 } from 'lucide-react';
+import { isSchoolMode, tx } from '../../utils/terms';
 
 const SIDEBAR_W = 260;
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { logout } = useAuth();
+  const { term, institution } = useInstitution();
   const { marksSheetStudent, features } = useFeatureFlags();
   const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
@@ -31,8 +34,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
       title: 'Main',
       items: [
         { to: '/user-dashboard/user-dashboard', label: 'Dashboard',       icon: LayoutDashboard },
-        ...(on('STUDENT_COURSE_REGISTRATION') ? [{ to: '/user-dashboard/register', label: 'Register Course', icon: GraduationCap }] : []),
-        { to: '/user-dashboard/courses',         label: 'My Courses',   icon: BookOpen         },
+        ...(on('STUDENT_COURSE_REGISTRATION') ? [{ to: '/user-dashboard/register', label: tx('Register Course'), icon: GraduationCap }] : []),
+        { to: '/user-dashboard/courses',         label: tx('My Courses'),   icon: BookOpen         },
         { to: '/user-dashboard/announcements',   label: 'Announcements', icon: Megaphone       },
       ]
     },
@@ -43,8 +46,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         ...(on('STUDENT_TIMETABLE') ? [{ to: '/user-dashboard/timetable', label: 'Exam Timetable', icon: CalendarDays }] : []),
         { to: '/user-dashboard/history', label: 'Performance History', icon: History        },
         ...(marksSheetStudent ? [
-          { to: '/user-dashboard/report-cards', label: 'Report Cards', icon: BookOpen },
-          ...(on('STUDENT_TRANSCRIPT') ? [{ to: '/user-dashboard/transcript', label: 'Transcript & CGPA', icon: FileText }] : []),
+          { to: '/user-dashboard/report-cards', label: tx('Report Cards'), icon: BookOpen },
+          ...(on('STUDENT_TRANSCRIPT') && !isSchoolMode() ? [{ to: '/user-dashboard/transcript', label: 'Transcript & CGPA', icon: FileText }] : []),
         ] : []),
       ]
     },
@@ -65,8 +68,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
     >
       {/* Brand */}
       <div className="user-sidebar-brand">
-        <div className="user-sidebar-logo">O</div>
-        <span className="user-sidebar-name">OTC</span>
+        <div className="user-sidebar-logo">{institution.shortName.charAt(0)}</div>
+        <span className="user-sidebar-name" title={institution.name}>{institution.shortName}</span>
         {/* Close button — visible on mobile only */}
         <button className="user-sidebar-close mobile-show" onClick={onClose} aria-label="Close menu">
           <X size={20} />
@@ -77,7 +80,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
       <div className="user-sidebar-scroll">
         {menuGroups.map((group, gIdx) => (
           <div key={gIdx} className="user-sidebar-group">
-            <div className="user-sidebar-group-label">{group.title}</div>
+            <div className="user-sidebar-group-label">{term(group.title)}</div>
             <nav>
               {group.items.map((item) => (
                 <NavLink
@@ -89,7 +92,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
                   }
                 >
                   <item.icon size={18} />
-                  <span>{item.label}</span>
+                  <span>{term(item.label)}</span>
                 </NavLink>
               ))}
             </nav>
@@ -163,7 +166,7 @@ export default function UserLayout() {
 
             <div className="user-topbar-profile">
               <div className="user-topbar-profile-text desktop-show">
-                <div className="user-topbar-name">{user?.username || user?.firstname || 'Student'}</div>
+                <div className="user-topbar-name">{user?.username || user?.firstname || tx('Student')}</div>
                 {/* <div className="user-topbar-role">Verified Student</div> */}
               </div>
               <div className="user-avatar" aria-label="User avatar">

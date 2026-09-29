@@ -8,10 +8,11 @@ import toast, { Toaster } from 'react-hot-toast';
 import {
   FilePlus, FileText, Upload, Save, List, Info, ArrowLeft,
   Loader2, Database, Zap, Hash, Award, Target, ChevronRight,
-  Layers, CheckSquare, ToggleLeft, Link2, X, Check, Plus, Trash2
+  Layers, CheckSquare, ToggleLeft, Link2, X, Check, Plus, Trash2, PenLine, Calculator
 } from 'lucide-react';
 import RichTextEditor from '../../components/ui/RichTextEditor';
 import QuestionImageField from '../../components/ui/QuestionImageField';
+import { tx } from '../../utils/terms';
 
 // Strip HTML tags for validation
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim();
@@ -42,7 +43,25 @@ const Q_TYPES = [
     color: '#7c3aed',
     bg: '#f5f3ff',
   },
+  {
+    id: 'FILL_BLANK',
+    label: 'Fill in the Blank',
+    sub: tx('Student types a word or phrase'),
+    icon: PenLine,
+    color: '#b45309',
+    bg: '#fffbeb',
+  },
+  {
+    id: 'NUMERIC',
+    label: 'Numeric Answer',
+    sub: tx('Student types a number (with tolerance)'),
+    icon: Calculator,
+    color: '#047857',
+    bg: '#ecfdf5',
+  },
 ];
+
+const blankTyped = () => ({ content: '', accepted: [''] as string[], value: '', tolerance: '' });
 
 // ─── Blank form factories ─────────────────────────────────────────────────────
 const blankMCQ = (qId: any) => ({
@@ -88,6 +107,9 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
   const [mcqImage, setMcqImage]       = useState<File | null>(null);
   const [tfImage, setTfImage]         = useState<File | null>(null);
   const [matchImage, setMatchImage]   = useState<File | null>(null);
+  // Fill in the blank / numeric
+  const [typedForm, setTypedForm]     = useState(blankTyped());
+  const [typedImage, setTypedImage]   = useState<File | null>(null);
   const [theoryImage, setTheoryImage] = useState<File | null>(null);
 
   // ── Theory state ─────────────────────────────────────────────────────────────
@@ -163,6 +185,27 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
     if (type === 'MCQ')        { setMcqForm(blankMCQ(qId)); setMcqImage(null); }
     else if (type === 'TRUE_FALSE') { setTfForm(blankTF(qId)); setTfImage(null); }
     else if (type === 'MATCHING')   { setMatchForm(blankMatching(qId)); setMatchImage(null); }
+    else if (type === 'FILL_BLANK' || type === 'NUMERIC') { setTypedForm(blankTyped()); setTypedImage(null); }
+  };
+
+  const handleAddTyped = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const numeric = questionType === 'NUMERIC';
+    if (!stripHtml(typedForm.content)) { toast.error('Question content is required'); return; }
+    const accepted = numeric ? [typedForm.value.trim()] : typedForm.accepted.map(a => a.trim()).filter(Boolean);
+    if (!accepted.length || !accepted[0]) { toast.error(numeric ? 'Enter the correct number' : 'Enter at least one accepted answer'); return; }
+    if (numeric && isNaN(Number(accepted[0].replace(',', '.')))) { toast.error('The correct answer must be a number'); return; }
+    const tolerance = numeric && typedForm.tolerance.trim() !== '' ? Number(typedForm.tolerance) : null;
+    if (tolerance !== null && (isNaN(tolerance) || tolerance < 0)) { toast.error('Tolerance must be 0 or more'); return; }
+    setLoading(true);
+    try {
+      const image = typedImage ? await uploadQuestionImage(typedImage) : null;
+      await addQuestion({ quiz: { qId }, content: typedForm.content, questionType, correct_answer: accepted, tolerance, image });
+      toast.success(numeric ? 'Numeric question added!' : 'Fill-in-the-blank question added!');
+      setTypedForm(blankTyped());
+      setTypedImage(null);
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
+    finally { setLoading(false); }
   };
 
   // ─── Submit handlers ──────────────────────────────────────────────────────────
@@ -554,15 +597,77 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                         <div className="addq-answer-hint" style={{ marginTop: 12 }}>
                           <Info size={13} />
                           <span>
-                            Each pair stores a <code>prompt</code> and an <code>answer</code>.
-                            The answer pool is shuffled for students during the exam.
-                          </span>
+                            Each pair stores a <code>prompt</code> and an <code>answer</code>{tx(". The answer pool is shuffled for students during the exam.")}</span>
                         </div>
                       </div>
 
                       <button type="submit" className="addq-submit-btn addq-submit-purple" disabled={loading}>
                         {loading ? <Loader2 className="addq-spin" size={16} /> : <Save size={16} />}
                         <span>{loading ? 'Saving...' : 'Add Matching Question'}</span>
+                      </button>
+                    </form>
+                  )}
+
+                  {(questionType === 'FILL_BLANK' || questionType === 'NUMERIC') && (
+                    <form onSubmit={handleAddTyped} className="addq-form-body">
+                      <div className="addq-field">
+                        <label className="addq-label"><Hash size={13} />Question</label>
+                        <QuestionImageField file={typedImage} onFileChange={setTypedImage} />
+                        <RichTextEditor
+                          value={typedForm.content}
+                          onChange={val => setTypedForm(f => ({ ...f, content: val }))}
+                          placeholder={questionType === 'NUMERIC' ? 'e.g. What is 15% of 240?' : 'e.g. The process by which plants make food is called ______.'}
+                        />
+                      </div>
+
+                      {questionType === 'FILL_BLANK' ? (
+                        <div className="addq-field">
+                          <label className="addq-label"><Check size={13} />Accepted answers</label>
+                          {typedForm.accepted.map((a, i) => (
+                            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                              <input className="addq-input" value={a} aria-label={`Accepted answer ${i + 1}`}
+                                placeholder={i === 0 ? 'e.g. photosynthesis' : 'Another accepted spelling (optional)'}
+                                onChange={e => setTypedForm(f => ({ ...f, accepted: f.accepted.map((x, j) => j === i ? e.target.value : x) }))} />
+                              {typedForm.accepted.length > 1 && (
+                                <button type="button" className="addq-remove-pair" aria-label="Remove answer"
+                                  onClick={() => setTypedForm(f => ({ ...f, accepted: f.accepted.filter((_, j) => j !== i) }))}>
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button type="button" className="addq-add-pair-btn" onClick={() => setTypedForm(f => ({ ...f, accepted: [...f.accepted, ''] }))}>
+                            <Plus size={14} /> Add another accepted answer
+                          </button>
+                          <div className="addq-answer-hint" style={{ marginTop: 12 }}>
+                            <Info size={13} />
+                            <span>Marking ignores capital letters, extra spaces and a full stop at the end. Add each other spelling you'll accept.</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="addq-field">
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <div>
+                              <label className="addq-label"><Target size={13} />Correct answer</label>
+                              <input className="addq-input" inputMode="decimal" value={typedForm.value} placeholder="e.g. 36"
+                                onChange={e => setTypedForm(f => ({ ...f, value: e.target.value }))} />
+                            </div>
+                            <div>
+                              <label className="addq-label"><Award size={13} />Tolerance (±)</label>
+                              <input className="addq-input" inputMode="decimal" value={typedForm.tolerance} placeholder="0 = exact"
+                                onChange={e => setTypedForm(f => ({ ...f, tolerance: e.target.value }))} />
+                            </div>
+                          </div>
+                          <div className="addq-answer-hint" style={{ marginTop: 12 }}>
+                            <Info size={13} />
+                            <span>Answers within the tolerance are marked correct, e.g. 3.14 ± 0.01 accepts 3.13–3.15. "3,5" is read as 3.5 and "1,000" as one thousand.</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <button type="submit" className="addq-submit-btn" disabled={loading}>
+                        {loading ? <Loader2 className="addq-spin" size={16} /> : <Save size={16} />}
+                        <span>{loading ? 'Saving...' : questionType === 'NUMERIC' ? 'Add Numeric Question' : 'Add Fill-in-the-Blank Question'}</span>
                       </button>
                     </form>
                   )}

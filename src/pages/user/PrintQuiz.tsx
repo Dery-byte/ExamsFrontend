@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import QuestionImage from '../../components/ui/QuestionImage';
+import { useInstitution } from '../../hooks/useInstitution';
 import { getReport, getQuestionsForText, getTheoryReport, getResultsDetails, getNumberOfTheoryToAnswer } from '../../api/endpoints';
 import { Printer, ArrowLeft, Download, CheckCircle, XCircle, Info, Award, User, Clock, Calendar, FileText, ChevronRight, Loader2 } from 'lucide-react';
 
@@ -40,6 +41,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 export default function PrintQuiz() {
+  const { institution } = useInstitution();
   const { qid } = useParams();
   const { user } = useAuth();
   const [report, setReport] = useState<any[]>([]);
@@ -73,7 +75,8 @@ export default function PrintQuiz() {
   const quizType = report[0]?.quiz?.quizType ?? questions[0]?.quiz?.quizType;
   const showSectionA = questions.length > 0 && (quizType === 'OBJ' || quizType === 'BOTH' || !quizType);
   const showSectionB = theoryGroups.length > 0 && (quizType === 'THEORY' || quizType === 'BOTH');
-  const mcqs = (resultsObj?.results ?? []).filter((q: any) => q.questionType === 'MCQ' || !q.questionType);
+  const mcqs = (resultsObj?.results ?? []).filter((q: any) => q.questionType === 'MCQ' || !q.questionType
+    || q.questionType === 'FILL_BLANK' || q.questionType === 'NUMERIC');
   const tfs = (resultsObj?.results ?? []).filter((q: any) => q.questionType === 'TRUE_FALSE');
   const matchings = (resultsObj?.results ?? []).filter((q: any) => q.questionType === 'MATCHING');
   const theoryTotal = theoryGroups.reduce((s, g) => s + g.questions.reduce((ss: number, q: any) => ss + (q.score || 0), 0), 0);
@@ -175,10 +178,10 @@ export default function PrintQuiz() {
           <div className="print-header" style={{ borderBottom: '1px solid #f1f5f7', background: 'linear-gradient(to right, #ffffff, #fcfdfe)' }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 30 }}>
-                <div style={{ width: 64, height: 64, background: 'var(--primary)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 24, color: '#fff', boxShadow: '0 8px 20px rgba(122, 111, 190, 0.3)' }}>UCC</div>
+                <div style={{ width: 64, height: 64, background: 'var(--primary)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 24, color: '#fff', boxShadow: '0 8px 20px rgba(122, 111, 190, 0.3)' }}>{institution.shortName}</div>
                 <div>
-                  <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#2a3142', letterSpacing: '-0.02em' }}>University of Cape Coast</h1>
-                  <div style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.05em' }}>Faculty of Physical Sciences • Department of CS & IT</div>
+                  <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#2a3142', letterSpacing: '-0.02em' }}>{institution.name}</h1>
+                  <div style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.05em' }}>{institution.subtitle || 'Examination Portal'}</div>
                 </div>
               </div>
 
@@ -315,6 +318,22 @@ export default function PrintQuiz() {
                       <StatusBadge status={q.status} />
                     </div>
 
+                    {(q.questionType === 'FILL_BLANK' || q.questionType === 'NUMERIC') ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div style={{ padding: '12px 18px', borderRadius: 10, fontSize: 14, border: `1.5px solid ${q.status === 'CORRECT' ? '#10b981' : '#ef6767'}`,
+                          background: q.status === 'CORRECT' ? 'rgba(16,185,129,0.05)' : 'rgba(239,103,103,0.05)', color: '#2a3142' }}>
+                          <div style={{ fontSize: 11, fontWeight: 800, color: '#74788d', textTransform: 'uppercase', marginBottom: 4 }}>Your answer</div>
+                          <div style={{ fontWeight: 700 }}>{q.selectedAnswers?.[0] || '(no answer)'}</div>
+                        </div>
+                        <div style={{ padding: '12px 18px', borderRadius: 10, fontSize: 14, border: '1.5px solid #10b981', background: 'rgba(16,185,129,0.05)', color: '#2a3142' }}>
+                          <div style={{ fontSize: 11, fontWeight: 800, color: '#74788d', textTransform: 'uppercase', marginBottom: 4 }}>Accepted answer</div>
+                          <div style={{ fontWeight: 700 }}>
+                            {(q.correct_answer || []).join(' / ')}
+                            {q.questionType === 'NUMERIC' && q.tolerance ? ` (± ${q.tolerance})` : ''}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       {['option1', 'option2', 'option3', 'option4'].filter(k => q[k]).map((k, j) => {
                         const rawVal = q[k] || '';
@@ -351,6 +370,7 @@ export default function PrintQuiz() {
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 ))}
               </div>

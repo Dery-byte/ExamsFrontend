@@ -6,6 +6,7 @@ import { MessageSquareWarning, Loader2, CheckCircle2, XCircle, Clock, ExternalLi
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRemarksToManage, respondToRemark } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 export const REMARK_STATUS: Record<string, { text: string; bg: string; fg: string; Icon: any }> = {
   PENDING:  { text: 'Pending',  bg: '#fff7e6', fg: '#8a5a00', Icon: Clock },
@@ -32,7 +33,7 @@ export default function RemarkRequests() {
 
   const respond = async (r: any, decision: 'RESOLVED' | 'REJECTED') => {
     const text = (drafts[r.id] ?? '').trim();
-    if (!text) { toast.error('Write a response to the student first'); return; }
+    if (!text) { toast.error(tx('Write a response to the student first')); return; }
     setBusy(r.id);
     try {
       await respondToRemark(r.id, decision, text);
@@ -57,8 +58,7 @@ export default function RemarkRequests() {
       </div>
 
       <p className="rr-help">
-        To re-mark, open the quiz in the review screen, adjust the marks and save. Then come back here and resolve the request. The student's new score is recorded automatically.
-      </p>
+        {tx("To re-mark, open the quiz in the review screen, adjust the marks and save. Then come back here and resolve the request. The student's new score is recorded automatically.")}</p>
 
       {isLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={24} color="#5156be" className="rr-spin" /></div>
@@ -95,7 +95,7 @@ export default function RemarkRequests() {
                     </label>
                   ))}
                 </fieldset>
-                <label className="rr-label" htmlFor={`rr-resp-${r.id}`}>Response to the student</label>
+                <label className="rr-label" htmlFor={`rr-resp-${r.id}`}>{tx("Response to the student")}</label>
                 <textarea id={`rr-resp-${r.id}`} className="rr-input" rows={3} value={drafts[r.id] ?? ''}
                   onChange={e => setDrafts(d => ({ ...d, [r.id]: e.target.value }))}
                   placeholder="Explain what you checked and the outcome…" />
@@ -107,8 +107,7 @@ export default function RemarkRequests() {
                   <button className="rr-btn-ghost" onClick={() => navigate(reviewPath)}><ExternalLink size={13} /> Open review screen</button>
                 </div>
                 <p style={{ margin: '6px 0 0', fontSize: 11.5, color: '#94a3b8' }}>
-                  To change the marks, use the review screen first, then send your response here. The student is notified.
-                </p>
+                  {tx("To change the marks, use the review screen first, then send your response here. The student is notified.")}</p>
               </>
             ) : (
               <div className="rr-response"><strong>{r.respondedBy ?? 'Staff'}:</strong> {r.response}</div>

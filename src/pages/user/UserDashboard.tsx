@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PageHeader from '../../components/PageHeader';
+import { tx } from '../../utils/terms';
 
 function MiniStat({ title, value, icon: Icon, color, trend, trendValue }: { title: string; value: number | string; icon: any; color: string; trend?: 'up' | 'down'; trendValue?: string }) {
   return (
@@ -255,8 +256,8 @@ export default function UserDashboard() {
             <table className="table-lexa">
               <thead style={{ background: '#fcfdfe' }}>
                 <tr>
-                  <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Name</th>
-                  <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Code</th>
+                  <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tx("Course Name")}</th>
+                  <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tx("Course Code")}</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Performance</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Review Status</th>
                   <th style={{ padding: '10px 16px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verification Date</th>

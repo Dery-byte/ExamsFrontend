@@ -6,6 +6,7 @@ import {
   Award, GraduationCap, User, FileText, Calendar, TrendingUp,
   CheckCircle, AlertCircle, Clock
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -62,9 +63,9 @@ const SemesterReportCard = () => {
       a.download = `CumulativeReportCard_${allReports[0]?.username || 'student'}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('Cumulative Report Card downloaded!');
+      toast.success(tx('Cumulative Report Card downloaded!'));
     } catch (err) {
-      toast.error('Failed to download cumulative report card.');
+      toast.error(tx('Failed to download cumulative report card.'));
       console.error(err);
     } finally {
       setDownloadingAll(false);
@@ -88,9 +89,9 @@ const SemesterReportCard = () => {
       a.download = `SemesterReportCard_Level${level}_Sem${semester}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('Semester Report Card downloaded!');
+      toast.success(tx('Semester Report Card downloaded!'));
     } catch (err) {
-      toast.error('Failed to download semester report card.');
+      toast.error(tx('Failed to download semester report card.'));
       console.error(err);
     } finally {
       setDownloadingSingle(null);
@@ -116,8 +117,7 @@ const SemesterReportCard = () => {
           <Clock size={52} color="#cbd5e1" />
           <h3 style={{ margin: '16px 0 8px', color: '#94a3b8', fontWeight: 800 }}>No Academic Records Found</h3>
           <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>
-            Your semester results will appear here once published by your administrator.
-          </p>
+            {tx("Your semester results will appear here once published by your administrator.")}</p>
         </div>
       </div>
     );
@@ -135,8 +135,7 @@ const SemesterReportCard = () => {
         <div>
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: '#0f172a' }}>My Academic Progress</h2>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
-            Cumulative performance across all levels and semesters
-          </p>
+            {tx("Cumulative performance across all levels and semesters")}</p>
         </div>
 
         <button
@@ -173,10 +172,10 @@ const SemesterReportCard = () => {
           background: '#fff'
         }}>
           {[
-            { icon: <User size={15} color="#5156be" />, label: 'Student Name', value: studentInfo.studentName || '—' },
-            { icon: <FileText size={15} color="#5156be" />, label: 'Student ID', value: studentInfo.username || '—' },
-            { icon: <GraduationCap size={15} color="#5156be" />, label: 'Programme', value: studentInfo.programName || '—' },
-            { icon: <TrendingUp size={15} color="#5156be" />, label: 'Semesters Completed', value: allReports.length },
+            { icon: <User size={15} color="#5156be" />, label: tx('Student Name'), value: studentInfo.studentName || '—' },
+            { icon: <FileText size={15} color="#5156be" />, label: tx('Student ID'), value: studentInfo.username || '—' },
+            { icon: <GraduationCap size={15} color="#5156be" />, label: tx('Programme'), value: studentInfo.programName || '—' },
+            { icon: <TrendingUp size={15} color="#5156be" />, label: tx('Semesters Completed'), value: allReports.length },
           ].map((item, i, arr) => (
             <div
               key={i}
@@ -235,10 +234,10 @@ const SemesterReportCard = () => {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#1e293b' }}>
-                    Level {report.level}
+                    {tx("Level ")}{report.level}
                   </h3>
                   <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
-                    Semester {report.semester}
+                    {tx("Semester ")}{report.semester}
                   </div>
                 </div>
               </div>
@@ -253,8 +252,7 @@ const SemesterReportCard = () => {
                 }}
               >
                 {downloadingSingle === (report.semester + parseInt(report.level) * 1000) ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={16} />}
-                Download Semester
-              </button>
+                {tx("Download Semester")}</button>
             </div>
 
             {/* Course Results Table */}
@@ -264,7 +262,7 @@ const SemesterReportCard = () => {
                   <thead>
                     <tr style={{ background: '#f1f5f9' }}>
                       <th style={{ padding: '12px 16px', textAlign: 'left', color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Code</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Title</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#475569', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tx("Course Title")}</th>
                       {sections.map((sec: any) => (
                         <th key={sec.id} style={{ padding: '12px 10px', textAlign: 'center', color: '#475569', fontSize: 11, fontWeight: 800, borderLeft: '1px solid #e2e8f0' }}>
                           <div>{sec.sectionName}</div>
@@ -328,7 +326,7 @@ const SemesterReportCard = () => {
                 <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Semester Average</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{tx("Semester Average")}</span>
                       <span style={{ fontSize: 12, fontWeight: 800, color: '#1e293b' }}>{overallPct}%</span>
                     </div>
                     <div style={{ height: 8, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>

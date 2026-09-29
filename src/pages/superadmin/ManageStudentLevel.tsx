@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { saGetAllStudents, saSetStudentSemester, saGetPrograms } from '../../api/endpoints';
 import toast from 'react-hot-toast';
 import { Search, GraduationCap, BookOpen, RefreshCw, ChevronDown, Save, Users } from 'lucide-react';
+import { defaultLevels, periodsPerLevel, tx } from '../../utils/terms';
 
 interface Student {
   id: number;
@@ -61,7 +62,7 @@ export default function ManageStudentLevel() {
 
   const getLevels = (programId: number): number[] => {
     const prog = programs.find(p => p.id === programId);
-    return prog?.configuredLevels || [100, 200, 300, 400];
+    return prog?.configuredLevels || defaultLevels();
   };
 
   const handleSave = async (student: Student) => {
@@ -74,7 +75,7 @@ export default function ManageStudentLevel() {
         ? { ...s, currentSemester: edit.currentSemester, currentLevel: edit.currentLevel } : s));
       setEdits(prev => { const n = { ...prev }; delete n[student.id]; return n; });
     } catch {
-      toast.error('Failed to update student');
+      toast.error(tx('Failed to update student'));
     } finally {
       setSaving(null);
     }
@@ -94,7 +95,7 @@ export default function ManageStudentLevel() {
             <GraduationCap size={20} color="#fff" />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Student Semester Management</h1>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{tx("Student Semester Management")}</h1>
             <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Set current level & semester for each student</p>
           </div>
         </div>
@@ -105,30 +106,30 @@ export default function ManageStudentLevel() {
         <Search size={18} color="rgba(139,92,246,0.7)" />
         <input
           value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search by name, ID, email or program…"
+          placeholder={tx("Search by name, ID, email or program…")}
           style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 14 }}
         />
         <select value={programFilter} onChange={e => setProgramFilter(e.target.value)}
           style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 8, padding: '6px 12px', color: '#fff', outline: 'none' }}>
-          <option value="" style={{ background: '#1a1a35' }}>All Programs</option>
+          <option value="" style={{ background: '#1a1a35' }}>{tx("All Programs")}</option>
           {programs.map(p => <option key={p.id} value={p.id} style={{ background: '#1a1a35' }}>{p.name}</option>)}
         </select>
         <button onClick={loadData} style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: '#a78bfa' }}>
           <RefreshCw size={15} />
         </button>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{filtered.length} students</span>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{filtered.length} {tx("students")}</span>
       </div>
 
       {/* Table */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: 'rgba(255,255,255,0.4)' }}>
           <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: 12, color: '#a78bfa' }} />
-          <p>Loading students…</p>
+          <p>{tx("Loading students…")}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ ...card, textAlign: 'center', padding: 60 }}>
           <Users size={40} style={{ color: 'rgba(139,92,246,0.3)', marginBottom: 12 }} />
-          <p style={{ color: 'rgba(255,255,255,0.4)' }}>No students found.</p>
+          <p style={{ color: 'rgba(255,255,255,0.4)' }}>{tx("No students found.")}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -152,13 +153,13 @@ export default function ManageStudentLevel() {
                   }}>{student.firstname?.[0]?.toUpperCase() || 'S'}</div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{student.firstname} {student.lastname}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{student.username} · {student.program || 'No Program'}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{student.username} · {student.program || tx('No Program')}</div>
                   </div>
                 </div>
 
                 {/* Level selector */}
                 <div>
-                  <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>LEVEL</label>
+                  <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>{tx("LEVEL")}</label>
                   <select
                     value={edit.currentLevel}
                     onChange={e => setEdit(student.id, 'currentLevel', Number(e.target.value))}
@@ -168,13 +169,13 @@ export default function ManageStudentLevel() {
                       color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
-                    {levels.map(l => <option key={l} value={l} style={{ background: '#1a1a35' }}>Level {l}</option>)}
+                    {levels.map(l => <option key={l} value={l} style={{ background: '#1a1a35' }}>{tx("Level ")}{l}</option>)}
                   </select>
                 </div>
 
                 {/* Semester selector */}
                 <div>
-                  <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>SEMESTER</label>
+                  <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>{tx("SEMESTER")}</label>
                   <select
                     value={edit.currentSemester}
                     onChange={e => setEdit(student.id, 'currentSemester', Number(e.target.value))}
@@ -184,8 +185,8 @@ export default function ManageStudentLevel() {
                       color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
-                    {Array.from({ length: (programs.find(p => p.id === student.programId)?.semestersPerLevel?.[edit.currentLevel] || 2) }, (_, i) => i + 1).map(sem => (
-                      <option key={sem} value={sem} style={{ background: '#1a1a35' }}>Semester {sem}</option>
+                    {Array.from({ length: (programs.find(p => p.id === student.programId)?.semestersPerLevel?.[edit.currentLevel] || periodsPerLevel()) }, (_, i) => i + 1).map(sem => (
+                      <option key={sem} value={sem} style={{ background: '#1a1a35' }}>{tx("Semester ")}{sem}</option>
                     ))}
                   </select>
                 </div>

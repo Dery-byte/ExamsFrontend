@@ -3,6 +3,7 @@ import { saGetPrograms, saGetDepartments, saCreateProgram, saUpdateProgram, saDe
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { BookMarked, Plus, Pencil, Trash2, X, Save, Calendar, Building2, Power, PowerOff } from 'lucide-react';
+import { isSchoolMode, periodsPerLevel, tx } from '../../utils/terms';
 
 interface Program { id: number; name: string; code: string; durationYears: number; departmentId: number; departmentName: string; configuredLevels: number[]; enabled: boolean; semestersPerLevel: Record<number, number>; }
 interface Department { id: number; name: string; code: string; }
@@ -41,11 +42,11 @@ export default function Programs() {
   const openCreate = () => { setForm({ name: '', code: '', durationYears: 4, departmentId: departments[0]?.id || '', semestersPerLevel: {} }); setMode('create'); setEditId(null); setModalOpen(true); };
   const openEdit = (p: Program) => { setForm({ name: p.name, code: p.code, durationYears: p.durationYears, departmentId: p.departmentId, semestersPerLevel: p.semestersPerLevel || {} }); setMode('edit'); setEditId(p.id); setModalOpen(true); };
 
-  const previewLevels = Array.from({ length: form.durationYears }, (_, i) => (i + 1) * 100);
+  const previewLevels = Array.from({ length: form.durationYears }, (_, i) => (i + 1) * (isSchoolMode() ? 1 : 100));
 
   const updateSemester = (level: number, delta: number) => {
     setForm(prev => {
-      const current = prev.semestersPerLevel[level] || 2;
+      const current = prev.semestersPerLevel[level] || periodsPerLevel();
       const next = Math.max(1, Math.min(6, current + delta));
       return { ...prev, semestersPerLevel: { ...prev.semestersPerLevel, [level]: next } };
     });
@@ -59,11 +60,11 @@ export default function Programs() {
       if (mode === 'create') {
         const created = await saCreateProgram(payload);
         setPrograms(prev => [...prev, created]);
-        toast.success('Program created!');
+        toast.success(tx('Program created!'));
       } else {
         const updated = await saUpdateProgram(editId!, payload);
         setPrograms(prev => prev.map(p => p.id === editId ? updated : p));
-        toast.success('Program updated!');
+        toast.success(tx('Program updated!'));
       }
       setModalOpen(false);
     } catch (e: any) { toast.error(e?.response?.data?.message || 'Operation failed'); }
@@ -71,7 +72,7 @@ export default function Programs() {
   };
 
   const handleDelete = async (p: Program) => {
-    const res = await Swal.fire({ title: `Delete "${p.name}"?`, text: 'This will remove the program and all its level configurations.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', background: '#1a1a35', color: '#fff' });
+    const res = await Swal.fire({ title: `Delete "${p.name}"?`, text: tx('This will remove the program and all its level configurations.'), icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', background: '#1a1a35', color: '#fff' });
     if (!res.isConfirmed) return;
     try { await saDeleteProgram(p.id); setPrograms(prev => prev.filter(x => x.id !== p.id)); toast.success('Deleted.'); }
     catch (e: any) { toast.error(e?.response?.data?.message || 'Delete failed'); }
@@ -82,11 +83,11 @@ export default function Programs() {
     const res = await Swal.fire({
       title: `${p.enabled ? 'Disable' : 'Enable'} "${p.name}"?`,
       html: p.enabled
-        ? `<div style="color:rgba(255,255,255,0.7);font-size:14px">This program will be <b style="color:#f87171">hidden system-wide</b>.<br/>Students, Lecturers, and Admins will no longer see it.</div>`
-        : `<div style="color:rgba(255,255,255,0.7);font-size:14px">This program will be <b style="color:#34d399">restored</b> and visible to all roles again.</div>`,
+        ? tx(`<div style="color:rgba(255,255,255,0.7);font-size:14px">This program will be <b style="color:#f87171">hidden system-wide</b>.<br/>Students, Lecturers, and Admins will no longer see it.</div>`)
+        : tx(`<div style="color:rgba(255,255,255,0.7);font-size:14px">This program will be <b style="color:#34d399">restored</b> and visible to all roles again.</div>`),
       icon: p.enabled ? 'warning' : 'question',
       showCancelButton: true,
-      confirmButtonText: p.enabled ? 'Disable Program' : 'Enable Program',
+      confirmButtonText: p.enabled ? tx('Disable Program') : tx('Enable Program'),
       confirmButtonColor: p.enabled ? '#ef4444' : '#10b981',
       cancelButtonColor: '#6b7280',
       background: '#1a1a35',
@@ -97,9 +98,9 @@ export default function Programs() {
     try {
       const updated = await saToggleProgram(p.id);
       setPrograms(prev => prev.map(x => x.id === p.id ? { ...x, enabled: updated.enabled } : x));
-      toast.success(`Program ${action}d successfully.`);
+      toast.success(tx(`Program ${action}d successfully.`));
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || `Failed to ${action} program`);
+      toast.error(e?.response?.data?.message || tx(`Failed to ${action} program`));
     } finally {
       setTogglingId(null);
     }
@@ -119,12 +120,11 @@ export default function Programs() {
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Programs &amp; Levels</h1>
-            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Configure academic programs and their level structure</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{tx("Configure academic programs and their level structure")}</p>
           </div>
         </div>
         <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', borderRadius: 10, background: 'linear-gradient(135deg,#0ea5e9,#2563eb)', border: 'none', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 14px rgba(14,165,233,0.3)' }}>
-          <Plus size={17} /> Add Program
-        </button>
+          <Plus size={17} /> {tx("Add Program")}</button>
       </div>
 
       {/* Stats bar */}
@@ -173,7 +173,7 @@ export default function Programs() {
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed rgba(139,92,246,0.2)' }}>
           <BookMarked size={48} style={{ color: 'rgba(139,92,246,0.3)', marginBottom: 16 }} />
-          <h3 style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>No programs found</h3>
+          <h3 style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{tx("No programs found")}</h3>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
@@ -222,7 +222,7 @@ export default function Programs() {
                   <button
                     onClick={() => handleToggle(p)}
                     disabled={togglingId === p.id}
-                    title={p.enabled ? 'Disable Program' : 'Enable Program'}
+                    title={p.enabled ? tx('Disable Program') : tx('Enable Program')}
                     style={{
                       width: 32, height: 32, borderRadius: 8, cursor: togglingId === p.id ? 'not-allowed' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -240,14 +240,14 @@ export default function Programs() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                 <Calendar size={13} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{p.durationYears} Year{p.durationYears > 1 ? 's' : ''} Programme</span>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{p.durationYears} Year{p.durationYears > 1 ? 's' : ''} {tx("Programme")}</span>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {p.configuredLevels?.map((lv, i) => {
-                  const sems = p.semestersPerLevel?.[lv] || 2;
+                  const sems = p.semestersPerLevel?.[lv] || periodsPerLevel();
                   return (
                     <span key={lv} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: `${levelColors[i % levelColors.length]}22`, border: `1px solid ${levelColors[i % levelColors.length]}44`, color: levelColors[i % levelColors.length] }}>
-                      Level {lv} <span style={{ opacity: 0.6, fontSize: 10, marginLeft: 2 }}>({sems} sems)</span>
+                      {tx("Level ")}{lv} <span style={{ opacity: 0.6, fontSize: 10, marginLeft: 2 }}>({sems} sems)</span>
                     </span>
                   );
                 })}
@@ -269,12 +269,12 @@ export default function Programs() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: 'linear-gradient(145deg,#1a1a35,#12122a)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 18, padding: '28px', width: '100%', maxWidth: 480, boxShadow: '0 25px 60px rgba(0,0,0,0.6)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{mode === 'create' ? 'New Program' : 'Edit Program'}</h2>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{mode === 'create' ? tx('New Program') : tx('Edit Program')}</h2>
               <button onClick={() => setModalOpen(false)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 6, cursor: 'pointer', color: '#fff' }}><X size={16} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div><label style={labelStyle}>Program Name *</label><input style={inputStyle} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Computer Science BS" /></div>
-              <div><label style={labelStyle}>Program Code *</label><input style={inputStyle} value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value.toUpperCase() }))} placeholder="e.g. CS" maxLength={10} /></div>
+              <div><label style={labelStyle}>{tx("Program Name *")}</label><input style={inputStyle} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Computer Science BS" /></div>
+              <div><label style={labelStyle}>{tx("Program Code *")}</label><input style={inputStyle} value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value.toUpperCase() }))} placeholder="e.g. CS" maxLength={10} /></div>
               <div>
                 <label style={labelStyle}>Department *</label>
                 <select style={inputStyle} value={form.departmentId} onChange={e => setForm(p => ({ ...p, departmentId: Number(e.target.value) }))}>
@@ -291,11 +291,11 @@ export default function Programs() {
                   <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>year{form.durationYears > 1 ? 's' : ''}</span>
                 </div>
                 <div style={{ marginTop: 10 }}>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>Generated Levels:</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>{tx("Generated Levels:")}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {previewLevels.map((lv, i) => (
                       <span key={lv} style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: `${levelColors[i % levelColors.length]}22`, border: `1px solid ${levelColors[i % levelColors.length]}44`, color: levelColors[i % levelColors.length] }}>
-                        Level {lv}
+                        {tx("Level ")}{lv}
                       </span>
                     ))}
                   </div>
@@ -303,14 +303,14 @@ export default function Programs() {
               </div>
 
               <div>
-                <label style={labelStyle}>Semesters per Level</label>
+                <label style={labelStyle}>{tx("Semesters per Level")}</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {previewLevels.map(lv => (
                     <div key={lv} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>Level {lv}</span>
+                      <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{tx("Level ")}{lv}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <button onClick={() => updateSemester(lv, -1)} style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-                        <span style={{ fontSize: 14, fontWeight: 700, width: 20, textAlign: 'center', color: '#38bdf8' }}>{form.semestersPerLevel[lv] || 2}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, width: 20, textAlign: 'center', color: '#38bdf8' }}>{form.semestersPerLevel[lv] || periodsPerLevel()}</span>
                         <button onClick={() => updateSemester(lv, 1)} style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                       </div>
                     </div>

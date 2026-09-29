@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Edit, Trash2, UserPlus, BookOpen, User, Info, X, Loader2, Search, Filter, Book, ChevronRight, GraduationCap, Layers, ShieldCheck, Target, Award, ArrowRight, CheckCircle2, MoreVertical, LayoutGrid, List, Database, Activity, BadgeCheck } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function ViewCategories() {
   const qc = useQueryClient();
@@ -84,7 +85,7 @@ export default function ViewCategories() {
         programIds: editingLockedGlobal ? undefined : (categoryEdit.programIds || []),
       };
       if (!isSuper && !editingLockedGlobal && payload.programIds!.length === 0) {
-        toast.error('Please select at least one program. Only the Super Admin can make a course global.', { id: loadingToast });
+        toast.error(tx('Please select at least one program. Only the Super Admin can make a course global.'), { id: loadingToast });
         setSaving(false);
         return;
       }
@@ -99,11 +100,11 @@ export default function ViewCategories() {
   };
 
   const doAssign = async () => {
-    if (!categoryEdit.userId) { toast.error('Faculty lead required'); return; }
+    if (!categoryEdit.userId) { toast.error(tx('Faculty lead required')); return; }
     const loadingToast = toast.loading('Establishing faculty lead...');
     try {
       await assignCourseToLecturer(categoryEdit.cid, categoryEdit.userId);
-      toast.success('Faculty lead established', { id: loadingToast });
+      toast.success(tx('Faculty lead established'), { id: loadingToast });
       qc.invalidateQueries({ queryKey: ['categories'] });
       setAssignModal(false);
     } catch { 
@@ -167,7 +168,7 @@ export default function ViewCategories() {
               <div className="reg-col title">
                  <h6 className="t">{el.title}</h6>
                  <span className="m" style={{ color: '#64748b' }}>
-                    <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.length ? el.programNames.join(', ') : '🌐 Global (All Programs)'}</span>
+                    <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.length ? el.programNames.join(', ') : tx('🌐 Global (All Programs)')}</span>
                     {' • '}{el.level}{' • '}{el.description?.substring(0, 60)}...
                  </span>
               </div>
@@ -215,7 +216,7 @@ export default function ViewCategories() {
                 </div>
 
                 <div className="f-grp-mini">
-                   <label>Academic Level</label>
+                   <label>{tx("Academic Level")}</label>
                    <div className="mini-level-grid">
                       {LEVELS.map(l => (
                         <button key={l} className={`l-pill-btn ${categoryEdit.level === l ? 'active' : ''}`} onClick={()=>setCategoryEdit({...categoryEdit, level: l})}>{l}</button>
@@ -228,14 +229,13 @@ export default function ViewCategories() {
                 </div>
                 {editingLockedGlobal ? (
                   <div className="f-grp-mini">
-                     <label>Registered Programs</label>
+                     <label>{tx("Registered Programs")}</label>
                      <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>
-                       🌐 Global course — only the Super Admin can change its programs.
-                     </span>
+                       {tx("🌐 Global course — only the Super Admin can change its programs.")}</span>
                   </div>
                 ) : programs.length > 0 && (
                   <div className="f-grp-mini">
-                     <label>Registered Programs (Select all that apply){isSuper && ' — leave empty for a Global course'}</label>
+                     <label>{tx("Registered Programs (Select all that apply)")}{isSuper && tx(' — leave empty for a Global course')}</label>
                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
                         {programs.map(p => {
                           const isSelected = (categoryEdit.programIds || []).includes(p.id);
@@ -282,14 +282,14 @@ export default function ViewCategories() {
         <div className="fixed-global-overlay">
           <div className="modal-lexa-container-compact animate-scale-up" style={{ width: 400 }}>
             <div className="modal-lexa-header-mini">
-              <h6 className="m-0">Faculty Assignment</h6>
+              <h6 className="m-0">{tx("Faculty Assignment")}</h6>
               <button className="m-close" onClick={()=>setAssignModal(false)}><X size={16}/></button>
             </div>
             <div style={{ padding: '25px' }}>
                <div className="f-grp-mini">
                   <label>Establishing Lead for {categoryEdit.courseCode}</label>
                   <select className="mini-input" style={{ width: '100%' }} value={categoryEdit.userId||''} onChange={e=>setCategoryEdit({...categoryEdit,userId:Number(e.target.value)})}>
-                    <option value="">Select Faculty Lead...</option>
+                    <option value="">{tx("Select Faculty Lead...")}</option>
                     {lecturers.map((l:any)=><option key={l.id} value={l.id}>{l.fullName}</option>)}
                   </select>
                </div>

@@ -9,19 +9,20 @@ import {
   ShieldCheck, Loader2, BadgeCheck, GraduationCap,
   Info, CheckCircle2, Award, Cpu, Sparkles, Calendar, Globe
 } from 'lucide-react';
+import { isSchoolMode, periodsPerLevel, tx } from '../../utils/terms';
 
 const LEVELS = [
-  { label: 'Level 100', sub: '1st Year', color: '#5156be' },
-  { label: 'Level 200', sub: '2nd Year', color: '#2ab57d' },
-  { label: 'Level 300', sub: '3rd Year', color: '#f59e0b' },
-  { label: 'Level 400', sub: '4th Year', color: '#fd625e' },
+  { label: tx('Level 100'), sub: '1st Year', color: '#5156be' },
+  { label: tx('Level 200'), sub: '2nd Year', color: '#2ab57d' },
+  { label: tx('Level 300'), sub: '3rd Year', color: '#f59e0b' },
+  { label: tx('Level 400'), sub: '4th Year', color: '#fd625e' },
 ];
 
 const INFO_ITEMS = [
-  { icon: <CheckCircle2 size={15} />, text: 'Course is immediately available for faculty assignment after registration.' },
-  { icon: <Award size={15} />, text: 'Course code must be unique within the academic registry.' },
+  { icon: <CheckCircle2 size={15} />, text: tx('Course is immediately available for faculty assignment after registration.') },
+  { icon: <Award size={15} />, text: tx('Course code must be unique within the academic registry.') },
   { icon: <ShieldCheck size={15} />, text: 'All changes are logged and auditable by system administrators.' },
-  { icon: <Cpu size={15} />, text: 'Assessments and quizzes can be linked to this course once registered.' },
+  { icon: <Cpu size={15} />, text: tx('Assessments and quizzes can be linked to this course once registered.') },
 ];
 
 export default function AddCategory() {
@@ -51,13 +52,13 @@ export default function AddCategory() {
 
   const formSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category.level) { toast.error('Please select an academic level'); return; }
-    if (!category.semester) { toast.error('Please select a semester'); return; }
+    if (!category.level) { toast.error(tx('Please select an academic level')); return; }
+    if (!category.semester) { toast.error(tx('Please select a semester')); return; }
     if (!isGlobal && category.programIds.length === 0) {
-      toast.error(isSuper ? 'Select at least one program, or mark the course as Global' : 'Please select at least one program');
+      toast.error(isSuper ? tx('Select at least one program, or mark the course as Global') : tx('Please select at least one program'));
       return;
     }
-    const loadingToast = toast.loading('Registering course...');
+    const loadingToast = toast.loading(tx('Registering course...'));
     setLoading(true);
     try {
       await addCategory({
@@ -65,7 +66,7 @@ export default function AddCategory() {
         programIds: isGlobal ? [] : category.programIds,
         creditUnits: category.creditUnits === '' ? null : Number(category.creditUnits),
       });
-      toast.success('Course registered successfully', { id: loadingToast });
+      toast.success(tx('Course registered successfully'), { id: loadingToast });
       setTimeout(() => navigate(`${basePath}/courses`), 1200);
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? 'Registration failed', { id: loadingToast });
@@ -86,7 +87,7 @@ export default function AddCategory() {
 
   return (
     <div className="acp-page">
-      <PageHeader title="Course Registration" breadcrumbs={['Admin', 'Courses', 'New Course']} />
+      <PageHeader title={tx("Course Registration")} breadcrumbs={['Admin', tx('Courses'), tx('New Course')]} />
 
       <div className="acp-shell">
 
@@ -100,13 +101,13 @@ export default function AddCategory() {
                 <GraduationCap size={22} />
               </div>
               <div>
-                <h4 className="acp-card-title">New Course Entry</h4>
-                <p className="acp-card-sub">Establish a new course in the academic registry</p>
+                <h4 className="acp-card-title">{tx("New Course Entry")}</h4>
+                <p className="acp-card-sub">{tx("Establish a new course in the academic registry")}</p>
               </div>
             </div>
             <button className="acp-btn-back" onClick={() => navigate(`${basePath}/courses`)}>
               <ArrowLeft size={15} />
-              <span>Course Catalog</span>
+              <span>{tx("Course Catalog")}</span>
             </button>
           </div>
 
@@ -129,8 +130,7 @@ export default function AddCategory() {
               <div className="acp-field acp-field--flex">
                 <label className="acp-label">
                   <BookOpen size={13} />
-                  Official Course Title
-                  <span className="acp-required">*</span>
+                  {tx("Official Course Title")}<span className="acp-required">*</span>
                 </label>
                 <div className={`acp-input-wrap ${focused === 'title' ? 'is-focused' : ''} ${category.title ? 'is-filled' : ''}`}>
                   <input
@@ -144,14 +144,13 @@ export default function AddCategory() {
                   />
                   {category.title && <CheckCircle2 className="acp-input-check" size={16} />}
                 </div>
-                <span className="acp-hint">Use the full, official course title as listed in the curriculum</span>
+                <span className="acp-hint">{tx("Use the full, official course title as listed in the curriculum")}</span>
               </div>
 
               <div className="acp-field acp-field--fixed">
                 <label className="acp-label">
                   <BadgeCheck size={13} />
-                  Course Code
-                  <span className="acp-required">*</span>
+                  {tx("Course Code")}<span className="acp-required">*</span>
                 </label>
                 <div className={`acp-input-wrap acp-code-wrap ${focused === 'courseCode' ? 'is-focused' : ''} ${category.courseCode ? 'is-filled' : ''}`}>
                   <input
@@ -167,14 +166,14 @@ export default function AddCategory() {
                 </div>
                 <span className="acp-hint">Unique identifier</span>
               </div>
-              <div className="acp-field" style={{ maxWidth: 140 }}>
+              {!isSchoolMode() && <div className="acp-field" style={{ maxWidth: 140 }}>
                 <label className="acp-label" htmlFor="acp-cu">Credit Units</label>
                 <div className="acp-input-wrap is-filled">
                   <input id="acp-cu" className="acp-input" type="number" min={0} max={30} value={category.creditUnits}
                     onChange={e => setCategory(c => ({ ...c, creditUnits: e.target.value }))} />
                 </div>
                 <span className="acp-hint">Weight in GPA</span>
-              </div>
+              </div>}
             </div>
 
             {/* Row 2a: Global course toggle (Super Admin only) */}
@@ -193,10 +192,8 @@ export default function AddCategory() {
                   />
                   <Globe size={16} color="#16a34a" />
                   <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
-                    Global course
-                    <span className="acp-hint" style={{ marginLeft: '8px', fontWeight: 400 }}>
-                      Open to every student regardless of program
-                    </span>
+                    {tx("Global course")}<span className="acp-hint" style={{ marginLeft: '8px', fontWeight: 400 }}>
+                      {tx("Open to every student regardless of program")}</span>
                   </span>
                 </label>
               </div>
@@ -206,8 +203,7 @@ export default function AddCategory() {
             {!isGlobal && programs.length > 0 && (
               <div className="acp-field">
                 <label className="acp-label">
-                  <GraduationCap size={13} /> Registered Programs
-                  <span className="acp-required">*</span>
+                  <GraduationCap size={13} /> {tx("Registered Programs")}<span className="acp-required">*</span>
                   <span className="acp-hint" style={{ marginLeft: '8px' }}>(Select all that apply)</span>
                 </label>
                 <div className="acp-programs-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px' }}>
@@ -247,8 +243,7 @@ export default function AddCategory() {
             <div className="acp-field">
               <label className="acp-label">
                 <Layers size={13} />
-                Academic Level
-                <span className="acp-required">*</span>
+                {tx("Academic Level")}<span className="acp-required">*</span>
               </label>
               <div className="acp-level-grid">
                 {availableLevels.map((lv, i) => {
@@ -263,7 +258,7 @@ export default function AddCategory() {
                     >
                       <span className="acp-level-dot" style={{ background: color }} />
                       <div className="acp-level-info">
-                        <span className="acp-level-name">Level {lv}</span>
+                        <span className="acp-level-name">{tx("Level ")}{lv}</span>
                         <span className="acp-level-sub">{i + 1}{yearSuffix} Year</span>
                       </div>
                       {category.level === lv && <CheckCircle2 size={16} className="acp-level-check" style={{ color }} />}
@@ -276,12 +271,12 @@ export default function AddCategory() {
             {/* Row 4: Semester */}
             <div className="acp-field">
               <label className="acp-label">
-                <Calendar size={13} /> Semester <span className="acp-required">*</span>
+                <Calendar size={13} /> {tx("Semester ")}<span className="acp-required">*</span>
               </label>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {Array.from({ length: (leadProgram?.semestersPerLevel?.[Number(category.level)] || 2) }, (_, i) => {
+                {Array.from({ length: (leadProgram?.semestersPerLevel?.[Number(category.level)] || periodsPerLevel()) }, (_, i) => {
                   const val = String(i + 1);
-                  const label = `Semester ${val}`;
+                  const label = tx(`Semester ${val}`);
                   const sub = i === 0 ? 'First Half' : i === 1 ? 'Second Half' : `Part ${val}`;
                   return (
                     <button key={val} type="button"
@@ -317,11 +312,11 @@ export default function AddCategory() {
                   onChange={set('description')}
                   onFocus={() => setFocused('description')}
                   onBlur={() => setFocused(null)}
-                  placeholder="Summarize course content, prerequisites, and primary learning outcomes..."
+                  placeholder={tx("Summarize course content, prerequisites, and primary learning outcomes...")}
                 />
                 <span className="acp-area-count">{category.description.length} chars</span>
               </div>
-              <span className="acp-hint">Minimum 30 characters recommended for a meaningful course description</span>
+              <span className="acp-hint">{tx("Minimum 30 characters recommended for a meaningful course description")}</span>
             </div>
 
             {/* Footer */}
@@ -332,7 +327,7 @@ export default function AddCategory() {
               <button type="submit" className="acp-btn-submit" disabled={loading}>
                 {loading
                   ? <><Loader2 size={17} className="acp-spin" /> Registering…</>
-                  : <><BookPlus size={17} /> Register Course</>
+                  : <><BookPlus size={17} /> {tx("Register Course")}</>
                 }
               </button>
             </div>
@@ -348,7 +343,7 @@ export default function AddCategory() {
             <div className="acp-sb-banner-body">
               <div className="acp-sb-icon"><Sparkles size={20} /></div>
               <h5 className="acp-sb-title">Registry Guide</h5>
-              <p className="acp-sb-sub">Everything you need to know about course registration</p>
+              <p className="acp-sb-sub">{tx("Everything you need to know about course registration")}</p>
             </div>
           </div>
 
@@ -381,7 +376,7 @@ export default function AddCategory() {
 
           {/* Level legend */}
           <div className="acp-sb-level-legend">
-            <p className="acp-sb-section-title"><Layers size={12} /> Level Structure</p>
+            <p className="acp-sb-section-title"><Layers size={12} /> {tx("Level Structure")}</p>
             {LEVELS.map(lv => (
               <div key={lv.label} className="acp-sb-level-row">
                 <span className="acp-sb-level-dot" style={{ background: lv.color }} />

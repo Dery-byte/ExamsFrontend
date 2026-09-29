@@ -1,6 +1,13 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import ModeGate from './components/common/ModeGate';
+import DeveloperLogin from './pages/developer/DeveloperLogin';
+import DeveloperDashboard from './pages/developer/DeveloperDashboard';
+import { useInstitution } from './hooks/useInstitution';
+import { syncMode } from './utils/terms';
 import { Toaster } from 'react-hot-toast';
 
 // Layouts
@@ -14,6 +21,7 @@ import Welcome from './pages/auth/Welcome';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ResetPassword from './pages/auth/ResetPassword';
+import ChangePassword from './pages/auth/ChangePassword';
 import Profile from './pages/auth/Profile';
 
 // Admin
@@ -37,6 +45,9 @@ import QuestionBank from './pages/shared/QuestionBank';
 import ProctoringReport from './pages/shared/ProctoringReport';
 import RemarkRequests from './pages/shared/RemarkRequests';
 import AcademicSettings from './pages/superadmin/AcademicSettings';
+import InstitutionSettings from './pages/superadmin/InstitutionSettings';
+import TermRemarks from './pages/shared/TermRemarks';
+import VerifyDocument from './pages/auth/VerifyDocument';
 import AcademicRecords from './pages/shared/AcademicRecords';
 import Transcript from './pages/user/Transcript';
 import DataTools from './pages/shared/DataTools';
@@ -75,7 +86,17 @@ import QuizLink from './pages/user/QuizLink';
 // Shared
 import MarksSheetManager from './pages/admin/MarksSheetManager';
 
+/** When the server's system mode differs from the one this browser cached, reload once with the right words. */
+function ModeSync() {
+  const { institution } = useInstitution();
+  useEffect(() => {
+    if (syncMode(institution.mode)) window.location.reload();
+  }, [institution.mode]);
+  return null;
+}
+
 export default function App() {
+  const location = useLocation();
   return (
     <AuthProvider>
       <Toaster
@@ -100,12 +121,20 @@ export default function App() {
           }
         }}
       />
+      <ModeSync />
+      <ErrorBoundary resetKey={location.pathname}>
       <Routes>
+        {/* Developer: email code sign-in, system mode, health */}
+        <Route path="/developer" element={<DeveloperLogin />} />
+        <Route path="/developer/dashboard" element={<ProtectedRoute role="DEVELOPER"><DeveloperDashboard /></ProtectedRoute>} />
         {/* Public */}
         <Route path="/" element={<Welcome />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
+        <Route path="/verify" element={<VerifyDocument />} />
+        <Route path="/verify/:code" element={<VerifyDocument />} />
         <Route path="/quiz/:qid" element={<QuizLink />} />
         {/* The readable part is decorative; the quiz is found by :qid */}
         <Route path="/quiz/:qid/:slug" element={<QuizLink />} />
@@ -115,8 +144,9 @@ export default function App() {
           <Route index element={<SuperAdminWelcome />} />
           <Route path="configuration" element={<SuperAdminConfiguration />} />
           <Route path="academic-settings" element={<AcademicSettings />} />
+          <Route path="institution" element={<InstitutionSettings />} />
           <Route path="features" element={<FeatureControls />} />
-          <Route path="academic-records" element={<AcademicRecords />} />
+          <Route path="academic-records" element={<ModeGate only="university" redirectTo=".."><AcademicRecords /></ModeGate>} />
           <Route path="data-tools" element={<DataTools />} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="analytics" element={<Analytics />} />
@@ -134,6 +164,7 @@ export default function App() {
           <Route path="courses" element={<ViewCategories />} />
           <Route path="add-course" element={<AddCategory />} />
           <Route path="marks-sheets" element={<MarksSheetManager />} />
+          <Route path="term-remarks" element={<ModeGate only="school" redirectTo="/super-admin"><TermRemarks /></ModeGate>} />
           <Route path="lecturers" element={<Lecturers />} />
         </Route>
 
@@ -145,7 +176,7 @@ export default function App() {
           <Route path="question-bank" element={<FeatureGate feature="QUESTION_BANK" redirectTo="/admin"><QuestionBank /></FeatureGate>} />
           <Route path="proctoring/:qId" element={<ProctoringReport />} />
           <Route path="remarks" element={<RemarkRequests />} />
-          <Route path="academic-records" element={<AcademicRecords />} />
+          <Route path="academic-records" element={<ModeGate only="university" redirectTo=".."><AcademicRecords /></ModeGate>} />
           <Route path="data-tools" element={<FeatureGate feature="HOD_DATA_TOOLS" redirectTo="/admin"><DataTools /></FeatureGate>} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="analytics" element={<FeatureGate feature="HOD_ANALYTICS" redirectTo="/admin"><Analytics /></FeatureGate>} />
@@ -161,6 +192,7 @@ export default function App() {
           <Route path="quiz-review" element={<QuizReview />} />
           <Route path="enroll-student" element={<EnrollStudent />} />
           <Route path="marks-sheets" element={<FeatureGate flag="marksSheetAdmin" redirectTo="/admin"><MarksSheetManager /></FeatureGate>} />
+          <Route path="term-remarks" element={<ModeGate only="school" redirectTo="/admin"><FeatureGate flag="marksSheetAdmin" redirectTo="/admin"><TermRemarks /></FeatureGate></ModeGate>} />
         </Route>
 
         {/* Lecturer */}
@@ -179,6 +211,7 @@ export default function App() {
           <Route path="add-question/:qId/:title" element={<LectAddQuestion />} />
           <Route path="quiz-review" element={<LectQuizReview />} />
           <Route path="manual-marks" element={<FeatureGate flag="marksSheetLecturer" redirectTo="/lect"><ManualMarksEntry /></FeatureGate>} />
+          <Route path="term-remarks" element={<ModeGate only="school" redirectTo="/lect"><FeatureGate flag="marksSheetLecturer" redirectTo="/lect"><TermRemarks /></FeatureGate></ModeGate>} />
         </Route>
 
         {/* Student */}
@@ -187,7 +220,7 @@ export default function App() {
           <Route path="user-dashboard" element={<UserDashboard />} />
           <Route path="timetable" element={<FeatureGate feature="STUDENT_TIMETABLE" redirectTo="/user-dashboard"><Timetable /></FeatureGate>} />
           <Route path="announcements" element={<Announcements />} />
-          <Route path="transcript" element={<FeatureGate flag="marksSheetStudent" feature="STUDENT_TRANSCRIPT" redirectTo="/user-dashboard"><Transcript /></FeatureGate>} />
+          <Route path="transcript" element={<ModeGate only="university" redirectTo="/user-dashboard"><FeatureGate flag="marksSheetStudent" feature="STUDENT_TRANSCRIPT" redirectTo="/user-dashboard"><Transcript /></FeatureGate></ModeGate>} />
           <Route path="profile" element={<Profile />} />
           <Route path="register" element={<FeatureGate feature="STUDENT_COURSE_REGISTRATION" redirectTo="/user-dashboard"><RegisterCourses /></FeatureGate>} />
           <Route path="courses" element={<CoursesRegistered />} />
@@ -204,6 +237,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

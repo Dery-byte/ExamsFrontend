@@ -15,6 +15,7 @@ import {
   Users, Search, Edit, Trash2, GraduationCap, Mail, Power,
   X, Save, Loader2, ChevronsUp, ArrowRight, RefreshCw, UserPlus,
 } from "lucide-react";
+import { defaultLevels, periodsPerLevel, tx } from '../../utils/terms';
 
 const LEVEL_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
   "100": { bg: "rgba(81,86,190,0.07)",  border: "#5156be", text: "#3730a3", badge: "#5156be" },
@@ -67,7 +68,7 @@ export default function Students() {
         );
       }
       setPrograms(allowedProgs);
-    } catch { toast.error("Failed to load students"); }
+    } catch { toast.error(tx("Failed to load students")); }
     finally { setLoading(false); }
   }, [isSuper, auth.user]);
 
@@ -89,7 +90,7 @@ export default function Students() {
 
   const getLevels = (s: any): number[] => {
     const prog = programs.find((p: any) => p.id === (s.programId || s.program_id));
-    return prog?.configuredLevels ?? [100, 200, 300, 400];
+    return prog?.configuredLevels ?? defaultLevels();
   };
 
   const nextLv = (s: any) => {
@@ -110,8 +111,8 @@ export default function Students() {
     const fwd  = target > (s.currentLevel ?? 0);
     const name = s.fullName ?? `${s.firstname ?? ""} ${s.lastname ?? ""}`.trim();
     const conf = await Swal.fire({
-      title: fwd ? "Promote Student" : "Demote Student",
-      html: `Move <b>${name}</b> to <b>Level ${target}</b>?`,
+      title: fwd ? tx("Promote Student") : tx("Demote Student"),
+      html: tx(`Move <b>${name}</b> to <b>Level ${target}</b>?`),
       icon: fwd ? "question" : "warning",
       showCancelButton: true,
       confirmButtonText: fwd ? "Promote ?" : "? Demote",
@@ -122,7 +123,7 @@ export default function Students() {
     setPromotingId(s.id);
     try {
       await (isSuper ? saPromoteStudent : adminPromoteStudent)(s.id, target);
-      toast.success(`Student moved to Level ${target}`);
+      toast.success(tx(`Student moved to Level ${target}`));
       await load();
     } catch (e: any) {
       const body = e?.response?.data;
@@ -136,13 +137,13 @@ export default function Students() {
           showCancelButton: body.canOverride,
           showConfirmButton: body.canOverride,
           confirmButtonText: "Promote anyway",
-          cancelButtonText: body.canOverride ? "Keep at current level" : "OK",
+          cancelButtonText: body.canOverride ? tx("Keep at current level") : "OK",
           confirmButtonColor: "#f59e0b",
         });
         if (over.isConfirmed && isSuper) {
           try {
             await saPromoteStudent(s.id, target, true);
-            toast.success(`Student moved to Level ${target} (override)`);
+            toast.success(tx(`Student moved to Level ${target} (override)`));
             await load();
           } catch (e2: any) { toast.error(e2?.response?.data?.message ?? "Promotion failed"); }
         }
@@ -154,15 +155,15 @@ export default function Students() {
 
   const promoteAll = async (level: string, target: number) => {
     if (!programFilter) {
-      toast.error("Please select a Program first before promoting in bulk.");
+      toast.error(tx("Please select a Program first before promoting in bulk."));
       return;
     }
     const count = grouped[level]?.length ?? 0;
     const conf  = await Swal.fire({
-      title: "Promote Level",
-      html: `Promote all <b>${count}</b> Level ${level} students in the selected program to <b>Level ${target}</b>?`,
+      title: tx("Promote Level"),
+      html: tx(`Promote all <b>${count}</b> Level ${level} students in the selected program to <b>Level ${target}</b>?`),
       icon: "question", showCancelButton: true,
-      confirmButtonText: `Promote Level (${count})`,
+      confirmButtonText: tx(`Promote Level (${count})`),
       confirmButtonColor: "#5156be", cancelButtonColor: "#adb5bd",
     });
     if (!conf.isConfirmed) return;
@@ -174,7 +175,7 @@ export default function Students() {
         const rows = held.map((h: any) => `<li><b>${String(h.name).replace(/</g, "&lt;")}</b> — ${h.reasons.join("; ").replace(/</g, "&lt;")}</li>`).join("");
         await Swal.fire({ title: res.message, html: `<ul style="text-align:left;margin:0;max-height:300px;overflow:auto">${rows}</ul>`, icon: "info" });
       } else {
-        toast.success(res?.message ?? `${count} students promoted!`);
+        toast.success(res?.message ?? tx(`${count} students promoted!`));
       }
       await load();
     } catch (e: any) {
@@ -184,22 +185,22 @@ export default function Students() {
 
   const promoteSemesterAll = async (level: string) => {
     if (!programFilter) {
-      toast.error("Please select a Program first before promoting in bulk.");
+      toast.error(tx("Please select a Program first before promoting in bulk."));
       return;
     }
     const count = grouped[level]?.length ?? 0;
     const conf  = await Swal.fire({
-      title: "Promote Semester",
-      html: `Promote all <b>${count}</b> Level ${level} students in the selected program to the next semester?`,
+      title: tx("Promote Semester"),
+      html: tx(`Promote all <b>${count}</b> Level ${level} students in the selected program to the next semester?`),
       icon: "question", showCancelButton: true,
-      confirmButtonText: `Promote Semester (${count})`,
+      confirmButtonText: tx(`Promote Semester (${count})`),
       confirmButtonColor: "#2ab57d", cancelButtonColor: "#adb5bd",
     });
     if (!conf.isConfirmed) return;
     setPromotingSem(level);
     try {
       const res = await (isSuper ? saPromoteSemesterAllAtLevel : adminPromoteSemesterAllAtLevel)(Number(programFilter), Number(level));
-      toast.success(res?.message ?? `${count} students promoted to next semester!`);
+      toast.success(res?.message ?? tx(`${count} students promoted to next semester!`));
       await load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? "Bulk promotion failed");
@@ -208,15 +209,15 @@ export default function Students() {
 
   const demoteSemesterAll = async (level: string) => {
     if (!programFilter) {
-      toast.error("Please select a Program first before demoting in bulk.");
+      toast.error(tx("Please select a Program first before demoting in bulk."));
       return;
     }
     const count = grouped[level]?.length ?? 0;
     const conf  = await Swal.fire({
-      title: "Demote Semester",
-      html: `Demote all <b>${count}</b> Level ${level} students in the selected program to the previous semester?`,
+      title: tx("Demote Semester"),
+      html: tx(`Demote all <b>${count}</b> Level ${level} students in the selected program to the previous semester?`),
       icon: "warning", showCancelButton: true,
-      confirmButtonText: `Demote Semester (${count})`,
+      confirmButtonText: tx(`Demote Semester (${count})`),
       confirmButtonColor: "#f59e0b", cancelButtonColor: "#adb5bd",
     });
     if (!conf.isConfirmed) return;
@@ -224,7 +225,7 @@ export default function Students() {
     try {
       const { saDemoteSemesterAllAtLevel, adminDemoteSemesterAllAtLevel } = await import("../../api/endpoints");
       const res = await (isSuper ? saDemoteSemesterAllAtLevel : adminDemoteSemesterAllAtLevel)(Number(programFilter), Number(level));
-      toast.success(res?.message ?? `${count} students demoted to previous semester!`);
+      toast.success(res?.message ?? tx(`${count} students demoted to previous semester!`));
       await load();
     } catch (e: any) {
       toast.error(e?.response?.data?.message ?? "Bulk demotion failed");
@@ -239,13 +240,13 @@ export default function Students() {
     setSaving(true);
     try {
       await updateStudent(studentEdit.id, studentEdit);
-      toast.success("Student updated");
+      toast.success(tx("Student updated"));
       setEditModal(false); await load();
     } catch { toast.error("Update failed"); } finally { setSaving(false); }
   };
 
   const remove = async (id: number, name: string) => {
-    const c = await Swal.fire({ title: "Delete Student?", text: `Remove ${name}?`, icon: "warning",
+    const c = await Swal.fire({ title: tx("Delete Student?"), text: `Remove ${name}?`, icon: "warning",
       showCancelButton: true, confirmButtonText: "Delete",
       confirmButtonColor: "#fd625e", cancelButtonColor: "#adb5bd" });
     if (!c.isConfirmed) return;
@@ -255,18 +256,18 @@ export default function Students() {
 
   const saveNewStudent = async () => {
     if (!newStudent.firstname || !newStudent.lastname || !newStudent.username || !newStudent.password || !newStudent.programId || !newStudent.currentLevel || !newStudent.currentSemester) {
-      toast.error("Please fill in all required fields (Name, Student ID, Password, Program, Level, Semester)");
+      toast.error(tx("Please fill in all required fields (Name, Student ID, Password, Program, Level, Semester)"));
       return;
     }
     setAdding(true);
     try {
       await registerStudent({ ...newStudent, programId: Number(newStudent.programId), currentLevel: Number(newStudent.currentLevel), currentSemester: Number(newStudent.currentSemester) });
-      toast.success("Student added successfully");
+      toast.success(tx("Student added successfully"));
       setAddModal(false);
       setNewStudent(emptyStudent);
       await load();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? "Failed to add student");
+      toast.error(e?.response?.data?.message ?? tx("Failed to add student"));
     } finally {
       setAdding(false);
     }
@@ -275,29 +276,28 @@ export default function Students() {
   return (
     <div style={{ paddingBottom: 40 }}>
       <Toaster position="top-right" />
-      <PageHeader title="Students" breadcrumbs={["Admin", "Students"]} />
+      <PageHeader title={tx("Students")} breadcrumbs={["Admin", tx("Students")]} />
 
       {/* Toolbar */}
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 22, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 200, maxWidth: 440 }}>
           <Search size={15} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#adb5bd" }} />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search name, email, program…"
+            placeholder={tx("Search name, email, program…")}
             style={{ width: "100%", paddingLeft: 36, height: 40, border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
         </div>
         <select value={programFilter} onChange={e => setProgramFilter(e.target.value)}
           style={{ height: 40, padding: "0 14px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", background: "#fff", cursor: "pointer", minWidth: 150 }}>
-          <option value="">All Programs</option>
+          <option value="">{tx("All Programs")}</option>
           {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <button onClick={load} title="Refresh"
           style={{ height: 40, width: 40, border: "1.5px solid #e2e8f0", background: "#fff", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <RefreshCw size={15} color="#5156be" />
         </button>
-        <button onClick={() => setAddModal(true)} title="Add Student"
+        <button onClick={() => setAddModal(true)} title={tx("Add Student")}
           style={{ height: 40, padding: "0 16px", border: "none", background: "#5156be", color: "#fff", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13 }}>
-          <UserPlus size={15} /> Add Student
-        </button>
+          <UserPlus size={15} /> {tx("Add Student")}</button>
         <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600, marginLeft: "auto" }}>{students.length} total</span>
       </div>
 
@@ -308,7 +308,7 @@ export default function Students() {
       ) : sortedLevels.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: "#adb5bd" }}>
           <Users size={40} style={{ marginBottom: 12 }} />
-          <p style={{ fontWeight: 700 }}>No students found</p>
+          <p style={{ fontWeight: 700 }}>{tx("No students found")}</p>
         </div>
       ) : sortedLevels.map(level => {
         const col   = colorFor(level);
@@ -323,9 +323,9 @@ export default function Students() {
               background: col.bg, borderBottom: `2px solid ${col.badge}30`, padding: "13px 18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ background: col.badge, color: "#fff", fontWeight: 800, fontSize: 13,
-                  padding: "4px 14px", borderRadius: 20 }}>Level {level}</span>
+                  padding: "4px 14px", borderRadius: 20 }}>{tx("Level ")}{level}</span>
                 <span style={{ fontSize: 13, color: col.text, fontWeight: 600 }}>
-                  {grp.length} student{grp.length !== 1 ? "s" : ""}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {grp.length} {tx("student")}{grp.length !== 1 ? "s" : ""}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {programFilter && canPromote ? (
                   <>
                     <button onClick={() => demoteSemesterAll(level)} disabled={promotingSem === level + "-demote" || bulky}
@@ -333,15 +333,13 @@ export default function Students() {
                         color: "#92400e", border: "1px solid #f59e0b", padding: "6px 14px", borderRadius: 8,
                         fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: promotingSem === level + "-demote" ? 0.7 : 1 }}>
                       {promotingSem === level + "-demote" ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <ArrowRight size={13} style={{ transform: "rotate(180deg)" }} />}
-                      Demote Semester
-                    </button>
+                      {tx("Demote Semester")}</button>
                     <button onClick={() => promoteSemesterAll(level)} disabled={promotingSem === level || bulky}
                       style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(42,181,125,0.15)",
                         color: "#065f46", border: "1px solid #2ab57d", padding: "6px 14px", borderRadius: 8,
                         fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: promotingSem === level ? 0.7 : 1 }}>
                       {promotingSem === level ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <ArrowRight size={13} />}
-                      Promote Semester
-                    </button>
+                      {tx("Promote Semester")}</button>
                     {nxtG ? (
                       <button onClick={() => promoteAll(level, nxtG)} disabled={bulky || promotingSem === level}
                         style={{ display: "flex", alignItems: "center", gap: 6, background: col.badge,
@@ -350,18 +348,17 @@ export default function Students() {
                         {bulky
                           ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
                           : <ChevronsUp size={13} />}
-                        Promote Level {nxtG}
+                        {tx("Promote Level ")}{nxtG}
                       </button>
                     ) : (
                       <span style={{ fontSize: 11, color: col.text, opacity: 0.55, fontWeight: 600 }}>
-                        {isSuper ? "Final level (Super Admin can demote)" : "Final Level"}
+                        {isSuper ? tx("Final level (Super Admin can demote)") : tx("Final Level")}
                       </span>
                     )}
                   </>
                 ) : (
                   <span style={{ fontSize: 11, color: col.text, opacity: 0.7, fontWeight: 600, fontStyle: "italic" }}>
-                    Select a Program to enable bulk promotion
-                  </span>
+                    {tx("Select a Program to enable bulk promotion")}</span>
                 )}
               </div>
             </div>
@@ -453,7 +450,7 @@ export default function Students() {
           display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 540 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Edit Student</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{tx("Edit Student")}</h3>
               <button onClick={() => setEditModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
                 <X size={20} />
               </button>
@@ -461,15 +458,15 @@ export default function Students() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px 16px" }}>
               {(() => {
                 const selectedProg = programs.find((p: any) => p.id === Number(studentEdit.programId));
-                const dynamicLevels = selectedProg?.configuredLevels ?? [100, 200, 300, 400, 500, 600];
-                const semsCount = selectedProg?.semestersPerLevel?.[Number(studentEdit.currentLevel)] ?? 2;
+                const dynamicLevels = selectedProg?.configuredLevels ?? defaultLevels();
+                const semsCount = selectedProg?.semestersPerLevel?.[Number(studentEdit.currentLevel)] ?? periodsPerLevel();
                 const dynamicSems = Array.from({ length: semsCount }, (_, i) => i + 1);
                 return [
                   { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
                   { key: "email", label: "Email" }, { key: "username", label: "Username" }, { key: "phone", label: "Phone" },
-                  { key: "programId", label: "Program", type: "programSelect" },
-                  { key: "currentLevel", label: "Level", type: "select", options: dynamicLevels },
-                  { key: "currentSemester", label: "Semester", type: "select", options: dynamicSems },
+                  { key: "programId", label: tx("Program"), type: "programSelect" },
+                  { key: "currentLevel", label: tx("Level"), type: "select", options: dynamicLevels },
+                  { key: "currentSemester", label: tx("Semester"), type: "select", options: dynamicSems },
                 ].map(f => (
                   <div key={f.key}>
                     <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>{f.label}</label>
@@ -482,7 +479,7 @@ export default function Students() {
                     ) : (f as any).type === "programSelect" ? (
                       <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
                         style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
-                        <option value="" disabled>Select Program</option>
+                        <option value="" disabled>{tx("Select Program")}</option>
                         {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     ) : (
@@ -510,7 +507,7 @@ export default function Students() {
           display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 540 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Add New Student</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{tx("Add New Student")}</h3>
               <button onClick={() => setAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
                 <X size={20} />
               </button>
@@ -518,16 +515,16 @@ export default function Students() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px 16px" }}>
               {(() => {
                 const selectedProg = programs.find((p: any) => p.id === Number(newStudent.programId));
-                const dynamicLevels = selectedProg?.configuredLevels ?? [100, 200, 300, 400, 500, 600];
-                const semsCount = selectedProg?.semestersPerLevel?.[Number(newStudent.currentLevel)] ?? 2;
+                const dynamicLevels = selectedProg?.configuredLevels ?? defaultLevels();
+                const semsCount = selectedProg?.semestersPerLevel?.[Number(newStudent.currentLevel)] ?? periodsPerLevel();
                 const dynamicSems = Array.from({ length: semsCount }, (_, i) => i + 1);
                 return [
                   { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
                   { key: "email", label: "Email (Optional)" }, { key: "phone", label: "Phone (Optional)" },
-                  { key: "username", label: "Student ID (Username)" }, { key: "password", label: "Password", type: "password" },
-                  { key: "programId", label: "Program", type: "programSelect" },
-                  { key: "currentLevel", label: "Level", type: "select", options: dynamicLevels },
-                  { key: "currentSemester", label: "Semester", type: "select", options: dynamicSems },
+                  { key: "username", label: tx("Student ID (Username)") }, { key: "password", label: "Password", type: "password" },
+                  { key: "programId", label: tx("Program"), type: "programSelect" },
+                  { key: "currentLevel", label: tx("Level"), type: "select", options: dynamicLevels },
+                  { key: "currentSemester", label: tx("Semester"), type: "select", options: dynamicSems },
                 ].map(f => (
                   <div key={f.key}>
                     <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>
@@ -542,7 +539,7 @@ export default function Students() {
                   ) : (f as any).type === "programSelect" ? (
                     <select value={newStudent[f.key] ?? ""} onChange={e => setNewStudent((p: any) => ({ ...p, [f.key]: e.target.value }))}
                       style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
-                      <option value="" disabled>Select Program</option>
+                      <option value="" disabled>{tx("Select Program")}</option>
                       {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   ) : (
@@ -558,8 +555,7 @@ export default function Students() {
                 style={{ flex: 1, height: 40, border: "1.5px solid #e2e8f0", background: "#f8fafc", borderRadius: 8, cursor: "pointer", fontWeight: 700 }}>Cancel</button>
               <button onClick={saveNewStudent} disabled={adding}
                 style={{ flex: 1, height: 40, border: "none", background: "#5156be", color: "#fff", borderRadius: 8, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                {adding ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <UserPlus size={14} />} Add Student
-              </button>
+                {adding ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <UserPlus size={14} />} {tx("Add Student")}</button>
             </div>
           </div>
         </div>

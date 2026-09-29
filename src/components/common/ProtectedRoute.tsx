@@ -10,6 +10,7 @@ export function ProtectedRoute({ children, role }: Props) {
   const { isLoggedIn, user } = useAuth();
   const location = useLocation();
   if (!isLoggedIn) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (user?.mustChangePassword && location.pathname !== '/change-password') return <Navigate to="/change-password" replace />;
   if (role) {
     const allowed = Array.isArray(role) ? role : [role];
     if (!user || !allowed.includes(user.role)) return <Navigate to="/login" replace />;

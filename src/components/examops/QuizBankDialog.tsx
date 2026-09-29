@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { Library, Loader2, X, Shuffle, Upload } from 'lucide-react';
 import { drawBankIntoQuiz, getBankForCourse, importQuizIntoBank } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 type Mode = 'draw' | 'import';
 
@@ -68,11 +69,11 @@ export default function QuizBankDialog({ quizId, courseId, mode, onClose, onDone
         </div>
 
         {!courseId ? (
-          <p style={{ color: '#64748b', fontSize: 13 }}>This quiz isn't linked to a course, so it has no question bank.</p>
+          <p style={{ color: '#64748b', fontSize: 13 }}>{tx("This quiz isn't linked to a course, so it has no question bank.")}</p>
         ) : mode === 'draw' ? (
           <>
             <p className="qbd-note">
-              <Library size={13} /> {available == null ? 'Loading bank…' : `${available} question(s) in this course's bank.`} Questions already in the quiz are skipped.
+              <Library size={13} /> {available == null ? 'Loading bank…' : tx(`${available} question(s) in this course's bank.`)} Questions already in the quiz are skipped.
             </p>
             <label className="qbd-label" htmlFor="qbd-topic">Topic</label>
             <select id="qbd-topic" className="qbd-input" value={topic} onChange={e => setTopic(e.target.value)}>
@@ -89,7 +90,7 @@ export default function QuizBankDialog({ quizId, courseId, mode, onClose, onDone
               <div>
                 <label className="qbd-label" htmlFor="qbd-type">Type</label>
                 <select id="qbd-type" className="qbd-input" value={questionType} onChange={e => setQuestionType(e.target.value)}>
-                  <option value="">Any</option><option value="MCQ">Multiple choice</option><option value="TRUE_FALSE">True / False</option><option value="MATCHING">Matching</option>
+                  <option value="">Any</option><option value="MCQ">Multiple choice</option><option value="TRUE_FALSE">True / False</option><option value="MATCHING">Matching</option><option value="FILL_BLANK">Fill in the blank</option><option value="NUMERIC">Numeric</option>
                 </select>
               </div>
             </div>
@@ -99,7 +100,7 @@ export default function QuizBankDialog({ quizId, courseId, mode, onClose, onDone
           </>
         ) : (
           <>
-            <p className="qbd-note"><Library size={13} /> Every objective question in this quiz is copied into the course's bank. Duplicates are skipped.</p>
+            <p className="qbd-note"><Library size={13} /> {tx("Every objective question in this quiz is copied into the course's bank. Duplicates are skipped.")}</p>
             <label className="qbd-label" htmlFor="qbd-itopic">Topic tag (optional)</label>
             <input id="qbd-itopic" className="qbd-input" value={importTopic} onChange={e => setImportTopic(e.target.value)} placeholder="Defaults to the quiz title" />
             <label className="qbd-label" htmlFor="qbd-idiff">Difficulty</label>

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getCategoriesForUser } from '../../api/endpoints';
 import { Toaster } from 'react-hot-toast';
 import { Loader2, BookOpen, Layers, ChevronRight, GraduationCap } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 const CARD_GRADS = [
   'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)',
@@ -24,9 +25,9 @@ export default function ViewCourse() {
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'12px', marginBottom:'28px' }}>
         <div>
-          <h4 style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#2a3142' }}>My Courses</h4>
+          <h4 style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#2a3142' }}>{tx("My Courses")}</h4>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', color:'#74788d', fontSize:'13px', marginTop:'3px' }}>
-            <span>Lecturer</span><ChevronRight size={12}/><span style={{ color:'#5156be', fontWeight:600 }}>Courses</span>
+            <span>{tx("Lecturer")}</span><ChevronRight size={12}/><span style={{ color:'#5156be', fontWeight:600 }}>{tx("Courses")}</span>
           </div>
         </div>
       </div>
@@ -37,13 +38,13 @@ export default function ViewCourse() {
           <div style={{ width:68, height:68, borderRadius:'50%', background:'rgba(81,86,190,0.08)', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <Loader2 style={{ animation:'spin 1s linear infinite', color:'#5156be' }} size={32}/>
           </div>
-          <p style={{ color:'#74788d', fontWeight:600, fontSize:'14px', margin:0 }}>Loading courses...</p>
+          <p style={{ color:'#74788d', fontWeight:600, fontSize:'14px', margin:0 }}>{tx("Loading courses...")}</p>
         </div>
       ) : cats.length === 0 ? (
         <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:'16px', border:'1px solid #eff0f2' }}>
           <GraduationCap size={52} style={{ color:'#adb5bd', marginBottom:'16px' }}/>
-          <h5 style={{ color:'#2a3142', fontWeight:700, marginBottom:'8px' }}>No Courses Yet</h5>
-          <p style={{ color:'#74788d', fontSize:'14px' }}>You haven't been assigned to any courses yet. Please contact your administrator.</p>
+          <h5 style={{ color:'#2a3142', fontWeight:700, marginBottom:'8px' }}>{tx("No Courses Yet")}</h5>
+          <p style={{ color:'#74788d', fontSize:'14px' }}>{tx("You haven't been assigned to any courses yet. Please contact your administrator.")}</p>
         </div>
       ) : (
         <div className="vc-grid">
@@ -71,7 +72,7 @@ export default function ViewCourse() {
                 {/* Body */}
                 <div style={{ padding:'16px 18px', flex:1 }}>
                   <p style={{ fontSize:'13px', color:'#74788d', lineHeight:1.6, margin:'0 0 16px', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>
-                    {c.description || 'Comprehensive course module covering core fundamental concepts and advanced learning methodologies.'}
+                    {c.description || tx('Comprehensive course module covering core fundamental concepts and advanced learning methodologies.')}
                   </p>
                   <div style={{ display:'flex', alignItems:'center', gap:'16px', fontSize:'12px', color:'#74788d', fontWeight:500 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'5px' }}><Layers size={13}/><span>{c.level || '—'}</span></div>

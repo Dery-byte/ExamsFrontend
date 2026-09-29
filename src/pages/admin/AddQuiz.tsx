@@ -15,6 +15,7 @@ import {
   Loader2, ArrowLeft, Terminal, Award, Key, Timer, LayoutGrid,
   ShieldEllipsis, ChevronRight, Tag, Hash, Info, Activity, BookOpen, Bot
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 const VIOLATION_OPTIONS = [
   { v: 'NONE', l: 'No Restrictions' },
@@ -106,8 +107,8 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     if (!quiz.quizType) { toast.error('Please select a quiz type'); return; }
     if (!quiz.category.cid) { toast.error('Please select a category'); return; }
     // Admin/HOD/SA always need a program; a lecturer needs one only if the course has programs.
-    if (programs.length > 0 && quiz.programIds.length === 0) { toast.error('Please select at least one program'); return; }
-    if (!lectMode && programs.length === 0) { toast.error('No programs available to assign this quiz to'); return; }
+    if (programs.length > 0 && quiz.programIds.length === 0) { toast.error(tx('Please select at least one program')); return; }
+    if (!lectMode && programs.length === 0) { toast.error(tx('No programs available to assign this quiz to')); return; }
     setLoading(true);
     try {
       const created = lectMode ? await addLecturerQuiz(quiz) : await addQuiz(quiz);
@@ -170,11 +171,11 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                   <label className="aq-label">Quiz Title</label>
                   <div className="aq-iw">
                     <span className="aq-ii"><Tag size={15} /></span>
-                    <input className="aq-input" required value={quiz.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Mid-Semester Examination" />
+                    <input className="aq-input" required value={quiz.title} onChange={e => set('title', e.target.value)} placeholder={tx("e.g. Mid-Semester Examination")} />
                   </div>
                 </div>
                 <div className="aq-field">
-                  <label className="aq-label">Course Category</label>
+                  <label className="aq-label">{tx("Course Category")}</label>
                   <div className="aq-iw">
                     <span className="aq-ii"><Layers size={15} /></span>
                     <select className="aq-input" required value={quiz.category.cid} onChange={e => handleCategoryChange(e.target.value)}>
@@ -190,12 +191,12 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 onChange={ids => set('programIds', ids)}
                 showDepartment={isSuperAdmin}
                 emptyText={lectMode
-                  ? (quiz.category.cid ? 'This course has no programs attached, so the quiz is open to all students registered for it.' : 'Select a course to choose which of its programs can take this quiz.')
-                  : (isSuperAdmin ? 'No programs available.' : 'No programs available for your department.')}
+                  ? (quiz.category.cid ? tx('This course has no programs attached, so the quiz is open to all students registered for it.') : tx('Select a course to choose which of its programs can take this quiz.'))
+                  : (isSuperAdmin ? tx('No programs available.') : tx('No programs available for your department.'))}
               />
               <div className="aq-field mt-4">
                 <label className="aq-label">Instructions & Guidelines</label>
-                <textarea className="aq-input aq-textarea" rows={3} value={quiz.description} onChange={e => set('description', e.target.value)} placeholder="Provide student instructions and syllabus guidelines..." />
+                <textarea className="aq-input aq-textarea" rows={3} value={quiz.description} onChange={e => set('description', e.target.value)} placeholder={tx("Provide student instructions and syllabus guidelines...")} />
               </div>
             </div>
 
@@ -228,7 +229,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 {quiz.quizType === 'THEORY' && (
                   <div className="aq-notice">
                     <Info size={14} />
-                    <span>Theory mode: marking is done By AI and subsequently reviewed by Lecturer before release of results</span>
+                    <span>{tx("Theory mode: marking is done By AI and subsequently reviewed by Lecturer before release of results")}</span>
                     <span>When Adding question set the no. of questions to answer and duration.</span>
 
                   </div>
@@ -378,7 +379,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 </div>
                 <div>
                   <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
-                  <p className="aq-deploy-hint">{quiz.active ? 'Visible to students' : 'Private – not published'}</p>
+                  <p className="aq-deploy-hint">{quiz.active ? tx('Visible to students') : 'Private – not published'}</p>
                 </div>
               </div>
             )}
@@ -391,7 +392,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
               <h6 className="aq-sidebar-title">Integrity Controls</h6>
             </div>
             <Toggle label="Focus Lock" k="enableFullscreenLock" icon={Monitor} desc="Restrict window switches" />
-            <Toggle label="Watermark" k="enableWatermark" icon={Layers} desc="Visible student ID overlay" />
+            <Toggle label="Watermark" k="enableWatermark" icon={Layers} desc={tx("Visible student ID overlay")} />
             <Toggle label="Media Shield" k="enableScreenshotBlocking" icon={Smartphone} desc="Block screen captures" />
             <Toggle label="DevTools Block" k="enableDevToolsBlocking" icon={Terminal} desc="Disable browser console" />
           </div>

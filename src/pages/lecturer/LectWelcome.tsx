@@ -11,6 +11,7 @@ import {
   BarChart2, TrendingUp, Users, Database, Loader2, BookOpen,
   Download, Activity, Target, LineChart as LineChartIcon,
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 type ChartType = 'bar' | 'line' | 'area' | 'radar';
 
@@ -89,7 +90,7 @@ export default function LectWelcome() {
   );
 
   const topCards = [
-    { label: 'Total Courses',  val: (myCourses as any[]).length, badge: '+12%', badgeOk: true,  spark: <SparklineUp /> },
+    { label: tx('Total Courses'),  val: (myCourses as any[]).length, badge: '+12%', badgeOk: true,  spark: <SparklineUp /> },
     { label: 'Active Quizzes', val: (myQuizzes as any[]).length, badge: '+8%',  badgeOk: true,  spark: <SparklineUp /> },
     { label: 'Average Score',  val: avgScore.toFixed(1) + '%',  badge: '-2.5%', badgeOk: false, spark: <SparklineDown /> },
     { label: 'Submissions',    val: reports.length,             badge: '+15%', badgeOk: true,  spark: <SparklineUp /> },
@@ -192,17 +193,17 @@ export default function LectWelcome() {
             <div className="lect-h-icon-glow"><BarChart2 size={24} /></div>
             <div>
               <h4 className="lect-h-title">Quiz Overview</h4>
-              <p className="lect-h-subtitle">Filter by course and assessment to view performance analytics</p>
+              <p className="lect-h-subtitle">{tx("Filter by course and assessment to view performance analytics")}</p>
             </div>
           </div>
           <div className="lect-h-controls">
             <div className="lect-select-wrapper">
               <select className="lect-premium-select" value={selCatId ?? ''} onChange={e => selectCategory(e.target.value ? Number(e.target.value) : null)}>
-                <option value="">Filter By Course</option>
+                <option value="">{tx("Filter By Course")}</option>
                 {catOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <select className="lect-premium-select" value={selQuizId ?? ''} onChange={e => onQuizSelected(e.target.value ? Number(e.target.value) : null)} disabled={!selCatId}>
-                <option value="">{selCatId ? 'Select Quiz' : 'Course Pending...'}</option>
+                <option value="">{selCatId ? 'Select Quiz' : tx('Course Pending...')}</option>
                 {quizOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
@@ -232,13 +233,13 @@ export default function LectWelcome() {
                   <div className="lect-m-icon"><Users size={18} /></div>
                   <div className="lect-m-details">
                     <span className="lect-m-label">Total Submissions</span>
-                    <span className="lect-m-value">{reports.length} Students</span>
+                    <span className="lect-m-value">{reports.length} {tx("Students")}</span>
                   </div>
                 </div>
                 <div className="lect-metric-box">
                   <div className="lect-m-icon"><BookOpen size={18} /></div>
                   <div className="lect-m-details">
-                    <span className="lect-m-label">Course</span>
+                    <span className="lect-m-label">{tx("Course")}</span>
                     <span className="lect-m-value" style={{ fontSize: '15px' }}>{courseName || '—'}</span>
                   </div>
                 </div>
@@ -277,7 +278,7 @@ export default function LectWelcome() {
             <div className="lect-idle-state">
               <div className="lect-idle-icon-glow"><Database size={48} /></div>
               <h3>Awaiting Selection</h3>
-              <p>Choose a course and quiz above to load student performance data and charts.</p>
+              <p>{tx("Choose a course and quiz above to load student performance data and charts.")}</p>
             </div>
           )}
         </div>
@@ -290,7 +291,7 @@ export default function LectWelcome() {
             <div className="lect-h-identity">
               <div className="lect-h-icon-glow secondary"><Activity size={24} /></div>
               <div>
-                <h4 className="lect-h-title">Student Results Ledger</h4>
+                <h4 className="lect-h-title">{tx("Student Results Ledger")}</h4>
                 <p className="lect-h-subtitle">Complete transcript and performance identity mapping</p>
               </div>
             </div>

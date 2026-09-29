@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Settings, Trash2, List, Zap, Loader2, Layers, Trophy, Clock, CheckCircle2, Link2 } from 'lucide-react';
 import { copyQuizLink } from '../../utils/quizLink';
 import './AssessmentCard.css';
+import { tx } from '../../utils/terms';
 
 interface AssessmentCardProps {
   qId: number;
@@ -56,8 +57,8 @@ export default function AssessmentCard({
           <button
             className="icon-btn link"
             onClick={() => copyQuizLink(qId, { title, courseTitle: category?.title })}
-            title="Copy student link"
-            aria-label="Copy student link"
+            title={tx("Copy student link")}
+            aria-label={tx("Copy student link")}
           >
             <Link2 size={16} />
           </button>

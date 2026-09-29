@@ -9,6 +9,7 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import PageHeader from "../../components/PageHeader";
 import { BookMarked, BookOpen, CheckCircle2, GraduationCap, Loader2, Search, User, Users, X } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function EnrollStudent() {
   const auth    = useAuth() as any;
@@ -35,7 +36,7 @@ export default function EnrollStudent() {
     const fn = isSuper ? saGetAllStudents : adminGetAllStudents;
     fn()
       .then((d: any) => setStudents(Array.isArray(d) ? d : []))
-      .catch(() => toast.error("Failed to load students"))
+      .catch(() => toast.error(tx("Failed to load students")))
       .finally(() => setLoadingStu(false));
   }, [isSuper]);
 
@@ -72,7 +73,7 @@ export default function EnrollStudent() {
     const fn = isSuper ? saGetCoursesForProgram : adminGetCoursesForProgram;
     fn(progId)
       .then((d: any) => setCourses(Array.isArray(d) ? d : []))
-      .catch(() => toast.error("Failed to load courses"))
+      .catch(() => toast.error(tx("Failed to load courses")))
       .finally(() => setLoadingCrs(false));
 
     // Fetch enrolled course IDs to persist the state
@@ -154,7 +155,7 @@ export default function EnrollStudent() {
   return (
     <div style={{ paddingBottom: 40 }}>
       <Toaster position="top-right" />
-      <PageHeader title="Enroll Student in Course" breadcrumbs={["Admin", "Enroll Student"]} />
+      <PageHeader title={tx("Enroll Student in Course")} breadcrumbs={["Admin", tx("Enroll Student")]} />
 
       <div className="enroll-grid">
 
@@ -164,7 +165,7 @@ export default function EnrollStudent() {
           <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid #f1f5f7" }}>
             <div className="enroll-stu-header">
               <Users size={16} color="#5156be" />
-              <span style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>Select Student</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>{tx("Select Student")}</span>
               <span className="enroll-stu-count">
                 {students.length} total
               </span>
@@ -173,13 +174,13 @@ export default function EnrollStudent() {
               <Search size={13} style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#adb5bd" }} />
               <input
                 value={stuSearch} onChange={e => setStuSearch(e.target.value)}
-                placeholder="Search students…"
+                placeholder={tx("Search students…")}
                 style={{ width: "100%", paddingLeft: 30, height: 36, border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }}
               />
             </div>
             <select value={stuProgramFilter} onChange={e => setStuProgramFilter(e.target.value)}
               style={{ width: "100%", marginTop: 8, padding: "0 10px", height: 36, border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer", background: "#f8fafc" }}>
-              <option value="">All Programs</option>
+              <option value="">{tx("All Programs")}</option>
               {uniquePrograms.map(([id, name]) => <option key={id} value={id}>{name as string}</option>)}
             </select>
           </div>
@@ -192,8 +193,7 @@ export default function EnrollStudent() {
               </div>
             ) : filteredStudents.length === 0 ? (
               <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8", fontSize: 13 }}>
-                No students found
-              </div>
+                {tx("No students found")}</div>
             ) : filteredStudents.map(s => {
               const isSel  = selected?.id === s.id;
               const name   = stuName(s);
@@ -222,7 +222,7 @@ export default function EnrollStudent() {
                     <div style={{ fontSize: 13, fontWeight: 700, color: isSel ? "#3730a3" : "#1e293b",
                       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
                     <div style={{ fontSize: 11, color: "#94a3b8", display: "flex", gap: 5, flexWrap: "wrap" }}>
-                      <span>{s.program || "No program"}</span>
+                      <span>{s.program || tx("No program")}</span>
                       {s.currentLevel > 0 && <span>· L{s.currentLevel} S{s.currentSemester}</span>}
                     </div>
                   </div>
@@ -248,11 +248,10 @@ export default function EnrollStudent() {
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#3730a3" }}>{stuName(selected)}</div>
                 <div style={{ fontSize: 12, color: "#6366f1" }}>
-                  {selected.program || "No program assigned"}
-                  {selected.currentLevel > 0 && ` · Level ${selected.currentLevel}`}
+                  {selected.program || tx("No program assigned")}
+                  {selected.currentLevel > 0 && tx(` · Level ${selected.currentLevel}`)}
                   {selected.currentSemester > 0 && ` · Sem ${selected.currentSemester}`}
-                  {" "}— enroll in any course below
-                </div>
+                  {" "}{tx("— enroll in any course below")}</div>
               </div>
             </div>
           ) : (
@@ -263,8 +262,7 @@ export default function EnrollStudent() {
             }}>
               <User size={36} style={{ marginBottom: 10 }} />
               <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>
-                Select a student on the left to browse available courses
-              </p>
+                {tx("Select a student on the left to browse available courses")}</p>
             </div>
           )}
 
@@ -276,7 +274,7 @@ export default function EnrollStudent() {
                   <Search size={13} style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#adb5bd" }} />
                   <input
                     value={courseSearch} onChange={e => setCourseSearch(e.target.value)}
-                    placeholder="Search courses…"
+                    placeholder={tx("Search courses…")}
                     style={{ width: "100%", paddingLeft: 30, height: 34, border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }}
                   />
                 </div>
@@ -285,8 +283,8 @@ export default function EnrollStudent() {
                     value={lvFilter} onChange={e => setLvFilter(e.target.value)}
                     className="enroll-filter-select"
                   >
-                    <option value="">All Levels</option>
-                    {uniqueLevels.map(l => <option key={l} value={l}>Level {l}</option>)}
+                    <option value="">{tx("All Levels")}</option>
+                    {uniqueLevels.map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
                   </select>
                 )}
                 {uniqueSems.length > 0 && (
@@ -294,12 +292,12 @@ export default function EnrollStudent() {
                     value={semFilter} onChange={e => setSemFilter(e.target.value)}
                     className="enroll-filter-select"
                   >
-                    <option value="">All Semesters</option>
-                    {uniqueSems.map(s => <option key={s} value={s}>Semester {s}</option>)}
+                    <option value="">{tx("All Semesters")}</option>
+                    {uniqueSems.map(s => <option key={s} value={s}>{tx("Semester ")}{s}</option>)}
                   </select>
                 )}
                 <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600, whiteSpace: "nowrap" }}>
-                  {filteredCourses.length} course{filteredCourses.length !== 1 ? "s" : ""}
+                  {filteredCourses.length} {tx("course")}{filteredCourses.length !== 1 ? "s" : ""}
                 </span>
               </div>
 
@@ -312,13 +310,13 @@ export default function EnrollStudent() {
                 ) : !selected.programId ? (
                   <div style={{ textAlign: "center", padding: "40px 20px", color: "#94a3b8" }}>
                     <GraduationCap size={32} style={{ marginBottom: 8 }} />
-                    <p style={{ margin: 0, fontWeight: 700 }}>This student has no program assigned</p>
-                    <p style={{ margin: "6px 0 0", fontSize: 12 }}>Assign a program via Student Directory first</p>
+                    <p style={{ margin: 0, fontWeight: 700 }}>{tx("This student has no program assigned")}</p>
+                    <p style={{ margin: "6px 0 0", fontSize: 12 }}>{tx("Assign a program via Student Directory first")}</p>
                   </div>
                 ) : filteredCourses.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "40px 20px", color: "#94a3b8" }}>
                     <BookOpen size={32} style={{ marginBottom: 8 }} />
-                    <p style={{ margin: 0, fontWeight: 700 }}>No courses match your filters</p>
+                    <p style={{ margin: 0, fontWeight: 700 }}>{tx("No courses match your filters")}</p>
                   </div>
                 ) : filteredCourses.map((c, idx) => {
                   const lvl        = normLevel(c.level ?? "");
@@ -355,7 +353,7 @@ export default function EnrollStudent() {
                           )}
                           {lvl && (
                             <span style={{ fontSize: 11, color: "#5156be", fontWeight: 700 }}>
-                              Level {lvl}
+                              {tx("Level ")}{lvl}
                             </span>
                           )}
                           {c.semester && (

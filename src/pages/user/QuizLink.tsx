@@ -1,6 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { quizInstructionsPath, decodeQuizId } from '../../utils/quizLink';
+import { tx } from '../../utils/terms';
 
 /**
  * Entry point for shared quiz links (/quiz/:qid).
@@ -30,10 +31,9 @@ export default function QuizLink() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#f0f2f8' }}>
       <div style={{ maxWidth: 420, textAlign: 'center', background: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 4px 20px rgba(0,0,0,.06)' }}>
-        <h3 style={{ margin: '0 0 8px', color: '#1e293b' }}>This link is for students</h3>
+        <h3 style={{ margin: '0 0 8px', color: '#1e293b' }}>{tx("This link is for students")}</h3>
         <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: 14 }}>
-          You're signed in as {user?.role?.toLowerCase().replace('_', ' ')}. Sign out and log in with a student account to take this quiz.
-        </p>
+          You're signed in as {user?.role?.toLowerCase().replace('_', ' ')}{tx(". Sign out and log in with a student account to take this quiz.")}</p>
         <button className="btn-lexa btn-lexa-primary" onClick={logout}>Sign out</button>
       </div>
     </div>

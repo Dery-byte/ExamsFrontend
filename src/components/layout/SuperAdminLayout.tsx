@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useInstitution } from '../../hooks/useInstitution';
+import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
 import {
   LayoutDashboard, UserCircle, Building2, BookMarked,
   Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
   Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library,
-  Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight
+  Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight,
+  Landmark, ClipboardPen
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function SuperAdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
+  const { term } = useInstitution();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -30,24 +35,25 @@ export default function SuperAdminLayout() {
       items: [
         { to: '/super-admin', exact: true, icon: <LayoutDashboard size={20} />, label: 'Overview' },
         { to: '/super-admin/configuration', icon: <Settings size={20} />, label: 'Configuration' },
+        { to: '/super-admin/institution', icon: <Landmark size={20} />, label: 'Institution' },
         { to: '/super-admin/features', icon: <ToggleRight size={20} />, label: 'Feature Controls' },
         { to: '/super-admin/announcements', icon: <Megaphone size={20} />, label: 'Announcements' },
         { to: '/super-admin/profile', icon: <UserCircle size={20} />, label: 'My Profile' },
       ]
     },
     {
-      label: 'University Structure',
+      label: tx('University Structure'),
       items: [
         { to: '/super-admin/departments', icon: <Building2 size={20} />, label: 'Departments' },
-        { to: '/super-admin/programs', icon: <BookMarked size={20} />, label: 'Programs & Levels' },
+        { to: '/super-admin/programs', icon: <BookMarked size={20} />, label: tx('Programs & Levels') },
         { to: '/super-admin/academic-settings', icon: <Scale size={20} />, label: 'Sessions & Grading' },
       ]
     },
     {
       label: 'Academic Registry',
       items: [
-        { to: '/super-admin/courses', icon: <Library size={20} />, label: 'Courses' },
-        { to: '/super-admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
+        { to: '/super-admin/courses', icon: <Library size={20} />, label: tx('Courses') },
+        { to: '/super-admin/add-course', icon: <PlusCircle size={20} />, label: tx('Add Course') },
         { to: '/super-admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' },
         { to: '/super-admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
         { to: '/super-admin/remarks', icon: <MessageSquareWarning size={20} />, label: 'Re-mark Requests' },
@@ -56,10 +62,10 @@ export default function SuperAdminLayout() {
     {
       label: 'User Management',
       items: [
-        { to: '/super-admin/hods', icon: <UserCog size={20} />, label: 'HOD Accounts' },
-        { to: '/super-admin/student-semester', icon: <GraduationCap size={20} />, label: 'Student Semesters' },
-        { to: '/super-admin/students', icon: <Users size={20} />, label: 'Students & Levels' },
-        { to: '/super-admin/enroll-student', icon: <BookOpen size={20} />, label: 'Enroll Student' },
+        { to: '/super-admin/hods', icon: <UserCog size={20} />, label: tx('HOD Accounts') },
+        { to: '/super-admin/student-semester', icon: <GraduationCap size={20} />, label: tx('Student Semesters') },
+        { to: '/super-admin/students', icon: <Users size={20} />, label: tx('Students & Levels') },
+        { to: '/super-admin/enroll-student', icon: <BookOpen size={20} />, label: tx('Enroll Student') },
         { to: '/super-admin/lecturers', icon: <Users size={20} />, label: 'Enroll Staff' },
         { to: '/super-admin/data-tools', icon: <DatabaseZap size={20} />, label: 'Data Tools' },
       ]
@@ -68,7 +74,8 @@ export default function SuperAdminLayout() {
       label: 'Academic Performance',
       items: [
         { to: '/super-admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' },
-        { to: '/super-admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' },
+        ...(isSchoolMode() ? [{ to: '/super-admin/term-remarks', icon: <ClipboardPen size={20} />, label: 'Report Remarks' }] : []),
+        ...(!isSchoolMode() ? [{ to: '/super-admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' }] : []),
         { to: '/super-admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
         { to: '/super-admin/audit-log', icon: <ScrollText size={20} />, label: 'Audit Log' },
       ]
@@ -109,7 +116,7 @@ export default function SuperAdminLayout() {
           {navItems.map((group) => (
             <div key={group.label} style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(139,92,246,0.6)', textTransform: 'uppercase', letterSpacing: 1.2, padding: '0 8px 8px' }}>
-                {group.label}
+                {term(group.label)}
               </div>
               {group.items.map((item) => (
                 <NavLink
@@ -127,7 +134,7 @@ export default function SuperAdminLayout() {
                   })}
                 >
                   {item.icon}
-                  <span style={{ flex: 1 }}>{item.label}</span>
+                  <span style={{ flex: 1 }}>{term(item.label)}</span>
                   <ChevronRight size={14} style={{ opacity: 0.4 }} />
                 </NavLink>
               ))}

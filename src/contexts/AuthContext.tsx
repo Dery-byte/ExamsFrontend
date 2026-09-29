@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { useNavigate } from 'react-router-dom';
 import { authenticate as apiAuth, doLogout, getCurrentUser } from '../api/endpoints';
 
-export type UserRole = 'ADMIN' | 'LECTURER' | 'NORMAL' | 'SUPER_ADMIN';
+export type UserRole = 'ADMIN' | 'LECTURER' | 'NORMAL' | 'SUPER_ADMIN' | 'DEVELOPER';
 
 export interface AuthUser {
   id: number;
@@ -20,12 +20,16 @@ export interface AuthUser {
   profilePicture?: string;
   bio?: string;
   department?: { id: number; name: string; description?: string };
+  /** Staff set this account's password; the user must choose a new one first. */
+  mustChangePassword?: boolean;
 }
 
 interface AuthCtx {
   user: AuthUser | null;
   isLoggedIn: boolean;
   login: (username: string, password: string, redirectTo?: string) => Promise<void>;
+  /** Signs in with a token obtained another way (the developer's emailed code). */
+  loginWithToken: (token: string) => Promise<void>;
   logout: () => void;
   getToken: () => string | null;
   isAdmin: () => boolean;
@@ -59,7 +63,16 @@ const ROLE_HOMES: Record<UserRole, string[]> = {
   ADMIN: ['/admin'],
   LECTURER: ['/lect'],
   NORMAL: ['/user-dashboard'],
+  DEVELOPER: ['/developer'],
 };
+/** Landing page for each role after sign-in. */
+export function homeFor(role: UserRole): string {
+  if (role === 'SUPER_ADMIN') return '/super-admin';
+  if (role === 'ADMIN') return '/admin';
+  if (role === 'LECTURER') return '/lect';
+  if (role === 'DEVELOPER') return '/developer/dashboard';
+  return '/user-dashboard/user-dashboard';
+}
 function canVisit(role: UserRole, path: string): boolean {
   return (ROLE_HOMES[role] ?? []).some(base => path === base || path.startsWith(base + '/'));
 }
@@ -124,6 +137,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (username: string, password: string, redirectTo?: string) => {
     const resp = await apiAuth({ username, password });
+    await completeLogin(resp, redirectTo);
+  }, [navigate, startCountdown]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loginWithToken = useCallback(async (token: string) => {
+    await completeLogin({ token });
+  }, [navigate, startCountdown]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const completeLogin = async (resp: any, redirectTo?: string) => {
     const token: string = resp.token;
     if (!token) throw new Error('No token');
     localStorage.setItem('access_token', token);
@@ -139,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const role = roleRaw.replace('ROLE_', '') as UserRole;
       authUser = {
         id: resp.userId ?? payload?.userId,
-        username: resp.username ?? username,
+        username: resp.username ?? payload?.sub,
         email: resp.email,
         firstname: resp.firstname,
         lastname: resp.lastname,
@@ -159,12 +180,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(authUser);
     startCountdown(token);
 
-    if (redirectTo && canVisit(authUser.role, redirectTo)) navigate(redirectTo, { replace: true });
-    else if (authUser.role === 'SUPER_ADMIN') navigate('/super-admin', { replace: true });
-    else if (authUser.role === 'ADMIN') navigate('/admin', { replace: true });
-    else if (authUser.role === 'LECTURER') navigate('/lect', { replace: true });
-    else navigate('/user-dashboard/user-dashboard', { replace: true });
-  }, [navigate, startCountdown]);
+    if (authUser.mustChangePassword) navigate('/change-password', { replace: true });
+    else if (redirectTo && canVisit(authUser.role, redirectTo)) navigate(redirectTo, { replace: true });
+    else navigate(homeFor(authUser.role), { replace: true });
+  };
 
   const logout = useCallback(() => {
     const token = localStorage.getItem('access_token');
@@ -184,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, isLoggedIn: !!user && !!localStorage.getItem('access_token'),
-      login, logout, getToken: () => localStorage.getItem('access_token'),
+      login, loginWithToken, logout, getToken: () => localStorage.getItem('access_token'),
       isAdmin:      () => user?.role === 'ADMIN',
       isLecturer:   () => user?.role === 'LECTURER',
       isStudent:    () => user?.role === 'NORMAL',

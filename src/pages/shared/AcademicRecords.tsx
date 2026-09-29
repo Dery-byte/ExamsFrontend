@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   adminGetAllStudents, downloadTranscriptPdf, getStudentEligibility, getStudentTranscript, saGetAllStudents,
 } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 const nameOf = (s: any): string => (s.fullName ?? `${s.firstname ?? ''} ${s.lastname ?? ''}`.trim()) || s.username || 'Student';
 
@@ -41,16 +42,16 @@ export default function AcademicRecords() {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      <PageHeader title="Academic Records" breadcrumbs={['Students', 'Academic Records']} />
+      <PageHeader title="Academic Records" breadcrumbs={[tx('Students'), 'Academic Records']} />
       <div className="ar-grid">
-        <nav className="ar-card" aria-label="Students" style={{ alignSelf: 'start' }}>
+        <nav className="ar-card" aria-label={tx("Students")} style={{ alignSelf: 'start' }}>
           <div style={{ padding: 12, borderBottom: '1px solid #f1f5f9', position: 'relative' }}>
             <Search size={13} style={{ position: 'absolute', left: 21, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }} />
-            <input aria-label="Search students" className="ar-input" placeholder="Search name, ID or program…" value={q} onChange={ev => setQ(ev.target.value)} />
+            <input aria-label={tx("Search students")} className="ar-input" placeholder={tx("Search name, ID or program…")} value={q} onChange={ev => setQ(ev.target.value)} />
           </div>
           <div style={{ maxHeight: 560, overflowY: 'auto' }}>
             {students.isLoading ? <div style={{ padding: 20, textAlign: 'center' }}><Loader2 size={20} color="#5156be" className="spin-ico" style={{ animation: 'spin 1s linear infinite' }} /></div>
-              : list.length === 0 ? <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>No students found</div>
+              : list.length === 0 ? <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{tx("No students found")}</div>
               : list.map(s => (
                 <button key={s.id} onClick={() => setSelected(s)} className={`ar-stu ${selected?.id === s.id ? 'is-active' : ''}`} aria-current={selected?.id === s.id}>
                   <span style={{ fontWeight: 700, color: '#1e293b' }}>{nameOf(s)}</span>
@@ -62,13 +63,13 @@ export default function AcademicRecords() {
 
         <section>
           {!selected ? (
-            <div className="ar-empty"><UserRound size={34} /><p>Select a student to see their academic record.</p></div>
+            <div className="ar-empty"><UserRound size={34} /><p>{tx("Select a student to see their academic record.")}</p></div>
           ) : (
             <>
               <div className="ar-banner">
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{nameOf(selected)}</div>
-                  <div style={{ fontSize: 12.5, color: '#64748b' }}>{selected.username}{selected.program ? ` · ${selected.program}` : ''}{selected.currentLevel ? ` · Level ${selected.currentLevel}` : ''}</div>
+                  <div style={{ fontSize: 12.5, color: '#64748b' }}>{selected.username}{selected.program ? ` · ${selected.program}` : ''}{selected.currentLevel ? tx(` · Level ${selected.currentLevel}`) : ''}</div>
                 </div>
                 {e && (
                   <span className="ar-elig" style={e.eligible ? { background: '#eefbee', color: '#0b7a0b' } : { background: '#fdeeee', color: '#9f1f1f' }}

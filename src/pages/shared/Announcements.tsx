@@ -10,13 +10,14 @@ import {
   deleteAnnouncement, getAnnouncements, getManageableAnnouncements, getPrograms, getProgramsByDept,
   postAnnouncement, saGetDepartments, type Announcement, type AnnouncementAudience,
 } from '../../api/endpoints';
+import { isSchoolMode, tx } from '../../utils/terms';
 
 const AUDIENCES: { value: AnnouncementAudience; label: string }[] = [
   { value: 'ALL', label: 'Everyone' },
-  { value: 'STUDENTS', label: 'Students' },
-  { value: 'LECTURERS', label: 'Lecturers' },
-  { value: 'ADMINS', label: 'HODs' },
-  { value: 'STAFF', label: 'Lecturers & HODs' },
+  { value: 'STUDENTS', label: tx('Students') },
+  { value: 'LECTURERS', label: tx('Lecturers') },
+  { value: 'ADMINS', label: tx('HODs') },
+  { value: 'STAFF', label: tx('Lecturers & HODs') },
 ];
 const AUDIENCE_LABEL = Object.fromEntries(AUDIENCES.map(a => [a.value, a.label]));
 
@@ -125,7 +126,7 @@ export default function Announcements() {
 
             <label className="ann-label" htmlFor="ann-title">Title</label>
             <input id="ann-title" className="ann-input" value={form.title} maxLength={200}
-              onChange={e => set('title', e.target.value)} placeholder="e.g. Mid-semester exams timetable" />
+              onChange={e => set('title', e.target.value)} placeholder={tx("e.g. Mid-semester exams timetable")} />
 
             <label className="ann-label" htmlFor="ann-body">Message</label>
             <textarea id="ann-body" className="ann-input" rows={5} value={form.body}
@@ -152,17 +153,17 @@ export default function Announcements() {
             {studentScoped && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
-                  <label className="ann-label" htmlFor="ann-prog">Program (students)</label>
+                  <label className="ann-label" htmlFor="ann-prog">{tx("Program (students)")}</label>
                   <select id="ann-prog" className="ann-input" value={form.programId} onChange={e => set('programId', e.target.value)}>
-                    <option value="">All programs</option>
+                    <option value="">{tx("All programs")}</option>
                     {programOptions.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="ann-label" htmlFor="ann-level">Level (students)</label>
+                  <label className="ann-label" htmlFor="ann-level">{tx("Level (students)")}</label>
                   <select id="ann-level" className="ann-input" value={form.level} onChange={e => set('level', e.target.value)}>
-                    <option value="">All levels</option>
-                    {[100, 200, 300, 400, 500, 600].map(l => <option key={l} value={l}>Level {l}</option>)}
+                    <option value="">{tx("All levels")}</option>
+                    {(isSchoolMode() ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [100, 200, 300, 400, 500, 600]).map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
                   </select>
                 </div>
               </div>

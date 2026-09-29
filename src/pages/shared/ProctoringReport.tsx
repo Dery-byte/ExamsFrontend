@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ShieldCheck, ShieldAlert, AlertTriangle, ChevronDown, ChevronRight, Loader2, Info } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { getProctoringReport, getProctoringTimeline } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 const TYPE_LABEL: Record<string, string> = {
   'visibility-hidden': 'Switched tab / minimised', 'focus-lost': 'Left the exam window', 'fullscreen-exit': 'Exited full screen',
@@ -45,7 +46,7 @@ export default function ProctoringReport() {
 
       <div className="pr-summary">
         <div className="pr-tile"><div className="pr-tile-l">Quiz</div><div className="pr-tile-v" style={{ fontSize: 16 }}>{data.courseCode ? `${data.courseCode} · ` : ''}{data.quizTitle}</div></div>
-        <div className="pr-tile"><div className="pr-tile-l">Students</div><div className="pr-tile-v">{rows.length}</div></div>
+        <div className="pr-tile"><div className="pr-tile-l">{tx("Students")}</div><div className="pr-tile-v">{rows.length}</div></div>
         <div className="pr-tile"><div className="pr-tile-l">Clean</div><div className="pr-tile-v">{counts.CLEAN}</div></div>
         <div className="pr-tile"><div className="pr-tile-l">To review</div><div className="pr-tile-v">{counts.WATCH}</div></div>
         <div className="pr-tile"><div className="pr-tile-l">Reached limit</div><div className="pr-tile-v">{counts.SERIOUS}</div></div>
@@ -59,7 +60,7 @@ export default function ProctoringReport() {
         <div style={{ overflowX: 'auto' }}>
           <table className="pr-table">
             <thead>
-              <tr><th style={{ width: 28 }} /><th>Student</th><th className="r">Violations</th><th>Most common</th><th>Status</th><th>Submitted</th></tr>
+              <tr><th style={{ width: 28 }} /><th>{tx("Student")}</th><th className="r">Violations</th><th>Most common</th><th>Status</th><th>Submitted</th></tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (

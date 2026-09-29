@@ -19,6 +19,7 @@ import {
   Smartphone, List, FileText, Terminal, Award,
   Activity, Key, Timer, Tag, Hash, Info, Bot
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 const VIOLATION_OPTIONS = [
   { v: 'NONE',                 l: 'No Restrictions' },
@@ -82,7 +83,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
 
   const save = async () => {
     if (!quiz.quizType)    { toast.error('Please select a quiz type'); return; }
-    if (!quiz.category?.cid) { toast.error('Please select a course category'); return; }
+    if (!quiz.category?.cid) { toast.error(tx('Please select a course category')); return; }
     setSaving(true);
     try {
       const payload = {
@@ -147,11 +148,11 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                     <label className="aq-label">Quiz Title</label>
                     <div className="aq-iw">
                       <span className="aq-ii"><Tag size={15} /></span>
-                      <input className="aq-input" required value={quiz.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Mid-Semester Examination" />
+                      <input className="aq-input" required value={quiz.title} onChange={e => set('title', e.target.value)} placeholder={tx("e.g. Mid-Semester Examination")} />
                     </div>
                   </div>
                   <div className="aq-field">
-                    <label className="aq-label">Course Category</label>
+                    <label className="aq-label">{tx("Course Category")}</label>
                     <div className="aq-iw">
                       <span className="aq-ii"><Layers size={15} /></span>
                       <select className="aq-input" required value={quiz.category?.cid || ''} onChange={e => set('category', { cid: e.target.value })}>
@@ -167,7 +168,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                     selectedIds={quiz.programIds ?? []}
                     onChange={ids => set('programIds', ids)}
                     showDepartment={isSuperAdmin}
-                    emptyText={isSuperAdmin ? 'No programs available.' : 'No programs available for your department.'}
+                    emptyText={isSuperAdmin ? tx('No programs available.') : tx('No programs available for your department.')}
                   />
                   <div className="aq-field" style={{ marginTop: 16 }}>
                     <label className="aq-label">Instructions &amp; Guidelines</label>
@@ -176,7 +177,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                       rows={3}
                       value={quiz.description}
                       onChange={e => set('description', e.target.value)}
-                      placeholder="Provide student instructions and syllabus guidelines..."
+                      placeholder={tx("Provide student instructions and syllabus guidelines...")}
                     />
                   </div>
                 </div>
@@ -212,7 +213,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                     {quiz.quizType === 'THEORY' && (
                       <div className="aq-notice">
                         <Info size={14} />
-                        <span>Theory mode: marking is done By AI and subsequently reviewed by Lecturer before release of results</span>
+                        <span>{tx("Theory mode: marking is done By AI and subsequently reviewed by Lecturer before release of results")}</span>
                         <span>When Adding question set the no. of questions to answer and duration.</span>
 
                       </div>
@@ -367,7 +368,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                       <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
                       <p className="aq-deploy-hint">
                         {quiz.active
-                          ? (quiz.publishedAt ? `Published ${new Date(quiz.publishedAt).toLocaleString()}` : 'Visible to students')
+                          ? (quiz.publishedAt ? `Published ${new Date(quiz.publishedAt).toLocaleString()}` : tx('Visible to students'))
                           : 'Private – not published'}
                       </p>
                     </div>
@@ -382,7 +383,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                   <h6 className="aq-sidebar-title">Integrity Controls</h6>
                 </div>
                 <Toggle label="Focus Lock"     k="enableFullscreenLock"     icon={Monitor}    desc="Restrict window switches" />
-                <Toggle label="Watermark"      k="enableWatermark"          icon={Layers}     desc="Visible student ID overlay" />
+                <Toggle label="Watermark"      k="enableWatermark"          icon={Layers}     desc={tx("Visible student ID overlay")} />
                 <Toggle label="Media Shield"   k="enableScreenshotBlocking" icon={Smartphone} desc="Block screen captures" />
                 <Toggle label="DevTools Block" k="enableDevToolsBlocking"   icon={Terminal}   desc="Disable browser console" />
               </div>

@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import { X, RotateCcw, Loader2, CheckCircle } from 'lucide-react';
 import { allowQuizRetake } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 export interface AttemptRow {
   id: number;
@@ -105,8 +106,7 @@ export default function QuizAttemptsModal({ quiz, student, attempts, onClose, on
         <div style={{ padding: 20, overflowX: 'auto' }}>
           {attempts.length === 0 ? (
             <p style={{ color: '#94a3b8', textAlign: 'center', margin: 24 }}>
-              No attempts are recorded for this student. (Results from before attempts were tracked appear here after their next activity.)
-            </p>
+              {tx("No attempts are recorded for this student. (Results from before attempts were tracked appear here after their next activity.)")}</p>
           ) : (
             <table className="resp-table" style={{ minWidth: 560 }}>
               <thead>

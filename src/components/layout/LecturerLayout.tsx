@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useInstitution } from '../../hooks/useInstitution';
+import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
@@ -15,17 +17,20 @@ import {
   Megaphone,
   CalendarDays,
   Library,
-  MessageSquareWarning
+  MessageSquareWarning,
+  ClipboardPen
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function LecturerLayout() {
   const { user, logout } = useAuth();
+  const { term } = useInstitution();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { marksSheetLecturer, features } = useFeatureFlags();
 
   const navItems = [
     { to: '/lect', exact: true, icon: <Home size={20} />, title: 'Dashboard' },
-    { to: '/lect/courses', icon: <Grid size={20} />, title: 'Courses' },
+    { to: '/lect/courses', icon: <Grid size={20} />, title: tx('Courses') },
     { to: '/lect/quizes', icon: <FileText size={20} />, title: 'Quizzes' },
     { to: '/lect/announcements', icon: <Megaphone size={20} />, title: 'Announcements' },
     { to: '/lect/profile', icon: <Users size={20} />, title: 'Profile' },
@@ -35,6 +40,7 @@ export default function LecturerLayout() {
     ...(features?.QUESTION_BANK !== false ? [{ to: '/lect/question-bank', icon: <Library size={20} />, title: 'Question Bank' }] : []),
     { to: '/lect/timetable', icon: <CalendarDays size={20} />, title: 'Exam Timetable' },
     ...(marksSheetLecturer ? [{ to: '/lect/manual-marks', icon: <FileText size={20} />, title: 'Marks Sheet' }] : []),
+    ...(marksSheetLecturer && isSchoolMode() ? [{ to: '/lect/term-remarks', icon: <ClipboardPen size={20} />, title: 'Report Remarks' }] : []),
   ];
 
   return (
@@ -58,11 +64,11 @@ export default function LecturerLayout() {
               to={item.to} 
               end={item.exact} 
               className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
-              title={item.title}
+              title={term(item.title)}
               onClick={() => setMobileOpen(false)}
             >
               {item.icon}
-              <span className="sidebar-label">{item.title}</span>
+              <span className="sidebar-label">{term(item.title)}</span>
             </NavLink>
           ))}
         </nav>
@@ -93,7 +99,7 @@ export default function LecturerLayout() {
               <div className="avatar">
                 {(user?.username?.[0] ?? user?.firstname?.[0] ?? 'L').toUpperCase()}
               </div>
-              <span className="name">{user?.username || user?.firstname || 'Lecturer'}</span>
+              <span className="name">{user?.username || user?.firstname || tx('Lecturer')}</span>
             </div>
             <button className="header-icon" onClick={logout} title="Logout" style={{ marginLeft: 8 }}>
               <LogOut size={18} />

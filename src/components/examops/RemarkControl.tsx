@@ -6,6 +6,7 @@ import { MessageSquareWarning, Loader2, X } from 'lucide-react';
 import { getMyRemarks, requestRemark } from '../../api/endpoints';
 import { REMARK_STATUS } from '../../pages/shared/RemarkRequests';
 import { useFeature } from '../../hooks/useFeatureFlags';
+import { tx } from '../../utils/terms';
 
 /** Student: request a re-mark of a reviewed script, or see the status of an existing request. */
 export default function RemarkControl({ report }: { report: any }) {
@@ -24,7 +25,7 @@ export default function RemarkControl({ report }: { report: any }) {
     setSending(true);
     try {
       await requestRemark(report.id, reason.trim());
-      toast.success('Re-mark requested. Your lecturer has been notified.');
+      toast.success(tx('Re-mark requested. Your lecturer has been notified.'));
       qc.invalidateQueries({ queryKey: ['remarks'] });
       setOpen(false);
     } catch (err: any) {

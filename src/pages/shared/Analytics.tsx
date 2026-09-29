@@ -7,6 +7,7 @@ import { AlertTriangle, BarChart3, Loader2, Table2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAnalyticsOverview, saGetDepartments } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
 /* Chart tokens — single-series charts use categorical slot 1; text never wears the series color. */
 const SERIES = '#2a78d6';
@@ -139,9 +140,9 @@ export default function Analytics() {
 
       {/* Headline numbers */}
       <div className="an-tiles">
-        <StatTile label="Students" value={num(t.students)} />
-        <StatTile label="Lecturers" value={num(t.lecturers)} />
-        <StatTile label="Courses" value={num(t.courses)} />
+        <StatTile label={tx("Students")} value={num(t.students)} />
+        <StatTile label={tx("Lecturers")} value={num(t.lecturers)} />
+        <StatTile label={tx("Courses")} value={num(t.courses)} />
         <StatTile label="Quizzes" value={num(t.quizzes)} sub={`${num(t.liveQuizzes)} live`} />
         <StatTile label="Quiz attempts" value={num(t.attempts)} />
         <StatTile label="Average score" value={t.attempts ? pct(t.averageScore) : '—'} />
@@ -214,7 +215,7 @@ export default function Analytics() {
         />
 
         <ChartCard
-          title="Pass rate by program" subtitle="Quiz attempts by students in each program" empty={programs.length === 0}
+          title={tx("Pass rate by program")} subtitle={tx("Quiz attempts by students in each program")} empty={programs.length === 0}
           chart={
             <ResponsiveContainer width="100%" height={Math.max(160, programs.length * 36 + 40)}>
               <BarChart data={programs} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
@@ -227,14 +228,14 @@ export default function Analytics() {
                     <div className="an-tip">
                       <div style={{ fontWeight: 700, color: INK }}>{payload[0].payload.name}</div>
                       <div style={{ color: '#475569' }}>Pass rate: <strong style={{ color: INK }}>{pct(payload[0].value)}</strong></div>
-                      <div style={{ color: '#475569' }}>{num(payload[0].payload.students)} students · {num(payload[0].payload.attempts)} attempts</div>
+                      <div style={{ color: '#475569' }}>{num(payload[0].payload.students)} {tx("students · ")}{num(payload[0].payload.attempts)} attempts</div>
                     </div>
                   ) : null} />
                 <Bar dataKey="passRate" name="Pass rate" fill={SERIES} radius={[0, 4, 4, 0]} maxBarSize={22} />
               </BarChart>
             </ResponsiveContainer>
           }
-          table={<SimpleTable head={['Program', 'Students', 'Attempts', 'Average', 'Pass rate']}
+          table={<SimpleTable head={[tx('Program'), tx('Students'), 'Attempts', 'Average', 'Pass rate']}
             rows={programs.map(p => [p.name, num(p.students), num(p.attempts), pct(p.averageScore), pct(p.passRate)])} />}
         />
       </div>
@@ -243,14 +244,14 @@ export default function Analytics() {
       <section className="an-card" style={{ marginTop: 16 }}>
         <header className="an-card-head">
           <div>
-            <h2 className="an-card-title">Courses needing attention</h2>
+            <h2 className="an-card-title">{tx("Courses needing attention")}</h2>
             <p className="an-card-sub">Lowest quiz pass rate first</p>
           </div>
         </header>
         {courses.length === 0 ? <div className="an-empty">No quiz attempts yet</div> : (
           <div style={{ overflowX: 'auto' }}>
             <table className="an-table">
-              <thead><tr><th>Course</th><th>Lecturer</th><th className="r">Attempts</th><th className="r">Average</th><th>Pass rate</th></tr></thead>
+              <thead><tr><th>{tx("Course")}</th><th>{tx("Lecturer")}</th><th className="r">Attempts</th><th className="r">Average</th><th>Pass rate</th></tr></thead>
               <tbody>
                 {courses.slice(0, 15).map(c => (
                   <tr key={c.courseId}>
@@ -271,14 +272,14 @@ export default function Analytics() {
         <section className="an-card">
           <header className="an-card-head">
             <div>
-              <h2 className="an-card-title">Lecturer results</h2>
-              <p className="an-card-sub">Quiz outcomes in each lecturer's courses</p>
+              <h2 className="an-card-title">{tx("Lecturer results")}</h2>
+              <p className="an-card-sub">{tx("Quiz outcomes in each lecturer's courses")}</p>
             </div>
           </header>
           {lecturers.length === 0 ? <div className="an-empty">No data yet</div> : (
             <div style={{ overflowX: 'auto' }}>
               <table className="an-table">
-                <thead><tr><th>Lecturer</th><th className="r">Courses</th><th className="r">Attempts</th><th>Pass rate</th></tr></thead>
+                <thead><tr><th>{tx("Lecturer")}</th><th className="r">{tx("Courses")}</th><th className="r">Attempts</th><th>Pass rate</th></tr></thead>
                 <tbody>
                   {lecturers.map(l => (
                     <tr key={l.lecturerId}>
@@ -297,21 +298,21 @@ export default function Analytics() {
         <section className="an-card">
           <header className="an-card-head">
             <div>
-              <h2 className="an-card-title">At-risk students</h2>
-              <p className="an-card-sub">2+ failed courses, or quiz average below {passMark}% over 3+ attempts</p>
+              <h2 className="an-card-title">{tx("At-risk students")}</h2>
+              <p className="an-card-sub">{tx("2+ failed courses, or quiz average below ")}{passMark}% over 3+ attempts</p>
             </div>
             {atRisk.length > 0 && <span className="an-risk-count"><AlertTriangle size={13} /> {atRisk.length}</span>}
           </header>
-          {atRisk.length === 0 ? <div className="an-empty">No students flagged</div> : (
+          {atRisk.length === 0 ? <div className="an-empty">{tx("No students flagged")}</div> : (
             <div style={{ overflowX: 'auto', maxHeight: 420 }}>
               <table className="an-table">
-                <thead><tr><th>Student</th><th>Program</th><th>Why flagged</th></tr></thead>
+                <thead><tr><th>{tx("Student")}</th><th>{tx("Program")}</th><th>Why flagged</th></tr></thead>
                 <tbody>
                   {atRisk.map(s => (
                     <tr key={s.studentId}>
                       <td>
                         <div style={{ fontWeight: 600, color: INK }}>{s.name}</div>
-                        {s.level && <div style={{ fontSize: 11, color: MUTED }}>Level {s.level}</div>}
+                        {s.level && <div style={{ fontSize: 11, color: MUTED }}>{tx("Level ")}{s.level}</div>}
                       </td>
                       <td style={{ color: '#475569' }}>{s.program ?? '—'}</td>
                       <td>

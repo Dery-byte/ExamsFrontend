@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useInstitution } from '../../hooks/useInstitution';
 import { forgotPassword, getQuizPublicSummary, getPublicSettings } from '../../api/endpoints';
 import {
   User,
@@ -17,6 +18,7 @@ import {
   Loader2,
   GraduationCap
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 const PHRASES = [
   'Access your examination portal',
@@ -32,6 +34,7 @@ const joinWithAnd = (items: string[]) =>
 
 export default function Login() {
   const { login } = useAuth();
+  const { institution } = useInstitution();
   const [signupOpen, setSignupOpen] = useState(true);
   useEffect(() => { getPublicSettings().then(s => setSignupOpen(s.studentSelfSignup)).catch(() => {}); }, []);
   // Set by ProtectedRoute / the shared quiz link: where to go once signed in.
@@ -305,7 +308,7 @@ export default function Login() {
                 {!!quizSummary?.programNames?.length && (
                   <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 500, opacity: 0.9 }}>
                     <GraduationCap size={13} style={{ flexShrink: 0 }} />
-                    <span>This quiz is for {joinWithAnd(quizSummary.programNames)} students.</span>
+                    <span>This quiz is for {joinWithAnd(quizSummary.programNames)} {tx("students.")}</span>
                   </div>
                 )}
               </div>
@@ -334,7 +337,7 @@ export default function Login() {
                     id="login-username"
                     type="text"
                     className="input card"
-                    placeholder="student.id"
+                    placeholder={tx("student.id")}
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     required
@@ -395,14 +398,16 @@ export default function Login() {
             <div style={{ marginTop: 36, textAlign: 'center' }}>
               <span style={{ fontSize: 14, color: 'var(--gray-500)', fontWeight: 500 }}>New member? </span>
               <Link to="/signup" style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
-                Create Student Account
-              </Link>
+                {tx("Create Student Account")}</Link>
             </div>
             )}
           </div>
 
           <div style={{ marginTop: 22, textAlign: 'center', fontSize: 12, color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.05em' }}>
-            OTC · © 2026
+            {institution.shortName} · © {new Date().getFullYear()}
+            <div style={{ marginTop: 6, letterSpacing: 0 }}>
+              <Link to="/verify" style={{ color: 'var(--primary)', fontWeight: 600 }}>{tx("Verify a transcript or report card")}</Link>
+            </div>
           </div>
         </div>
 
@@ -536,7 +541,7 @@ export default function Login() {
                             id="recovery-email"
                             type="email"
                             className="input card"
-                            placeholder="e.g. student@example.com"
+                            placeholder={tx("e.g. student@example.com")}
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             required

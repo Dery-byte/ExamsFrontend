@@ -1,4 +1,5 @@
 import { GraduationCap } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 interface Props {
   programs: any[];
@@ -17,10 +18,10 @@ export default function QuizProgramPicker({ programs, selectedIds, onChange, sho
   return (
     <div className="aq-field mt-4">
       <label className="aq-label">
-        Allowed Programs <span className="qpp-hint">(students in the selected programs can take this quiz)</span>
+        {tx("Allowed Programs ")}<span className="qpp-hint">{tx("(students in the selected programs can take this quiz)")}</span>
       </label>
       {programs.length === 0 ? (
-        <p className="qpp-hint">{emptyText ?? 'No programs available.'}</p>
+        <p className="qpp-hint">{emptyText ?? tx('No programs available.')}</p>
       ) : (
         <div className="qpp-grid">
           {programs.map((p: any) => {

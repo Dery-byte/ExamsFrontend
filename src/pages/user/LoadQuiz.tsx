@@ -15,6 +15,7 @@ import {
   ArrowUpRight,
   Clock
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 /* ─── tiny helpers ──────────────────────────────────────────────── */
 const fmtScore = (marks: any, max: any) =>
@@ -208,7 +209,7 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>⏳ Pending Review</div>
-                <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600, marginTop: 2 }}>Results available once reviewed by lecturer</div>
+                <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600, marginTop: 2 }}>{tx("Results available once reviewed by lecturer")}</div>
               </div>
             </div>
           )}
@@ -219,7 +220,7 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
         <button 
           onClick={report?.isReviewed ? onSummary : undefined}
           disabled={!report?.isReviewed}
-          title={!report?.isReviewed ? 'Analytics available after lecturer review' : 'View performance analytics'}
+          title={!report?.isReviewed ? tx('Analytics available after lecturer review') : 'View performance analytics'}
           className="btn-lexa btn-lexa-outline"
           style={{ flex: 1, padding: '10px', fontSize: 13, borderRadius: 8, opacity: report?.isReviewed ? 1 : 0.45, cursor: report?.isReviewed ? 'pointer' : 'not-allowed' }}
         >
@@ -230,7 +231,7 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
           disabled={!closed || !report?.isReviewed || isDownloading}
           className={`btn-lexa ${closed && report?.isReviewed ? 'btn-lexa-primary' : ''}`}
           style={{ flex: 1, padding: '10px', fontSize: 13, opacity: (closed && report?.isReviewed) ? 1 : 0.5, justifyContent: 'center', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
-          title={!report?.isReviewed ? 'Result Slip available after lecturer review' : ''}
+          title={!report?.isReviewed ? tx('Result Slip available after lecturer review') : ''}
         >
           {isDownloading
             ? <><Loader2 size={15} className="spin-ico" /> Generating...</>
@@ -428,7 +429,7 @@ export default function LoadQuiz() {
                   transition: 'border-color 0.2s'
                 }}
               >
-                {uniqueCategories.length === 0 && <option value="">No courses available</option>}
+                {uniqueCategories.length === 0 && <option value="">{tx("No courses available")}</option>}
                 {uniqueCategories.map((c: any) => (
                   <option key={c.cid} value={String(c.cid)}>
                     {c.courseCode} — {c.title}

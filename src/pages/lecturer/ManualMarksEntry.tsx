@@ -8,6 +8,7 @@ import {
     DownloadCloud, RefreshCw, Plus, Trash2, Loader2, X,
     ClipboardCheck, Users, BookOpen, Award, TrendingUp, Save, Send
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; dotColor: string }> = {
     DRAFT:     { label: 'Draft',     bg: '#f3f4f6', color: '#374151', dotColor: '#9ca3af' },
@@ -197,7 +198,7 @@ const ManualMarksEntry = () => {
             targetSectionId = match.id;
         }
 
-        if (!window.confirm("This will fetch and overwrite marks for ALL students into that section. Continue?")) return;
+        if (!window.confirm(tx("This will fetch and overwrite marks for ALL students into that section. Continue?"))) return;
 
         setBulkSyncing(true);
         try {
@@ -238,7 +239,7 @@ const ManualMarksEntry = () => {
     };
 
     const handleDeleteSection = async (sectionId: number) => {
-        if (!window.confirm("Are you sure? This will delete this section and all associated student marks.")) return;
+        if (!window.confirm(tx("Are you sure? This will delete this section and all associated student marks."))) return;
         try {
             await deleteSheetSection(selectedSheetId, sectionId);
             toast.success("Section deleted!");
@@ -255,10 +256,10 @@ const ManualMarksEntry = () => {
                 <h2 className="mme-title">Manual Marks Entry</h2>
                 <div className="mme-card">
                     <select className="mme-select" value={selectedSheetId} onChange={handleSheetSelect}>
-                        <option value="">Select an active semester sheet</option>
+                        <option value="">{tx("Select an active semester sheet")}</option>
                         {sheets.map((s: any) => (
                             <option key={s.id} value={s.id}>
-                                {s.courseName || `Sheet #${s.id}`} — {s.sessionName ? `${s.sessionName} | ` : ''}Level {s.level} | Sem {s.semester} | {s.status}
+                                {s.courseName || `Sheet #${s.id}`} — {s.sessionName ? `${s.sessionName} | ` : ''}{tx("Level ")}{s.level} | Sem {s.semester} | {s.status}
                             </option>
                         ))}
                     </select>
@@ -283,7 +284,7 @@ const ManualMarksEntry = () => {
                             Manual Marks Entry {allCourses[0]?.courseCode ? `— ${allCourses[0].courseCode}` : ''}
                         </div>
                         <div className="mme-ov-subtitle">
-                            {sheetData.sessionName ? <>{sheetData.sessionName} &bull; </> : null}Level {sheetData.level} &bull; Sem {sheetData.semester}
+                            {sheetData.sessionName ? <>{sheetData.sessionName} &bull; </> : null}{tx("Level ")}{sheetData.level} &bull; Sem {sheetData.semester}
                         </div>
                     </div>
                 </div>
@@ -324,8 +325,8 @@ const ManualMarksEntry = () => {
                 {/* Summary cards */}
                 <div className="mme-stat-grid">
                     {[
-                        { icon: <Users size={18} color="#3b82f6" />, label: 'Students', value: studentCount, bg: '#eff6ff' },
-                        { icon: <BookOpen size={18} color="#7c3aed" />, label: 'Courses', value: allCourses.length, bg: '#f5f3ff' },
+                        { icon: <Users size={18} color="#3b82f6" />, label: tx('Students'), value: studentCount, bg: '#eff6ff' },
+                        { icon: <BookOpen size={18} color="#7c3aed" />, label: tx('Courses'), value: allCourses.length, bg: '#f5f3ff' },
                         { icon: <Award size={18} color="#10b981" />, label: 'Sections', value: sheetData.sections?.length || 0, bg: '#f0fdf4' },
                         { icon: <TrendingUp size={18} color="#f59e0b" />, label: 'Status', value: STATUS_CONFIG[sheetData.status]?.label || sheetData.status, bg: '#fffbeb' },
                     ].map((card, i) => (
@@ -355,7 +356,7 @@ const ManualMarksEntry = () => {
                         <table className="mme-table">
                             <thead>
                                 <tr className="mme-thead-course-row">
-                                    <th rowSpan={2} className="mme-th mme-th-student">Student</th>
+                                    <th rowSpan={2} className="mme-th mme-th-student">{tx("Student")}</th>
                                     {allCourses.map((c: any) => (
                                         <th key={c.courseId} colSpan={sheetData.sections.length + 2} className="mme-th mme-th-course">
                                             <div className="mme-course-code">{c.courseCode}</div>

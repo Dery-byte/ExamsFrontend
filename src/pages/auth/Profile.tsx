@@ -7,11 +7,12 @@ import {
   Briefcase, ChevronRight, CheckCircle, XCircle,
   X, Eye, EyeOff, Loader2, Check,
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 const ROLE_META: Record<string, { label: string; color: string; bg: string; grad: string; icon: React.ReactNode }> = {
   ADMIN:    { label: 'Administrator',   color: '#5156be', bg: '#eef2ff', grad: 'linear-gradient(135deg,#5156be,#7c3aed)', icon: <Shield size={18}/> },
-  LECTURER: { label: 'Academic Faculty', color: '#0891b2', bg: '#ecfeff', grad: 'linear-gradient(135deg,#0891b2,#06b6d4)', icon: <Briefcase size={18}/> },
-  NORMAL:   { label: 'Student',          color: '#059669', bg: '#ecfdf5', grad: 'linear-gradient(135deg,#059669,#10b981)', icon: <User size={18}/> },
+  LECTURER: { label: tx('Academic Faculty'), color: '#0891b2', bg: '#ecfeff', grad: 'linear-gradient(135deg,#0891b2,#06b6d4)', icon: <Briefcase size={18}/> },
+  NORMAL:   { label: tx('Student'),          color: '#059669', bg: '#ecfdf5', grad: 'linear-gradient(135deg,#059669,#10b981)', icon: <User size={18}/> },
 };
 
 /* ── tiny reusable modal wrapper ─────────────────────────────────────────── */

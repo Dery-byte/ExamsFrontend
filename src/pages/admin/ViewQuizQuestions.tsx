@@ -21,6 +21,7 @@ import {
 import RichTextEditor from '../../components/ui/RichTextEditor';
 import QuestionImage from '../../components/ui/QuestionImage';
 import QuestionImageField from '../../components/ui/QuestionImageField';
+import { tx } from '../../utils/terms';
 
 export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: boolean }) {
   const { qId, qTitle } = useParams();
@@ -174,6 +175,12 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
       payload.correct_answer = specificObj.matchingPairs.map((p: any) => p.answer);
     } else if (specificObj.questionType === 'TRUE_FALSE') {
       payload.option1 = 'True'; payload.option2 = 'False';
+    } else if (specificObj.questionType === 'FILL_BLANK' || specificObj.questionType === 'NUMERIC') {
+      const accepted = (specificObj.correctAnswer || []).map((a: string) => String(a).trim()).filter(Boolean);
+      if (!accepted.length) { toast.error(specificObj.questionType === 'NUMERIC' ? 'Enter the correct number' : 'Enter at least one accepted answer'); setSaving(false); return; }
+      payload.correct_answer = specificObj.questionType === 'NUMERIC' ? [accepted[0]] : accepted;
+      payload.tolerance = specificObj.questionType === 'NUMERIC' && specificObj.tolerance !== '' && specificObj.tolerance != null
+        ? Number(specificObj.tolerance) : null;
     } else {
       payload.option1 = specificObj.option1; payload.option2 = specificObj.option2;
       payload.option3 = specificObj.option3; payload.option4 = specificObj.option4;
@@ -313,10 +320,10 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
           <Link to={`${basePath}/quizzes`} className="vqq-btn-back">
             <ArrowLeft size={15} /><span>Registry</span>
           </Link>
-          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('draw')} title="Add random questions from this course's question bank">
+          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('draw')} title={tx("Add random questions from this course's question bank")}>
             <Shuffle size={15} /><span>From bank</span>
           </button>}
-          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('import')} title="Copy this quiz's questions into the course's question bank">
+          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('import')} title={tx("Copy this quiz's questions into the course's question bank")}>
             <Upload size={15} /><span>Save to bank</span>
           </button>}
           <Link to={`${basePath}/proctoring/${qId}`} className="vqq-btn-back" title="Proctoring report for this quiz">
@@ -400,7 +407,9 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                 {questions.map((q, i) => {
                   const isMatching = (q.questionType || '').toUpperCase() === 'MATCHING';
                   const isTF = (q.questionType || '').toUpperCase() === 'TRUE_FALSE';
-                  const typeLabel = isMatching ? 'Matching' : isTF ? 'True / False' : 'MCQ';
+                  const isTyped = q.questionType === 'FILL_BLANK' || q.questionType === 'NUMERIC';
+                  const typeLabel = isMatching ? 'Matching' : isTF ? 'True / False'
+                    : q.questionType === 'FILL_BLANK' ? 'Fill in the Blank' : q.questionType === 'NUMERIC' ? 'Numeric' : 'MCQ';
                   const headerGrad = isMatching
                     ? 'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)'
                     : isTF
@@ -432,8 +441,22 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                         <QuestionImage src={q.image} />
                         <p className="vqq-obj-question ql-content" dangerouslySetInnerHTML={{ __html: q.content }} />
 
+                        {/* Fill in the blank / numeric: accepted answers */}
+                        {isTyped && (
+                          <div className="vqq-opts-list">
+                            <div className="vqq-opt vqq-opt-correct" style={{ borderColor: accentColor, background: `${accentColor}12` }}>
+                              <span className="vqq-opt-letter" style={{ background: accentColor, color: '#fff' }}>✓</span>
+                              <span className="vqq-opt-text">
+                                {q.questionType === 'NUMERIC'
+                                  ? <>{correctAnswers[0]}{q.tolerance ? ` (± ${q.tolerance})` : ' (exact)'}</>
+                                  : correctAnswers.join('  /  ')}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
                         {/* MCQ Options */}
-                        {!isMatching && !isTF && (
+                        {!isMatching && !isTF && !isTyped && (
                           <div className="vqq-opts-list">
                             {['option1','option2','option3','option4'].map((optKey, idx) => {
                               const optVal = q[optKey];
@@ -693,6 +716,46 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                   />
                 )}
               </div>
+
+              {/* Fill in the blank: accepted answers */}
+              {specificObj.questionType === 'FILL_BLANK' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Accepted answers <span style={{ fontSize: '10px', fontWeight: 400, textTransform: 'none', color: '#adb5bd' }}>(case, spaces and a final full stop are ignored)</span></label>
+                  {(specificObj.correctAnswer?.length ? specificObj.correctAnswer : ['']).map((a: string, i: number, arr: string[]) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <input value={a} aria-label={`Accepted answer ${i + 1}`}
+                        onChange={e => setSpecificObj((prev: any) => { const list = [...(prev.correctAnswer?.length ? prev.correctAnswer : [''])]; list[i] = e.target.value; return { ...prev, correctAnswer: list }; })}
+                        style={{ flex: 1, padding: '9px 12px', border: '1.5px solid #e9ecef', borderRadius: 8, fontSize: 13 }} />
+                      {arr.length > 1 && (
+                        <button type="button" aria-label="Remove answer" onClick={() => setSpecificObj((prev: any) => ({ ...prev, correctAnswer: prev.correctAnswer.filter((_: any, j: number) => j !== i) }))}
+                          style={{ width: 34, border: '1px solid #fee2e2', background: '#fff5f5', color: '#fd625e', borderRadius: 8, cursor: 'pointer' }}><Trash2 size={13} /></button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setSpecificObj((prev: any) => ({ ...prev, correctAnswer: [...(prev.correctAnswer ?? []), ''] }))}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: 'none', background: 'none', color: '#5156be', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                    <Plus size={13} /> Add accepted answer
+                  </button>
+                </div>
+              )}
+
+              {/* Numeric: value + tolerance */}
+              {specificObj.questionType === 'NUMERIC' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', marginBottom: '6px' }}>Correct answer</label>
+                    <input inputMode="decimal" value={specificObj.correctAnswer?.[0] ?? ''}
+                      onChange={e => setSpecificObj((prev: any) => ({ ...prev, correctAnswer: [e.target.value] }))}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '1.5px solid #e9ecef', borderRadius: 8, fontSize: 13 }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', marginBottom: '6px' }}>Tolerance (±)</label>
+                    <input inputMode="decimal" value={specificObj.tolerance ?? ''} placeholder="0 = exact"
+                      onChange={e => setSpecificObj((prev: any) => ({ ...prev, tolerance: e.target.value }))}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '1.5px solid #e9ecef', borderRadius: 8, fontSize: 13 }} />
+                  </div>
+                </div>
+              )}
 
               {/* MCQ Options */}
               {(specificObj.questionType || '').toUpperCase() === 'MCQ' && (

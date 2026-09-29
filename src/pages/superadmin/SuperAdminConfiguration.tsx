@@ -4,12 +4,13 @@ import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, Re
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
+import { isSchoolMode, tx } from '../../utils/terms';
 
 /** Per-role switches for the Marks Sheet navigation entry (default on when never set). */
 const MARKS_SHEET_TOGGLES = [
-  { key: 'MARKS_SHEET_VISIBLE_ADMIN',    label: 'Admins (HODs)', sub: 'Show "Marks Sheets" in the Admin navigation.',         icon: <ClipboardList size={20} />, color: '#8b5cf6' },
-  { key: 'MARKS_SHEET_VISIBLE_LECTURER', label: 'Lecturers',     sub: 'Show "Marks Sheet" (marks entry) in the Lecturer navigation.', icon: <PenLine size={20} />,       color: '#0ea5e9' },
-  { key: 'MARKS_SHEET_VISIBLE_STUDENT',  label: 'Students',      sub: 'Show "Report Cards" (published marks) in the Student navigation.', icon: <GraduationCap size={20} />, color: '#10b981' },
+  { key: 'MARKS_SHEET_VISIBLE_ADMIN',    label: tx('Admins (HODs)'), sub: 'Show "Marks Sheets" in the Admin navigation.',         icon: <ClipboardList size={20} />, color: '#8b5cf6' },
+  { key: 'MARKS_SHEET_VISIBLE_LECTURER', label: tx('Lecturers'),     sub: tx('Show "Marks Sheet" (marks entry) in the Lecturer navigation.'), icon: <PenLine size={20} />,       color: '#0ea5e9' },
+  { key: 'MARKS_SHEET_VISIBLE_STUDENT',  label: tx('Students'),      sub: tx('Show "Report Cards" (published marks) in the Student navigation.'), icon: <GraduationCap size={20} />, color: '#10b981' },
 ];
 
 interface Program { id: number; name: string; code: string; departmentName: string; enabled: boolean; }
@@ -48,7 +49,7 @@ export default function SuperAdminConfiguration() {
     setProgramsLoading(true);
     saGetPrograms()
       .then((data: Program[]) => setPrograms(Array.isArray(data) ? data : []))
-      .catch(() => toast.error('Failed to load programs'))
+      .catch(() => toast.error(tx('Failed to load programs')))
       .finally(() => setProgramsLoading(false));
   };
 
@@ -91,7 +92,7 @@ export default function SuperAdminConfiguration() {
     try {
       await saUpdateSystemSettings({ [key]: next.toString() });
       setSettings(prev => ({ ...prev, [key]: next.toString() }));
-      toast.success(next ? 'Exam clock now keeps running while a student is away' : 'Exam clock now pauses while a student is away');
+      toast.success(next ? tx('Exam clock now keeps running while a student is away') : tx('Exam clock now pauses while a student is away'));
     } catch {
       toast.error('Failed to update setting');
     } finally {
@@ -106,7 +107,7 @@ export default function SuperAdminConfiguration() {
       setPrograms(prev => prev.map(x => x.id === p.id ? { ...x, enabled: updated.enabled } : x));
       toast.success(`"${p.name}" has been ${updated.enabled ? 'enabled' : 'disabled'}.`);
     } catch {
-      toast.error('Failed to update program visibility');
+      toast.error(tx('Failed to update program visibility'));
     } finally {
       setTogglingId(null);
     }
@@ -132,8 +133,9 @@ export default function SuperAdminConfiguration() {
         </div>
       </div>
 
-      {/* ── Course Registration ─────────────────────────────────────────── */}
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>Course Registration</h2>
+      {/* ── Course Registration (carry-overs: university only) ───────────── */}
+      {!isSchoolMode() && <>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>{tx("Course Registration")}</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 14, marginBottom: 40 }}>
         <div style={{ ...card(), display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -142,7 +144,7 @@ export default function SuperAdminConfiguration() {
              </div>
              <div>
                <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginBottom: 4 }}>Allow Carry-over Registration</div>
-               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>If enabled, students can register for courses from previous levels and semesters. If disabled, they are strictly restricted to their current level/semester.</div>
+               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>{tx("If enabled, students can register for courses from previous levels and semesters. If disabled, they are strictly restricted to their current level/semester.")}</div>
              </div>
           </div>
           <button
@@ -164,6 +166,7 @@ export default function SuperAdminConfiguration() {
           </button>
         </div>
       </div>
+      </>}
 
       {/* ── Exams ───────────────────────────────────────────────────────── */}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>Exams</h2>
@@ -173,10 +176,9 @@ export default function SuperAdminConfiguration() {
             <Timer size={22} />
           </div>
           <div>
-            <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginBottom: 4 }}>Exam clock keeps running while a student is away</div>
+            <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginBottom: 4 }}>{tx("Exam clock keeps running while a student is away")}</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
-              On: if a student closes the browser, loses power or drops offline, the time away still counts — they return to the time actually left (and the attempt is submitted if it has run out). Off: the clock resumes from their last save, up to 15 seconds before they left.
-            </div>
+              {tx("On: if a student closes the browser, loses power or drops offline, the time away still counts — they return to the time actually left (and the attempt is submitted if it has run out). Off: the clock resumes from their last save, up to 15 seconds before they left.")}</div>
           </div>
         </div>
         <button
@@ -184,7 +186,7 @@ export default function SuperAdminConfiguration() {
           disabled={savingKey === 'EXAM_CLOCK_RUNS_WHILE_AWAY'}
           role="switch"
           aria-checked={isOn('EXAM_CLOCK_RUNS_WHILE_AWAY')}
-          aria-label="Exam clock keeps running while a student is away"
+          aria-label={tx("Exam clock keeps running while a student is away")}
           style={{
             background: isOn('EXAM_CLOCK_RUNS_WHILE_AWAY') ? '#10b981' : 'rgba(255,255,255,0.1)',
             border: 'none', borderRadius: 20, width: 50, height: 26, position: 'relative', cursor: 'pointer', transition: 'all 0.3s', flexShrink: 0, marginLeft: 16
@@ -250,10 +252,9 @@ export default function SuperAdminConfiguration() {
       {/* ── Program Visibility ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: 0, textTransform: 'uppercase', letterSpacing: 1 }}>Program Visibility</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: 0, textTransform: 'uppercase', letterSpacing: 1 }}>{tx("Program Visibility")}</h2>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
-            Disabled programs are hidden from students, lecturers, and admins system-wide
-          </p>
+            {tx("Disabled programs are hidden from students, lecturers, and admins system-wide")}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Summary chips */}
@@ -276,7 +277,7 @@ export default function SuperAdminConfiguration() {
       ) : programs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 14, border: '1px dashed rgba(139,92,246,0.2)' }}>
           <BookMarked size={36} style={{ color: 'rgba(139,92,246,0.3)', marginBottom: 10 }} />
-          <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0 }}>No programs found. Create programs first.</p>
+          <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0 }}>{tx("No programs found. Create programs first.")}</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
@@ -330,7 +331,7 @@ export default function SuperAdminConfiguration() {
                 <button
                   onClick={() => handleToggleProgram(p)}
                   disabled={togglingId === p.id}
-                  title={p.enabled ? 'Disable this program' : 'Enable this program'}
+                  title={p.enabled ? tx('Disable this program') : tx('Enable this program')}
                   style={{
                     width: 48, height: 26, borderRadius: 13, border: 'none', cursor: togglingId === p.id ? 'not-allowed' : 'pointer',
                     background: p.enabled ? '#10b981' : 'rgba(255,255,255,0.12)',

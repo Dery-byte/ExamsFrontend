@@ -25,6 +25,7 @@ import {
   CheckCircle,
   PlayCircle
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 // ─── Module-level quiz window store ──────────────────────────────────────────
 // _activeQuizWindow  — survives SPA navigation (module scope).
@@ -352,7 +353,7 @@ export default function Instructions() {
               </div>
 
               <div style={{ color: '#6c757d', fontSize: 14, lineHeight: 1.8, marginBottom: 30 }}>
-                {quiz?.description || 'This examination module is designed to assess your proficiency and understanding of the course curriculum. Please ensure you have read all instructions carefully before initializing the session.'}
+                {quiz?.description || tx('This examination module is designed to assess your proficiency and understanding of the course curriculum. Please ensure you have read all instructions carefully before initializing the session.')}
               </div>
 
               <h6 style={{ fontSize: 13, fontWeight: 700, color: '#495057', marginBottom: 20, textTransform: 'uppercase' }}>Protocol & Regulations</h6>
@@ -445,8 +446,7 @@ export default function Instructions() {
                 <>
                   {attempts?.retakeGranted && (
                     <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 4, background: 'rgba(122, 111, 190, 0.1)', color: 'var(--primary)', fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
-                      Your lecturer has allowed you to retake this quiz. Your new marks will replace your previous result.
-                    </div>
+                      {tx("Your lecturer has allowed you to retake this quiz. Your new marks will replace your previous result.")}</div>
                   )}
 
                   {quizOpen ? (

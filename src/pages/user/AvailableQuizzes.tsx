@@ -5,6 +5,7 @@ import { getRegCourses, getActiveQuizzesOfCategory, getReport } from '../../api/
 import { quizInstructionsPath } from '../../utils/quizLink';
 import PageHeader from '../../components/PageHeader';
 import { Search, Loader2, BookOpen, AlertCircle, HelpCircle, Award, X, Clock, PlayCircle, FileText, ChevronRight, Activity, Calendar, Filter, PieChart, BarChart2, CheckCircle, TrendingUp } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function AvailableQuizzes() {
   const { user } = useAuth();
@@ -94,8 +95,7 @@ export default function AvailableQuizzes() {
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ flex: '1 1 300px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, marginBottom: 10, color: '#2a3142' }}>
-                <BookOpen size={16} className="text-primary" /> Select Course Curriculum
-              </label>
+                <BookOpen size={16} className="text-primary" /> {tx("Select Course Curriculum")}</label>
               <div style={{ position: 'relative' }}>
                 <select 
                   style={{ 
@@ -156,7 +156,7 @@ export default function AvailableQuizzes() {
             <BookOpen size={45} />
           </div>
           <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>Ready for Evaluation?</h4>
-          <p style={{ color: '#74788d', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>Select one of your registered courses from the selector above to access your scheduled examinations and quiz modules.</p>
+          <p style={{ color: '#74788d', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>{tx("Select one of your registered courses from the selector above to access your scheduled examinations and quiz modules.")}</p>
         </div>
       ) : displayedQuizzes.length === 0 ? (
         <div className="lexa-card animate-fade-in-up" style={{ padding: '100px 20px', textAlign: 'center', border: '1px dashed #e1e9f1' }}>
@@ -166,8 +166,7 @@ export default function AvailableQuizzes() {
           <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>No Active Assessments</h4>
           <p style={{ color: '#74788d', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>There are currently no examinations active for this curriculum module. Please monitor your notifications for future schedules.</p>
           <button onClick={() => setSelectedCid('')} className="btn-lexa btn-lexa-outline" style={{ marginTop: 30 }}>
-            Change Course Selection
-          </button>
+            {tx("Change Course Selection")}</button>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>

@@ -10,8 +10,9 @@ import QuestionImageField from '../../components/ui/QuestionImageField';
 import {
   addBankQuestion, deleteBankQuestion, getBankCourses, getBankForCourse, updateBankQuestion, uploadQuestionImage,
 } from '../../api/endpoints';
+import { tx } from '../../utils/terms';
 
-const TYPE_LABEL: Record<string, string> = { MCQ: 'Multiple choice', TRUE_FALSE: 'True / False', MATCHING: 'Matching' };
+const TYPE_LABEL: Record<string, string> = { MCQ: 'Multiple choice', TRUE_FALSE: 'True / False', MATCHING: 'Matching', FILL_BLANK: 'Fill in the blank', NUMERIC: 'Numeric' };
 const DIFF_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
   EASY: { bg: '#eefbee', fg: '#0b7a0b', label: 'Easy' },
   MEDIUM: { bg: '#fff7e6', fg: '#8a5a00', label: 'Medium' },
@@ -25,11 +26,11 @@ function plainText(html: string) {
 
 type Form = {
   id?: number; topic: string; difficulty: string; questionType: string; content: string; image: string | null;
-  options: string[]; correct: string[]; pairs: { prompt: string; answer: string }[];
+  options: string[]; correct: string[]; pairs: { prompt: string; answer: string }[]; tolerance: string;
 };
 const EMPTY: Form = {
   topic: '', difficulty: 'MEDIUM', questionType: 'MCQ', content: '', image: null,
-  options: ['', '', '', ''], correct: [], pairs: [{ prompt: '', answer: '' }, { prompt: '', answer: '' }],
+  options: ['', '', '', ''], correct: [], pairs: [{ prompt: '', answer: '' }, { prompt: '', answer: '' }], tolerance: '',
 };
 
 /** Per-course question bank: browse, filter, add, edit and delete reusable questions. */
@@ -77,6 +78,7 @@ export default function QuestionBank() {
     options: [q.option1 ?? '', q.option2 ?? '', q.option3 ?? '', q.option4 ?? ''],
     correct: q.correctAnswer ?? [],
     pairs: q.matchingPairs?.length ? q.matchingPairs : EMPTY.pairs,
+    tolerance: q.tolerance != null ? String(q.tolerance) : '',
   });
 
   return (
@@ -86,12 +88,12 @@ export default function QuestionBank() {
       {courses.isLoading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="#5156be" className="qb-spin" /></div>
       ) : !courses.data?.length ? (
-        <div className="qb-card qb-empty"><BookOpen size={32} /><p>You don't manage any courses yet, so there is no bank to show.</p></div>
+        <div className="qb-card qb-empty"><BookOpen size={32} /><p>{tx("You don't manage any courses yet, so there is no bank to show.")}</p></div>
       ) : (
         <div className="qb-grid">
           {/* Course list */}
-          <nav className="qb-card" aria-label="Courses" style={{ alignSelf: 'start' }}>
-            <div className="qb-side-head">Courses</div>
+          <nav className="qb-card" aria-label={tx("Courses")} style={{ alignSelf: 'start' }}>
+            <div className="qb-side-head">{tx("Courses")}</div>
             {courses.data.map((c: any) => (
               <button key={c.courseId} onClick={() => { setCourseId(c.courseId); setTopicFilter(''); }}
                 className={`qb-course ${courseId === c.courseId ? 'is-active' : ''}`} aria-current={courseId === c.courseId}>
@@ -147,7 +149,15 @@ export default function QuestionBank() {
                       </div>
                       <div className="qb-content">{plainText(q.content)}</div>
                       {q.image && <QuestionImage src={q.image} style={{ maxHeight: 120, marginTop: 6 }} />}
-                      {q.questionType === 'MATCHING' ? (
+                      {q.questionType === 'FILL_BLANK' || q.questionType === 'NUMERIC' ? (
+                        <ul className="qb-opts">
+                          <li style={{ color: '#0b7a0b', fontWeight: 700 }}>
+                            <Check size={12} /> {q.questionType === 'NUMERIC'
+                              ? `${q.correctAnswer?.[0] ?? ''}${q.tolerance ? ` (± ${q.tolerance})` : ' (exact)'}`
+                              : (q.correctAnswer ?? []).join('  /  ')}
+                          </li>
+                        </ul>
+                      ) : q.questionType === 'MATCHING' ? (
                         <ul className="qb-opts">{q.matchingPairs.map((p: any, i: number) => <li key={i}>{p.prompt} → <strong>{p.answer}</strong></li>)}</ul>
                       ) : (
                         <ul className="qb-opts">
@@ -228,8 +238,16 @@ function BankQuestionEditor({ initial, courseId, topics, onClose, onSaved }: {
   const save = async () => {
     setSaving(true);
     try {
+      const typed = f.questionType === 'FILL_BLANK' || f.questionType === 'NUMERIC';
+      const accepted = f.correct.map(c => c.trim()).filter(Boolean);
+      if (typed && !accepted.length) { toast.error(f.questionType === 'NUMERIC' ? 'Enter the correct number' : 'Enter at least one accepted answer'); return; }
+      const tolerance = f.questionType === 'NUMERIC' && f.tolerance.trim() !== '' ? Number(f.tolerance) : null;
+      if (tolerance !== null && (isNaN(tolerance) || tolerance < 0)) { toast.error('Tolerance must be 0 or more'); return; }
       const image = file ? await uploadQuestionImage(file) : f.image;
-      const payload = {
+      const payload = typed ? {
+        topic: f.topic, difficulty: f.difficulty, questionType: f.questionType, content: f.content, image,
+        correctAnswer: f.questionType === 'NUMERIC' ? [accepted[0]] : accepted, tolerance,
+      } : {
         topic: f.topic, difficulty: f.difficulty, questionType: f.questionType, content: f.content, image,
         option1: options[0], option2: options[1], option3: options[2] ?? '', option4: options[3] ?? '',
         correctAnswer: f.correct.filter(c => options.includes(c)),
@@ -282,7 +300,33 @@ function BankQuestionEditor({ initial, courseId, topics, onClose, onSaved }: {
           <QuestionImageField file={file} onFileChange={setFile} existing={f.image} onRemoveExisting={() => set('image', null)} />
         </div>
 
-        {f.questionType === 'MATCHING' ? (
+        {f.questionType === 'FILL_BLANK' ? (
+          <>
+            <div className="qbe-label">Accepted answers (case, extra spaces and a final full stop are ignored)</div>
+            {(f.correct.length ? f.correct : ['']).map((a, i, arr) => (
+              <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                <input aria-label={`Accepted answer ${i + 1}`} className="qb-input" value={a} placeholder={i === 0 ? 'e.g. photosynthesis' : 'Another spelling (optional)'}
+                  onChange={e => set('correct', arr.map((x, j) => j === i ? e.target.value : x))} />
+                <button className="qb-icon qb-icon-danger" aria-label="Remove answer" disabled={arr.length <= 1}
+                  onClick={() => set('correct', arr.filter((_, j) => j !== i))}><X size={13} /></button>
+              </div>
+            ))}
+            <button className="qbe-link" onClick={() => set('correct', [...(f.correct.length ? f.correct : ['']), ''])}><Plus size={13} /> Add accepted answer</button>
+          </>
+        ) : f.questionType === 'NUMERIC' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label className="qbe-label" htmlFor="qbe-num">Correct answer</label>
+              <input id="qbe-num" className="qb-input" inputMode="decimal" value={f.correct[0] ?? ''} placeholder="e.g. 36"
+                onChange={e => set('correct', [e.target.value])} />
+            </div>
+            <div>
+              <label className="qbe-label" htmlFor="qbe-tol">Tolerance (±)</label>
+              <input id="qbe-tol" className="qb-input" inputMode="decimal" value={f.tolerance} placeholder="0 = exact"
+                onChange={e => set('tolerance', e.target.value)} />
+            </div>
+          </div>
+        ) : f.questionType === 'MATCHING' ? (
           <>
             <div className="qbe-label">Pairs (left → correct right)</div>
             {f.pairs.map((p, i) => (

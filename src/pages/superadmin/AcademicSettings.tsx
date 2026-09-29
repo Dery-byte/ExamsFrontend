@@ -8,6 +8,7 @@ import {
   createSession, deleteSession, getGradingPreset, getGradingSettings, getSessions, makeSessionCurrent,
   recalculateGrades, saveGradingSettings, saveGradingPreset, deleteGradingPreset,
 } from '../../api/endpoints';
+import { getMode, isSchoolMode, tx } from '../../utils/terms';
 
 type Band = { letter: string; minScore: string; gradePoint: string; remark: string; passing: boolean };
 type Klass = { name: string; minCgpa: string };
@@ -68,7 +69,7 @@ function SessionsCard() {
   };
 
   const setCurrent = async (s: any) => {
-    const ok = await Swal.fire({ title: `Make ${s.name} current?`, text: 'New marks sheets and course enrolments will go into this session.', icon: 'question', showCancelButton: true, confirmButtonText: 'Make current', confirmButtonColor: '#5156be' });
+    const ok = await Swal.fire({ title: `Make ${s.name} current?`, text: tx('New marks sheets and course enrolments will go into this session.'), icon: 'question', showCancelButton: true, confirmButtonText: 'Make current', confirmButtonColor: '#5156be' });
     if (!ok.isConfirmed) return;
     try { await makeSessionCurrent(s.id); toast.success(`${s.name} is now the current session`); refresh(); }
     catch (e: any) { toast.error(e?.response?.data?.message ?? 'Could not change the session'); }
@@ -156,7 +157,14 @@ function GradingCard() {
   };
 
   const allPresets: any[] = data?.presets ?? [];
-  const builtIn = allPresets.filter(p => p.builtIn);
+  // Only the presets that fit the system mode (saved presets always show)
+  const SCHOOL_PRESETS: Record<string, string[]> = {
+    SHS: ['GH_SHS'], BASIC: ['GH_PRIMARY', 'GH_JHS'], ALL_SCHOOLS: ['GH_PRIMARY', 'GH_JHS', 'GH_SHS'],
+  };
+  const allSchoolKeys = SCHOOL_PRESETS.ALL_SCHOOLS;
+  const builtIn = allPresets.filter(p => p.builtIn && (isSchoolMode()
+    ? (SCHOOL_PRESETS[getMode()] ?? []).includes(p.key)
+    : !allSchoolKeys.includes(p.key)));
   const custom = allPresets.filter(p => !p.builtIn);
   const selectedPreset = allPresets.find(p => p.key === preset);
 
@@ -237,7 +245,8 @@ function GradingCard() {
     <section className="as-card">
       <div className="as-head">
         <Scale size={18} color="#5156be" />
-        <div><h2>Grading scale, classes & promotion</h2><p>Used for every course grade, GPA, CGPA, transcript and promotion decision.</p></div>
+        <div><h2>{isSchoolMode() ? 'Grading scale & promotion' : 'Grading scale, classes & promotion'}</h2>
+          <p>{isSchoolMode() ? tx('Used for every subject grade on terminal reports and for promotion.') : tx("Used for every course grade, GPA, CGPA, transcript and promotion decision.")}</p></div>
       </div>
       <div className="as-body">
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
@@ -286,6 +295,7 @@ function GradingCard() {
           </div>
 
           <div>
+            {!isSchoolMode() && <>
             <div className="as-label"><GraduationCap size={12} /> Class of degree (by CGPA) — optional</div>
             {classes.length === 0 && <p className="as-note">No classes: transcripts won't show a class. Typical for primary, JHS and SHS.</p>}
             <table className="as-table">
@@ -303,18 +313,19 @@ function GradingCard() {
             <button className="as-ghost" style={{ marginTop: 8 }} onClick={() => setClasses(cs => [...cs, { name: '', minCgpa: '' }])}><Plus size={13} /> Add class</button>
 
             <div style={{ marginTop: 18 }}>
-              <label className="as-label" htmlFor="as-credits">Default credit units (courses without their own)</label>
+              <label className="as-label" htmlFor="as-credits">{tx("Default credit units (courses without their own)")}</label>
               <input id="as-credits" type="number" min={0} max={30} className="as-input" style={{ maxWidth: 120 }} value={credits} onChange={e => setCredits(e.target.value)} />
             </div>
+            </>}
 
             <div style={{ marginTop: 18 }}>
-              <div className="as-label">Promotion rules (moving students up a level)</div>
-              <p className="as-note">Leave blank for no rule. Students who break a rule are held back by bulk promotion; only the Super Admin can override for one student.</p>
+              <div className="as-label">{tx("Promotion rules (moving students up a level)")}</div>
+              <p className="as-note">{tx("Leave blank for no rule. Students who break a rule are held back by bulk promotion; only the Super Admin can override for one student.")}</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div><label className="as-label" htmlFor="as-maxc">Max outstanding carry-overs</label>
+                <div><label className="as-label" htmlFor="as-maxc">{isSchoolMode() ? tx('Max failed courses') : 'Max outstanding carry-overs'}</label>
                   <input id="as-maxc" type="number" min={0} className="as-input" placeholder="No limit" value={maxCarry} onChange={e => setMaxCarry(e.target.value)} /></div>
-                <div><label className="as-label" htmlFor="as-minc">Minimum CGPA</label>
-                  <input id="as-minc" type="number" step="0.01" min={0} className="as-input" placeholder="No minimum" value={minCgpa} onChange={e => setMinCgpa(e.target.value)} /></div>
+                {!isSchoolMode() && <div><label className="as-label" htmlFor="as-minc">Minimum CGPA</label>
+                  <input id="as-minc" type="number" step="0.01" min={0} className="as-input" placeholder="No minimum" value={minCgpa} onChange={e => setMinCgpa(e.target.value)} /></div>}
               </div>
             </div>
           </div>

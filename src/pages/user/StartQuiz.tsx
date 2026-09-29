@@ -410,6 +410,19 @@ export default function StartQuiz() {
     setSelectedPfx(prev => ({ ...prev, [p]: !sel }));
   };
 
+  // Typed answers (fill in the blank / numeric): update at once, save 1 s after typing stops
+  const typedSaveTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const saveTypedAnswer = (quesId: number, value: string) => {
+    if (typedSaveTimers.current[quesId]) clearTimeout(typedSaveTimers.current[quesId]);
+    delete typedSaveTimers.current[quesId];
+    updateQuizAnswer({ questionId: quesId, option: value, checked: true, replace: true, quizId: parseInt(realId) }).catch(() => { });
+  };
+  const setTypedAnswer = (q: any, value: string) => {
+    setQuestions(prev => prev.map(pq => pq.quesId === q.quesId ? { ...pq, givenAnswer: value.trim() ? [value] : [] } : pq));
+    if (typedSaveTimers.current[q.quesId]) clearTimeout(typedSaveTimers.current[q.quesId]);
+    typedSaveTimers.current[q.quesId] = setTimeout(() => saveTypedAnswer(q.quesId, value), 1000);
+  };
+
   const setMCQAnswer = (q: any, option: string, checked: boolean) => {
     const ans = [...(q.givenAnswer ?? [])];
     if (checked && !ans.includes(option)) ans.push(option);
@@ -775,6 +788,25 @@ export default function StartQuiz() {
                               <div key={i} draggable onDragStart={e => e.dataTransfer.setData('text', ans)} style={{ padding: '5px 12px', background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 4, fontSize: 12, cursor: 'grab' }}>{ans}</div>
                             ))}
                           </div>
+                        </div>
+                      ) : (q.questionType === 'FILL_BLANK' || q.questionType === 'NUMERIC') ? (
+                        <div>
+                          <label htmlFor={`typed-${q.quesId}`} style={{ display: 'block', fontSize: 12, fontWeight: 700, color: theme.muted, marginBottom: 6 }}>
+                            {q.questionType === 'NUMERIC' ? 'Type your answer as a number' : 'Type your answer'}
+                          </label>
+                          <input
+                            id={`typed-${q.quesId}`}
+                            type="text"
+                            inputMode={q.questionType === 'NUMERIC' ? 'decimal' : 'text'}
+                            autoComplete="off"
+                            spellCheck={false}
+                            value={q.givenAnswer?.[0] ?? ''}
+                            onChange={e => setTypedAnswer(q, e.target.value)}
+                            onBlur={e => saveTypedAnswer(q.quesId, e.target.value)}
+                            placeholder={q.questionType === 'NUMERIC' ? 'e.g. 42.5' : 'Your answer'}
+                            style={{ width: '100%', maxWidth: 420, boxSizing: 'border-box', padding: '11px 14px', fontSize: 15, borderRadius: 6,
+                              border: `1.5px solid ${(q.givenAnswer?.[0] ?? '') ? '#7a6fbe' : theme.border}`, background: theme.card, color: theme.title, outline: 'none' }}
+                          />
                         </div>
                       ) : (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

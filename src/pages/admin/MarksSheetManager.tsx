@@ -6,8 +6,9 @@ import { toast } from 'react-hot-toast';
 import {
   BookOpen, Users, ChevronDown, ChevronUp, Eye, CheckCircle,
   Globe, RotateCcw, UserPlus, PlusCircle, Trash2, X, Award,
-  ClipboardCheck, AlertCircle, Loader2, CheckSquare, TrendingUp
+  ClipboardCheck, AlertCircle, Loader2, CheckSquare, TrendingUp, CalendarClock
 } from 'lucide-react';
+import { defaultLevels, periodName, periodsPerLevel, tx } from '../../utils/terms';
 
 /* ═══════════════════════════════════════════════════════════════════
    STATUS HELPERS
@@ -106,7 +107,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
               Marks Review — {sheet.courseName || 'Sheet'}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
-              {sheet.sessionName ? <>{sheet.sessionName} &bull; </> : null}Level {sheet.level} &bull; Sem {sheet.semester} &bull; {sheet.programName}
+              {sheet.sessionName ? <>{sheet.sessionName} &bull; </> : null}{tx("Level ")}{sheet.level} &bull; Sem {sheet.semester} &bull; {sheet.programName}
             </div>
           </div>
         </div>
@@ -197,15 +198,15 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
         ) : studentMarks.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
             <Users size={48} color="#cbd5e1" />
-            <p style={{ color: '#94a3b8', fontSize: 14 }}>No student marks recorded yet.</p>
+            <p style={{ color: '#94a3b8', fontSize: 14 }}>{tx("No student marks recorded yet.")}</p>
           </div>
         ) : (
           <div style={{ padding: '24px' }}>
             {/* Summary cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
               {[
-                { icon: <Users size={18} color="#3b82f6" />, label: 'Students', value: studentMarks.length, bg: '#eff6ff' },
-                { icon: <BookOpen size={18} color="#7c3aed" />, label: 'Courses', value: courseList.length, bg: '#f5f3ff' },
+                { icon: <Users size={18} color="#3b82f6" />, label: tx('Students'), value: studentMarks.length, bg: '#eff6ff' },
+                { icon: <BookOpen size={18} color="#7c3aed" />, label: tx('Courses'), value: courseList.length, bg: '#f5f3ff' },
                 { icon: <Award size={18} color="#10b981" />, label: 'Sections', value: sections.length, bg: '#f0fdf4' },
                 { icon: <TrendingUp size={18} color="#f59e0b" />, label: 'Status', value: STATUS_CONFIG[sheet.status]?.label || sheet.status, bg: '#fffbeb' },
               ].map((card, i) => (
@@ -229,8 +230,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
                     {/* Course headers (spanning sections) */}
                     <tr style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
                       <th style={{ padding: '14px 18px', textAlign: 'left', color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', minWidth: 180, position: 'sticky', left: 0, background: '#1e1b4b', zIndex: 2 }}>
-                        Student
-                      </th>
+                        {tx("Student")}</th>
                       {courseList.map(course => (
                         <th key={course.id} colSpan={sections.length + 1} style={{ padding: '14px 10px', textAlign: 'center', color: '#fff', fontSize: 12, fontWeight: 800, borderLeft: '1px solid rgba(255,255,255,0.1)', minWidth: (sections.length + 1) * 90 }}>
                           <div>{course.code}</div>
@@ -358,10 +358,34 @@ interface SheetCardProps {
   onViewMarks: (sheet: any) => void;
   onEdit: (sheet: any) => void;
   onDelete: (sheetId: number) => void;
+  onSchedule: (sheetId: number, publishAt: string | null) => Promise<void>;
 }
 
-function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDelete }: SheetCardProps) {
+/** yyyy-MM-ddTHH:mm in local time, for <input type="datetime-local"> */
+function toLocalInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDelete, onSchedule }: SheetCardProps) {
   const isLoading = (act: string) => actionLoading === `${act}-${sheet.id}`;
+  const [scheduling, setScheduling] = useState(false);
+  const [when, setWhen] = useState('');
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const scheduledFor = sheet.status === 'APPROVED' && sheet.publishAt ? new Date(sheet.publishAt) : null;
+
+  const saveSchedule = async (value: string | null) => {
+    if (value !== null) {
+      const d = new Date(value);
+      if (!value || isNaN(d.getTime())) { toast.error('Pick a date and time'); return; }
+      if (d.getTime() <= Date.now()) { toast.error('Pick a time in the future'); return; }
+      value = d.toISOString();
+    }
+    setSavingSchedule(true);
+    try { await onSchedule(sheet.id, value); setScheduling(false); }
+    catch { /* toast already shown */ }
+    finally { setSavingSchedule(false); }
+  };
 
   const canApprove  = sheet.status === 'SUBMITTED';
   const canPublish  = sheet.status === 'APPROVED';
@@ -404,8 +428,7 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569' }}>
             <Users size={14} color="#5156be" />
-            <strong style={{ color: '#1e293b' }}>{sheet.enrolledStudentCount ?? 0}</strong> students
-          </div>
+            <strong style={{ color: '#1e293b' }}>{sheet.enrolledStudentCount ?? 0}</strong> {tx("students")}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569' }}>
             <Award size={14} color="#5156be" />
             <span>Teacher: <strong style={{ color: '#1e293b' }}>{sheet.classTeacherName || 'Not Assigned'}</strong></span>
@@ -502,6 +525,21 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
             </button>
           )}
 
+          {/* Schedule release — APPROVED sheets can publish themselves later */}
+          {canPublish && !scheduledFor && !scheduling && (
+            <button
+              onClick={() => { setWhen(toLocalInput(new Date(Date.now() + 24 * 3600_000))); setScheduling(true); }}
+              disabled={!!actionLoading}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px',
+                border: '1.5px solid #c4b5fd', borderRadius: 8, background: '#f5f3ff', color: '#5b21b6',
+                fontWeight: 700, fontSize: 12, cursor: actionLoading ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <CalendarClock size={13} /> Schedule release
+            </button>
+          )}
+
           {/* Disabled Publish hint when not yet approved */}
           {sheet.status === 'SUBMITTED' && (
             <button disabled title="Approve the sheet first before publishing" style={{
@@ -513,11 +551,44 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
             </button>
           )}
 
+          {(scheduling || scheduledFor) && (
+            <div style={{
+              flexBasis: '100%', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+              padding: '10px 12px', borderRadius: 10, background: '#f5f3ff', border: '1px solid #ddd6fe', fontSize: 12.5, color: '#4c1d95'
+            }}>
+              <CalendarClock size={15} />
+              {scheduledFor && !scheduling ? (
+                <>
+                  <span>Results release automatically on <strong>{scheduledFor.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</strong></span>
+                  <button onClick={() => { setWhen(toLocalInput(scheduledFor)); setScheduling(true); }} disabled={savingSchedule}
+                    style={{ border: 'none', background: 'none', color: '#5b21b6', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>Change</button>
+                  <button onClick={() => saveSchedule(null)} disabled={savingSchedule}
+                    style={{ border: 'none', background: 'none', color: '#b91c1c', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
+                    {savingSchedule ? 'Cancelling…' : 'Cancel schedule'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <label htmlFor={`release-${sheet.id}`}>Release on</label>
+                  <input id={`release-${sheet.id}`} type="datetime-local" value={when} min={toLocalInput(new Date())}
+                    onChange={e => setWhen(e.target.value)}
+                    style={{ height: 32, border: '1.5px solid #c4b5fd', borderRadius: 7, padding: '0 8px', fontSize: 12.5, color: '#1e293b' }} />
+                  <button onClick={() => saveSchedule(when)} disabled={savingSchedule}
+                    style={{ height: 32, padding: '0 12px', border: 'none', borderRadius: 7, background: '#6d28d9', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {savingSchedule && <Loader2 size={12} style={{ animation: 'rSpin 1s linear infinite' }} />} Save
+                  </button>
+                  <button onClick={() => setScheduling(false)} disabled={savingSchedule}
+                    style={{ border: 'none', background: 'none', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: 12 }}>Cancel</button>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Revert */}
           {canRevert && (
             <button
               onClick={() => {
-                if (window.confirm('Revert this sheet to the lecturer for corrections?')) onAction('revert', sheet.id);
+                if (window.confirm(tx('Revert this sheet to the lecturer for corrections?'))) onAction('revert', sheet.id);
               }}
               disabled={!!actionLoading}
               style={{
@@ -628,7 +699,7 @@ const MarksSheetManager = () => {
 
   const handleActivateSheet = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCourseId) { toast.error('Please select a course.'); return; }
+    if (!selectedCourseId) { toast.error(tx('Please select a course.')); return; }
     
     // Validate total is 100
     const totalScore = sections.reduce((sum, sec) => sum + (Number(sec.maxScore) || 0), 0);
@@ -667,7 +738,7 @@ const MarksSheetManager = () => {
     setEditingSheetId(sheet.id);
     setProgramId(sheet.programId.toString());
     const p = programs.find((p: any) => p.id === sheet.programId) as any;
-    setAvailableLevels(p?.configuredLevels || [100, 200, 300, 400] as any);
+    setAvailableLevels(p?.configuredLevels || defaultLevels() as any);
     setLevel(sheet.level.toString());
     setSemester(sheet.semester.toString());
     setClassTeacherId(sheet.classTeacherId ? sheet.classTeacherId.toString() : '');
@@ -700,6 +771,22 @@ const MarksSheetManager = () => {
     }
   };
 
+  const handleSchedule = useCallback(async (sheetId: number, publishAt: string | null) => {
+    try {
+      if (publishAt) {
+        await client.post(`${marksBase}/marks/sheet/${sheetId}/schedule-publish`, { publishAt });
+        toast.success(tx('Release scheduled. Students will be notified when it goes out.'));
+      } else {
+        await client.delete(`${marksBase}/marks/sheet/${sheetId}/schedule-publish`);
+        toast.success('Scheduled release cancelled');
+      }
+      fetchSheets();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Could not update the release schedule.');
+      throw error;
+    }
+  }, [marksBase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleAction = useCallback(async (action: string, sheetId: number) => {
     const key = `${action}-${sheetId}`;
     setActionLoading(key);
@@ -709,7 +796,7 @@ const MarksSheetManager = () => {
       if (action === 'revert')   await client.post(`${marksBase}/marks/sheet/${sheetId}/revert`);
       if (action === 'enroll') {
         const res = await client.post(`${marksBase}/marks/sheet/${sheetId}/enroll-students`);
-        toast.success(`Enrolled ${res.data.enrolled} students!`);
+        toast.success(tx(`Enrolled ${res.data.enrolled} students!`));
         fetchSheets(); return;
       }
       const msgs: Record<string, string> = { approve: 'Sheet approved!', publish: 'Sheet published!', revert: 'Sheet reverted to lecturer.' };
@@ -749,7 +836,7 @@ const MarksSheetManager = () => {
             </div>
             <div>
               <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#0f172a' }}>Marks Sheet Manager</h1>
-              <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Review, approve and publish semester mark sheets</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>{tx("Review, approve and publish semester mark sheets")}</p>
             </div>
           </div>
         </div>
@@ -792,7 +879,7 @@ const MarksSheetManager = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <PlusCircle size={18} color="#5156be" />
               <h3 style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: 16 }}>
-                {editingSheetId ? 'Edit Semester Sheet' : 'Activate New Semester Sheet'}
+                {editingSheetId ? tx('Edit Semester Sheet') : tx('Activate New Semester Sheet')}
               </h3>
             </div>
             {editingSheetId && (
@@ -809,30 +896,29 @@ const MarksSheetManager = () => {
               {/* Row 1: Program / Level / Semester */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20 }}>
                 <div>
-                  <label style={labelStyle}>Program</label>
+                  <label style={labelStyle}>{tx("Program")}</label>
                   <select style={inputStyle} value={programId} onChange={e => {
                     setProgramId(e.target.value);
                     const p = programs.find((p: any) => p.id === Number(e.target.value)) as any;
-                    setAvailableLevels(p?.configuredLevels || [100, 200, 300, 400] as any);
+                    setAvailableLevels(p?.configuredLevels || defaultLevels() as any);
                     setLevel(''); setSemester('');
                   }} required>
-                    <option value="">Select Program</option>
+                    <option value="">{tx("Select Program")}</option>
                     {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Level</label>
+                  <label style={labelStyle}>{tx("Level")}</label>
                   <select style={inputStyle} value={level} onChange={e => { setLevel(e.target.value); setSemester(''); }} required>
-                    <option value="">Select Level</option>
+                    <option value="">{tx("Select Level")}</option>
                     {availableLevels.map((lv: number) => <option key={lv} value={lv}>{lv}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Semester</label>
+                  <label style={labelStyle}>{tx("Semester")}</label>
                   <select style={inputStyle} value={semester} onChange={e => setSemester(e.target.value)} required>
-                    <option value="">Select Semester</option>
-                    <option value="1">1st Semester</option>
-                    <option value="2">2nd Semester</option>
+                    <option value="">{tx("Select Semester")}</option>
+                    {Array.from({ length: periodsPerLevel() }, (_, i) => i + 1).map(n => <option key={n} value={n}>{periodName(n)}</option>)}
                   </select>
                 </div>
               </div>
@@ -841,8 +927,7 @@ const MarksSheetManager = () => {
               {availableCourses.length > 0 && (
                 <div style={{ marginBottom: 20, padding: '18px 20px', background: '#f8faff', borderRadius: 12, border: '1.5px solid #dbeafe' }}>
                   <label style={{ ...labelStyle, color: '#1d4ed8', marginBottom: 12 }}>
-                    Select Course for this Sheet
-                  </label>
+                    {tx("Select Course for this Sheet")}</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
                     {availableCourses.map((c: any) => (
                       <label key={c.cid} style={{
@@ -872,8 +957,7 @@ const MarksSheetManager = () => {
               )}
               {programId && level && semester && availableCourses.length === 0 && (
                 <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fffbeb', border: '1px solid #fbbf24', borderRadius: 10, color: '#92400e', fontSize: 13 }}>
-                  ⚠️ No courses found for this combination. Please add courses first.
-                </div>
+                  {tx("⚠️ No courses found for this combination. Please add courses first.")}</div>
               )}
 
               {/* Class teacher + restrict */}
@@ -886,14 +970,13 @@ const MarksSheetManager = () => {
                   </select>
                   {selectedCourseId && defaultClassTeacherId && classTeacherId && classTeacherId !== defaultClassTeacherId && (
                     <div style={{ marginTop: 8, padding: '10px 14px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 8, color: '#be123c', fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>
-                      ⚠️ <strong>Warning:</strong> You have selected a different lecturer than the one assigned to this course. This sheet will be managed by the selected Class Teacher.
-                    </div>
+                      ⚠️ <strong>Warning:</strong> {tx("You have selected a different lecturer than the one assigned to this course. This sheet will be managed by the selected Class Teacher.")}</div>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', marginTop: 26 }}>
                   <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
                     <input type="checkbox" checked={restrictLecturer} onChange={e => setRestrictLecturer(e.target.checked)} style={{ width: 18, height: 18, marginTop: 2 }} />
-                    <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.5 }}>Restrict lecturers to only enter marks for their assigned courses</span>
+                    <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.5 }}>{tx("Restrict lecturers to only enter marks for their assigned courses")}</span>
                   </label>
                 </div>
               </div>
@@ -964,6 +1047,7 @@ const MarksSheetManager = () => {
               onViewMarks={s => setViewingSheet(s)}
               onEdit={handleEditSheet}
               onDelete={handleDeleteSheet}
+              onSchedule={handleSchedule}
             />
           ))}
         </div>

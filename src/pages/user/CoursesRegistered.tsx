@@ -5,6 +5,7 @@ import { getRegCourses, deleteRegCourse } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import PageHeader from '../../components/PageHeader';
 import { Search, Loader2, BookOpen, Trash2, ChevronRight, Filter, Download, Activity } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function CoursesRegistered() {
   const { user } = useAuth();
@@ -40,12 +41,12 @@ export default function CoursesRegistered() {
 
   const deleteRegCourseById = (rid: number, courseTitle: string) => {
     Swal.fire({
-      title: 'Course Disenrollment',
+      title: tx('Course Disenrollment'),
       html: `Are you sure you want to drop <b>${courseTitle}</b>?<br/><br/>This action will remove the module from your current session curriculum.`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Yes, Drop Course',
-      cancelButtonText: 'Keep Course',
+      confirmButtonText: tx('Yes, Drop Course'),
+      cancelButtonText: tx('Keep Course'),
       confirmButtonColor: 'var(--danger)',
       cancelButtonColor: 'var(--gray-400)',
       reverseButtons: true,
@@ -58,7 +59,7 @@ export default function CoursesRegistered() {
         setUserRecords(ur => ur.filter(c => c.rid !== rid));
         Swal.fire({
           title: 'Removed!',
-          text: 'The course has been successfully removed from your registration.',
+          text: tx('The course has been successfully removed from your registration.'),
           icon: 'success',
           confirmButtonColor: 'var(--primary)',
           customClass: { popup: 'swal2-premium-popup' }
@@ -79,7 +80,7 @@ export default function CoursesRegistered() {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
-      <PageHeader title="My Courses" breadcrumbs={['Lexa', 'Portal', 'My Courses']} />
+      <PageHeader title={tx("My Courses")} breadcrumbs={['Lexa', 'Portal', tx('My Courses')]} />
 
       <div className="lexa-card">
         <div className="lexa-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 15 }}>
@@ -124,9 +125,9 @@ export default function CoursesRegistered() {
                 <BookOpen size={45} />
               </div>
               <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>Empty Curriculum</h4>
-              <p style={{ color: '#74788d', fontSize: 15, maxWidth: 450, margin: '0 auto 30px', lineHeight: 1.6 }}>You haven't enrolled in any academic modules for the current session. Start by browsing the course catalog to build your schedule.</p>
+              <p style={{ color: '#74788d', fontSize: 15, maxWidth: 450, margin: '0 auto 30px', lineHeight: 1.6 }}>{tx("You haven't enrolled in any academic modules for the current session. Start by browsing the course catalog to build your schedule.")}</p>
               <button onClick={() => navigate('/user-dashboard/register')} className="btn-lexa btn-lexa-primary" style={{ borderRadius: 8, padding: '12px 30px' }}>
-                Explore Course Catalog <ChevronRight size={18} />
+                {tx("Explore Course Catalog ")}<ChevronRight size={18} />
               </button>
             </div>
           ) : (
@@ -135,8 +136,8 @@ export default function CoursesRegistered() {
                 <thead style={{ background: '#fcfdfe' }}>
                   <tr>
                     <th style={{ paddingLeft: 24, width: 80, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</th>
-                    <th style={{ width: 150, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Code</th>
-                    <th style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Course Name</th>
+                    <th style={{ width: 150, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tx("Course Code")}</th>
+                    <th style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tx("Course Name")}</th>
                     <th style={{ paddingRight: 24, textAlign: 'right', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                   </tr>
                 </thead>
@@ -152,7 +153,7 @@ export default function CoursesRegistered() {
                       <td>
                         <div style={{ fontWeight: 800, color: '#2a3142', fontSize: 15, marginBottom: 2 }}>{course.category?.title}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#adb5bd', fontWeight: 600 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Activity size={12} className="text-info" /> {course.category?.level} Level</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Activity size={12} className="text-info" /> {course.category?.level} {tx("Level")}</span>
                           <span style={{ color: '#e1e9f1' }}>|</span>
                           <span>Verified Registration</span>
                         </div>
@@ -163,7 +164,7 @@ export default function CoursesRegistered() {
                           style={{ width: 36, height: 36, padding: 0, borderRadius: 8 }}
                           disabled={isDeleting}
                           onClick={() => deleteRegCourseById(course.rid, course.category?.title)}
-                          title="Drop Course"
+                          title={tx("Drop Course")}
                         >
                           {isDeleting ? <Loader2 className="spin-ico" size={16} /> : <Trash2 size={16} />}
                         </button>

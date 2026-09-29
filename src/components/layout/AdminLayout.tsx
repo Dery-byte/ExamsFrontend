@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useInstitution } from '../../hooks/useInstitution';
+import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { 
@@ -27,11 +29,14 @@ import {
   MessageSquareWarning,
   FileText,
   DatabaseZap,
-  ToggleRight
+  ToggleRight,
+  ClipboardPen
 } from 'lucide-react';
+import { tx } from '../../utils/terms';
 
 export default function AdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
+  const { term } = useInstitution();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -63,22 +68,23 @@ export default function AdminLayout() {
     { 
       label: 'Academic Registry', 
       items: [
-        { to: '/admin/courses', icon: <BookOpen size={20} />, label: 'Courses' },
-        { to: '/admin/add-course', icon: <PlusCircle size={20} />, label: 'Add Course' },
+        { to: '/admin/courses', icon: <BookOpen size={20} />, label: tx('Courses') },
+        { to: '/admin/add-course', icon: <PlusCircle size={20} />, label: tx('Add Course') },
         { to: '/admin/quizzes', icon: <ClipboardList size={20} />, label: 'Quizzes' },
         { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
         ...(on('QUESTION_BANK') ? [{ to: '/admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' }] : []),
         { to: '/admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
         ...(marksSheetAdmin ? [{ to: '/admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' }] : []),
+        ...(marksSheetAdmin && isSchoolMode() ? [{ to: '/admin/term-remarks', icon: <ClipboardPen size={20} />, label: 'Report Remarks' }] : []),
       ]
     },
     { 
       label: 'User Management', 
       items: [
-        { to: '/admin/students', icon: <GraduationCap size={20} />, label: 'Student Directory' },
-        { to: '/admin/enroll-student', icon: <BookMarked size={20} />, label: 'Enroll Student' },
-        { to: '/admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' },
-        { to: '/admin/lecturers', icon: <Users size={20} />, label: 'Faculty Directory' },
+        { to: '/admin/students', icon: <GraduationCap size={20} />, label: tx('Student Directory') },
+        { to: '/admin/enroll-student', icon: <BookMarked size={20} />, label: tx('Enroll Student') },
+        ...(!isSchoolMode() ? [{ to: '/admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' }] : []),
+        { to: '/admin/lecturers', icon: <Users size={20} />, label: tx('Faculty Directory') },
         ...(on('HOD_DATA_TOOLS') ? [{ to: '/admin/data-tools', icon: <DatabaseZap size={20} />, label: 'Data Tools' }] : []),
       ]
     },
@@ -112,7 +118,7 @@ export default function AdminLayout() {
         <nav className="lexa-sidebar-nav">
           {navItems.map((section, idx) => (
             <div key={idx} className="lexa-nav-section">
-              <h6 className="lexa-nav-label">{section.label}</h6>
+              <h6 className="lexa-nav-label">{term(section.label)}</h6>
               <div className="lexa-nav-group">
                 {section.items.map((item, i) => (
                   <NavLink 
@@ -122,7 +128,7 @@ export default function AdminLayout() {
                     className={({ isActive }) => `lexa-nav-link ${isActive ? 'active' : ''}`}
                   >
                     <span className="lexa-nav-icon">{item.icon}</span>
-                    <span className="lexa-nav-text">{item.label}</span>
+                    <span className="lexa-nav-text">{term(item.label)}</span>
                     <ChevronRight size={14} className="lexa-nav-arrow" />
                   </NavLink>
                 ))}
