@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  GraduationCap
+  GraduationCap,
+  Hash
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -55,7 +56,7 @@ export default function Login() {
   const [apiErr, setApiErr] = useState('');
   const [success, setSuccess] = useState(false);
   const [successIdentifier, setSuccessIdentifier] = useState('');
-  const [quizSummary, setQuizSummary] = useState<{ title?: string; programNames?: string[] } | null>(null);
+  const [quizSummary, setQuizSummary] = useState<{ title?: string; programNames?: string[]; indexRangeStart?: string | null; indexRangeEnd?: string | null } | null>(null);
 
   useEffect(() => {
     if (!fromState.quizLink || !fromState.qid) return;
@@ -309,6 +310,12 @@ export default function Login() {
                   <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 500, opacity: 0.9 }}>
                     <GraduationCap size={13} style={{ flexShrink: 0 }} />
                     <span>This quiz is for {joinWithAnd(quizSummary.programNames)} {tx("students.")}</span>
+                  </div>
+                )}
+                {quizSummary?.indexRangeStart && quizSummary?.indexRangeEnd && (
+                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 500, opacity: 0.9 }}>
+                    <Hash size={13} style={{ flexShrink: 0 }} />
+                    <span>Only index numbers {quizSummary.indexRangeStart} to {quizSummary.indexRangeEnd}.</span>
                   </div>
                 )}
               </div>

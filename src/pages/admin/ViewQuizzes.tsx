@@ -6,6 +6,7 @@ import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuiz
 import { useAuth } from '../../contexts/AuthContext';
 import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
 import AttemptsField from '../../components/ui/AttemptsField';
+import IndexRangeField, { indexRangeError } from '../../components/ui/IndexRangeField';
 import AutoOpenField from '../../components/ui/AutoOpenField';
 import AutoCloseField from '../../components/ui/AutoCloseField';
 import Swal from 'sweetalert2';
@@ -37,7 +38,13 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
     getQuiz(qId).then(data => {
       if (data) {
         if (!data.category) data.category = { cid: '' };
-        setQuiz({ ...data, programIds: (data.programs ?? []).map((p: any) => p.id) });
+        setQuiz({
+          ...data,
+          programIds: (data.programs ?? []).map((p: any) => p.id),
+          // "" rather than null, so clearing the range reaches the server (null there means "no change")
+          indexRangeStart: data.indexRangeStart ?? '',
+          indexRangeEnd: data.indexRangeEnd ?? '',
+        });
       } else {
         onClose();
       }
@@ -84,6 +91,8 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
   const save = async () => {
     if (!quiz.quizType)    { toast.error('Please select a quiz type'); return; }
     if (!quiz.category?.cid) { toast.error(tx('Please select a course category')); return; }
+    const rangeError = indexRangeError(quiz.indexRangeStart, quiz.indexRangeEnd);
+    if (rangeError) { toast.error(rangeError); return; }
     setSaving(true);
     try {
       const payload = {
@@ -169,6 +178,11 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                     onChange={ids => set('programIds', ids)}
                     showDepartment={isSuperAdmin}
                     emptyText={isSuperAdmin ? tx('No programs available.') : tx('No programs available for your department.')}
+                  />
+                  <IndexRangeField
+                    start={quiz.indexRangeStart}
+                    end={quiz.indexRangeEnd}
+                    onChange={(s, e) => setQuiz((q: any) => ({ ...q, indexRangeStart: s, indexRangeEnd: e }))}
                   />
                   <div className="aq-field" style={{ marginTop: 16 }}>
                     <label className="aq-label">Instructions &amp; Guidelines</label>

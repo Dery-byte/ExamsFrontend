@@ -12,7 +12,7 @@ import {
 } from '../../api/endpoints';
 import { tx } from '../../utils/terms';
 
-const TYPE_LABEL: Record<string, string> = { MCQ: 'Multiple choice', TRUE_FALSE: 'True / False', MATCHING: 'Matching', FILL_BLANK: 'Fill in the blank', NUMERIC: 'Numeric' };
+const TYPE_LABEL: Record<string, string> = { MCQ: 'Multiple choice', TRUE_FALSE: 'True / False', MATCHING: 'Matching', FILL_BLANK: 'Fill in the blank', NUMERIC: 'Numeric', THEORY: 'Theory (written answer)' };
 const DIFF_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
   EASY: { bg: '#eefbee', fg: '#0b7a0b', label: 'Easy' },
   MEDIUM: { bg: '#fff7e6', fg: '#8a5a00', label: 'Medium' },
@@ -27,10 +27,12 @@ function plainText(html: string) {
 type Form = {
   id?: number; topic: string; difficulty: string; questionType: string; content: string; image: string | null;
   options: string[]; correct: string[]; pairs: { prompt: string; answer: string }[]; tolerance: string;
+  marks: string; markingGuide: string;
 };
 const EMPTY: Form = {
   topic: '', difficulty: 'MEDIUM', questionType: 'MCQ', content: '', image: null,
   options: ['', '', '', ''], correct: [], pairs: [{ prompt: '', answer: '' }, { prompt: '', answer: '' }], tolerance: '',
+  marks: '', markingGuide: '',
 };
 
 /** Per-course question bank: browse, filter, add, edit and delete reusable questions. */
@@ -79,6 +81,7 @@ export default function QuestionBank() {
     correct: q.correctAnswer ?? [],
     pairs: q.matchingPairs?.length ? q.matchingPairs : EMPTY.pairs,
     tolerance: q.tolerance != null ? String(q.tolerance) : '',
+    marks: q.marks != null ? String(q.marks) : '', markingGuide: q.markingGuide ?? '',
   });
 
   return (
@@ -149,7 +152,14 @@ export default function QuestionBank() {
                       </div>
                       <div className="qb-content">{plainText(q.content)}</div>
                       {q.image && <QuestionImage src={q.image} style={{ maxHeight: 120, marginTop: 6 }} />}
-                      {q.questionType === 'FILL_BLANK' || q.questionType === 'NUMERIC' ? (
+                      {q.questionType === 'THEORY' ? (
+                        <div className="qb-theory">
+                          <span className="qb-marks">{q.marks} mark{q.marks === 1 ? '' : 's'}</span>
+                          {q.markingGuide
+                            ? <div><strong>Marking guide:</strong> {plainText(q.markingGuide)}</div>
+                            : <div style={{ color: '#94a3b8' }}>No marking guide</div>}
+                        </div>
+                      ) : q.questionType === 'FILL_BLANK' || q.questionType === 'NUMERIC' ? (
                         <ul className="qb-opts">
                           <li style={{ color: '#0b7a0b', fontWeight: 700 }}>
                             <Check size={12} /> {q.questionType === 'NUMERIC'
@@ -205,6 +215,8 @@ export default function QuestionBank() {
         .qb-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #475569; }
         .qb-content { font-size: 14px; color: #1e293b; line-height: 1.5; overflow-wrap: anywhere; }
         .qb-content p { margin: 0; }
+        .qb-theory { font-size: 12.5px; color: #475569; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+        .qb-marks { align-self: flex-start; background: #eef2ff; color: #4338ca; font-weight: 700; font-size: 11.5px; padding: 2px 8px; border-radius: 6px; }
         .qb-opts { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: #475569; }
         .qb-opts li { margin: 2px 0; }
         .qb-icon { width: 30px; height: 30px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -243,8 +255,14 @@ function BankQuestionEditor({ initial, courseId, topics, onClose, onSaved }: {
       if (typed && !accepted.length) { toast.error(f.questionType === 'NUMERIC' ? 'Enter the correct number' : 'Enter at least one accepted answer'); return; }
       const tolerance = f.questionType === 'NUMERIC' && f.tolerance.trim() !== '' ? Number(f.tolerance) : null;
       if (tolerance !== null && (isNaN(tolerance) || tolerance < 0)) { toast.error('Tolerance must be 0 or more'); return; }
+      const theory = f.questionType === 'THEORY';
+      const marks = Number(f.marks);
+      if (theory && (!f.marks.trim() || isNaN(marks) || marks <= 0)) { toast.error('Give the question its marks (more than 0)'); return; }
       const image = file ? await uploadQuestionImage(file) : f.image;
-      const payload = typed ? {
+      const payload = theory ? {
+        topic: f.topic, difficulty: f.difficulty, questionType: 'THEORY', content: f.content, image,
+        marks, markingGuide: f.markingGuide,
+      } : typed ? {
         topic: f.topic, difficulty: f.difficulty, questionType: f.questionType, content: f.content, image,
         correctAnswer: f.questionType === 'NUMERIC' ? [accepted[0]] : accepted, tolerance,
       } : {
@@ -300,7 +318,24 @@ function BankQuestionEditor({ initial, courseId, topics, onClose, onSaved }: {
           <QuestionImageField file={file} onFileChange={setFile} existing={f.image} onRemoveExisting={() => set('image', null)} />
         </div>
 
-        {f.questionType === 'FILL_BLANK' ? (
+        {f.questionType === 'THEORY' ? (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 10, alignItems: 'start' }}>
+              <div>
+                <label className="qbe-label" htmlFor="qbe-marks">Marks</label>
+                <input id="qbe-marks" className="qb-input" inputMode="decimal" value={f.marks} placeholder="e.g. 10"
+                  onChange={e => set('marks', e.target.value)} />
+              </div>
+              <div>
+                <label className="qbe-label" htmlFor="qbe-guide">Marking guide (optional)</label>
+                <textarea id="qbe-guide" className="qb-input" rows={4} style={{ height: 'auto', padding: 8, resize: 'vertical' }}
+                  value={f.markingGuide} onChange={e => set('markingGuide', e.target.value)}
+                  placeholder="Points a full answer covers and how marks are shared; used by markers and the AI evaluator." />
+              </div>
+            </div>
+            <p className="qbe-note">When drawn into a quiz this goes to Section B (written answers) as the next question number, e.g. Q4.</p>
+          </>
+        ) : f.questionType === 'FILL_BLANK' ? (
           <>
             <div className="qbe-label">Accepted answers (case, extra spaces and a final full stop are ignored)</div>
             {(f.correct.length ? f.correct : ['']).map((a, i, arr) => (
@@ -372,6 +407,7 @@ function BankQuestionEditor({ initial, courseId, topics, onClose, onSaved }: {
         .qbe-modal { width: 100%; max-width: 620px; background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 20px 50px rgba(15,23,42,0.25); }
         .qbe-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .qbe-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin: 4px 0 5px; }
+        .qbe-note { font-size: 12px; color: #64748b; margin: 8px 0 0; }
         .qbe-link { display: inline-flex; align-items: center; gap: 4px; border: none; background: none; color: #5156be; font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 0; }
         .qbe-ghost { height: 36px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer; }
         @media (max-width: 560px) { .qbe-row3 { grid-template-columns: 1fr; } }

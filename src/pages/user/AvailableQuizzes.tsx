@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getRegCourses, getActiveQuizzesOfCategory, getReport } from '../../api/endpoints';
 import { quizInstructionsPath } from '../../utils/quizLink';
 import PageHeader from '../../components/PageHeader';
-import { Search, Loader2, BookOpen, AlertCircle, HelpCircle, Award, X, Clock, PlayCircle, FileText, ChevronRight, Activity, Calendar, Filter, PieChart, BarChart2, CheckCircle, TrendingUp } from 'lucide-react';
+import { Search, Loader2, BookOpen, AlertCircle, Ban, HelpCircle, Award, X, Clock, PlayCircle, FileText, ChevronRight, Activity, Calendar, Filter, PieChart, BarChart2, CheckCircle, TrendingUp } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
 export default function AvailableQuizzes() {
@@ -205,6 +205,14 @@ export default function AvailableQuizzes() {
                     </div>
                   </div>
                 </div>
+
+                {/* Set by the server when the student's index number is outside the quiz's allowed range */}
+                {q.accessNotice && (
+                  <div role="note" style={{ marginTop: 16, padding: '10px 12px', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, display: 'flex', gap: 8, alignItems: 'flex-start', color: '#9a3412', fontSize: 12.5, lineHeight: 1.5 }}>
+                    <Ban size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span>{q.accessNotice}</span>
+                  </div>
+                )}
               </div>
 
               <div style={{ padding: '16px 24px', background: '#fcfdfe', borderTop: '1px solid #f1f5f7', display: 'flex', gap: 12 }}>
@@ -215,13 +223,25 @@ export default function AvailableQuizzes() {
                 >
                   History
                 </button>
-                <Link 
-                  to={quizInstructionsPath(q.qId, { courseTitle: q.category?.title, title: q.title })} 
-                  className="btn-lexa btn-lexa-primary"
-                  style={{ flex: 1.5, padding: '10px', fontSize: 13, textDecoration: 'none', borderRadius: 6 }}
-                >
-                  <PlayCircle size={16} /> Begin Session
-                </Link>
+                {q.accessNotice ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="btn-lexa"
+                    title={q.accessNotice}
+                    style={{ flex: 1.5, padding: '10px', fontSize: 13, borderRadius: 6, background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', cursor: 'not-allowed' }}
+                  >
+                    <Ban size={16} /> {tx("Not assigned to you")}
+                  </button>
+                ) : (
+                  <Link
+                    to={quizInstructionsPath(q.qId, { courseTitle: q.category?.title, title: q.title })}
+                    className="btn-lexa btn-lexa-primary"
+                    style={{ flex: 1.5, padding: '10px', fontSize: 13, textDecoration: 'none', borderRadius: 6 }}
+                  >
+                    <PlayCircle size={16} /> Begin Session
+                  </Link>
+                )}
               </div>
             </div>
           ))}

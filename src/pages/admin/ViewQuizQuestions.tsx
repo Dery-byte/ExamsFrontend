@@ -320,10 +320,10 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
           <Link to={`${basePath}/quizzes`} className="vqq-btn-back">
             <ArrowLeft size={15} /><span>Registry</span>
           </Link>
-          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('draw')} title={tx("Add random questions from this course's question bank")}>
+          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('draw')} title={tx("Add objective or theory questions from this course's question bank")}>
             <Shuffle size={15} /><span>From bank</span>
           </button>}
-          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('import')} title={tx("Copy this quiz's questions into the course's question bank")}>
+          {bankOn && <button className="vqq-btn-back" onClick={() => setBankMode('import')} title={tx("Copy this quiz's objective and theory questions into the course's question bank")}>
             <Upload size={15} /><span>Save to bank</span>
           </button>}
           <Link to={`${basePath}/proctoring/${qId}`} className="vqq-btn-back" title="Proctoring report for this quiz">

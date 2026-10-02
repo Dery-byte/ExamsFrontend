@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
 import { showQuizLinkDialog } from '../../utils/quizLink';
 import AttemptsField from '../../components/ui/AttemptsField';
+import IndexRangeField, { indexRangeError } from '../../components/ui/IndexRangeField';
 import AutoOpenField from '../../components/ui/AutoOpenField';
 import AutoCloseField from '../../components/ui/AutoCloseField';
 import toast, { Toaster } from 'react-hot-toast';
@@ -31,6 +32,8 @@ const defaultQuiz = () => ({
   delayMultiplier: 1.5, enableFullscreenLock: true, enableWatermark: true, emailReportOnReview: false,
   enableScreenshotBlocking: true, enableDevToolsBlocking: true, llmProvider: 'GPT',
   programIds: [] as number[],
+  indexRangeStart: '',
+  indexRangeEnd: '',
   maxAttempts: 1,
   autoOpen: false,
   autoClose: false,
@@ -109,6 +112,8 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     // Admin/HOD/SA always need a program; a lecturer needs one only if the course has programs.
     if (programs.length > 0 && quiz.programIds.length === 0) { toast.error(tx('Please select at least one program')); return; }
     if (!lectMode && programs.length === 0) { toast.error(tx('No programs available to assign this quiz to')); return; }
+    const rangeError = indexRangeError(quiz.indexRangeStart, quiz.indexRangeEnd);
+    if (rangeError) { toast.error(rangeError); return; }
     setLoading(true);
     try {
       const created = lectMode ? await addLecturerQuiz(quiz) : await addQuiz(quiz);
@@ -193,6 +198,11 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 emptyText={lectMode
                   ? (quiz.category.cid ? tx('This course has no programs attached, so the quiz is open to all students registered for it.') : tx('Select a course to choose which of its programs can take this quiz.'))
                   : (isSuperAdmin ? tx('No programs available.') : tx('No programs available for your department.'))}
+              />
+              <IndexRangeField
+                start={quiz.indexRangeStart}
+                end={quiz.indexRangeEnd}
+                onChange={(s, e) => setQuiz(q => ({ ...q, indexRangeStart: s, indexRangeEnd: e }))}
               />
               <div className="aq-field mt-4">
                 <label className="aq-label">Instructions & Guidelines</label>

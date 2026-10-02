@@ -43,7 +43,11 @@ export default function QuizBankDialog({ quizId, courseId, mode, onClose, onDone
     try {
       if (mode === 'draw') {
         const res = await drawBankIntoQuiz(quizId, { topic, difficulty, questionType, count });
-        toast.success(`Added ${res.added} question(s) — quiz now has ${res.totalInQuiz}`);
+        const parts = [
+          res.addedObjective ? `${res.addedObjective} objective (Section A, now ${res.totalInQuiz})` : '',
+          res.addedTheory ? `${res.addedTheory} theory (Section B, now ${res.theoryInQuiz})` : '',
+        ].filter(Boolean);
+        toast.success(`Added ${parts.join(' and ') || `${res.added} question(s)`}`);
       } else {
         const res = await importQuizIntoBank(quizId, { topic: importTopic, difficulty: importDifficulty });
         toast.success(`Saved ${res.added} question(s) to the bank${res.skipped ? ` (${res.skipped} already there)` : ''}`);
@@ -90,7 +94,7 @@ export default function QuizBankDialog({ quizId, courseId, mode, onClose, onDone
               <div>
                 <label className="qbd-label" htmlFor="qbd-type">Type</label>
                 <select id="qbd-type" className="qbd-input" value={questionType} onChange={e => setQuestionType(e.target.value)}>
-                  <option value="">Any</option><option value="MCQ">Multiple choice</option><option value="TRUE_FALSE">True / False</option><option value="MATCHING">Matching</option><option value="FILL_BLANK">Fill in the blank</option><option value="NUMERIC">Numeric</option>
+                  <option value="">Any</option><option value="MCQ">Multiple choice</option><option value="TRUE_FALSE">True / False</option><option value="MATCHING">Matching</option><option value="FILL_BLANK">Fill in the blank</option><option value="NUMERIC">Numeric</option><option value="THEORY">Theory (Section B)</option>
                 </select>
               </div>
             </div>
@@ -100,7 +104,7 @@ export default function QuizBankDialog({ quizId, courseId, mode, onClose, onDone
           </>
         ) : (
           <>
-            <p className="qbd-note"><Library size={13} /> {tx("Every objective question in this quiz is copied into the course's bank. Duplicates are skipped.")}</p>
+            <p className="qbd-note"><Library size={13} /> {tx("Every question in this quiz (objective and theory) is copied into the course's bank. Duplicates are skipped.")}</p>
             <label className="qbd-label" htmlFor="qbd-itopic">Topic tag (optional)</label>
             <input id="qbd-itopic" className="qbd-input" value={importTopic} onChange={e => setImportTopic(e.target.value)} placeholder="Defaults to the quiz title" />
             <label className="qbd-label" htmlFor="qbd-idiff">Difficulty</label>
