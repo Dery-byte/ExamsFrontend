@@ -319,6 +319,8 @@ export const getDepartments = () => client.get('/departments').then(r => r.data)
 
 // ── Student filtered courses ───────────────────────────────────────────────
 export const getCoursesForStudent = () => client.get('/categories/for-student').then(r => r.data);
+/** Global courses the Super Admin opened to everyone: any student can take their quizzes without registering. */
+export const getOpenToEveryoneCourses = () => client.get('/categories/open-to-everyone').then(r => r.data);
 
 // ── Super Admin endpoints (different base path: /api/v1/super-admin) ────────
 import axios from 'axios';

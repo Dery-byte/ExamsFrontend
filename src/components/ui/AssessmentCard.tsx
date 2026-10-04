@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useStaffBase } from '../../hooks/useStaffBase';
 import { Settings, Trash2, List, Zap, Loader2, Layers, Trophy, Clock, CheckCircle2, Link2 } from 'lucide-react';
 import { copyQuizLink } from '../../utils/quizLink';
 import './AssessmentCard.css';
@@ -38,6 +39,7 @@ export default function AssessmentCard({
   onSync,
   updating,
 }: AssessmentCardProps) {
+  const staffBase = useStaffBase();
   const isLive = status === 'OPEN' || status === 'Open';
   const isTheory = quizType === 'THEORY';
 
@@ -97,7 +99,7 @@ export default function AssessmentCard({
       </div>
 
       <div className="card-bottom">
-        <Link to={`/admin/view-questions/${qId}/${title}`} className="bank-btn">
+        <Link to={`${staffBase}/view-questions/${qId}/${title}`} className="bank-btn">
           <List size={16} /> Question Bank
         </Link>
         <div className="sync-section">

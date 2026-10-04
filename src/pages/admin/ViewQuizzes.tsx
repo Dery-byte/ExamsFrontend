@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useStaffBase } from '../../hooks/useStaffBase';
 import { createPortal } from 'react-dom';
 import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders, getMyDepartmentPrograms, saGetPrograms } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
@@ -457,6 +458,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
 export default function ViewQuizzes() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const staffBase = useStaffBase();
   const { data: rawQuizzes, isLoading } = useQuery({ queryKey: ['quizzes'], queryFn: loadQuizzes });
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
 
@@ -500,7 +502,7 @@ export default function ViewQuizzes() {
           <h1 className="t-title">Quizzes</h1>
           <p className="t-sub">{quizzes.length} quizzes currently available.</p>
         </div>
-        <button className="btn-add" onClick={() => navigate('/admin/add-quiz')}>
+        <button className="btn-add" onClick={() => navigate(`${staffBase}/add-quiz`)}>
           <Plus size={18} /> <span>Add Quiz</span>
         </button>
       </div>

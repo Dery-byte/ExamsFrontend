@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getRegCourses, getActiveQuizzesOfCategory, getReport } from '../../api/endpoints';
+import { getRegCourses, getActiveQuizzesOfCategory, getReport, getOpenToEveryoneCourses } from '../../api/endpoints';
 import { quizInstructionsPath } from '../../utils/quizLink';
 import PageHeader from '../../components/PageHeader';
 import { Search, Loader2, BookOpen, AlertCircle, Ban, HelpCircle, Award, X, Clock, PlayCircle, FileText, ChevronRight, Activity, Calendar, Filter, PieChart, BarChart2, CheckCircle, TrendingUp } from 'lucide-react';
@@ -11,6 +11,8 @@ export default function AvailableQuizzes() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [userRecords, setUserRecords]         = useState<any[]>([]);
+  // Global courses open to everyone (no registration), not already among the registered ones
+  const [generalCourses, setGeneralCourses]   = useState<any[]>([]);
   const [selectedCid, setSelectedCid]         = useState<string>('');
   const [availablequizzes, setQuizzes]        = useState<any[]>([]);
   const [displayedQuizzes, setDisplayed]      = useState<any[]>([]);
@@ -26,10 +28,15 @@ export default function AvailableQuizzes() {
   const loadRegisteredCourses = async () => {
     setLoadingRec(true);
     try {
-      const data: any[] = await getRegCourses();
+      const [data, open]: [any[], any[]] = await Promise.all([
+        getRegCourses(),
+        getOpenToEveryoneCourses().catch(() => []),
+      ]);
       const userId = user?.id;
       const filtered = data.filter((r: any) => r.user?.id === userId);
       setUserRecords(filtered);
+      const registered = new Set(filtered.map((r: any) => r.category?.cid));
+      setGeneralCourses((open ?? []).filter((c: any) => !registered.has(c.cid)));
     } catch (err) {
       console.error('Failed to load registered courses:', err);
     } finally {
@@ -113,6 +120,15 @@ export default function AvailableQuizzes() {
                       {r.category?.courseCode} • {r.category?.title}
                     </option>
                   ))}
+                  {generalCourses.length > 0 && (
+                    <optgroup label="General — open to everyone">
+                      {generalCourses.map((c: any) => (
+                        <option key={`general-${c.cid}`} value={c.cid}>
+                          {c.courseCode} • {c.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
                 <div style={{ position: 'absolute', right: 15, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#adb5bd' }}>
                    <ChevronRight size={16} style={{ transform: 'rotate(90deg)' }} />

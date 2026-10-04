@@ -163,6 +163,12 @@ export default function App() {
           <Route path="enroll-student" element={<EnrollStudent />} />
           <Route path="courses" element={<ViewCategories />} />
           <Route path="add-course" element={<AddCategory />} />
+          <Route path="quizzes" element={<ViewQuizzes />} />
+          <Route path="add-quiz" element={<AddQuiz />} />
+          <Route path="view-questions/:qId/:qTitle" element={<ViewQuizQuestions />} />
+          <Route path="add-question/:qId/:title" element={<AddQuestion />} />
+          <Route path="quiz-review" element={<QuizReview />} />
+          <Route path="proctoring/:qId" element={<ProctoringReport />} />
           <Route path="marks-sheets" element={<MarksSheetManager />} />
           <Route path="term-remarks" element={<ModeGate only="school" redirectTo="/super-admin"><TermRemarks /></ModeGate>} />
           <Route path="lecturers" element={<Lecturers />} />

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useStaffBase } from '../../hooks/useStaffBase';
 import { createPortal } from 'react-dom';
 import {
   getQuestionsForAdmin, getQuestionsForLecturer, getTheoryQuestions, getNumberOfTheoryToAnswer,
@@ -27,7 +28,8 @@ import { theoryGroupKey, compareTheoryGroups } from '../../utils/theoryGroups';
 export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: boolean }) {
   const { qId, qTitle } = useParams();
   const navigate = useNavigate();
-  const basePath = adminMode ? '/admin' : '/lect';
+  const staffBase = useStaffBase();
+  const basePath = adminMode ? staffBase : '/lect';
   const roleName = adminMode ? 'Admin' : 'Lecturer';
 
   const [questions, setQuestions] = useState<any[]>([]);

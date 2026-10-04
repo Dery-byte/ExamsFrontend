@@ -32,6 +32,8 @@ export default function AddCategory() {
   const basePath = isSuper ? '/super-admin' : '/admin';
   // Global courses (no programs) are open to every student; only the Super Admin can create them.
   const [isGlobal, setIsGlobal] = useState(false);
+  // A global course can also be opened to everyone: every student takes its quizzes without registering
+  const [openToEveryone, setOpenToEveryone] = useState(false);
   const [category, setCategory] = useState<{title: string, courseCode: string, level: string, description: string, semester: string, programIds: number[], creditUnits: string}>({ title: '', courseCode: '', level: '', description: '', semester: '', programIds: [], creditUnits: '3' });
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
@@ -64,6 +66,7 @@ export default function AddCategory() {
       await addCategory({
         ...category,
         programIds: isGlobal ? [] : category.programIds,
+        openToEveryone: isSuper && isGlobal && openToEveryone,
         creditUnits: category.creditUnits === '' ? null : Number(category.creditUnits),
       });
       toast.success(tx('Course registered successfully'), { id: loadingToast });
@@ -196,6 +199,25 @@ export default function AddCategory() {
                       {tx("Open to every student regardless of program")}</span>
                   </span>
                 </label>
+                {isGlobal && (
+                  <label style={{
+                    display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', marginTop: '8px',
+                    border: openToEveryone ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                    borderRadius: '6px', background: openToEveryone ? '#eff6ff' : '#fff', cursor: 'pointer'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={openToEveryone}
+                      onChange={e => setOpenToEveryone(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                    />
+                    <Globe size={16} color="#2563eb" />
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+                      {tx("Open to everyone")}<span className="acp-hint" style={{ marginLeft: '8px', fontWeight: 400 }}>
+                        {tx("Every student can take this course's quizzes without registering for it")}</span>
+                    </span>
+                  </label>
+                )}
               </div>
             )}
 

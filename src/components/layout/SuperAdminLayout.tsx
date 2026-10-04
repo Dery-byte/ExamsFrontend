@@ -9,7 +9,7 @@ import {
   Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
   Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library,
   Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight,
-  Landmark, ClipboardPen
+  Landmark, ClipboardPen, ClipboardList, FilePlus, Eye
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -54,6 +54,9 @@ export default function SuperAdminLayout() {
       items: [
         { to: '/super-admin/courses', icon: <Library size={20} />, label: tx('Courses') },
         { to: '/super-admin/add-course', icon: <PlusCircle size={20} />, label: tx('Add Course') },
+        { to: '/super-admin/quizzes', icon: <ClipboardList size={20} />, label: 'Quizzes' },
+        { to: '/super-admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
+        { to: '/super-admin/quiz-review', icon: <Eye size={20} />, label: 'Quiz Review Panel' },
         { to: '/super-admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' },
         { to: '/super-admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
         { to: '/super-admin/remarks', icon: <MessageSquareWarning size={20} />, label: 'Re-mark Requests' },

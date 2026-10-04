@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useStaffBase } from '../../hooks/useStaffBase';
 import { useQuery } from '@tanstack/react-query';
 import { getCategories, addQuiz, addLecturerQuiz, getCategoriesForUser, getAvailableLlmProviders, getMyDepartmentPrograms, saGetPrograms } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
@@ -66,6 +67,10 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
         .filter((p: any) => p.enabled !== false)
     : [];
   const programs: any[] = lectMode ? coursePrograms : adminPrograms;
+  // A Super Admin quiz on a global course (no programs) may leave programs empty: open to every program
+  const selectedCourse: any = (categories as any[]).find((c: any) => String(c.cid) === String(quiz.category.cid));
+  const courseIsGlobal = !!selectedCourse && (selectedCourse.programIds ?? selectedCourse.programs ?? []).length === 0;
+  const programsOptional = isSuperAdmin && !lectMode && courseIsGlobal;
 
   const handleCategoryChange = (cid: string) => {
     if (lectMode) {
@@ -96,7 +101,8 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     : FALLBACK_PROVIDERS;
 
   const roleName = lectMode ? 'Lecturer' : 'Admin';
-  const backPath = lectMode ? '/lect/quizes' : '/admin/quizzes';
+  const staffBase = useStaffBase();
+  const backPath = lectMode ? '/lect/quizes' : `${staffBase}/quizzes`;
 
   const set = (k: string, v: any) => setQuiz(q => ({ ...q, [k]: v }));
 
@@ -110,7 +116,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     if (!quiz.quizType) { toast.error('Please select a quiz type'); return; }
     if (!quiz.category.cid) { toast.error('Please select a category'); return; }
     // Admin/HOD/SA always need a program; a lecturer needs one only if the course has programs.
-    if (programs.length > 0 && quiz.programIds.length === 0) { toast.error(tx('Please select at least one program')); return; }
+    if (programs.length > 0 && quiz.programIds.length === 0 && !programsOptional) { toast.error(tx('Please select at least one program')); return; }
     if (!lectMode && programs.length === 0) { toast.error(tx('No programs available to assign this quiz to')); return; }
     const rangeError = indexRangeError(quiz.indexRangeStart, quiz.indexRangeEnd);
     if (rangeError) { toast.error(rangeError); return; }
@@ -199,6 +205,13 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                   ? (quiz.category.cid ? tx('This course has no programs attached, so the quiz is open to all students registered for it.') : tx('Select a course to choose which of its programs can take this quiz.'))
                   : (isSuperAdmin ? tx('No programs available.') : tx('No programs available for your department.'))}
               />
+              {programsOptional && quiz.programIds.length === 0 && (
+                <div style={{ margin: '-6px 0 14px', padding: '10px 12px', borderRadius: 6, background: '#eff6ff', color: '#1e40af', fontSize: 12.5, fontWeight: 500 }}>
+                  {selectedCourse?.openToEveryone
+                    ? tx('No program selected: this quiz is for everyone. Its course is open to everyone, so every student can take it without registering.')
+                    : tx('No program selected: students of every program who registered for this global course can take it.')}
+                </div>
+              )}
               <IndexRangeField
                 start={quiz.indexRangeStart}
                 end={quiz.indexRangeEnd}

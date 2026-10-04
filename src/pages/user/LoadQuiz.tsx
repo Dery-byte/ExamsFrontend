@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import RemarkControl from '../../components/examops/RemarkControl';
-import { getReport, getRegCourses, getReportsByUser, getTakenQuizzesOfCategoryByUser, downloadReportPdf } from '../../api/endpoints';
+import { getReport, getRegCourses, getReportsByUser, getTakenQuizzesOfCategoryByUser, downloadReportPdf, getOpenToEveryoneCourses } from '../../api/endpoints';
 import PageHeader from '../../components/PageHeader';
 import { 
   X, 
@@ -307,9 +307,10 @@ export default function LoadQuiz() {
   const init = async () => {
     if (!user?.id) return;
     try {
-      const [reg, rpts] = await Promise.all([
+      const [reg, rpts, open] = await Promise.all([
         getRegCourses(),
         getReportsByUser(user.id).catch(() => []),
+        getOpenToEveryoneCourses().catch(() => []),   // results of quizzes taken without registering
       ]);
       const mine = Array.isArray(reg) ? reg.filter((r: any) => r.user?.id === user.id) : [];
       setReports(Array.isArray(rpts) ? rpts : []);
@@ -320,6 +321,7 @@ export default function LoadQuiz() {
           map.set(r.category.cid, r.category);
         }
       });
+      (Array.isArray(open) ? open : []).forEach((c: any) => { if (c?.cid && !map.has(c.cid)) map.set(c.cid, c); });
       const cats = Array.from(map.values());
       
       setUniqueCategories(cats);

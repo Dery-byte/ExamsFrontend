@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useStaffBase } from '../../hooks/useStaffBase';
 import {
   getQuiz, addQuestion, uploadQuestions,
   uploadTheoryQuestions, addNumberOfTheoryToAnswer, addTheoryQuestion, uploadQuestionImage
@@ -96,7 +97,8 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
   const [specificQuiz, setSpecificQuiz] = useState<any>(null);
   const [qTitle, setQTitle] = useState(title || '');
   const roleName = adminMode ? 'Admin' : 'Lecturer';
-  const basePath  = adminMode ? '/admin' : '/lect';
+  const staffBase = useStaffBase();
+  const basePath  = adminMode ? staffBase : '/lect';
 
   // ── OBJ state ────────────────────────────────────────────────────────────────
   const [questionType, setQuestionType] = useState<string | null>(null);

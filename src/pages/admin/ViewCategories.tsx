@@ -83,6 +83,8 @@ export default function ViewCategories() {
         creditUnits: categoryEdit.creditUnits === '' || categoryEdit.creditUnits == null ? undefined : Number(categoryEdit.creditUnits),
         // Omit programIds (leave unchanged) when the editor can't modify a global course's programs
         programIds: editingLockedGlobal ? undefined : (categoryEdit.programIds || []),
+        // Only the Super Admin switches "open to everyone", and only on a global course; others leave it as it is
+        openToEveryone: isSuper ? ((categoryEdit.programIds || []).length === 0 && !!categoryEdit.openToEveryone) : undefined,
       };
       if (!isSuper && !editingLockedGlobal && payload.programIds!.length === 0) {
         toast.error(tx('Please select at least one program. Only the Super Admin can make a course global.'), { id: loadingToast });
@@ -168,7 +170,7 @@ export default function ViewCategories() {
               <div className="reg-col title">
                  <h6 className="t">{el.title}</h6>
                  <span className="m" style={{ color: '#64748b' }}>
-                    <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.length ? el.programNames.join(', ') : tx('🌐 Global (All Programs)')}</span>
+                    <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.length ? el.programNames.join(', ') : el.openToEveryone ? tx('🌐 Global — open to everyone') : tx('🌐 Global (All Programs)')}</span>
                     {' • '}{el.level}{' • '}{el.description?.substring(0, 60)}...
                  </span>
               </div>
@@ -227,6 +229,20 @@ export default function ViewCategories() {
                    <label>Synopsis</label>
                    <textarea className="mini-area" rows={3} value={categoryEdit.description||''} onChange={e=>setCategoryEdit({...categoryEdit,description:e.target.value})} placeholder="Description..."/>
                 </div>
+                {isSuper && (categoryEdit.programIds || []).length === 0 && (
+                  <div className="f-grp-mini">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textTransform: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!categoryEdit.openToEveryone}
+                        onChange={e => setCategoryEdit({ ...categoryEdit, openToEveryone: e.target.checked })}
+                        style={{ accentColor: '#2563eb' }}
+                      />
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                        {tx("Open to everyone — every student can take this course's quizzes without registering")}</span>
+                    </label>
+                  </div>
+                )}
                 {editingLockedGlobal ? (
                   <div className="f-grp-mini">
                      <label>{tx("Registered Programs")}</label>
