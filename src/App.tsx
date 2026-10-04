@@ -226,7 +226,7 @@ export default function App() {
           <Route path="courses" element={<CoursesRegistered />} />
           <Route path="quizzes" element={<AvailableQuizzes />} />
           <Route path="history" element={<LoadQuiz />} />
-          <Route path="report-cards" element={<FeatureGate flag="marksSheetStudent" redirectTo="/user-dashboard"><SemesterReportCard /></FeatureGate>} />
+          <Route path="report-cards" element={<FeatureGate flag="marksSheetStudent" feature="STUDENT_REPORT_CARD" redirectTo="/user-dashboard"><SemesterReportCard /></FeatureGate>} />
 
           <Route path="instructions/:qid" element={<Instructions />} />
         </Route>

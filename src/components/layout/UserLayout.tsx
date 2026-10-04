@@ -46,7 +46,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         ...(on('STUDENT_TIMETABLE') ? [{ to: '/user-dashboard/timetable', label: 'Exam Timetable', icon: CalendarDays }] : []),
         { to: '/user-dashboard/history', label: 'Performance History', icon: History        },
         ...(marksSheetStudent ? [
-          { to: '/user-dashboard/report-cards', label: tx('Report Cards'), icon: BookOpen },
+          ...(on('STUDENT_REPORT_CARD') ? [{ to: '/user-dashboard/report-cards', label: tx('Report Cards'), icon: BookOpen }] : []),
           ...(on('STUDENT_TRANSCRIPT') && !isSchoolMode() ? [{ to: '/user-dashboard/transcript', label: 'Transcript & CGPA', icon: FileText }] : []),
         ] : []),
       ]

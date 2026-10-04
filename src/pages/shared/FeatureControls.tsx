@@ -97,12 +97,12 @@ export default function FeatureControls() {
                 <div className="fc-row">
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div className="fc-title">
-                      {f.label}
+                      {tx(f.label)}
                       <span className={`fc-scope ${f.scope === 'SYSTEM' ? 'sys' : 'dep'}`}>
                         {f.scope === 'SYSTEM' ? <><Globe size={11} /> System-wide</> : <><Building2 size={11} /> {tx("Department-level")}</>}
                       </span>
                     </div>
-                    <p className="fc-desc">{f.description}</p>
+                    <p className="fc-desc">{tx(f.description)}</p>
                     {lockedBySuper && <p className="fc-lock"><Lock size={12} /> Turned off by the Super Admin for the whole system.</p>}
                     {isSuper && f.scope === 'DEPARTMENT' && overrides.size > 0 && (
                       <p className="fc-note">{overrides.size} department{overrides.size > 1 ? 's have' : ' has'} its own setting.</p>

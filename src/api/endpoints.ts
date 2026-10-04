@@ -462,7 +462,7 @@ export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
 /** Switchable features (see Feature Controls). */
 export type FeatureKey =
   | 'STUDENT_SELF_SIGNUP' | 'HOD_ANALYTICS' | 'HOD_DATA_TOOLS' | 'HOD_PROMOTION' | 'HOD_ANNOUNCEMENTS'
-  | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'QUESTION_BANK'
+  | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'STUDENT_REPORT_CARD' | 'QUESTION_BANK'
   | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION';
 
 export interface FeatureFlags {
