@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { saveViolationCount, recordProctoringEvent, saveViolationDelay, getViolationDelay } from '../api/endpoints';
+import { queueViolation, queueViolationDelay } from '../utils/saveQueue';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type ViolationAction =
@@ -199,13 +199,16 @@ const beep = (freq: number, dur: number, vol = 0.25) => {
 };
 
 // ── Fullscreen ────────────────────────────────────────────────────────────────
+// Browsers only allow fullscreen from a click or key press; calls from timers are refused with a
+// rejected promise ("Permissions check failed"), which try/catch alone does not catch
+const ignoreRefusal = (p: any) => { if (p && typeof p.catch === 'function') p.catch(() => {}); };
 const enterFS = () => {
   const el = document.documentElement as any;
-  try { (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen)?.call(el, { navigationUI: 'hide' }); } catch {}
+  try { ignoreRefusal((el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen)?.call(el, { navigationUI: 'hide' })); } catch {}
 };
 const exitFS = () => {
   const d = document as any;
-  try { (d.exitFullscreen || d.webkitExitFullscreen || d.mozCancelFullScreen || d.msExitFullscreen)?.call(d); } catch {}
+  try { ignoreRefusal((d.exitFullscreen || d.webkitExitFullscreen || d.mozCancelFullScreen || d.msExitFullscreen)?.call(d)); } catch {}
 };
 const isFS = () => !!(
   document.fullscreenElement || (document as any).webkitFullscreenElement ||
@@ -645,12 +648,8 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     let d = Number(c.delaySeconds);
     if (st.current.totalViolations > 1) {
       d = Math.round(d * Math.pow(Number(c.delayMultiplier), st.current.totalViolations - 1));
-          console.log("This is an unknown d", d)
-
     }
-
     return d;
-
   };
 
   const endDelay = useCallback(() => {
@@ -661,7 +660,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     s.delayRemaining = 0;
     if (delayIv.current) { clearInterval(delayIv.current); delayIv.current = null; }
     s.totalDelayServed += s.curDelayDuration;
-    saveViolationDelay(c.quizId, 0).catch(()=>{});
+    // Nothing to save: the server already knows when this lock-out ends
 
     showToast('Quiz access restored');
     
@@ -687,12 +686,15 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
       willAutoNext, c.violationAction, st.current.totalDelayServed);
     beep(440, 0.5);
 
+    // Saved once: the server stores when the lock-out ends, so it carries over to a reload or
+    // another device without a save every second
+    queueViolationDelay(c.quizId, dur);
+
     let t = dur;
     delayIv.current = setInterval(() => {
       t--;
       st.current.delayRemaining = t;
       tickDelayOv(t, dur);
-      saveViolationDelay(c.quizId, t).catch(()=>{});
       if (t <= 5 && t > 0) beep(880, 0.2, 0.2);
       if (t <= 0) endDelay();
     }, 1000);
@@ -702,7 +704,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     const c = cfgRef.current;
     if (st.current.autoSubmitDone) return;
     st.current.autoSubmitDone = true;
-    recordProctoringEvent(c.quizId, 'auto-submit').catch(()=>{});
+    queueViolation(c.quizId, 'auto-submit');
     if (delayIv.current) { clearInterval(delayIv.current); delayIv.current = null; }
 
     const max = c.autoSubmitCountdownSeconds;
@@ -729,9 +731,8 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
 
     s.isProcessing = true;
     s.totalViolations++;
-    saveViolationCount(c.quizId, s.totalViolations).catch(()=>{});
-    // Timestamped event for the staff proctoring report
-    recordProctoringEvent(c.quizId, type, s.totalViolations).catch(()=>{});
+    // Timestamped event for the staff proctoring report; the server also stores the count from it
+    queueViolation(c.quizId, type, s.totalViolations);
 
     const remaining = c.maxViolations - s.totalViolations;
 
@@ -777,34 +778,23 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
   const pendingDelayVal = (cfg as any)._pendingViolationDelay ?? 0;
   const savedCountVal   = (cfg as any)._savedViolationCount   ?? 0;
 
-//   console.log('[useQuizProtection] Config received:', {
-//   _pendingViolationDelay: (cfg as any)._pendingViolationDelay,
-//   _savedViolationCount: (cfg as any)._savedViolationCount,
-//   quizId: cfg.quizId,
-//   violationAction: cfg.violationAction,
-// });
-
   useEffect(() => {
-    console.log('[QuizProtection] Restoration effect triggered with:', {
-    pendingDelayVal,
-    savedCountVal,
-    quizId: cfg.quizId,
-    isDelayActive: st.current.isDelayActive,
-    autoSubmitDone: st.current.autoSubmitDone,
-  });
     if (!cfg.quizId || cfg.violationAction === 'NONE') return;
     const s = st.current;
 
-    // Restore violation count first
-    if (savedCountVal > 0 && s.totalViolations === 0) {
-      s.totalViolations = savedCountVal;
-      console.log('[QuizProtection] Restored violation count:', savedCountVal);
+    // Restore violation count first (saved on the server, so it follows the student to any device)
+    if (savedCountVal > s.totalViolations) s.totalViolations = savedCountVal;
+
+    // The limit was already reached in an earlier session (e.g. the student signed out during the
+    // auto-submit countdown): signing in again, here or on another device, does not escape it
+    if (s.totalViolations >= cfg.maxViolations && cfg.maxViolations > 0 && !s.autoSubmitDone &&
+      (cfg.violationAction === 'AUTOSUBMIT_ONLY' || cfg.violationAction === 'DELAY_AND_AUTOSUBMIT')) {
+      initiateAutoSubmit('violation-limit-reached');
+      return;
     }
 
     // Restore pending violation delay
     if (pendingDelayVal > 0 && !s.isDelayActive && !s.autoSubmitDone) {
-      console.log('[QuizProtection] Restoring pending delay:', pendingDelayVal, 'seconds');
-      console.log("heheheheheheheheheeheheheheheeh");
       s.curDelayDuration = pendingDelayVal;
       s.delayRemaining   = pendingDelayVal;
       s.isDelayActive    = true;
@@ -813,13 +803,16 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
         cfg.maxViolations, false, cfg.violationAction, s.totalDelayServed);
       beep(440, 0.5);
 
+      // Saved once: restarts the server's end time from now, which matters when the exam clock
+      // (and with it the lock-out) is paused while the student is away
+      queueViolationDelay(cfg.quizId, pendingDelayVal);
+
       let t = pendingDelayVal;
       if (delayIv.current) clearInterval(delayIv.current);
       delayIv.current = setInterval(() => {
         t--;
         s.delayRemaining = t;
         tickDelayOv(t, pendingDelayVal);
-        saveViolationDelay(cfg.quizId, t).catch(() => {});
         if (t <= 5 && t > 0) beep(880, 0.2, 0.2);
         if (t <= 0) {
           endDelay();

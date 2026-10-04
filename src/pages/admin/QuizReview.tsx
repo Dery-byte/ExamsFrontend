@@ -12,6 +12,7 @@ import QuestionImage from '../../components/ui/QuestionImage';
 import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
 import QuizEmailReportToggle from '../../components/ui/QuizEmailReportToggle';
 import QuizAttemptsModal, { AttemptRow } from '../../components/ui/QuizAttemptsModal';
+import MarkingStatus from '../../components/examops/MarkingStatus';
 import {
   ChevronDown, ChevronRight, X, Loader2, FileText,
   MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye,
@@ -618,6 +619,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
       {/* Expanded: Student List */}
       {expanded && (
         <div className="resp-table-wrapper">
+          {(quiz.quizType === 'THEORY' || quiz.quizType === 'BOTH') && <MarkingStatus quizId={quiz.qId} />}
           {isLoading ? (
             <div style={{ padding: 32, textAlign: 'center' }}>
               <Loader2 size={24} style={{ animation: 'rSpin 1s linear infinite', color: '#5156be' }} />

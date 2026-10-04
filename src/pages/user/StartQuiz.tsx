@@ -2,12 +2,16 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getQuiz, getQuestionsForStudent, getTheoryQuestions, getNumberOfTheoryToAnswer,
-  getQuizTimer, saveQuizTimer, updateQuizAnswer, getQuizAnswersByQuiz,
-  saveTheoryAnswers, loadTheoryAnswers, clearTheoryAnswers,
+  getQuizTimer, getQuizAnswersByQuiz,
+  loadTheoryAnswers,
   evalQuiz, evalTheory, addSectionBMarks,
-  deleteQuizTimer, clearQuizAnswers, getViolationDelay, getViolationCount,
+  getViolationDelay, getViolationCount,
   beginQuizAttempt, finishQuizAttempt
 } from '../../api/endpoints';
+import {
+  queueAnswer, queueTheoryAnswer, queueTimer, pendingViolationState,
+  flushSaveQueue, openQuizSaves, closeQuizSaves, useSaveQueueFailing,
+} from '../../utils/saveQueue';
 import { decodeParam } from '../../utils/quizLink';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuizProtection } from '../../hooks/useQuizProtection';
@@ -40,6 +44,27 @@ type Section = 'A' | 'B';
 type QuizType = 'OBJ' | 'THEORY' | 'BOTH';
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
+/**
+ * Sends a submission, retrying with growing gaps while the server is busy or unreachable (never
+ * when it refuses). If an earlier try reached the server but its reply was lost, the retry is
+ * told "already submitted" (409): the submission is in, so that counts as success (null).
+ */
+const submitWithRetry = async <T,>(send: () => Promise<T>, onRetry: (waitSeconds: number) => void): Promise<T | null> => {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await send();
+    } catch (e: any) {
+      const status = e?.response?.status;
+      if (attempt > 1 && status === 409) return null;
+      const busy = !status || status === 408 || status === 429 || status >= 500;
+      if (!busy || attempt >= 8) throw e;
+      const wait = Math.min(30_000, 2000 * 2 ** (attempt - 1)) + Math.random() * 2000;
+      onRetry(Math.round(wait / 1000));
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+};
+
 const fmtTimer = (s: number) => {
   const t = Math.max(0, s);
   const h = Math.floor(t / 3600);
@@ -135,6 +160,9 @@ export default function StartQuiz() {
   const autoSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Always points to the latest sectionBAll — solves stale-closure in interval/blur handlers
   const sectionBAllRef = useRef<any[]>([]);
+  // Theory answers changed since they were last queued for saving (by quesNo)
+  const dirtyTheory = useRef<Set<string>>(new Set());
+  const savesFailing = useSaveQueueFailing();
   const submitAllRef = useRef<(auto?: boolean) => void>(() => { });
 
   const timerVal = useRef(0);
@@ -209,12 +237,11 @@ export default function StartQuiz() {
   useEffect(() => {
     if (!realId) return;
     loadAll();
+    // blur, visibilitychange and pagehide often fire together: the save queue merges them into one save
     const onBlur = () => {
       if (isTimerLoaded.current && timerVal.current > 0) {
-        saveQuizTimer(realId, timerVal.current).catch(() => { });
-        // Read directly from ref — always fresh regardless of closure age
-        const answers = sectionBAllRef.current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
-        if (answers.length > 0) saveTheoryAnswers(realId, answers).catch(() => { });
+        queueTimer(realId, timerVal.current);
+        saveTheory();
       }
     };
     window.addEventListener('blur', onBlur);
@@ -240,9 +267,11 @@ export default function StartQuiz() {
     try {
       // Start a new attempt, or resume the one in progress. The server refuses (409) when the student
       // has used every attempt, so a direct /start link can't bypass the limit.
+      openQuizSaves(realId);
       try {
         await beginQuizAttempt(realId);
       } catch (e: any) {
+        closeQuizSaves(realId);   // no attempt to save into: drop anything left over for this quiz
         await Swal.fire({
           title: 'Cannot start this quiz',
           text: e?.response?.data?.message || 'This quiz is not available for you right now.',
@@ -254,6 +283,10 @@ export default function StartQuiz() {
         else navigate('/user-dashboard/quizzes', { replace: true });
         return;
       }
+
+      // Saves left unsent on this device (e.g. the page was closed while the server was slow) go
+      // first, so what is loaded below includes them
+      await flushSaveQueue({ quizId: realId, timeoutMs: 8000 });
 
       const [quizData, rawQs, theoryRaw, nqArr, savedTime, savedAns, savedTh, savedDelay, savedViolationCount] = await Promise.all([
         getQuiz(realId),
@@ -267,10 +300,14 @@ export default function StartQuiz() {
         getViolationCount(realId).catch(() => null),
       ]);
       setQuiz(quizData);
+      // Violation state lives on the server, so it carries over to any device. Anything still
+      // unsent on this device (the flush above timed out) counts too.
+      const unsent = pendingViolationState(realId);
+      const serverCount = savedViolationCount?.totalViolationCount ?? savedViolationCount?.count ?? (savedTime as any)?.totalViolationCount ?? 0;
       setQuizConfig({
         ...quizData,
-        _pendingViolationDelay: savedDelay?.violationDelayTime ?? savedDelay?.delaySeconds ?? 0,
-        _savedViolationCount: savedViolationCount?.totalViolationCount ?? savedViolationCount?.count ?? (savedTime as any)?.totalViolationCount ?? 0,
+        _pendingViolationDelay: unsent.delay ?? savedDelay?.violationDelayTime ?? savedDelay?.delaySeconds ?? 0,
+        _savedViolationCount: Math.max(Number(serverCount) || 0, unsent.count),
       });
       const qt: QuizType = ((quizData.quizType as string)?.toUpperCase().trim() as QuizType) || 'OBJ';
       setQuizType(qt);
@@ -348,14 +385,17 @@ export default function StartQuiz() {
       setTimer(t0);
       startTimer(t0, totalSec);
 
-      // Checkpoint every 15 s so a crash or dropped connection loses at most 15 s of clock
-      let tick = 0;
+      // First checkpoint right away, so the server's clock starts now even if the page closes early
+      if (!timeExpired) queueTimer(realId, t0);
+      // Then about once a minute (blur, tab hide and page close also checkpoint). While the student
+      // is away the server takes the time off the last checkpoint, so a longer gap costs nothing.
+      // A random period per student keeps a full exam hall from saving in the same second.
       autoSaveRef.current = setInterval(() => {
         if (isTimerLoaded.current) {
-          saveQuizTimer(realId, timerVal.current).catch(() => { });
-          if (++tick % 4 === 0) saveTheory().catch(() => { });   // theory answers also save as the student types
+          queueTimer(realId, timerVal.current);
+          saveTheory();   // only answers changed since the last save; most are saved as the student types
         }
-      }, 15_000);
+      }, 55_000 + Math.random() * 10_000);
       isTimerLoaded.current = true;
     } catch (e) { console.error('loadAll error', e); } finally { setLoading(false); }
   };
@@ -378,15 +418,19 @@ export default function StartQuiz() {
   const onTimerExpired = () => {
     if (isExpiredHandled.current) return;
     isExpiredHandled.current = true;
-    submitAllRef.current(true);
+    // Everyone who started together runs out together: a random 0-5 s wait spreads the hall's
+    // automatic submissions instead of sending them all in the same second
+    setTimeout(() => submitAllRef.current(true), Math.random() * 5000);
   };
 
-  // Reads from ref so it is always fresh — safe to call from intervals/blur handlers
-  const saveTheory = useCallback(async () => {
-    const current = sectionBAllRef.current;
-    if (current.length === 0) return;
-    const answers = current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
-    await saveTheoryAnswers(realId, answers).catch(() => { });
+  // Queues only the theory answers changed since the last save; the queue sends them together.
+  // Reads from refs so it is always fresh — safe to call from intervals/blur handlers
+  const saveTheory = useCallback(() => {
+    if (dirtyTheory.current.size === 0) return;
+    for (const q of sectionBAllRef.current) {
+      if (dirtyTheory.current.has(q.quesNo)) queueTheoryAnswer(realId, q.quesNo, q.givenAnswer || '');
+    }
+    dirtyTheory.current.clear();
   }, [realId]); // no sectionBAll dep — ref is always current
 
   const updateTheoryAnswer = (quesNo: string, val: string) => {
@@ -395,12 +439,10 @@ export default function StartQuiz() {
       sectionBAllRef.current = updated; // sync ref immediately, before next render
       return updated;
     });
-    // Debounced save: persists 2 s after the student stops typing
+    dirtyTheory.current.add(quesNo);
+    // Debounced save: persists 5 s after the student stops typing
     if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
-    autoSaveDebounceRef.current = setTimeout(() => {
-      const answers = sectionBAllRef.current.map((q: any) => ({ quesNo: q.quesNo, givenAnswer: q.givenAnswer || '' }));
-      if (answers.length > 0) saveTheoryAnswers(realId, answers).catch(() => { });
-    }, 2000);
+    autoSaveDebounceRef.current = setTimeout(saveTheory, 5000);
   };
 
   const togglePrefix = (p: string) => {
@@ -415,7 +457,7 @@ export default function StartQuiz() {
   const saveTypedAnswer = (quesId: number, value: string) => {
     if (typedSaveTimers.current[quesId]) clearTimeout(typedSaveTimers.current[quesId]);
     delete typedSaveTimers.current[quesId];
-    updateQuizAnswer({ questionId: quesId, option: value, checked: true, replace: true, quizId: parseInt(realId) }).catch(() => { });
+    queueAnswer(realId, { questionId: quesId, option: value, checked: true, replace: true });
   };
   const setTypedAnswer = (q: any, value: string) => {
     setQuestions(prev => prev.map(pq => pq.quesId === q.quesId ? { ...pq, givenAnswer: value.trim() ? [value] : [] } : pq));
@@ -428,17 +470,17 @@ export default function StartQuiz() {
     if (checked && !ans.includes(option)) ans.push(option);
     else if (!checked) { const i = ans.indexOf(option); if (i > -1) ans.splice(i, 1); }
     setQuestions(prev => prev.map(pq => pq.quesId === q.quesId ? { ...pq, givenAnswer: ans } : pq));
-    updateQuizAnswer({ questionId: q.quesId, option, checked, quizId: parseInt(realId) }).catch(() => { });
+    queueAnswer(realId, { questionId: q.quesId, option, checked });
   };
 
   const setTFAnswer = (q: any, val: string) => {
     const desel = (q.givenAnswer ?? [])[0] === val;
     setQuestions(prev => prev.map(pq => pq.quesId === q.quesId ? { ...pq, givenAnswer: desel ? [] : [val] } : pq));
-    updateQuizAnswer({ questionId: q.quesId, option: val, checked: !desel, quizId: parseInt(realId) }).catch(() => { });
+    queueAnswer(realId, { questionId: q.quesId, option: val, checked: !desel });
   };
 
   const setMatchAnswer = (q: any, pairIdx: number, answer: string | null) => {
-    updateQuizAnswer({ questionId: q.quesId, option: answer ?? '', checked: !!answer, quizId: parseInt(realId), pairIndex: pairIdx }).catch(() => { });
+    queueAnswer(realId, { questionId: q.quesId, option: answer ?? '', checked: !!answer, pairIndex: pairIdx });
     setQuestions(prev => prev.map(pq => {
       if (pq.quesId !== q.quesId) return pq;
       const ma = [...(pq.matchingAnswers ?? new Array(pq.matchingPairs?.length ?? 0).fill(''))];
@@ -477,12 +519,14 @@ export default function StartQuiz() {
       // ── Section A: Objective ──────────────────────────────────────────────
       if ((quizType === 'OBJ' || quizType === 'BOTH') && questions.length > 0) {
         addLog(`Submitting ${questions.length} objective question(s)…`, 'info');
-        await evalQuiz(realId, questions.map(q => ({
+        const objectiveAnswers = questions.map(q => ({
           ...q,
           givenAnswer: q.questionType === 'MATCHING' 
             ? (q.matchingAnswers ?? []) 
             : (Array.isArray(q.givenAnswer) ? q.givenAnswer : [q.givenAnswer ?? '']),
-        }))).catch((e: any) => {
+        }));
+        await submitWithRetry(() => evalQuiz(realId, objectiveAnswers),
+          wait => addLog(`Server busy — retrying in ${wait} s…`, 'warn')).catch((e: any) => {
           const errMsg = e.response?.data?.error || e.response?.data?.message || e.message || 'Unknown error';
           addLog(`Objective evaluation error: ${errMsg}`, 'err');
           Swal.fire({ title: 'Objective Error', text: errMsg, icon: 'error' });
@@ -494,8 +538,10 @@ export default function StartQuiz() {
       // ── Section B: Theory ─────────────────────────────────────────────────
       if ((quizType === 'THEORY' || quizType === 'BOTH') && sectionBAll.length > 0) {
         addLog('Saving theory draft…', 'info');
-        await saveTheory();
-        addLog('Theory draft saved ✓', 'ok');
+        saveTheory();
+        // The answers being marked are sent with the evaluation below; the draft is only a backup
+        const draftSaved = await flushSaveQueue({ quizId: realId, timeoutMs: 5000 });
+        addLog(draftSaved ? 'Theory draft saved ✓' : 'Theory draft kept on this device', draftSaved ? 'ok' : 'warn');
 
         const selQs: any[] = [];
         Object.entries(selectedPfx).forEach(([pfx, sel]) => {
@@ -503,12 +549,9 @@ export default function StartQuiz() {
         });
 
         if (selQs.length > 0) {
-          addLog(`Sending ${selQs.length} theory question(s) to AI evaluation…`, 'info');
-          selQs.forEach((q, i) =>
-            addLog(`  [${i + 1}/${selQs.length}] Evaluating: ${q.quesNo} — "${(q.question ?? '').slice(0, 60)}…"`, 'info')
-          );
+          addLog(`Submitting ${selQs.length} theory question(s)…`, 'info');
 
-          const theoryResult: any = await evalTheory({
+          const theorySubmission = {
             contents: [{
               parts: selQs.map(item => ({
                 // Only the ids and the answer matter: the server reads the question, marks and
@@ -516,15 +559,20 @@ export default function StartQuiz() {
                 text: `quizId ${realId}: tqid ${item.tqId || item.tqid || item.quesId}: Question Number ${item.quesNo}: Answer: ${item.givenAnswer || 'No answer provided'} Marks: ${item.marks || 10} Criteria: -`,
               })),
             }],
-          }).catch((e: any) => {
+          };
+          const theoryResult: any = await submitWithRetry(() => evalTheory(theorySubmission),
+            wait => addLog(`Server busy — retrying in ${wait} s…`, 'warn')).catch((e: any) => {
             const errMsg = e.response?.data?.error || e.response?.data?.message || e.message || 'Unknown error';
             addLog(`AI evaluation failed: ${errMsg}`, 'err');
             Swal.fire({ title: 'AI Evaluation Error', text: errMsg, icon: 'error' });
             throw new Error(errMsg);
           });
 
-          // Backend returns QuizEvaluationResponse (object), not an array
-          if (theoryResult && typeof theoryResult === 'object' && theoryResult.summary) {
+          // The server stores the answers and marks them in the background; results are
+          // released after lecturer review
+          if (!theoryResult || theoryResult.status === 'QUEUED') {
+            addLog('Theory answers submitted ✓ — they will be marked and released after review', 'ok');
+          } else if (typeof theoryResult === 'object' && theoryResult.summary) {
             const s = theoryResult.summary;
             addLog(`AI evaluation complete ✓  Score: ${s.totalScore}/${s.totalMaxMarks} (${s.percentage?.toFixed(1)}%)`, 'ok');
             if (theoryResult.results?.length) {
@@ -543,10 +591,12 @@ export default function StartQuiz() {
 
       // ── Cleanup ───────────────────────────────────────────────────────────
       addLog('Cleaning up session data…', 'info');
-      await finishQuizAttempt(realId).catch(() => { });   // closes this attempt so a further one can be started
-      await deleteQuizTimer(realId).catch(() => { });
-      clearQuizAnswers(realId).catch(() => { });
-      clearTheoryAnswers(realId).catch(() => { });
+      // Queued violation events reach the proctoring report before the attempt closes; then nothing
+      // more is saved for this quiz from this page (a late timer save would leave a stale row)
+      await flushSaveQueue({ quizId: realId, timeoutMs: 5000 });
+      closeQuizSaves(realId);
+      // Closes this attempt (so a further one can be started) and clears the clock and saved answers
+      await submitWithRetry(() => finishQuizAttempt(realId), () => { }).catch(() => { });
       addLog('Session finalised ✓', 'ok');
 
       // Brief pause so student can see final log
@@ -634,6 +684,12 @@ export default function StartQuiz() {
         </div>
 
         <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
+          {savesFailing && (
+            <div title="Your answers are kept on this device and will be saved as soon as the server responds."
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#f1b44c' }}>
+              <AlertTriangle size={14} /> Saving… retrying
+            </div>
+          )}
           <div className="mobile-hide-timer" style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '5px 15px',
             background: isLight ? '#f8f9fa' : '#2d333b', borderRadius: 4, border: `1px solid ${theme.border}`

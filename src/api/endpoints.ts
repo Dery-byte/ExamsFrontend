@@ -442,6 +442,13 @@ export const getQuizAttempts = (qid: number | string) =>
 /** Staff: allow one student to take the quiz again. */
 export const allowQuizRetake = (qid: number | string, studentId: number, reason?: string) =>
   client.post(`/quiz-attempts/quiz/${qid}/student/${studentId}/retake`, { reason }).then(r => r.data);
+/** Staff: theory submissions still being marked by AI, and those whose marking failed. */
+export interface FailedMarking { jobId: number; studentId: number; studentName: string; username?: string; tries: number; error?: string; failedAt?: string; }
+export const getMarkingStatus = (qid: number | string) =>
+  client.get<{ marking: number; retrying: number; failed: FailedMarking[] }>(`/quiz-attempts/quiz/${qid}/marking`).then(r => r.data);
+/** Staff: put one failed theory submission back in the marking queue. */
+export const retryMarking = (qid: number | string, jobId: number) =>
+  client.post(`/quiz-attempts/quiz/${qid}/marking/${jobId}/retry`).then(r => r.data);
 
 // ── Question images (PNG/JPG/JPEG are converted to WebP by the backend) ────────
 export const uploadQuestionImage = (file: File): Promise<string> => {

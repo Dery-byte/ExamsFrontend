@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authenticate as apiAuth, doLogout, getCurrentUser } from '../api/endpoints';
+import { flushSaveQueue, kickSaveQueue } from '../utils/saveQueue';
 
 export type UserRole = 'ADMIN' | 'LECTURER' | 'NORMAL' | 'SUPER_ADMIN' | 'DEVELOPER';
 
@@ -179,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('user', JSON.stringify(authUser));
     setUser(authUser);
     startCountdown(token);
+    kickSaveQueue();   // exam saves left unsent on this device by this user
 
     if (authUser.mustChangePassword) navigate('/change-password', { replace: true });
     else if (redirectTo && canVisit(authUser.role, redirectTo)) navigate(redirectTo, { replace: true });
@@ -186,9 +188,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = useCallback(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) doLogout(token).catch(() => {});
-    performLogout();
+    // Send unsent exam saves (violations, answers) first, while the token still works, so they are
+    // on the server if the student signs in on another device. Instant when nothing is queued.
+    flushSaveQueue({ timeoutMs: 4000 }).finally(() => {
+      const token = localStorage.getItem('access_token');
+      if (token) doLogout(token).catch(() => {});
+      performLogout();
+    });
   }, [performLogout]);
 
   const updateUser = useCallback((partial: Partial<AuthUser>) => {
