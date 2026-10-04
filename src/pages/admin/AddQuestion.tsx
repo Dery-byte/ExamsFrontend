@@ -8,11 +8,12 @@ import toast, { Toaster } from 'react-hot-toast';
 import {
   FilePlus, FileText, Upload, Save, List, Info, ArrowLeft,
   Loader2, Database, Zap, Hash, Award, Target, ChevronRight,
-  Layers, CheckSquare, ToggleLeft, Link2, X, Check, Plus, Trash2, PenLine, Calculator
+  Layers, CheckSquare, ToggleLeft, Link2, X, Check, Plus, Trash2, PenLine, Calculator, Download
 } from 'lucide-react';
 import RichTextEditor from '../../components/ui/RichTextEditor';
 import QuestionImageField from '../../components/ui/QuestionImageField';
 import { tx } from '../../utils/terms';
+import { downloadQuestionTemplate, downloadTemplateGuide } from '../../utils/questionTemplates';
 
 // Strip HTML tags for validation
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim();
@@ -747,6 +748,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
             <div className="addq-dark-body">
               {activeTab === 'OBJ' && isOBJ && (
                 <div className="animate-fade-in">
+                  <div className="addq-tpl-row">
+                    <button type="button" className="addq-tpl-btn"
+                      onClick={() => downloadQuestionTemplate('SECTION_A')}>
+                      <Download size={13} /><span>Download template</span>
+                    </button>
+                    <button type="button" className="addq-tpl-link" onClick={downloadTemplateGuide}>How to fill it</button>
+                  </div>
                   <label className="addq-dropzone">
                     <input type="file" accept=".json" onChange={e => onFileChange(e, 'OBJ')} style={{ display: 'none' }} />
                     <FilePlus size={30} />
@@ -783,6 +791,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                       <input type="number" value={theoryQuesToAnswer.timeAllowed}
                         onChange={e => setTheoryQA(t => ({ ...t, timeAllowed: e.target.value }))} placeholder="0" />
                     </div>
+                  </div>
+                  <div className="addq-tpl-row">
+                    <button type="button" className="addq-tpl-btn addq-tpl-btn-green"
+                      onClick={() => downloadQuestionTemplate('SECTION_B')}>
+                      <Download size={13} /><span>Download template</span>
+                    </button>
+                    <button type="button" className="addq-tpl-link" onClick={downloadTemplateGuide}>How to fill it</button>
                   </div>
                   <label className="addq-dropzone addq-dropzone-green">
                     <input type="file" accept=".json" onChange={e => onFileChange(e, 'THEORY')} style={{ display: 'none' }} />
@@ -985,6 +1000,14 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
         .addq-dropzone-green:hover { border-color:#10b981; }
         .addq-dz-title { font-size:12px; font-weight:700; color:#fff; text-align:center; word-break:break-all; }
         .addq-dz-sub   { font-size:10px; color:rgba(255,255,255,.3); }
+        .addq-tpl-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+        .addq-dark-fields + .addq-tpl-row { margin-top:12px; }
+        .addq-tpl-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:8px; border:1px solid rgba(165,180,252,.35); background:rgba(81,86,190,.18); color:#c7d2fe; font-size:11px; font-weight:700; cursor:pointer; transition:.2s; font-family:'Inter',sans-serif; }
+        .addq-tpl-btn:hover { background:rgba(81,86,190,.35); color:#fff; }
+        .addq-tpl-btn-green { border-color:rgba(110,231,183,.35); background:rgba(16,185,129,.15); color:#a7f3d0; }
+        .addq-tpl-btn-green:hover { background:rgba(16,185,129,.3); color:#fff; }
+        .addq-tpl-link { background:none; border:none; padding:0; color:rgba(255,255,255,.5); font-size:11px; font-weight:600; text-decoration:underline; cursor:pointer; font-family:'Inter',sans-serif; }
+        .addq-tpl-link:hover { color:#fff; }
 
         .addq-staging { background:rgba(0,0,0,.2); border:1px solid rgba(255,255,255,.05); border-radius:9px; padding:10px 12px; }
         .addq-staging-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; font-size:10px; font-weight:700; text-transform:uppercase; color:rgba(255,255,255,.4); }

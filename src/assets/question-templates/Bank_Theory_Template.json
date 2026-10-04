@@ -1,0 +1,23 @@
+[
+  {
+    "topic": "Operating systems",
+    "difficulty": "EASY",
+    "question": "Define an operating system.",
+    "marks": "4",
+    "evaluationCriteria": "2 marks: manages hardware and software resources. 2 marks: provides services to programs / acts as interface for the user."
+  },
+  {
+    "topic": "Memory",
+    "difficulty": "MEDIUM",
+    "question": "Explain the difference between RAM and ROM.",
+    "marks": "6",
+    "evaluationCriteria": "RAM: volatile, temporary, read/write (3 marks). ROM: non-volatile, permanent, mostly read-only (3 marks)."
+  },
+  {
+    "topic": "Networks",
+    "difficulty": "HARD",
+    "question": "Discuss three advantages and two disadvantages of a computer network.",
+    "marks": "10",
+    "evaluationCriteria": "2 marks for each advantage (e.g. resource sharing, communication, central backup). 2 marks for each disadvantage (e.g. security risks, cost of setup)."
+  }
+]

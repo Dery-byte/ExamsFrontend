@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import QuestionImage from '../../components/ui/QuestionImage';
 import { useInstitution } from '../../hooks/useInstitution';
+import { theoryGroupKey } from '../../utils/theoryGroups';
 import { getReport, getQuestionsForText, getTheoryReport, getResultsDetails, getNumberOfTheoryToAnswer } from '../../api/endpoints';
 import { Printer, ArrowLeft, Download, CheckCircle, XCircle, Info, Award, User, Clock, Calendar, FileText, ChevronRight, Loader2 } from 'lucide-react';
 
@@ -18,8 +19,7 @@ const groupByPrefix = (data: any[]) => {
   if (!data?.length) return [];
   const map: Record<string, any[]> = {};
   data.forEach(q => {
-    const pre = (q.quesO?.match(/^(Q\d+)/i)?.[0] ?? 'OTHER').toUpperCase();
-    (map[pre] ??= []).push(q);
+    (map[theoryGroupKey(q.quesO)] ??= []).push(q);
   });
   return Object.entries(map).map(([prefix, questions]) => ({ prefix, questions }));
 };

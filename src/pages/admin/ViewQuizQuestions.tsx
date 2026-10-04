@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
@@ -22,6 +22,7 @@ import RichTextEditor from '../../components/ui/RichTextEditor';
 import QuestionImage from '../../components/ui/QuestionImage';
 import QuestionImageField from '../../components/ui/QuestionImageField';
 import { tx } from '../../utils/terms';
+import { theoryGroupKey, compareTheoryGroups } from '../../utils/theoryGroups';
 
 export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: boolean }) {
   const { qId, qTitle } = useParams();
@@ -45,6 +46,8 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   // Modals
   const [editObjModal, setEditObjModal] = useState(false);
   const [specificObj, setSpecificObj] = useState<any>({ questionType: 'MCQ', correctAnswer: [], matchingPairs: [] });
+  // The question as loaded, so switching the type back before saving restores its answers
+  const objOriginal = useRef<any>(null);
   const [editTheoryModal, setEditTheoryModal] = useState(false);
   const [theory, setTheory] = useState<any>({});
   const [editCountModal, setEditCountModal] = useState(false);
@@ -85,7 +88,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
     const map: Record<string, boolean> = {};
     const prefixes = getPrefixes(data);
     prefixes.forEach(p => {
-      const qs = data.filter(q => q.quesNo?.startsWith(p));
+      const qs = data.filter(q => theoryGroupKey(q.quesNo) === p);
       map[p] = qs.some((q: any) => q.compulsory === true || q.isCompulsory === true);
     });
     setCompulsory(map);
@@ -94,11 +97,11 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   const getPrefixes = (data?: any[]) => {
     const src = data ?? sectionB;
     const set = new Set<string>();
-    src.forEach(q => { const m = q.quesNo?.match(/^Q\d+/)?.[0]; if (m) set.add(m); });
-    return Array.from(set).sort();
+    src.forEach(q => set.add(theoryGroupKey(q.quesNo)));
+    return Array.from(set).sort(compareTheoryGroups);
   };
 
-  const getGrouped = (prefix: string) => sectionB.filter(q => q.quesNo?.startsWith(prefix));
+  const getGrouped = (prefix: string) => sectionB.filter(q => theoryGroupKey(q.quesNo) === prefix);
 
   const onCompulsoryChange = (prefix: string, checked: boolean) => {
     setCompulsory(m => ({ ...m, [prefix]: checked }));
@@ -116,6 +119,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
     console.log("Immediate Modal Trigger for ID:", idToUse);
 
     // Clear previous and open immediately
+    objOriginal.current = null;
     setSpecificObj({ questionType: (fallbackType || 'MCQ').toUpperCase(), correctAnswer: [], matchingPairs: [] });
     setObjImageFile(null);
     setEditObjModal(true);
@@ -136,12 +140,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
       const rawType = data.questionType || data.question_type || fallbackType || 'MCQ';
       const qType = String(rawType).toUpperCase();
 
-      setSpecificObj({
+      const loaded = {
         ...data,
         questionType: qType,
         correctAnswer: Array.isArray(cAns) ? cAns : (cAns ? [cAns] : []),
         matchingPairs: Array.isArray(data.matchingPairs) ? data.matchingPairs.map((p: any) => ({ ...p })) : []
-      });
+      };
+      objOriginal.current = loaded;
+      setSpecificObj({ ...loaded, correctAnswer: [...loaded.correctAnswer], matchingPairs: loaded.matchingPairs.map((p: any) => ({ ...p })) });
     } catch (err) {
       console.error("Fetch failure:", err);
       toast.error('Could not sync with registry');
@@ -151,7 +157,52 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
     }
   };
 
+  /**
+   * Switch the question being edited to another type. Answers that still make sense are kept (fill-in ↔
+   * numeric keep the answer, MCQ keeps its options); the rest start blank. Going back to the type it was
+   * saved as brings its saved answers back. The question text, image and marks are always kept.
+   */
+  const changeObjType = (t: string) => setSpecificObj((prev: any) => {
+    if (t === prev.questionType) return prev;
+    const keep = { content: prev.content, image: prev.image, marks: prev.marks };
+    const orig = objOriginal.current;
+    if (orig && t === orig.questionType) {
+      return { ...orig, ...keep, correctAnswer: [...orig.correctAnswer], matchingPairs: orig.matchingPairs.map((p: any) => ({ ...p })) };
+    }
+    const wasTyped = prev.questionType === 'FILL_BLANK' || prev.questionType === 'NUMERIC';
+    const next: any = { ...prev, ...keep, questionType: t, correctAnswer: [] };
+    if (t === 'MCQ') {
+      if (prev.questionType === 'TRUE_FALSE') { next.option1 = ''; next.option2 = ''; next.option3 = ''; next.option4 = ''; }
+      const opts = [next.option1, next.option2, next.option3, next.option4].filter(Boolean);
+      next.correctAnswer = (prev.correctAnswer || []).filter((a: string) => opts.includes(a));
+    } else if (t === 'FILL_BLANK' && wasTyped) {
+      next.correctAnswer = [...(prev.correctAnswer || [])];
+    } else if (t === 'NUMERIC' && wasTyped) {
+      next.correctAnswer = (prev.correctAnswer || []).slice(0, 1);
+    } else if (t === 'MATCHING' && !(prev.matchingPairs?.length)) {
+      next.matchingPairs = [{ prompt: '', answer: '' }, { prompt: '', answer: '' }];
+    }
+    return next;
+  });
+
+  /** The same checks the server makes, with the message shown before a round trip. */
+  const objEditProblem = (q: any): string | null => {
+    if (!String(q.content || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) return 'Question text is required';
+    if (q.questionType === 'MCQ') {
+      if (!q.option1?.trim() || !q.option2?.trim()) return 'A multiple-choice question needs at least options A and B';
+      if (!(q.correctAnswer || []).length) return 'Mark at least one option as correct';
+    } else if (q.questionType === 'TRUE_FALSE') {
+      if ((q.correctAnswer || []).length !== 1) return 'Choose True or False as the correct answer';
+    } else if (q.questionType === 'MATCHING') {
+      if ((q.matchingPairs || []).some((p: any) => !p.prompt?.trim() || !p.answer?.trim())) return 'Every matching pair needs both a prompt and its match';
+      if ((q.matchingPairs || []).length < 2) return 'A matching question needs at least 2 pairs';
+    }
+    return null;
+  };
+
   const updateObjQuestion = async () => {
+    const problem = objEditProblem(specificObj);
+    if (problem) { toast.error(problem); return; }
     setSaving(true);
     let image: string | null = specificObj.image || null;
     try {
@@ -191,7 +242,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
       toast.success('Registry item updated');
       setEditObjModal(false);
       loadData();
-    } catch { toast.error("Sync failed"); }
+    } catch (err: any) { toast.error(err?.response?.data?.message || "Sync failed"); }
     setSaving(false);
   };
 
@@ -677,15 +728,21 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
               {/* Type + Marks */}
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 <div style={{ flex: 3, minWidth: 0 }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Question Type</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#f8f9fa', height: '38px' }}>
-                    <span style={{ background: '#5156be', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>{specificObj.questionType}</span>
-                    <span style={{ fontSize: '12px', color: '#495057', fontWeight: 600 }}>
-                      {(specificObj.questionType || '').toUpperCase() === 'MCQ' && 'Multiple Choice'}
-                      {(specificObj.questionType || '').toUpperCase() === 'TRUE_FALSE' && 'True / False'}
-                      {(specificObj.questionType || '').toUpperCase() === 'MATCHING' && 'Matching'}
-                    </span>
-                  </div>
+                  <label htmlFor="edit-obj-type" style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Question Type</label>
+                  <select id="edit-obj-type" value={specificObj.questionType || 'MCQ'} disabled={isModalLoading}
+                    onChange={e => changeObjType(e.target.value)}
+                    style={{ width: '100%', height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#fff', fontSize: '13px', fontWeight: 600, color: '#2a3142', cursor: 'pointer', boxSizing: 'border-box' }}>
+                    <option value="MCQ">Multiple Choice</option>
+                    <option value="TRUE_FALSE">True / False</option>
+                    <option value="MATCHING">Matching</option>
+                    <option value="FILL_BLANK">Fill in the Blank</option>
+                    <option value="NUMERIC">Numeric</option>
+                  </select>
+                  {objOriginal.current && specificObj.questionType !== objOriginal.current.questionType && (
+                    <div style={{ fontSize: '11px', color: '#b45309', marginTop: '5px' }}>
+                      Changing the type replaces this question's answers when you save. Fill in the answer fields below.
+                    </div>
+                  )}
                 </div>
                 <div style={{ flex: 1, minWidth: '80px' }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Marks</label>
@@ -776,7 +833,15 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                             {isSel ? <Check size={12} strokeWidth={3} /> : <span style={{ fontSize: '9px', fontWeight: 700 }}>{String.fromCharCode(65 + i)}</span>}
                           </button>
                           <input style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 500, outline: 'none', minWidth: 0 }}
-                            value={optVal || ''} onChange={e => setSpecificObj(prev => ({ ...prev, [opt]: e.target.value }))} placeholder={`Option ${String.fromCharCode(65 + i)}...`} />
+                            value={optVal || ''} placeholder={`Option ${String.fromCharCode(65 + i)}...`}
+                            onChange={e => {
+                              const val = e.target.value;
+                              // Keep a correct option marked while its text is edited
+                              setSpecificObj((prev: any) => ({
+                                ...prev, [opt]: val,
+                                correctAnswer: (prev.correctAnswer || []).flatMap((c: string) => c !== prev[opt] ? [c] : val ? [val] : []),
+                              }));
+                            }} />
                         </div>
                       );
                     })}

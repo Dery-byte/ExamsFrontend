@@ -12,6 +12,7 @@ import { decodeParam } from '../../utils/quizLink';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuizProtection } from '../../hooks/useQuizProtection';
 import QuestionImage from '../../components/ui/QuestionImage';
+import { theoryGroupKey, compareTheoryGroups } from '../../utils/theoryGroups';
 import Swal from 'sweetalert2';
 import {
   Clock,
@@ -50,8 +51,7 @@ const fmtTimer = (s: number) => {
 
 function groupByPrefix(questions: any[]): Record<string, any[]> {
   return questions.reduce((acc, q) => {
-    const prefix = q.quesNo?.match(/^[A-Za-z]+[0-9]+/)?.[0] ?? 'Q1';
-    (acc[prefix] ??= []).push(q);
+    (acc[theoryGroupKey(q.quesNo)] ??= []).push(q);
     return acc;
   }, {} as Record<string, any[]>);
 }
@@ -66,7 +66,7 @@ function sortPrefixesByCompulsory(grouped: Record<string, any[]>): string[] {
     const bC = isGroupCompulsory(grouped[b]);
     if (aC && !bC) return -1;
     if (!aC && bC) return 1;
-    return a.localeCompare(b, undefined, { numeric: true });
+    return compareTheoryGroups(a, b);
   });
 }
 
@@ -499,7 +499,7 @@ export default function StartQuiz() {
 
         const selQs: any[] = [];
         Object.entries(selectedPfx).forEach(([pfx, sel]) => {
-          if (sel) selQs.push(...sectionBAll.filter(q => q.quesNo?.startsWith(pfx)));
+          if (sel) selQs.push(...sectionBAll.filter(q => theoryGroupKey(q.quesNo) === pfx));
         });
 
         if (selQs.length > 0) {
@@ -511,7 +511,9 @@ export default function StartQuiz() {
           const theoryResult: any = await evalTheory({
             contents: [{
               parts: selQs.map(item => ({
-                text: `quizId ${realId}: tqid ${item.tqId || item.tqid || item.quesId}: Question Number ${item.quesNo}: ${item.question} Answer: ${item.givenAnswer || 'No answer provided'} Marks: ${item.marks || 10} Criteria: ${item.evaluationCriteria || item.criteria || 'Standard evaluation'}`,
+                // Only the ids and the answer matter: the server reads the question, marks and
+                // marking criteria from the database (students never receive the criteria).
+                text: `quizId ${realId}: tqid ${item.tqId || item.tqid || item.quesId}: Question Number ${item.quesNo}: Answer: ${item.givenAnswer || 'No answer provided'} Marks: ${item.marks || 10} Criteria: -`,
               })),
             }],
           }).catch((e: any) => {
@@ -579,8 +581,8 @@ export default function StartQuiz() {
   submitAllRef.current = submitAll;
 
   const currentQs = useMemo(() => sectionBAll.filter(q => {
-    const pfx = prefixes.find(p => q.quesNo?.startsWith(p));
-    return pfx ? selectedPfx[pfx] : true;
+    const pfx = theoryGroupKey(q.quesNo);
+    return prefixes.includes(pfx) ? selectedPfx[pfx] : true;
   }), [sectionBAll, prefixes, selectedPfx]);
   const selCount = Object.values(selectedPfx).filter(Boolean).length;
   const isSubmitDisabled = useMemo(() => {

@@ -185,7 +185,7 @@ export const uploadTheoryQuestions = (qid: number | string, questions: object[])
 
 
 export const setCompulsoryQuestion = (quizId: number | string, prefix: string, isCompulsory: boolean) =>
-  client.put(`/update-compulsory/${quizId}/${prefix}?isCompulsory=${isCompulsory}`, null, { responseType: 'text' }).then(r => r.data);
+  client.put(`/update-compulsory/${quizId}/${encodeURIComponent(prefix)}?isCompulsory=${isCompulsory}`, null, { responseType: 'text' }).then(r => r.data);
 
 // ── GPT eval ──────────────────────────────────────────────────────────────
 export const evalTheory = (questions: object) =>
@@ -535,6 +535,9 @@ export const addBankQuestion = (courseId: number, data: object) =>
 export const updateBankQuestion = (id: number, data: object) =>
   client.put(`${apiRoot()}/question-bank/${id}`, data).then(r => r.data);
 export const deleteBankQuestion = (id: number) => client.delete(`${apiRoot()}/question-bank/${id}`).then(r => r.data);
+/** Bulk upload a JSON file's questions (quiz template format) into a course's bank. All or nothing; `types` limits it to those question types. */
+export const uploadBankQuestions = (courseId: number, data: { topic?: string; difficulty?: string; questions: unknown[]; types?: string[] }) =>
+  client.post<{ added: number; skipped: number; ignored: number }>(`${apiRoot()}/question-bank/upload/course/${courseId}`, data).then(r => r.data);
 export const importQuizIntoBank = (quizId: number, data: { topic?: string; difficulty?: string }) =>
   client.post(`${apiRoot()}/question-bank/import/quiz/${quizId}`, data).then(r => r.data);
 export const drawBankIntoQuiz = (quizId: number, data: { topic?: string; difficulty?: string; questionType?: string; count?: number; questionIds?: number[] }) =>

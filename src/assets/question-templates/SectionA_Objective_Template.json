@@ -1,0 +1,45 @@
+[
+  {
+    "questionType": "MCQ",
+    "content": "Which of these is an input device?",
+    "option1": "Monitor",
+    "option2": "Keyboard",
+    "option3": "Printer",
+    "option4": "Speaker",
+    "correct_answer": ["Keyboard"]
+  },
+  {
+    "questionType": "MCQ",
+    "content": "Which of the following are programming languages? (Select all that apply)",
+    "option1": "Python",
+    "option2": "HTML",
+    "option3": "Java",
+    "option4": "Excel",
+    "correct_answer": ["Python", "Java"]
+  },
+  {
+    "questionType": "TRUE_FALSE",
+    "content": "RAM keeps its data when the computer is switched off.",
+    "correct_answer": ["False"]
+  },
+  {
+    "questionType": "MATCHING",
+    "content": "Match each device to its category.",
+    "matchingPairs": [
+      { "prompt": "Mouse",   "answer": "Input device",   "pairOrder": 0 },
+      { "prompt": "Printer", "answer": "Output device",  "pairOrder": 1 },
+      { "prompt": "SSD",     "answer": "Storage device", "pairOrder": 2 }
+    ]
+  },
+  {
+    "questionType": "FILL_BLANK",
+    "content": "The brain of the computer is called the ______.",
+    "correct_answer": ["CPU", "Central Processing Unit", "processor"]
+  },
+  {
+    "questionType": "NUMERIC",
+    "content": "How many bits make up one byte?",
+    "correct_answer": ["8"],
+    "tolerance": 0
+  }
+]

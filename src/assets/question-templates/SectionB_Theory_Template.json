@@ -1,0 +1,37 @@
+[
+  {
+    "quesNo": "Q1a",
+    "question": "Define an operating system.",
+    "marks": "4",
+    "evaluationCriteria": "2 marks: manages hardware and software resources. 2 marks: provides services to programs / acts as interface for the user.",
+    "isCompulsory": true
+  },
+  {
+    "quesNo": "Q1b",
+    "question": "Give three examples of operating systems.",
+    "marks": "3",
+    "evaluationCriteria": "1 mark each for any correct example, e.g. Windows, Linux, macOS, Android.",
+    "isCompulsory": true
+  },
+  {
+    "quesNo": "Q2",
+    "question": "Explain the difference between RAM and ROM.",
+    "marks": "6",
+    "evaluationCriteria": "RAM: volatile, temporary, read/write (3 marks). ROM: non-volatile, permanent, mostly read-only (3 marks).",
+    "isCompulsory": false
+  },
+  {
+    "quesNo": "Q3a",
+    "question": "What is a computer network?",
+    "marks": "3",
+    "evaluationCriteria": "Two or more computers linked to share data and resources.",
+    "isCompulsory": false
+  },
+  {
+    "quesNo": "Q3b",
+    "question": "State two advantages of a computer network.",
+    "marks": "4",
+    "evaluationCriteria": "2 marks each, e.g. resource sharing, easy communication, centralised data backup.",
+    "isCompulsory": false
+  }
+]

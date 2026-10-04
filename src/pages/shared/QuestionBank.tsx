@@ -3,14 +3,16 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import { Library, Plus, Search, Pencil, Trash2, Loader2, X, Check, BookOpen } from 'lucide-react';
+import { Library, Plus, Search, Pencil, Trash2, Loader2, X, Check, BookOpen, Upload, Download } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import QuestionImage from '../../components/ui/QuestionImage';
 import QuestionImageField from '../../components/ui/QuestionImageField';
 import {
   addBankQuestion, deleteBankQuestion, getBankCourses, getBankForCourse, updateBankQuestion, uploadQuestionImage,
+  uploadBankQuestions,
 } from '../../api/endpoints';
 import { tx } from '../../utils/terms';
+import { downloadQuestionTemplate, downloadTemplateGuide } from '../../utils/questionTemplates';
 
 const TYPE_LABEL: Record<string, string> = { MCQ: 'Multiple choice', TRUE_FALSE: 'True / False', MATCHING: 'Matching', FILL_BLANK: 'Fill in the blank', NUMERIC: 'Numeric', THEORY: 'Theory (written answer)' };
 const DIFF_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
@@ -44,6 +46,7 @@ export default function QuestionBank() {
   const [diffFilter, setDiffFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [editing, setEditing] = useState<Form | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const courses = useQuery({ queryKey: ['bank', 'courses'], queryFn: getBankCourses });
   const bank = useQuery({
@@ -127,6 +130,7 @@ export default function QuestionBank() {
                 <option value="">All types</option>
                 {Object.entries(TYPE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
+              <button className="qb-btn qb-btn-outline" onClick={() => setUploadOpen(true)} disabled={courseId == null}><Upload size={15} /> Upload questions</button>
               <button className="qb-btn" onClick={() => setEditing({ ...EMPTY })} disabled={courseId == null}><Plus size={15} /> Add question</button>
             </div>
 
@@ -136,7 +140,7 @@ export default function QuestionBank() {
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={22} color="#5156be" className="qb-spin" /></div>
             ) : filtered.length === 0 ? (
               <div className="qb-empty"><Library size={30} />
-                <p>{questions.length ? 'No questions match these filters.' : 'This bank is empty. Add questions here, or use "Save to bank" on any quiz\'s questions page.'}</p>
+                <p>{questions.length ? 'No questions match these filters.' : 'This bank is empty. Add or upload questions here, or use "Save to bank" on any quiz\'s questions page.'}</p>
               </div>
             ) : filtered.map(q => {
               const d = DIFF_STYLE[q.difficulty] ?? DIFF_STYLE.MEDIUM;
@@ -195,6 +199,12 @@ export default function QuestionBank() {
           onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refresh(); }} />
       )}
 
+      {uploadOpen && courseId != null && (
+        <BankUploadDialog courseId={courseId} topics={bank.data?.topics ?? []}
+          courseLabel={courses.data?.find((c: any) => c.courseId === courseId)?.courseCode ?? 'this course'}
+          onClose={() => setUploadOpen(false)} onUploaded={() => { setUploadOpen(false); refresh(); }} />
+      )}
+
       <style>{`
         .qb-grid { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
         .qb-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.05); }
@@ -226,8 +236,224 @@ export default function QuestionBank() {
         .qb-spin { animation: qb-spin 1s linear infinite; }
         @keyframes qb-spin { to { transform: rotate(360deg); } }
         @media (max-width: 860px) { .qb-grid { grid-template-columns: 1fr; } .qb-select { flex: 1 1 140px; } }
+        .qb-btn-outline { background: #fff; color: #5156be; border: 1.5px solid #c7d2fe; }
+        .qb-btn-outline:hover:not(:disabled) { background: #eef0ff; }
+
+        /* Dialogs (question editor, upload) */
+        .qbe-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 3000; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+        .qbe-modal { width: 100%; max-width: 620px; background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 20px 50px rgba(15,23,42,0.25); }
+        .qbe-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .qbe-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin: 4px 0 5px; }
+        .qbe-note { font-size: 12px; color: #64748b; margin: 8px 0 0; }
+        .qbe-link { display: inline-flex; align-items: center; gap: 4px; border: none; background: none; color: #5156be; font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 0; }
+        .qbe-ghost { height: 36px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer; }
+        .qbe-ghost:disabled, .qb-icon:disabled { opacity: 0.6; cursor: not-allowed; }
+        .qbu-templates { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
+        .qbu-tpl { display: inline-flex; align-items: center; gap: 6px; height: 32px; font-size: 12.5px; }
+        .qbu-defaults { display: grid; grid-template-columns: 1fr 180px; gap: 10px; }
+        .qbu-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; margin-top: 12px; padding: 18px; border: 2px dashed #c7d2fe; border-radius: 12px; background: #f8fafc; color: #5156be; cursor: pointer; text-align: center; transition: .2s; }
+        .qbu-drop:hover { background: #eef0ff; border-color: #5156be; }
+        .qbu-drop strong { font-size: 13px; color: #1e293b; word-break: break-all; }
+        .qbu-drop span { font-size: 11.5px; color: #94a3b8; }
+        .qbu-preview { margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; background: #fff; }
+        .qbu-preview-head { font-size: 12px; font-weight: 800; color: #4338ca; margin-bottom: 6px; }
+        .qbu-preview-row { font-size: 12.5px; color: #475569; padding: 3px 0; overflow-wrap: anywhere; }
+        .qbu-preview-sub { font-size: 12px; color: #64748b; margin: -2px 0 6px; }
+        .qbu-types { border: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .qbu-types legend { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0; }
+        .qbu-types-actions { display: inline-flex; gap: 10px; }
+        .qbu-type { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 9px; font-size: 12.5px; color: #475569; cursor: pointer; background: #fff; transition: .15s; }
+        .qbu-type input { width: 15px; height: 15px; accent-color: #5156be; flex-shrink: 0; }
+        .qbu-type.is-on { border-color: #a5b4fc; background: #eef0ff; color: #1e293b; font-weight: 600; }
+        .qbu-type.is-empty { opacity: 0.5; cursor: not-allowed; }
+        .qbu-type-count { margin-left: auto; font-size: 11px; font-weight: 800; color: #4338ca; background: #e0e7ff; border-radius: 10px; padding: 1px 8px; }
+        .qbu-error { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fdeeee; border: 1px solid #f5c2c2; color: #9f1f1f; font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+        @media (max-width: 560px) { .qbe-row3, .qbu-defaults, .qbu-types { grid-template-columns: 1fr; } }
       `}</style>
     </div>
+  );
+}
+
+/** Most questions one upload may hold (the server enforces the same limit). */
+const MAX_UPLOAD = 500;
+
+/**
+ * An uploaded item's type, by the server's rule (QuestionBankService.uploadType): its questionType in
+ * capitals; with none, "THEORY" for a quiz theory item ("question" and no "content"), otherwise "MCQ".
+ * Null when the entry isn't a { } block.
+ */
+const uploadItemType = (q: any): string | null => {
+  if (!q || typeof q !== 'object' || Array.isArray(q)) return null;
+  const raw = q.questionType;
+  const t = typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean' ? String(raw).trim() : '';
+  if (!t) return 'question' in q && !('content' in q) ? 'THEORY' : 'MCQ';
+  return t.toUpperCase();
+};
+
+const typeLabel = (t: string) => TYPE_LABEL[t] ?? `Unrecognised type "${t}"`;
+
+/** Bulk upload of a JSON file (the quiz bulk-upload format) into one course's bank. */
+function BankUploadDialog({ courseId, courseLabel, topics, onClose, onUploaded }: {
+  courseId: number; courseLabel: string; topics: string[]; onClose: () => void; onUploaded: () => void;
+}) {
+  const [fileName, setFileName] = useState('');
+  const [items, setItems] = useState<any[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [topic, setTopic] = useState('');
+  const [difficulty, setDifficulty] = useState('MEDIUM');
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';   // choosing the same file again still fires onChange
+    if (!file) return;
+    setFileName(file.name);
+    setItems([]);
+    setSelected([]);
+    setError('');
+    try {
+      const parsed = JSON.parse(await file.text());
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      if (!list.length) { setError('The file has no questions in it.'); return; }
+      const broken = list.findIndex(q => uploadItemType(q) == null);
+      if (broken >= 0) { setError(`Question ${broken + 1}: each question must be written inside { }.`); return; }
+      setItems(list);
+      setSelected(Array.from(new Set(list.map(q => uploadItemType(q)!))));   // every type in the file, ticked
+    } catch {
+      setError('This file is not valid JSON. Check for a missing or extra comma, quote or bracket (the "How to fill it" guide explains the rules).');
+    }
+  };
+
+  // How many of each type the file holds: the known types first (shown even at 0), then any unrecognised ones
+  const counts = useMemo(() => {
+    const c: Record<string, number> = Object.fromEntries(Object.keys(TYPE_LABEL).map(t => [t, 0]));
+    items.forEach(q => { const t = uploadItemType(q)!; c[t] = (c[t] ?? 0) + 1; });
+    return c;
+  }, [items]);
+  const chosen = useMemo(() => items.filter(q => selected.includes(uploadItemType(q)!)), [items, selected]);
+  const typesInFile = Object.keys(counts).filter(t => counts[t] > 0);
+  const toggleType = (t: string) => setSelected(s => s.includes(t) ? s.filter(x => x !== t) : [...s, t]);
+  const tooMany = chosen.length > MAX_UPLOAD;
+
+  const upload = async () => {
+    setUploading(true);
+    setError('');
+    try {
+      const r = await uploadBankQuestions(courseId, { topic: topic.trim() || undefined, difficulty, questions: items, types: selected });
+      toast.success(`${r.added} question${r.added !== 1 ? 's' : ''} added to the bank`
+        + (r.skipped ? ` · ${r.skipped} already there, skipped` : ''));
+      onUploaded();
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Could not upload the questions.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return createPortal(
+    <div className="qbe-overlay" onMouseDown={e => { if (e.target === e.currentTarget && !uploading) onClose(); }}>
+      <div role="dialog" aria-modal="true" aria-label="Upload questions to the bank" className="qbe-modal">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <strong style={{ fontSize: 15, color: '#1e293b' }}>Upload questions to {courseLabel}</strong>
+          <button onClick={onClose} aria-label="Close" className="qb-icon" disabled={uploading}><X size={15} /></button>
+        </div>
+        <p className="qbe-note" style={{ marginTop: 0 }}>
+          Choose a .json file of questions. The bank takes the same files as a quiz's bulk upload, and objective and theory
+          questions can be mixed in one file.
+        </p>
+
+        <div className="qbu-templates">
+          <button type="button" className="qbe-ghost qbu-tpl" onClick={() => downloadQuestionTemplate('BANK_OBJECTIVE')}>
+            <Download size={13} /> Objective template
+          </button>
+          <button type="button" className="qbe-ghost qbu-tpl" onClick={() => downloadQuestionTemplate('BANK_THEORY')}>
+            <Download size={13} /> Theory template
+          </button>
+          <button type="button" className="qbe-link" onClick={downloadTemplateGuide}>How to fill it</button>
+        </div>
+
+        <div className="qbu-defaults">
+          <div>
+            <label className="qbe-label" htmlFor="qbu-topic">Default topic (optional)</label>
+            <input id="qbu-topic" className="qb-input" list="qbu-topics" value={topic} onChange={e => setTopic(e.target.value)} placeholder="e.g. Loops" />
+            <datalist id="qbu-topics">{topics.map(t => <option key={t} value={t} />)}</datalist>
+          </div>
+          <div>
+            <label className="qbe-label" htmlFor="qbu-diff">Default difficulty</label>
+            <select id="qbu-diff" className="qb-input" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+              <option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+            </select>
+          </div>
+        </div>
+        <p className="qbe-note" style={{ marginTop: 4 }}>Used for questions in the file that don't set their own topic or difficulty.</p>
+
+        <label className="qbu-drop">
+          <input type="file" accept=".json,application/json" onChange={onFile} style={{ display: 'none' }} />
+          <Upload size={22} />
+          <strong>{fileName || 'Choose JSON file'}</strong>
+          <span>{fileName ? 'Click to choose a different file' : 'Click to browse'}</span>
+        </label>
+
+        {items.length > 0 && (
+          <fieldset className="qbu-types">
+            <legend className="qbe-label">
+              Question types to upload
+              <span className="qbu-types-actions">
+                <button type="button" className="qbe-link" onClick={() => setSelected(typesInFile)}>All</button>
+                <button type="button" className="qbe-link" onClick={() => setSelected([])}>None</button>
+              </span>
+            </legend>
+            {Object.keys(counts).map(t => (
+              <label key={t} className={`qbu-type ${selected.includes(t) ? 'is-on' : ''} ${counts[t] ? '' : 'is-empty'}`}>
+                <input type="checkbox" checked={selected.includes(t)} disabled={!counts[t]} onChange={() => toggleType(t)} />
+                <span>{typeLabel(t)}</span>
+                <span className="qbu-type-count">{counts[t]}</span>
+              </label>
+            ))}
+          </fieldset>
+        )}
+
+        {items.length > 0 && (
+          <div className="qbu-preview">
+            {chosen.length === 0 ? (
+              <div className="qbu-preview-head" style={{ color: '#9f1f1f' }}>Select at least one question type to upload.</div>
+            ) : (
+              <>
+                <div className="qbu-preview-head">
+                  Uploading {chosen.length} question{chosen.length !== 1 ? 's' : ''}:{' '}
+                  {Object.keys(counts).filter(t => counts[t] && selected.includes(t)).map(t => `${typeLabel(t)} (${counts[t]})`).join(' · ')}
+                </div>
+                {items.length > chosen.length && (
+                  <div className="qbu-preview-sub">
+                    {items.length - chosen.length} other question{items.length - chosen.length !== 1 ? 's' : ''} in this file will be left out.
+                  </div>
+                )}
+                {chosen.slice(0, 3).map((q, i) => (
+                  <div key={i} className="qbu-preview-row">
+                    <span className="qb-tag">{typeLabel(uploadItemType(q)!)}</span>{' '}
+                    {plainText(String(q?.content ?? q?.question ?? '')).slice(0, 70) || <em>(no question text)</em>}
+                  </div>
+                ))}
+                {chosen.length > 3 && <div className="qbu-preview-row" style={{ color: '#94a3b8' }}>…and {chosen.length - 3} more</div>}
+              </>
+            )}
+          </div>
+        )}
+
+        {tooMany && <div role="alert" className="qbu-error">Upload at most {MAX_UPLOAD} questions at a time ({chosen.length} chosen). Untick a type or split the file.</div>}
+        {error && <div role="alert" className="qbu-error">{error}</div>}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+          <button onClick={onClose} className="qbe-ghost" disabled={uploading}>Cancel</button>
+          <button onClick={upload} disabled={!chosen.length || tooMany || uploading} className="qb-btn">
+            {uploading ? <Loader2 size={14} className="qb-spin" /> : <Upload size={14} />}
+            {' '}Upload{chosen.length ? ` ${chosen.length} question${chosen.length !== 1 ? 's' : ''}` : ''}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -402,16 +628,6 @@ function BankQuestionEditor({ initial, courseId, topics, onClose, onSaved }: {
           <button onClick={save} disabled={saving} className="qb-btn">{saving && <Loader2 size={14} className="qb-spin" />} Save</button>
         </div>
       </div>
-      <style>{`
-        .qbe-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 3000; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
-        .qbe-modal { width: 100%; max-width: 620px; background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 20px 50px rgba(15,23,42,0.25); }
-        .qbe-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .qbe-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin: 4px 0 5px; }
-        .qbe-note { font-size: 12px; color: #64748b; margin: 8px 0 0; }
-        .qbe-link { display: inline-flex; align-items: center; gap: 4px; border: none; background: none; color: #5156be; font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 0; }
-        .qbe-ghost { height: 36px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer; }
-        @media (max-width: 560px) { .qbe-row3 { grid-template-columns: 1fr; } }
-      `}</style>
     </div>,
     document.body,
   );
