@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
-import { Upload, Download, FileSpreadsheet, Loader2, CheckCircle2, XCircle, Users, KeyRound, BookPlus, FileDown } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, Loader2, CheckCircle2, XCircle, Users, KeyRound, BookPlus, FileDown, Mail } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -94,8 +94,10 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
   const [result, setResult] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
+  const [notify, setNotify] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const tpl = TEMPLATES[type];
+  const isPeople = type !== 'courses';
 
   const reset = () => { setRows([]); setResult(null); setFileName(''); };
 
@@ -124,13 +126,14 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
     const invalid = result.total - result.valid;
     const ok = await Swal.fire({
       title: `Import ${result.valid} ${tpl.label.toLowerCase()}?`,
-      text: invalid ? `${invalid} row(s) with problems will be skipped.` : 'All rows passed the checks.',
+      text: (invalid ? `${invalid} row(s) with problems will be skipped.` : 'All rows passed the checks.')
+        + (isPeople && notify ? ' Each new user will be emailed their username and temporary password.' : ''),
       icon: 'question', showCancelButton: true, confirmButtonText: 'Import', confirmButtonColor: '#5156be',
     });
     if (!ok.isConfirmed) return;
     setBusy(true);
     try {
-      const res = await importRows(type, rows, true);
+      const res = await importRows(type, rows, true, isPeople && notify);
       setResult(res);
       toast.success(`${res.created} ${tpl.label.toLowerCase()} imported`);
     } catch (e: any) { toast.error(e?.response?.data?.message ?? 'Import failed'); }
@@ -203,6 +206,16 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
             )}
             {problems.length === 0 && !result.committed && <span className="dt-ok"><CheckCircle2 size={14} /> Every row passed the checks.</span>}
 
+            {isPeople && !result.committed && (
+              <label className="dt-note" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} />
+                Email each new user their username and temporary password
+              </label>
+            )}
+            {result.committed && result.emailed > 0 && (
+              <span className="dt-ok" style={{ marginTop: 8 }}><Mail size={14} /> Login details are being emailed to {result.emailed} user(s).</span>
+            )}
+
             <div className="dt-row" style={{ marginTop: 12 }}>
               {!result.committed && (
                 <button className="dt-btn" disabled={!result.valid} onClick={commit}>
@@ -217,7 +230,7 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
                 <KeyRound size={16} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div>
                   <b>{result.credentials.length} temporary password(s) were generated.</b> Download them now — they are not stored anywhere readable and can't be shown again.
-                  Ask each person to change their password after first sign-in.
+                  {result.emailed > 0 ? ' Each person has also been emailed their own login details; keep this file as a backup in case an email does not arrive.' : ' Ask each person to change their password after first sign-in.'}
                   <div style={{ marginTop: 8 }}><button className="dt-btn" onClick={downloadCredentials}><Download size={14} /> Download login details</button></div>
                 </div>
               </div>

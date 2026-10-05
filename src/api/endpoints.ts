@@ -606,8 +606,8 @@ export const downloadTranscriptPdf = async (studentId?: number) => {
 
 // ── Admin productivity (Phase 4) ──────────────────────────────────────────
 export type ImportType = 'students' | 'lecturers' | 'courses';
-export const importRows = (type: ImportType, rows: Record<string, string>[], commit: boolean) =>
-  client.post(`${apiRoot()}/admin-tools/import/${type}`, { rows }, { params: { commit } }).then(r => r.data);
+export const importRows = (type: ImportType, rows: Record<string, string>[], commit: boolean, notify = true) =>
+  client.post(`${apiRoot()}/admin-tools/import/${type}`, { rows }, { params: { commit, notify } }).then(r => r.data);
 export const bulkEnroll = (data: { programId: number; level: number; semester?: number | null }, commit: boolean) =>
   client.post(`${apiRoot()}/admin-tools/bulk-enroll`, data, { params: { commit } }).then(r => r.data);
 export const getResultsSummary = (programId: number, level?: number | '') =>
