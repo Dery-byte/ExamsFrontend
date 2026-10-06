@@ -1,31 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import RemarkControl from '../../components/examops/RemarkControl';
+import AppModal, { ModalState } from '../../components/ui/AppModal';
 import { getReport, getRegCourses, getReportsByUser, getTakenQuizzesOfCategoryByUser, downloadReportPdf, getOpenToEveryoneCourses } from '../../api/endpoints';
 import PageHeader from '../../components/PageHeader';
-import { 
-  X, 
-  Loader2, 
-  BookOpen, 
-  Award, 
+import {
+  Loader2,
+  BookOpen,
+  Award,
   Download,
   FileText,
   Activity,
   ArrowUpRight,
-  Clock
+  Clock,
+  AlertTriangle,
+  RotateCcw
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import { toNum, fmtNum, pct, gradeTone } from '../../utils/scores';
 
 /* ─── tiny helpers ──────────────────────────────────────────────── */
-const fmtScore = (marks: any, max: any) =>
-  `${parseFloat(marks || 0).toFixed(0)} / ${parseFloat(max || 0).toFixed(0)}`;
-
-const pct = (got: any, max: any) => {
-  const g = parseFloat(got || 0), m = parseFloat(max || 0);
-  return m > 0 ? Math.round((g / m) * 100) : 0;
-};
-
 const gradeColor = (p: number) =>
   p >= 70 ? 'var(--success)' : p >= 50 ? 'var(--warning)' : 'var(--danger)';
 
@@ -33,126 +27,139 @@ const gradeLabel = (p: number) =>
   p >= 70 ? 'EXCELLENT' : p >= 50 ? 'SATISFACTORY' : 'NEEDS IMPROVEMENT';
 
 /* ─── summary modal ─────────────────────────────────────────────── */
-/* ─── summary modal ─────────────────────────────────────────────── */
-function SummaryModal({ qId, onClose, userId }: { qId: number; onClose: () => void; userId: number }) {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const ref = useRef<HTMLDivElement>(null);
+function ScoreRing({ percent, color }: { percent: number; color: string }) {
+  const r = 42;
+  const c = 2 * Math.PI * r;
+  const filled = Math.max(0, Math.min(100, percent));
+  return (
+    <div className="am-ring" role="img" aria-label={`${percent}% overall`}>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r={r} className="am-ring-track" />
+        <circle cx="50" cy="50" r={r} className="am-ring-value"
+          style={{ stroke: color, strokeDasharray: c, strokeDashoffset: c * (1 - filled / 100) }} />
+      </svg>
+      <span className="am-ring-label" style={{ color }} aria-hidden="true">{percent}<small>%</small></span>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    getReport(userId, qId)
-      .then(setData)
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, [qId, userId]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [onClose]);
-
-  const quizType = data[0]?.quiz?.quizType ?? '';
-  const showObj  = quizType !== 'THEORY';
-  const showTh   = quizType !== 'OBJ';
-
-  return createPortal(
-    <div className="lexa-modal-overlay">
-      <div ref={ref} className="lexa-modal-content animate-zoom-in" style={{ maxWidth: 650, borderRadius: 12 }}>
-        <div className="lexa-modal-header" style={{ padding: '20px 25px', background: '#fff' }}>
-          <div>
-            <h5 className="lexa-modal-title" style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Performance Analytics</h5>
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#adb5bd' }}>Detailed evaluation breakdown for this session</p>
-          </div>
-          <button onClick={onClose} style={{ background: '#f8f9fa', border: 'none', color: '#adb5bd', cursor: 'pointer', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="close-btn-hover">
-            <X size={18} />
-          </button>
+function BreakdownRow({ label, hint, got, max, total }: {
+  label: string; hint?: string; got: number; max: number; total?: boolean;
+}) {
+  const p = pct(got, max);
+  const tone = gradeTone(p);
+  return (
+    <div className={`am-row${total ? ' am-row-total' : ''}`}>
+      <div className="am-row-head">
+        <div className="am-row-label">
+          <span>{label}</span>
+          {hint && <small>{hint}</small>}
         </div>
-
-        <div className="lexa-modal-body" style={{ padding: '25px' }}>
-          {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0' }}>
-              <Loader2 className="spin-ico" size={40} style={{ color: 'var(--primary)', marginBottom: 20 }} />
-              <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 700 }}>Processing candidate metrics...</p>
-            </div>
-          ) : data.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fcfdfe', border: '1px solid #f1f5f7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#e1e9f1' }}>
-                <Activity size={40} />
-              </div>
-              <h6 style={{ fontWeight: 800, color: '#adb5bd' }}>No Analytics Available</h6>
-              <p style={{ color: '#ced4da', fontSize: 13, maxWidth: 300, margin: '0 auto' }}>Detailed metrics are being processed. Please check back after official verification.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {data.map((r: any, i: number) => {
-                const total = parseFloat(r.marks || 0) + parseFloat(r.marksB || 0);
-                const max   = parseFloat(r.quiz?.maxMarks || 0) + parseFloat(r.maxScoreSectionB || 0);
-                const p     = pct(total, max);
-                const color = gradeColor(p);
-                return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                      <div className="lexa-card" style={{ marginBottom: 0, background: '#fcfdfe', border: '1px solid #f1f5f7' }}>
-                        <div className="lexa-card-body" style={{ textAlign: 'center', padding: '20px' }}>
-                          <h3 style={{ margin: 0, fontWeight: 800, color: color, fontSize: 28 }}>{total}</h3>
-                          <p style={{ margin: '4px 0 0', fontSize: 11, color: '#adb5bd', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Total Score</p>
-                        </div>
-                      </div>
-                      <div className="lexa-card" style={{ marginBottom: 0, background: '#fcfdfe', border: '1px solid #f1f5f7' }}>
-                        <div className="lexa-card-body" style={{ textAlign: 'center', padding: '20px' }}>
-                          <h3 style={{ margin: 0, fontWeight: 800, color: color, fontSize: 28 }}>{p}%</h3>
-                          <p style={{ margin: '4px 0 0', fontSize: 11, color: '#adb5bd', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Proficiency</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ padding: '18px 24px', borderRadius: 12, background: '#fcfdfe', display: 'flex', alignItems: 'center', gap: 15, border: `1px solid ${color}40` }}>
-                      <div style={{ width: 45, height: 45, borderRadius: '12px', background: color, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${color}40` }}>
-                        <Award size={24} />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: '#2a3142' }}>{gradeLabel(p)}</div>
-                        <div style={{ fontSize: 13, color: '#74788d', fontWeight: 600 }}>Candidate has achieved {p}% competency in this assessment module.</div>
-                      </div>
-                    </div>
-
-                    <div style={{ overflowX: 'auto', borderRadius: 8, border: '1px solid #f1f5f7' }}>
-                      <table className="table-lexa" style={{ marginBottom: 0 }}>
-                        <thead style={{ background: '#fcfdfe' }}>
-                          <tr>
-                            {showObj && <th style={{ padding: '15px' }}>Section A (Objective)</th>}
-                            {showTh  && <th style={{ padding: '15px' }}>Section B (Theory)</th>}
-                            <th style={{ textAlign: 'right', padding: '15px' }}>Aggregate Result</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            {showObj && (
-                              <td style={{ padding: '15px', fontWeight: 700, color: '#495057' }}>{r.marks} <span style={{ color: '#adb5bd', fontSize: 12 }}>/ {r.quiz?.maxMarks}</span></td>
-                            )}
-                            {showTh && (
-                              <td style={{ padding: '15px', fontWeight: 700, color: '#495057' }}>{r.marksB} <span style={{ color: '#adb5bd', fontSize: 12 }}>/ {r.maxScoreSectionB}</span></td>
-                            )}
-                            <td style={{ textAlign: 'right', fontWeight: 800, color: color, padding: '15px', fontSize: 16 }}>{total} <span style={{ color: '#adb5bd', fontSize: 12, fontWeight: 600 }}>/ {max}</span></td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        <div className="lexa-modal-footer" style={{ padding: '15px 25px', background: '#fcfdfe', borderTop: '1px solid #f1f5f7', textAlign: 'right' }}>
-          <button onClick={onClose} className="btn-lexa btn-lexa-primary" style={{ padding: '10px 30px', borderRadius: 8 }}>Acknowledge Analytics</button>
+        <div className="am-row-score">
+          <strong>{fmtNum(got)}</strong>
+          <span>/ {fmtNum(max)}</span>
+          <em style={{ color: tone.text }}>{p}%</em>
         </div>
       </div>
-    </div>,
-    document.body
+      <div className="am-bar" role="progressbar" aria-label={`${label} score`}
+        aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, p)}>
+        <div className="am-bar-fill" style={{ width: `${Math.min(100, p)}%`, background: tone.solid }} />
+      </div>
+    </div>
+  );
+}
+
+function SummaryModal({ qId, onClose, userId }: { qId: number; onClose: () => void; userId: number }) {
+  const [data, setData] = useState<any[]>([]);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus('loading');
+    getReport(userId, qId)
+      .then(res => {
+        if (cancelled) return;
+        setData(Array.isArray(res) ? res : []);
+        setStatus('ready');
+      })
+      .catch(() => { if (!cancelled) setStatus('error'); });
+    return () => { cancelled = true; };
+  }, [qId, userId, reloadKey]);
+
+  const quiz = data[0]?.quiz;
+  const quizLabel = [quiz?.category?.courseCode, quiz?.title].filter(Boolean).join(' · ');
+
+  return (
+    <AppModal
+      title="Performance Analytics"
+      subtitle="Detailed evaluation breakdown for this session"
+      meta={status === 'ready' && quizLabel
+        ? <><BookOpen size={13} aria-hidden="true" /><span title={quizLabel}>{quizLabel}</span></>
+        : undefined}
+      onClose={onClose}
+    >
+      {status === 'loading' ? (
+        <ModalState tone="loading" icon={<Loader2 className="am-spin" size={36} />}>Loading your results…</ModalState>
+      ) : status === 'error' ? (
+        <ModalState
+          tone="error"
+          icon={<AlertTriangle size={28} />}
+          title="Couldn't load analytics"
+          action={
+            <button type="button" className="btn-lexa btn-lexa-outline am-retry" onClick={() => setReloadKey(k => k + 1)}>
+              <RotateCcw size={14} aria-hidden="true" /> Try again
+            </button>
+          }
+        >
+          Check your connection and try again.
+        </ModalState>
+      ) : data.length === 0 ? (
+        <ModalState icon={<Activity size={28} />} title="No analytics available">
+          Detailed metrics are still being processed. Please check back after official verification.
+        </ModalState>
+      ) : (
+        <div className="am-reports">
+          {data.map((r: any, i: number) => {
+            const type  = r.quiz?.quizType ?? '';
+            const showObj = type !== 'THEORY';
+            const showTh  = type !== 'OBJ';
+            const objGot = toNum(r.marks),  objMax = toNum(r.quiz?.maxMarks);
+            const thGot  = toNum(r.marksB), thMax  = toNum(r.maxScoreSectionB);
+            const total = objGot + thGot;
+            const max   = objMax + thMax;
+            const p     = pct(total, max);
+            const tone  = gradeTone(p);
+            return (
+              <section key={r.id ?? i} className="am-report" aria-label={data.length > 1 ? `Attempt ${i + 1}` : undefined}>
+                {data.length > 1 && <div className="am-attempt">Attempt {i + 1}</div>}
+
+                <div className="am-summary" style={{ background: tone.soft, borderColor: tone.border }}>
+                  <ScoreRing percent={p} color={tone.solid} />
+                  <div className="am-summary-text">
+                    <span className="am-grade" style={{ color: tone.text, borderColor: tone.border }}>
+                      <Award size={13} aria-hidden="true" /> {gradeLabel(p)}
+                    </span>
+                    <div className="am-total">
+                      <strong>{fmtNum(total)}</strong>
+                      <span>/ {fmtNum(max)}</span>
+                    </div>
+                    <p>Total score across all sections</p>
+                  </div>
+                </div>
+
+                <div className="am-breakdown">
+                  <h3 className="am-section-title">Score breakdown</h3>
+                  {showObj && <BreakdownRow label="Section A" hint="Objective" got={objGot} max={objMax} />}
+                  {showTh  && <BreakdownRow label="Section B" hint="Theory" got={thGot} max={thMax} />}
+                  {showObj && showTh && <BreakdownRow label="Aggregate" got={total} max={max} total />}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </AppModal>
   );
 }
 
@@ -501,13 +508,66 @@ export default function LoadQuiz() {
           border-color: #ced4da;
           color: #495057;
         }
-        .lexa-modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
-          display: flex; align-items: center; justify-content: center; z-index: 9000; animation: fadeIn .3s ease;
+        /* ── Performance Analytics modal content (shell styles live in AppModal.css) ── */
+        .am-reports { display: flex; flex-direction: column; gap: 28px; }
+        .am-report + .am-report { padding-top: 28px; border-top: 1px dashed #e1e9f1; }
+        .am-attempt { margin-bottom: 12px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #74788d; }
+
+        .am-summary {
+          display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 22px;
+          padding: 20px 22px; border: 1px solid; border-radius: 12px;
         }
-        .animate-zoom-in { animation: zoomIn .3s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .close-btn-hover:hover { background: #fee !important; color: var(--danger) !important; }
+        .am-ring { position: relative; width: 104px; height: 104px; }
+        .am-ring svg { display: block; width: 100%; height: 100%; transform: rotate(-90deg); }
+        .am-ring circle { fill: none; stroke-width: 9; }
+        .am-ring-track { stroke: rgba(42, 49, 66, 0.08); }
+        .am-ring-value { stroke-linecap: round; transition: stroke-dashoffset .6s ease-out; }
+        .am-ring-label {
+          position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+          font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums;
+        }
+        .am-ring-label small { margin: 6px 0 0 1px; font-size: 13px; }
+        .am-summary-text { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+        .am-grade {
+          display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+          border: 1px solid; border-radius: 999px; background: #fff;
+          font-size: 11px; font-weight: 800; letter-spacing: .05em;
+        }
+        .am-total { display: flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; }
+        .am-total strong { font-size: 30px; font-weight: 800; color: #2a3142; line-height: 1.1; }
+        .am-total span { font-size: 15px; font-weight: 700; color: #adb5bd; }
+        .am-summary-text p { margin: 0; font-size: 13px; font-weight: 600; color: #74788d; }
+
+        .am-breakdown { margin-top: 24px; }
+        .am-section-title { margin: 0 0 4px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #74788d; }
+        .am-row { padding: 14px 0; border-bottom: 1px solid #f1f5f7; }
+        .am-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .am-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+        .am-row-label { min-width: 0; display: flex; align-items: baseline; gap: 8px; font-size: 14px; font-weight: 700; color: #2a3142; }
+        .am-row-label small { font-size: 12px; font-weight: 600; color: #adb5bd; }
+        .am-row-score { display: flex; align-items: baseline; gap: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; color: #adb5bd; }
+        .am-row-score strong { font-size: 15px; font-weight: 800; color: #2a3142; }
+        .am-row-score em { min-width: 44px; margin-left: 8px; font-style: normal; font-weight: 800; text-align: right; }
+        .am-bar { height: 6px; border-radius: 999px; background: #f1f3f7; overflow: hidden; }
+        .am-bar-fill { height: 100%; border-radius: inherit; transition: width .6s ease-out; }
+        .am-row-total .am-row-label { font-weight: 800; }
+        .am-row-total .am-row-score strong { font-size: 16px; }
+        .am-row-total .am-bar { height: 8px; }
+
+        /* Phones: stack the ring above the score */
+        @media (max-width: 520px) {
+          .am-summary { grid-template-columns: 1fr; justify-items: center; gap: 14px; padding: 18px 16px; text-align: center; }
+          .am-summary-text { align-items: center; }
+          .am-ring { width: 96px; height: 96px; }
+        }
+        /* Very narrow phones: section hint drops under its label */
+        @media (max-width: 360px) {
+          .am-row-label { flex-direction: column; gap: 0; }
+          .am-row-score em { min-width: 36px; margin-left: 4px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .am-ring-value, .am-bar-fill { transition: none; }
+        }
         .text-primary { color: var(--primary); }
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -536,10 +596,6 @@ export default function LoadQuiz() {
           }
           .loadquiz-mobile-only {
             display: block !important;
-          }
-          .lexa-modal-content {
-            width: 95vw !important;
-            max-width: 650px !important;
           }
         }
       `}</style>

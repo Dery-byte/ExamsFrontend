@@ -1,0 +1,164 @@
+/* ─── AppModal shell ───────────────────────────────────────────── */
+.am-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(34, 39, 54, 0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  overscroll-behavior: contain;
+  animation: amFade .2s ease-out;
+}
+
+.am-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  outline: none;
+  box-shadow: 0 24px 64px rgba(18, 38, 63, 0.22);
+  animation: amPop .22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.am-dialog-sm { max-width: 440px; }
+.am-dialog-lg { max-width: 720px; }
+
+.am-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f7;
+}
+.am-header-text { min-width: 0; }
+.am-title { margin: 0; font-size: 18px; font-weight: 800; color: #2a3142; line-height: 1.3; overflow-wrap: anywhere; }
+.am-subtitle { margin: 4px 0 0; font-size: 13px; color: #74788d; line-height: 1.4; }
+.am-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin-top: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(122, 111, 190, 0.08);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.am-meta svg { flex-shrink: 0; }
+.am-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.am-icon-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin: -6px -8px 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #f5f6f8;
+  color: #74788d;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.am-icon-btn:hover { background: #feeef1; color: var(--danger); }
+.am-icon-btn:focus-visible,
+.am-dialog .btn-lexa:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.am-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px;
+}
+
+.am-footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid #f1f5f7;
+  background: #fcfdfe;
+}
+.am-footer .btn-lexa {
+  min-width: 112px;
+  justify-content: center;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* ─── Body states (loading / empty / error) ────────────────────── */
+.am-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 40px 12px; }
+.am-state-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f6f8;
+  color: #adb5bd;
+}
+.am-state-icon-error { background: #feeef1; color: var(--danger); }
+.am-state-icon-loading { background: transparent; color: var(--primary); margin-bottom: 8px; }
+.am-state h3 { margin: 0 0 6px; font-size: 15px; font-weight: 800; color: #2a3142; }
+.am-state p { margin: 0; max-width: 320px; font-size: 13px; font-weight: 600; color: #74788d; line-height: 1.5; }
+.am-retry { margin-top: 18px; gap: 6px; padding: 8px 18px; border-radius: 8px; cursor: pointer; }
+.am-spin { animation: amSpin 1s linear infinite; }
+
+@keyframes amFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes amPop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes amSheet { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
+@keyframes amSpin { to { transform: rotate(360deg); } }
+
+/* Short viewports (landscape phones, split screen): use nearly all the height. */
+@media (max-height: 560px) and (min-width: 521px) {
+  .am-overlay { padding: 8px 16px; }
+  .am-dialog { max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); }
+  .am-header { padding: 14px 20px 12px; }
+  .am-body { padding: 16px 20px; }
+  .am-footer { padding: 10px 20px; }
+}
+
+/* Phones: bottom sheet with a full-width action. */
+@media (max-width: 520px) {
+  .am-overlay { align-items: flex-end; padding: 0; }
+  .am-dialog,
+  .am-dialog-sm,
+  .am-dialog-lg {
+    max-width: none;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 16px 16px 0 0;
+    animation-name: amSheet;
+  }
+  .am-header { padding: 18px 16px 14px; }
+  .am-title { font-size: 17px; }
+  .am-body { padding: 20px 16px; }
+  .am-footer { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .am-footer .btn-lexa { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-overlay, .am-dialog { animation: none; }
+  .am-spin { animation-duration: 2s; }
+}

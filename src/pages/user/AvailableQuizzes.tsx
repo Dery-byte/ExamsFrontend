@@ -4,8 +4,110 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getRegCourses, getActiveQuizzesOfCategory, getReport, getOpenToEveryoneCourses } from '../../api/endpoints';
 import { quizInstructionsPath } from '../../utils/quizLink';
 import PageHeader from '../../components/PageHeader';
-import { Search, Loader2, BookOpen, AlertCircle, Ban, HelpCircle, Award, X, Clock, PlayCircle, FileText, ChevronRight, Activity, Calendar, Filter, PieChart, BarChart2, CheckCircle, TrendingUp } from 'lucide-react';
+import AppModal, { ModalState } from '../../components/ui/AppModal';
+import { Search, Loader2, BookOpen, AlertCircle, AlertTriangle, Ban, Award, Clock, PlayCircle, FileText, ChevronRight, Activity, Calendar, RotateCcw } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import { fmtNum, gradeTone, reportTotals, parseServerDate, fmtDateTime } from '../../utils/scores';
+
+/* ─── attempt history modal ─────────────────────────────────────── */
+function AttemptHistoryModal({ quiz, userId, onClose }: { quiz: any; userId: number; onClose: () => void }) {
+  const [data, setData] = useState<any[]>([]);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus('loading');
+    getReport(userId, quiz.qId)
+      .then(res => {
+        if (cancelled) return;
+        setData(Array.isArray(res) ? res : []);
+        setStatus('ready');
+      })
+      .catch(() => { if (!cancelled) setStatus('error'); });
+    return () => { cancelled = true; };
+  }, [quiz.qId, userId, reloadKey]);
+
+  // Number attempts oldest → newest, then list the newest first.
+  const attempts = data
+    .map(r => ({ r, t: parseServerDate(r.submissionDate)?.getTime() ?? 0 }))
+    .sort((a, b) => (a.t - b.t) || ((a.r.id ?? 0) - (b.r.id ?? 0)))
+    .map(({ r }, i) => ({ r, n: i + 1 }))
+    .reverse();
+
+  const quizLabel = [quiz.category?.courseCode, quiz.title].filter(Boolean).join(' · ');
+
+  return (
+    <AppModal
+      title="Attempt History"
+      subtitle={status === 'ready' && data.length > 0
+        ? `${data.length} submitted attempt${data.length === 1 ? '' : 's'} for this assessment`
+        : 'Your submitted attempts for this assessment'}
+      meta={quizLabel ? <><BookOpen size={13} aria-hidden="true" /><span title={quizLabel}>{quizLabel}</span></> : undefined}
+      onClose={onClose}
+    >
+      {status === 'loading' ? (
+        <ModalState tone="loading" icon={<Loader2 className="am-spin" size={36} />}>Loading your attempts…</ModalState>
+      ) : status === 'error' ? (
+        <ModalState
+          tone="error"
+          icon={<AlertTriangle size={28} />}
+          title="Couldn't load your history"
+          action={
+            <button type="button" className="btn-lexa btn-lexa-outline am-retry" onClick={() => setReloadKey(k => k + 1)}>
+              <RotateCcw size={14} aria-hidden="true" /> Try again
+            </button>
+          }
+        >
+          Check your connection and try again.
+        </ModalState>
+      ) : attempts.length === 0 ? (
+        <ModalState icon={<FileText size={28} />} title="No attempts yet">
+          You haven't attempted this assessment yet. Your results will appear here once you submit.
+        </ModalState>
+      ) : (
+        <ol className="ah-list">
+          {attempts.map(({ r, n }) => {
+            const { total, max, percent } = reportTotals(r);
+            const tone = gradeTone(percent);
+            const date = fmtDateTime(r.submissionDate);
+            const completed = (r.progress ?? 'Completed') === 'Completed';
+            return (
+              <li key={r.id ?? n} className="ah-item">
+                <div className="ah-index" aria-hidden="true">{n}</div>
+                <div className="ah-main">
+                  <div className="ah-title">
+                    <span>Attempt {n}</span>
+                    <span className={`lexa-badge badge-soft-${completed ? 'success' : 'warning'} ah-badge`}>{r.progress ?? 'Completed'}</span>
+                  </div>
+                  <div className="ah-sub">
+                    <Calendar size={12} aria-hidden="true" />
+                    <span>{date || 'Submission date unavailable'}</span>
+                  </div>
+                </div>
+                <div className="ah-score">
+                  {r.isReviewed ? (
+                    <>
+                      <div className="ah-score-value">
+                        <strong>{fmtNum(total)}</strong>
+                        <span>/ {fmtNum(max)}</span>
+                      </div>
+                      <div className="ah-score-pct" style={{ color: tone.text }}>{percent}%</div>
+                    </>
+                  ) : (
+                    <span className="ah-pending" title={tx('Results available once reviewed by lecturer')}>
+                      <Clock size={12} aria-hidden="true" /> Pending review
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </AppModal>
+  );
+}
 
 export default function AvailableQuizzes() {
   const { user } = useAuth();
@@ -19,9 +121,7 @@ export default function AvailableQuizzes() {
   const [searchQuery, setSearchQuery]         = useState('');
   const [isLoadingUserRecords, setLoadingRec] = useState(true);
   const [isLoadingQuizzes, setLoadingQ]       = useState(false);
-  const [reportModal, setReportModal]         = useState(false);
-  const [reportData, setReportData]           = useState<any[]>([]);
-  const [isLoadingReportData, setLoadingRep]  = useState(false);
+  const [historyQuiz, setHistoryQuiz]         = useState<any | null>(null);
 
   useEffect(() => { loadRegisteredCourses(); }, []);
 
@@ -79,18 +179,6 @@ export default function AvailableQuizzes() {
       ));
     }
   }, [searchQuery, availablequizzes]);
-
-  const viewReport = async (qId: number) => {
-    if (!user?.id) return;
-    setReportModal(true);
-    setLoadingRep(true);
-    try { 
-      const report = await getReport(user.id, qId); 
-      setReportData(Array.isArray(report) ? report : []); 
-    }
-    catch { setReportData([]); }
-    finally { setLoadingRep(false); }
-  };
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
@@ -233,7 +321,8 @@ export default function AvailableQuizzes() {
 
               <div style={{ padding: '16px 24px', background: '#fcfdfe', borderTop: '1px solid #f1f5f7', display: 'flex', gap: 12 }}>
                 <button 
-                  onClick={() => viewReport(q.qId)} 
+                  type="button"
+                  onClick={() => setHistoryQuiz(q)}
                   className="btn-lexa btn-lexa-outline"
                   style={{ flex: 1, padding: '10px', fontSize: 13, borderRadius: 6 }}
                 >
@@ -264,83 +353,8 @@ export default function AvailableQuizzes() {
         </div>
       )}
 
-      {/* Results Modal - Enhanced Lexa Design */}
-      {reportModal && (
-        <div className="lexa-modal-overlay" onClick={() => setReportModal(false)}>
-          <div className="lexa-modal-content animate-zoom-in" style={{ maxWidth: 650, borderRadius: 12, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-            <div className="lexa-modal-header" style={{ padding: '20px 25px', borderBottom: '1px solid #f1f5f7', background: '#fff' }}>
-              <div>
-                <h5 className="lexa-modal-title" style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Assessment Performance Report</h5>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#adb5bd' }}>Verified examination attempt records</p>
-              </div>
-              <button onClick={() => setReportModal(false)} style={{ background: '#f8f9fa', border: 'none', color: '#adb5bd', cursor: 'pointer', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} className="close-btn-hover">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="lexa-modal-body" style={{ padding: '25px' }}>
-              {isLoadingReportData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0' }}>
-                  <Loader2 className="spin-ico" size={40} style={{ color: 'var(--primary)', marginBottom: 20 }} />
-                  <h6 style={{ fontWeight: 700, color: '#495057' }}>Retrieving Candidate Data</h6>
-                  <p style={{ fontSize: 13, color: '#adb5bd' }}>Decryption in progress...</p>
-                </div>
-              ) : reportData.length === 0 ? (
-                <div style={{ padding: '60px 0', textAlign: 'center' }}>
-                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#fcfdfe', border: '1px solid #f1f5f7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#e1e9f1' }}>
-                    <FileText size={40} />
-                  </div>
-                  <h6 style={{ fontWeight: 800, color: '#adb5bd' }}>No Records Found</h6>
-                  <p style={{ fontSize: 13, color: '#ced4da', maxWidth: 300, margin: '0 auto' }}>You haven't attempted this assessment yet. All future results will appear here.</p>
-                </div>
-              ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table className="table-lexa">
-                    <thead>
-                      <tr>
-                        <th style={{ padding: '15px 12px' }}>Candidate Details</th>
-                        <th style={{ textAlign: 'center', padding: '15px 12px' }}>Final Score</th>
-                        <th style={{ textAlign: 'right', padding: '15px 12px' }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reportData.map((r: any, i: number) => (
-                        <tr key={i}>
-                          <td style={{ padding: '15px 12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <div style={{ width: 35, height: 35, borderRadius: '50%', background: 'rgba(122, 111, 190, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12 }}>
-                                {r.user?.firstname?.[0]}
-                              </div>
-                              <div>
-                                <div style={{ fontWeight: 800, color: '#2a3142', fontSize: 14 }}>{r.user?.firstname} {r.user?.lastname}</div>
-                                <div style={{ fontSize: 11, color: '#adb5bd', fontWeight: 600 }}>ID: {r.user?.username}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td style={{ textAlign: 'center', padding: '15px 12px' }}>
-                            <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
-                               <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--primary)' }}>
-                                 {parseFloat(r.marks||0) + parseFloat(r.marksB||0)}
-                               </span>
-                               <span style={{ fontSize: 10, color: '#adb5bd', fontWeight: 700 }}>POINTS</span>
-                            </div>
-                          </td>
-                          <td style={{ textAlign: 'right', padding: '15px 12px' }}>
-                            <span className={`lexa-badge badge-soft-${r.progress === 'Completed' ? 'success' : 'warning'}`} style={{ padding: '4px 12px', fontSize: 11, borderRadius: 4 }}>
-                              {r.progress}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-            <div className="lexa-modal-footer" style={{ padding: '15px 25px', background: '#fcfdfe', borderTop: '1px solid #f1f5f7', textAlign: 'right' }}>
-              <button onClick={() => setReportModal(false)} className="btn-lexa btn-lexa-primary" style={{ padding: '10px 25px', borderRadius: 8 }}>Close Report</button>
-            </div>
-          </div>
-        </div>
+      {historyQuiz && user?.id && (
+        <AttemptHistoryModal quiz={historyQuiz} userId={user.id} onClose={() => setHistoryQuiz(null)} />
       )}
 
       <style>{`
@@ -348,9 +362,6 @@ export default function AvailableQuizzes() {
           transform: translateY(-4px);
           box-shadow: 0 8px 16px rgba(18, 38, 63, 0.08) !important;
           border-color: var(--primary) !important;
-        }
-        @media (max-width: 576px) {
-          .lexa-modal-content { width: 95vw !important; border-radius: 8px !important; }
         }
         .btn-lexa-outline {
           background: transparent;
@@ -362,18 +373,45 @@ export default function AvailableQuizzes() {
           border-color: #ced4da;
           color: #495057;
         }
-        .lexa-modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
-          display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn .3s ease;
-        }
-        .animate-zoom-in { animation: zoomIn .3s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .close-btn-hover:hover { background: #fee !important; color: var(--danger) !important; }
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        @media (max-width: 576px) {
-          .lexa-modal-content { width: 95vw !important; border-radius: 8px !important; }
+        /* ── Attempt History modal content (shell styles live in AppModal.css) ── */
+        .ah-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+        .ah-item {
+          display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px;
+          padding: 14px 16px; border: 1px solid #eef1f5; border-radius: 12px; background: #fcfdfe;
+        }
+        .ah-index {
+          width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(122, 111, 190, 0.1); color: var(--primary);
+          font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums;
+        }
+        .ah-main { min-width: 0; }
+        .ah-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-size: 14px; font-weight: 800; color: #2a3142; }
+        .ah-badge { padding: 2px 8px !important; font-size: 10px !important; border-radius: 4px !important; text-transform: uppercase; letter-spacing: .04em; }
+        .ah-sub { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; font-weight: 600; color: #74788d; }
+        .ah-sub svg { flex-shrink: 0; color: #adb5bd; }
+        .ah-sub span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ah-score { text-align: right; white-space: nowrap; }
+        .ah-score-value { display: flex; align-items: baseline; justify-content: flex-end; gap: 4px; font-variant-numeric: tabular-nums; }
+        .ah-score-value strong { font-size: 18px; font-weight: 800; color: #2a3142; line-height: 1.2; }
+        .ah-score-value span { font-size: 13px; font-weight: 700; color: #adb5bd; }
+        .ah-score-pct { margin-top: 2px; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .ah-pending {
+          display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px;
+          background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 11px; font-weight: 800;
+        }
+
+        /* Narrow phones: score moves under the attempt details */
+        @media (max-width: 400px) {
+          .ah-item { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "index main" "index score"; row-gap: 10px; padding: 12px; }
+          .ah-index { grid-area: index; align-self: start; }
+          .ah-main { grid-area: main; }
+          .ah-score { grid-area: score; display: flex; align-items: baseline; gap: 8px; text-align: left; }
+          .ah-score-value { justify-content: flex-start; }
+          .ah-score-pct { margin-top: 0; }
         }
       `}</style>
     </div>
