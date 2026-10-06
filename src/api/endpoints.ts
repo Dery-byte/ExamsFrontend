@@ -476,6 +476,8 @@ export type FeatureKey =
 
 export interface FeatureFlags {
   marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean;
+  /** Super Admin switch: students see School Fees (nav entry, dashboard card, page). */
+  feesStudent?: boolean;
   /** Each feature's state for the signed-in user (system switch + their department's choice). */
   features?: Partial<Record<FeatureKey, boolean>>;
 }
@@ -686,3 +688,86 @@ export const reportClientError = (data: { page: string; message: string; stack?:
 
 // Developers: read-only list (rows are added directly in the developer_email table)
 export const getDevelopers = () => client.get(`${developerRootUrl()}/developers`).then(r => r.data);
+
+// ── Fees & payments ───────────────────────────────────────────────────────
+export type FeeStatus = 'PAID' | 'PART_PAID' | 'UNPAID' | 'NO_FEE' | 'NO_CLASS';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'ABANDONED' | 'VOIDED';
+export type PaymentMethod = 'PAYSTACK' | 'CASH' | 'BANK_TRANSFER' | 'OTHER';
+
+export interface FeeComponentItem { name: string; amount: number }
+/** One item of a student's itemised fee: what it costs, what's been paid towards it and what's left. */
+export interface FeeItemStatus { name: string; amount: number; paid: number; balance: number }
+export interface FeeScheduleInfo {
+  id: number; programId: number; level: number; sessionId: number; amount: number; itemised: boolean;
+  components: FeeComponentItem[]; dueDate: string | null; note: string | null; updatedAt: string; updatedBy: string | null;
+}
+export interface SessionRef { id: number; name: string; current: boolean }
+export interface FeePaymentInfo {
+  id: number; reference: string; amount: number; currency: string; status: PaymentStatus; method: PaymentMethod;
+  channel: string | null; message: string | null; createdAt: string; paidAt: string | null; sessionName: string;
+  programName: string | null; level: number | null; studentName: string; studentId: string;
+  /** The breakdown items this payment was for; empty when it was for the fee as a whole. */
+  items: FeeComponentItem[];
+  studentEmail?: string; recordedBy?: string | null; note?: string | null; gatewayTransactionId?: number | null;
+}
+export interface MyFees {
+  currency: string; session: SessionRef; onlinePayment: boolean; partPayment: boolean; itemPayment: boolean; minimumPayment: number;
+  student: { name: string; studentId: string; email: string; programName: string | null; level: number | null };
+  fee: FeeScheduleInfo | null; paid: number; balance: number; credit: number; status: FeeStatus;
+  /** Per-item paid and balance when the fee is itemised (empty otherwise). */
+  items: FeeItemStatus[];
+  payments: FeePaymentInfo[];
+}
+export interface FeeLevelRow {
+  level: number; students: number | null; schedule: FeeScheduleInfo | null; collected: number;
+  billed?: number; outstanding?: number;
+}
+export interface FeeProgramRow { id: number; name: string; code: string; departmentName: string | null; enabled: boolean; levels: FeeLevelRow[] }
+export interface FeeOverview {
+  session: SessionRef; sessions: SessionRef[]; currency: string;
+  paystack: { configured: boolean; mode: 'live' | 'test' | null };
+  settings: { visibleToStudents: boolean; onlinePayment: boolean; partPayment: boolean; itemPayment: boolean };
+  totals: { billed: number | null; collected: number; outstanding: number | null; students: number | null; levelsSet: number; levelsTotal: number };
+  programs: FeeProgramRow[];
+}
+export interface FeeScheduleInput {
+  programId: number; level: number; sessionId: number; itemised: boolean; amount?: number;
+  components?: FeeComponentItem[]; dueDate?: string | null; note?: string | null; alsoApplyToLevels?: number[];
+}
+export interface FeeStudentMatch {
+  id: number; name: string; studentId: string; email: string; programName: string | null; level: number | null;
+  fee: number | null; balance: number | null; items: FeeItemStatus[];
+}
+export interface PaymentPage { content: FeePaymentInfo[]; total: number; page: number; size: number }
+
+/** Student: own fee, balance and history (403 while the Super Admin keeps fees hidden). */
+export const getMyFees = (): Promise<MyFees> => client.get(`${apiRoot()}/fees/me`).then(r => r.data);
+/**
+ * Student: starts a Paystack checkout; send the browser to authorizationUrl.
+ * Nothing = the full balance; amount = a part payment; items = those items of the breakdown.
+ */
+export const startFeePayment = (pay: { amount?: number; items?: string[] } = {}): Promise<{ reference: string; authorizationUrl: string }> =>
+  client.post(`${apiRoot()}/fees/pay`, pay).then(r => r.data);
+/** Student: back from Paystack — confirm the payment and get its final state. */
+export const confirmFeePayment = (reference: string): Promise<FeePaymentInfo> =>
+  client.post(`${apiRoot()}/fees/payments/${encodeURIComponent(reference)}/confirm`).then(r => r.data);
+
+const feesAdminUrl = () => `${superAdminRootUrl()}/fees`;
+export const getFeeOverview = (sessionId?: number): Promise<FeeOverview> =>
+  client.get(`${feesAdminUrl()}/overview`, { params: sessionId ? { sessionId } : {} }).then(r => r.data);
+export const saveFeeSchedule = (data: FeeScheduleInput): Promise<FeeScheduleInfo[]> =>
+  client.put(`${feesAdminUrl()}/schedules`, data).then(r => r.data);
+export const deleteFeeSchedule = (id: number) => client.delete(`${feesAdminUrl()}/schedules/${id}`).then(r => r.data);
+export const copyFeeSchedules = (fromSessionId: number, toSessionId: number, overwrite: boolean): Promise<{ copied: number; skipped: number }> =>
+  client.post(`${feesAdminUrl()}/schedules/copy`, { fromSessionId, toSessionId, overwrite }).then(r => r.data);
+export const getFeePayments = (params: { sessionId?: number; status?: string; programId?: number; level?: number; q?: string; page?: number; size?: number }): Promise<PaymentPage> =>
+  client.get(`${feesAdminUrl()}/payments`, { params }).then(r => r.data);
+export const searchFeeStudents = (q: string): Promise<FeeStudentMatch[]> =>
+  client.get(`${feesAdminUrl()}/students`, { params: { q } }).then(r => r.data);
+/** amount is ignored when items are given: the server charges those items' balances. */
+export const recordFeePayment = (data: { studentId: number; amount?: number; method: PaymentMethod; paidOn?: string; note?: string; items?: string[] }): Promise<FeePaymentInfo> =>
+  client.post(`${feesAdminUrl()}/payments/manual`, data).then(r => r.data);
+export const voidFeePayment = (id: number, reason: string): Promise<FeePaymentInfo> =>
+  client.post(`${feesAdminUrl()}/payments/${id}/void`, { reason }).then(r => r.data);
+export const recheckFeePayment = (id: number): Promise<FeePaymentInfo> =>
+  client.post(`${feesAdminUrl()}/payments/${id}/recheck`).then(r => r.data);

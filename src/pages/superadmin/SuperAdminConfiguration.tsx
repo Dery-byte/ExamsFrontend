@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { saGetSystemSettings, saUpdateSystemSettings, saGetPrograms, saToggleProgram } from '../../api/endpoints';
-import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer } from 'lucide-react';
+import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
@@ -11,6 +12,14 @@ const MARKS_SHEET_TOGGLES = [
   { key: 'MARKS_SHEET_VISIBLE_ADMIN',    label: tx('Admins (HODs)'), sub: 'Show "Marks Sheets" in the Admin navigation.',         icon: <ClipboardList size={20} />, color: '#8b5cf6' },
   { key: 'MARKS_SHEET_VISIBLE_LECTURER', label: tx('Lecturers'),     sub: tx('Show "Marks Sheet" (marks entry) in the Lecturer navigation.'), icon: <PenLine size={20} />,       color: '#0ea5e9' },
   { key: 'MARKS_SHEET_VISIBLE_STUDENT',  label: tx('Students'),      sub: tx('Show "Report Cards" (published marks) in the Student navigation.'), icon: <GraduationCap size={20} />, color: '#10b981' },
+];
+
+/** Fees switches; `def` is the value used when the setting has never been saved. */
+const FEE_TOGGLES = [
+  { key: 'FEES_VISIBLE_STUDENT', def: false, label: tx('Show fees to students'), sub: tx('Adds "School Fees" to the student navigation and a fee card to their dashboard, with the breakdown when you have set one.'), icon: <Wallet size={20} />, color: '#10b981' },
+  { key: 'FEES_ONLINE_PAYMENT', def: true, label: 'Online payment (Paystack)', sub: 'Students pay by card or Mobile Money. When off, they pay at the accounts office and you record the payment.', icon: <CreditCard size={20} />, color: '#0ea5e9' },
+  { key: 'FEES_PART_PAYMENT', def: true, label: 'Allow part payments', sub: 'Students can pay in instalments. When off, each payment must clear the full balance.', icon: <Layers size={20} />, color: '#f59e0b' },
+  { key: 'FEES_ITEM_PAYMENT', def: true, label: 'Pay by item', sub: 'Where a fee has a breakdown, students can pay for chosen items (e.g. Tuition, then SRC dues), even when part payments are off.', icon: <ListChecks size={20} />, color: '#8b5cf6' },
 ];
 
 interface Program { id: number; name: string; code: string; departmentName: string; enabled: boolean; }
@@ -78,6 +87,24 @@ export default function SuperAdminConfiguration() {
       setSettings(prev => ({ ...prev, [key]: next.toString() }));
       qc.invalidateQueries({ queryKey: ['feature-flags'] });
       toast.success(`Marks Sheet ${next ? 'shown to' : 'hidden from'} ${label}`);
+    } catch {
+      toast.error('Failed to update setting');
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  const isSet = (key: string, def: boolean) => settings[key] == null ? def : settings[key] === 'true';
+
+  const handleToggleFee = async (t: typeof FEE_TOGGLES[number]) => {
+    const next = !isSet(t.key, t.def);
+    setSavingKey(t.key);
+    try {
+      await saUpdateSystemSettings({ [t.key]: next.toString() });
+      setSettings(prev => ({ ...prev, [t.key]: next.toString() }));
+      qc.invalidateQueries({ queryKey: ['feature-flags'] });
+      qc.invalidateQueries({ queryKey: ['fee-overview'] });
+      toast.success(`${t.label}: ${next ? 'on' : 'off'}`);
     } catch {
       toast.error('Failed to update setting');
     } finally {
@@ -204,6 +231,56 @@ export default function SuperAdminConfiguration() {
       {/* ── Result Slips ────────────────────────────────────────────────── */}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>Result Slips</h2>
       <div style={{ marginBottom: 40 }}><ReportEmailToggle dark /></div>
+
+      {/* ── Fees & Payments ─────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>Fees &amp; Payments</h2>
+          <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+            {tx('Set the amounts per programme and level on the Fees page, then choose what students see here.')}</p>
+        </div>
+        <Link to="/super-admin/fees" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#a78bfa', textDecoration: 'none' }}>
+          Manage fees <ArrowRight size={14} />
+        </Link>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14, marginBottom: 40 }}>
+        {FEE_TOGGLES.map(t => {
+          const on = isSet(t.key, t.def);
+          const saving = savingKey === t.key;
+          return (
+            <div key={t.key} style={{ ...card(), display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: `${t.color}1a`, border: `1px solid ${t.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.color, flexShrink: 0 }}>
+                  {t.icon}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginBottom: 3 }}>{t.label}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>{t.sub}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleToggleFee(t)}
+                disabled={saving}
+                role="switch"
+                aria-checked={on}
+                aria-label={t.label}
+                style={{
+                  background: on ? '#10b981' : 'rgba(255,255,255,0.1)',
+                  border: 'none', borderRadius: 20, width: 50, height: 26, position: 'relative', cursor: saving ? 'not-allowed' : 'pointer', transition: 'all 0.3s', flexShrink: 0, marginLeft: 16
+                }}
+              >
+                {saving && <Loader2 size={14} className="spin" style={{ position: 'absolute', top: 6, left: 18, color: '#fff' }} />}
+                <div style={{
+                  width: 20, height: 20, background: '#fff', borderRadius: '50%', position: 'absolute', top: 3,
+                  left: on ? 27 : 3, transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {on && !saving && <Check size={12} color="#10b981" />}
+                </div>
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       {/* ── Marks Sheet Visibility ──────────────────────────────────────── */}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>Marks Sheet Visibility</h2>

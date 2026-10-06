@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getFeatureFlags, type FeatureFlags, type FeatureKey } from '../api/endpoints';
 
-const DEFAULT_FLAGS: FeatureFlags = { marksSheetAdmin: true, marksSheetLecturer: true, marksSheetStudent: true, features: {} };
+const DEFAULT_FLAGS: FeatureFlags = { marksSheetAdmin: true, marksSheetLecturer: true, marksSheetStudent: true, feesStudent: false, features: {} };
 
 /** Super Admin / HOD switches that control which navigation entries and actions each user sees. */
 export function useFeatureFlags(): FeatureFlags {

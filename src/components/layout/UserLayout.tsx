@@ -17,7 +17,8 @@ import {
   Clock,
   Megaphone,
   CalendarDays,
-  FileText
+  FileText,
+  Wallet
 } from 'lucide-react';
 import { isSchoolMode, tx } from '../../utils/terms';
 
@@ -26,7 +27,7 @@ const SIDEBAR_W = 260;
 function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { logout } = useAuth();
   const { term, institution } = useInstitution();
-  const { marksSheetStudent, features } = useFeatureFlags();
+  const { marksSheetStudent, feesStudent, features } = useFeatureFlags();
   const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
   const menuGroups = [
@@ -36,6 +37,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         { to: '/user-dashboard/user-dashboard', label: 'Dashboard',       icon: LayoutDashboard },
         ...(on('STUDENT_COURSE_REGISTRATION') ? [{ to: '/user-dashboard/register', label: tx('Register Course'), icon: GraduationCap }] : []),
         { to: '/user-dashboard/courses',         label: tx('My Courses'),   icon: BookOpen         },
+        ...(feesStudent === true ? [{ to: '/user-dashboard/fees', label: 'School Fees', icon: Wallet }] : []),
         { to: '/user-dashboard/announcements',   label: 'Announcements', icon: Megaphone       },
       ]
     },

@@ -9,7 +9,7 @@ import {
   Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
   Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library,
   Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight,
-  Landmark, ClipboardPen, ClipboardList, FilePlus, Eye
+  Landmark, ClipboardPen, ClipboardList, FilePlus, Eye, Wallet
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -47,6 +47,12 @@ export default function SuperAdminLayout() {
         { to: '/super-admin/departments', icon: <Building2 size={20} />, label: 'Departments' },
         { to: '/super-admin/programs', icon: <BookMarked size={20} />, label: tx('Programs & Levels') },
         { to: '/super-admin/academic-settings', icon: <Scale size={20} />, label: 'Sessions & Grading' },
+      ]
+    },
+    {
+      label: 'Finance',
+      items: [
+        { to: '/super-admin/fees', icon: <Wallet size={20} />, label: 'Fees & Payments' },
       ]
     },
     {

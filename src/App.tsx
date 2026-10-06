@@ -60,6 +60,7 @@ import Departments from './pages/superadmin/Departments';
 import Programs from './pages/superadmin/Programs';
 import ManageHODs from './pages/superadmin/ManageHODs';
 import ManageStudentLevel from './pages/superadmin/ManageStudentLevel';
+import FeesPage from './pages/superadmin/fees/FeesPage';
 
 // Lecturer
 import LectWelcome from './pages/lecturer/LectWelcome';
@@ -82,6 +83,7 @@ import StartQuiz from './pages/user/StartQuiz';
 import PrintQuiz from './pages/user/PrintQuiz';
 import SemesterReportCard from './pages/user/SemesterReportCard';
 import QuizLink from './pages/user/QuizLink';
+import Fees from './pages/user/fees/Fees';
 
 // Shared
 import MarksSheetManager from './pages/admin/MarksSheetManager';
@@ -146,6 +148,7 @@ export default function App() {
           <Route path="academic-settings" element={<AcademicSettings />} />
           <Route path="institution" element={<InstitutionSettings />} />
           <Route path="features" element={<FeatureControls />} />
+          <Route path="fees" element={<FeesPage />} />
           <Route path="academic-records" element={<ModeGate only="university" redirectTo=".."><AcademicRecords /></ModeGate>} />
           <Route path="data-tools" element={<DataTools />} />
           <Route path="announcements" element={<Announcements />} />
@@ -228,6 +231,8 @@ export default function App() {
           <Route path="announcements" element={<Announcements />} />
           <Route path="transcript" element={<ModeGate only="university" redirectTo="/user-dashboard"><FeatureGate flag="marksSheetStudent" feature="STUDENT_TRANSCRIPT" redirectTo="/user-dashboard"><Transcript /></FeatureGate></ModeGate>} />
           <Route path="profile" element={<Profile />} />
+          {/* Not behind FeatureGate: Paystack returns students here and the gate would redirect before the flags load */}
+          <Route path="fees" element={<Fees />} />
           <Route path="register" element={<FeatureGate feature="STUDENT_COURSE_REGISTRATION" redirectTo="/user-dashboard"><RegisterCourses /></FeatureGate>} />
           <Route path="courses" element={<CoursesRegistered />} />
           <Route path="quizzes" element={<AvailableQuizzes />} />

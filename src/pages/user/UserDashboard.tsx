@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PageHeader from '../../components/PageHeader';
+import FeesSummaryCard from './fees/FeesSummaryCard';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { tx } from '../../utils/terms';
 
 function MiniStat({ title, value, icon: Icon, color, trend, trendValue }: { title: string; value: number | string; icon: any; color: string; trend?: 'up' | 'down'; trendValue?: string }) {
@@ -67,6 +69,7 @@ function MiniStat({ title, value, icon: Icon, color, trend, trendValue }: { titl
 export default function UserDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { feesStudent } = useFeatureFlags();
   const [stats, setStats] = useState({ courses: 0, quizzes: 0, points: 0, rank: 'N/A' });
   const [reports, setReports] = useState<any[]>([]);
   const [activeQuizzes, setActiveQuizzes] = useState<any[]>([]);
@@ -147,6 +150,8 @@ export default function UserDashboard() {
           </div>
         </div>
       </div>
+
+      {feesStudent === true && <FeesSummaryCard />}
 
       {/* Stats Row */}
       <div className="dashboard-stats-grid">
