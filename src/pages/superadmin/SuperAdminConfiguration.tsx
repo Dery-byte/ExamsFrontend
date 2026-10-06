@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { saGetSystemSettings, saUpdateSystemSettings, saGetPrograms, saToggleProgram } from '../../api/endpoints';
-import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks } from 'lucide-react';
+import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks, FileCheck2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
+import ResultsHoldSettings from './fees/ResultsHoldSettings';
 import { isSchoolMode, tx } from '../../utils/terms';
 
 /** Per-role switches for the Marks Sheet navigation entry (default on when never set). */
@@ -127,6 +128,21 @@ export default function SuperAdminConfiguration() {
     }
   };
 
+  const handleToggleVerifyLink = async () => {
+    const key = 'LOGIN_VERIFY_LINK_VISIBLE';
+    const next = !isOn(key);
+    setSavingKey(key);
+    try {
+      await saUpdateSystemSettings({ [key]: next.toString() });
+      setSettings(prev => ({ ...prev, [key]: next.toString() }));
+      toast.success(next ? 'Verification link shown on the sign-in page' : 'Verification link hidden from the sign-in page');
+    } catch {
+      toast.error('Failed to update setting');
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
   const handleToggleProgram = async (p: Program) => {
     setTogglingId(p.id);
     try {
@@ -232,6 +248,40 @@ export default function SuperAdminConfiguration() {
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>Result Slips</h2>
       <div style={{ marginBottom: 40 }}><ReportEmailToggle dark /></div>
 
+      {/* ── Sign-in Page ────────────────────────────────────────────────── */}
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: 1 }}>Sign-in Page</h2>
+      <div style={{ ...card(), display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', flexShrink: 0 }}>
+            <FileCheck2 size={22} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 15, color: '#fff', marginBottom: 4 }}>{tx("Show \"Verify a transcript or report card\" link")}</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+              {tx("Shows the link under the sign-in form. Hiding it does not switch verification off: codes printed on transcripts and report cards still open the verification page. The link is also hidden while document verification is switched off in Features.")}</div>
+          </div>
+        </div>
+        <button
+          onClick={handleToggleVerifyLink}
+          disabled={savingKey === 'LOGIN_VERIFY_LINK_VISIBLE'}
+          role="switch"
+          aria-checked={isOn('LOGIN_VERIFY_LINK_VISIBLE')}
+          aria-label={tx("Show the verification link on the sign-in page")}
+          style={{
+            background: isOn('LOGIN_VERIFY_LINK_VISIBLE') ? '#10b981' : 'rgba(255,255,255,0.1)',
+            border: 'none', borderRadius: 20, width: 50, height: 26, position: 'relative', cursor: savingKey === 'LOGIN_VERIFY_LINK_VISIBLE' ? 'not-allowed' : 'pointer', transition: 'all 0.3s', flexShrink: 0, marginLeft: 16
+          }}
+        >
+          {savingKey === 'LOGIN_VERIFY_LINK_VISIBLE' && <Loader2 size={14} className="spin" style={{ position: 'absolute', top: 6, left: 18, color: '#fff' }} />}
+          <div style={{
+            width: 20, height: 20, background: '#fff', borderRadius: '50%', position: 'absolute', top: 3,
+            left: isOn('LOGIN_VERIFY_LINK_VISIBLE') ? 27 : 3, transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {isOn('LOGIN_VERIFY_LINK_VISIBLE') && savingKey !== 'LOGIN_VERIFY_LINK_VISIBLE' && <Check size={12} color="#10b981" />}
+          </div>
+        </button>
+      </div>
+
       {/* ── Fees & Payments ─────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
         <div>
@@ -281,6 +331,9 @@ export default function SuperAdminConfiguration() {
           );
         })}
       </div>
+
+      {/* ── Results hold for unpaid fees ─────────────────────────────────── */}
+      <ResultsHoldSettings />
 
       {/* ── Marks Sheet Visibility ──────────────────────────────────────── */}
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>Marks Sheet Visibility</h2>

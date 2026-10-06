@@ -20,7 +20,6 @@ export default function InstitutionSettings() {
   const [form, setForm] = useState({ name: '', shortName: '', subtitle: '', type: 'UNIVERSITY', portalUrl: '', showPosition: false });
   const [saving, setSaving] = useState(false);
   const [logoBusy, setLogoBusy] = useState(false);
-  const [logoVersion, setLogoVersion] = useState(0);
   const [q, setQ] = useState('');
   const [search, setSearch] = useState('');
   const docs = useQuery({ queryKey: ['issued-documents', search], queryFn: () => getIssuedDocuments(search) });
@@ -52,7 +51,6 @@ export default function InstitutionSettings() {
     try {
       const updated = await uploadInstitutionLogo(file);
       qc.setQueryData(['institution'], updated);
-      setLogoVersion(v => v + 1);
       toast.success('Logo uploaded');
     } catch (err: any) { toast.error(err?.response?.data?.message ?? 'Could not upload the logo'); }
     finally { setLogoBusy(false); }
@@ -127,7 +125,7 @@ export default function InstitutionSettings() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <div className="is-logo">
             {inst.data?.hasLogo
-              ? <img src={`${institutionLogoUrl()}?v=${logoVersion}`} alt={`${form.name} logo`} />
+              ? <img src={institutionLogoUrl(inst.data.logoVersion)} alt={`${form.name} logo`} />
               : <span>{form.shortName || '—'}</span>}
           </div>
           <label className="is-btn is-btn-ghost">

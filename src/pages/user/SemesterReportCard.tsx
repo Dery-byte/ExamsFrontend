@@ -7,6 +7,8 @@ import {
   CheckCircle, AlertCircle, Clock
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import { resultsHoldOf, type ResultsHold } from '../../api/endpoints';
+import ResultsHoldNotice from '../../components/academic/ResultsHoldNotice';
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -37,13 +39,17 @@ const SemesterReportCard = () => {
   const [loading, setLoading] = useState(true);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadingSingle, setDownloadingSingle] = useState<number | null>(null);
+  const [hold, setHold] = useState<ResultsHold | null>(null);
 
   const base = client.defaults.baseURL!.replace('/v1/auth', '');
 
   useEffect(() => {
     client.get(`${base}/marks/sheet/my-marks/all`)
       .then(res => setAllReports(res.data))
-      .catch(() => toast.error('Failed to load your reports.'))
+      .catch(err => {
+        const h = resultsHoldOf(err);
+        if (h) setHold(h); else toast.error('Failed to load your reports.');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -107,6 +113,11 @@ const SemesterReportCard = () => {
         <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
       </div>
     );
+  }
+
+  /* Held for unpaid fees */
+  if (hold) {
+    return <div style={{ padding: '24px' }}><ResultsHoldNotice hold={hold} /></div>;
   }
 
   /* No marks state */

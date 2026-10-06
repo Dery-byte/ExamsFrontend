@@ -634,7 +634,7 @@ export const setFeatureSystemWide = (key: FeatureKey, enabled: boolean) =>
 export const setFeatureForDepartment = (key: FeatureKey, departmentId: number, enabled: boolean | null) =>
   client.put(`${apiRoot()}/features/${key}/departments/${departmentId}`, { enabled }).then(r => r.data);
 /** Settings needed before sign-in (e.g. whether students may sign up). */
-export const getPublicSettings = (): Promise<{ studentSelfSignup: boolean }> =>
+export const getPublicSettings = (): Promise<{ studentSelfSignup: boolean; showVerifyLink: boolean }> =>
   client.get('/public-settings').then(r => r.data);
 
 // ── Institution profile, document verification, report-card remarks ──────
@@ -642,7 +642,9 @@ const superAdminRootUrl = () => client.defaults.baseURL!.replace('/auth', '/supe
 
 /** Public: name, type (UNIVERSITY / SCHOOL) and wording. */
 export const getInstitution = () => client.get('/institution').then(r => r.data);
-export const institutionLogoUrl = () => `${client.defaults.baseURL}/institution/logo`;
+/** Pass the institution's logoVersion so a newly uploaded logo isn't hidden behind the browser's cached copy. */
+export const institutionLogoUrl = (version?: number) =>
+  `${client.defaults.baseURL}/institution/logo${version ? `?v=${version}` : ''}`;
 export const updateInstitution = (data: object) =>
   client.put(`${superAdminRootUrl()}/institution`, data).then(r => r.data);
 export const uploadInstitutionLogo = (file: File) => {
@@ -717,6 +719,40 @@ export interface MyFees {
   /** Per-item paid and balance when the fee is itemised (empty otherwise). */
   items: FeeItemStatus[];
   payments: FeePaymentInfo[];
+  /** What the student's unpaid fees are holding back (null when nothing is held). */
+  resultsHold: ResultsHold | null;
+}
+/**
+ * Returned (as a 403 body) instead of report cards / the transcript while a student's fees fall short
+ * of their programme's rule, and in MyFees.resultsHold.
+ */
+export interface ResultsHold {
+  code: 'FEES_HOLD'; message: string; documents: ('REPORT_CARDS' | 'TRANSCRIPT')[]; mode: ResultsHoldMode;
+  currency: string; sessionName: string; fee: number; paid: number; balance: number; amountToRelease: number;
+  unpaidItems: FeeItemStatus[]; feesPage: boolean;
+}
+/** The hold in an API error, if that is why the request was refused. */
+export const resultsHoldOf = (err: any): ResultsHold | null => {
+  const d = err?.response?.data;
+  return d && d.code === 'FEES_HOLD' ? d as ResultsHold : null;
+};
+export type ResultsHoldMode = 'FULL' | 'PERCENT' | 'ITEMS';
+export interface ResultsHoldRule {
+  mode: ResultsHoldMode; minPercent: number | null; requiredItems: string[]; reportCards: boolean; transcript: boolean;
+  updatedAt: string; updatedBy: string | null;
+}
+export interface ResultsHoldProgram {
+  id: number; name: string; code: string; departmentName: string | null; enabled: boolean;
+  /** Levels of this programme with a fee set in the current session. */
+  levelsWithFee: number;
+  /** Item names used in this programme's current-session fee breakdowns. */
+  items: string[];
+  rule: ResultsHoldRule | null;
+}
+export interface ResultsHoldOverview { enabled: boolean; feesVisibleToStudents: boolean; session: SessionRef; programs: ResultsHoldProgram[] }
+export interface ResultsHoldInput {
+  programId: number; mode: ResultsHoldMode; minPercent?: number | null; requiredItems?: string[];
+  reportCards: boolean; transcript: boolean; alsoApplyToPrograms?: number[];
 }
 export interface FeeLevelRow {
   level: number; students: number | null; schedule: FeeScheduleInfo | null; collected: number;
@@ -726,7 +762,7 @@ export interface FeeProgramRow { id: number; name: string; code: string; departm
 export interface FeeOverview {
   session: SessionRef; sessions: SessionRef[]; currency: string;
   paystack: { configured: boolean; mode: 'live' | 'test' | null };
-  settings: { visibleToStudents: boolean; onlinePayment: boolean; partPayment: boolean; itemPayment: boolean };
+  settings: { visibleToStudents: boolean; onlinePayment: boolean; partPayment: boolean; itemPayment: boolean; resultsHold: boolean };
   totals: { billed: number | null; collected: number; outstanding: number | null; students: number | null; levelsSet: number; levelsTotal: number };
   programs: FeeProgramRow[];
 }
@@ -771,3 +807,8 @@ export const voidFeePayment = (id: number, reason: string): Promise<FeePaymentIn
   client.post(`${feesAdminUrl()}/payments/${id}/void`, { reason }).then(r => r.data);
 export const recheckFeePayment = (id: number): Promise<FeePaymentInfo> =>
   client.post(`${feesAdminUrl()}/payments/${id}/recheck`).then(r => r.data);
+/** Super Admin: which programmes hold report cards / transcripts until fees are paid. */
+export const getResultsHolds = (): Promise<ResultsHoldOverview> =>
+  client.get(`${feesAdminUrl()}/results-holds`).then(r => r.data);
+export const saveResultsHold = (data: ResultsHoldInput) => client.put(`${feesAdminUrl()}/results-holds`, data).then(r => r.data);
+export const removeResultsHold = (programId: number) => client.delete(`${feesAdminUrl()}/results-holds/${programId}`).then(r => r.data);

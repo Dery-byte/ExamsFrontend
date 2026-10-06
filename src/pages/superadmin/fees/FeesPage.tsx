@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import {
   AlertCircle, BookMarked, CheckCircle2, Copy, CreditCard, Eye, EyeOff, Layers, Loader2, Pencil, Plus,
-  Receipt, Search, Trash2, TrendingUp, Users, Wallet,
+  Lock, Receipt, Search, Trash2, TrendingUp, Users, Wallet,
 } from 'lucide-react';
 import { FEE_ADMIN_CSS } from './feeStyles';
 import ScheduleEditor from './ScheduleEditor';
@@ -108,6 +108,7 @@ function StatusChips({ data }: { data: FeeOverview }) {
           : <span className={`fe-chip ${paystack.mode === 'live' ? 'ok' : 'warn'}`}><CreditCard size={13} /> Paystack {paystack.mode === 'live' ? 'live' : 'test mode'} · Card &amp; Mobile Money</span>}
       <span className="fe-chip off">{settings.partPayment ? 'Part payments allowed' : 'Full payment only'}</span>
       <span className="fe-chip off">{settings.itemPayment ? 'Students can pay by item' : 'Paying by item off'}</span>
+      {settings.resultsHold && <span className="fe-chip warn"><Lock size={13} /> {tx('Results held for unpaid fees')} · <Link to="/super-admin/configuration">rules</Link></span>}
     </div>
   );
 }

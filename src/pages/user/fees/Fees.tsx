@@ -15,6 +15,7 @@ import { formatDate, formatMoney, moneyInput, parseMoney, paymentMethodLabel, ro
 import { levelName, tx } from '../../../utils/terms';
 import { STUDENT_FEE_CSS } from './studentFeeStyles';
 import FeeDialog from './FeeDialog';
+import ResultsHoldNotice from '../../../components/academic/ResultsHoldNotice';
 
 type Banner =
   | { kind: 'checking' }
@@ -112,6 +113,7 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
   return (
     <div className="sf-grid">
       <div className="sf-col">
+        {data.resultsHold && <ResultsHoldNotice hold={data.resultsHold} compact />}
         {!fee ? (
           <div className="sf-card"><Empty icon={<Wallet size={28} />} title="No fee set yet"
             text={tx(`The school hasn't set the fee for ${classLabel || 'your class'} for ${session.name} yet. Check back later.`)} /></div>
@@ -492,7 +494,7 @@ function ReceiptModal({ payment, data, onClose }: { payment: FeePaymentInfo; dat
       <div className="sf-receipt" ref={receiptRef}>
         <div className="sf-receipt-head">
           <div className="sf-receipt-brand">
-            {institution.hasLogo && <img src={institutionLogoUrl()} alt="" />}
+            {institution.hasLogo && <img src={institutionLogoUrl(institution.logoVersion)} alt="" />}
             <div style={{ minWidth: 0 }}>
               <h3>{institution.name}</h3>
               {institution.subtitle && <p>{institution.subtitle}</p>}

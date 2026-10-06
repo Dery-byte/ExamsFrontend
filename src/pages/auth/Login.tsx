@@ -37,7 +37,11 @@ export default function Login() {
   const { login } = useAuth();
   const { institution } = useInstitution();
   const [signupOpen, setSignupOpen] = useState(true);
-  useEffect(() => { getPublicSettings().then(s => setSignupOpen(s.studentSelfSignup)).catch(() => {}); }, []);
+  // Starts hidden so a link the Super Admin switched off never flashes on screen
+  const [showVerifyLink, setShowVerifyLink] = useState(false);
+  useEffect(() => {
+    getPublicSettings().then(s => { setSignupOpen(s.studentSelfSignup); setShowVerifyLink(s.showVerifyLink); }).catch(() => {});
+  }, []);
   // Set by ProtectedRoute / the shared quiz link: where to go once signed in.
   const location = useLocation();
   const fromState = (location.state as any) ?? {};
@@ -412,9 +416,11 @@ export default function Login() {
 
           <div style={{ marginTop: 22, textAlign: 'center', fontSize: 12, color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.05em' }}>
             {institution.shortName} · © {new Date().getFullYear()}
+            {showVerifyLink && (
             <div style={{ marginTop: 6, letterSpacing: 0 }}>
               <Link to="/verify" style={{ color: 'var(--primary)', fontWeight: 600 }}>{tx("Verify a transcript or report card")}</Link>
             </div>
+            )}
           </div>
         </div>
 
