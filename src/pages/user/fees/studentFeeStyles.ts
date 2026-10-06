@@ -1,6 +1,8 @@
 /** Styles for the student Fees page and dashboard card (light portal theme). */
 export const STUDENT_FEE_CSS = `
-.sf { --sf-ink: #2a3142; --sf-muted: #74788d; --sf-line: #eef0f4; --sf-paid: #0f9d6e; --sf-warn: #c47f0b; --sf-bad: #d63a55; padding-bottom: 12px; }
+/* Dialogs render on <body> (outside .sf), so they carry the same variables */
+.sf, .sf-overlay { --sf-ink: #2a3142; --sf-muted: #74788d; --sf-line: #eef0f4; --sf-paid: #0f9d6e; --sf-warn: #c47f0b; --sf-bad: #d63a55; }
+.sf { padding-bottom: 12px; }
 .sf-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 .sf-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .sf-card { background: #fff; border: 1px solid #e9ecf2; border-radius: 16px; box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 8px 24px rgba(16,24,40,0.04); overflow: hidden; }
@@ -54,14 +56,6 @@ export const STUDENT_FEE_CSS = `
 .sf-items-hint { display: flex; gap: 6px; align-items: flex-start; padding: 0 20px 16px; font-size: 12px; color: var(--sf-muted); line-height: 1.45; }
 .sf-items-hint svg { flex-shrink: 0; margin-top: 2px; }
 .sf-h-for { color: #5a4fa3 !important; font-weight: 600; }
-.sf-pick { margin: -2px 0 12px; padding: 10px; border-radius: 12px; background: #f9f8fe; border: 1px solid #ece9fa; }
-.sf-pick-row { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 9px; cursor: pointer; font-size: 14px; color: #2a3142; }
-.sf-pick-row:hover { background: #f1eefc; }
-.sf-pick-row.on { background: #ebe7fb; }
-.sf-pick-row input { accent-color: #7a6fbe; width: 16px; height: 16px; margin: 0; flex-shrink: 0; }
-.sf-pick-name { flex: 1; min-width: 0; }
-.sf-pick-name small { color: #74788d; font-size: 12px; }
-.sf-pick-row b { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sf-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; background: #c9c3ef; vertical-align: middle; }
 .sf-callout { display: flex; gap: 10px; padding: 12px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
 .sf-callout svg { flex-shrink: 0; margin-top: 1px; }
@@ -107,28 +101,66 @@ export const STUDENT_FEE_CSS = `
 .sf-empty h3 { margin: 0 0 6px; font-size: 17px; color: var(--sf-ink); }
 .sf-empty p { margin: 0 auto; max-width: 420px; font-size: 13.5px; color: var(--sf-muted); line-height: 1.55; }
 
-.sf-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(17,24,39,0.55); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 16px; animation: sf-fade .15s; }
-.sf-modal { width: 100%; max-width: 460px; max-height: calc(100vh - 32px); overflow-y: auto; background: #fff; border-radius: 18px; box-shadow: 0 30px 70px rgba(17,24,39,0.3); animation: sf-in .2s ease-out; }
-.sf-modal.wide { max-width: 620px; }
-.sf-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 22px 0; }
-.sf-modal-head h2 { margin: 0; font-size: 18px; font-weight: 800; color: #2a3142; }
-.sf-modal-head p { margin: 4px 0 0; font-size: 13px; color: #74788d; }
-.sf-modal-body { padding: 18px 22px; }
-.sf-modal-foot { display: flex; gap: 10px; justify-content: flex-end; padding: 0 22px 20px; flex-wrap: wrap; }
+/* ── Dialogs: full-screen backdrop, centred, page behind locked (see FeeDialog) ── */
+.sf-overlay { position: fixed; inset: 0; z-index: 10000; height: 100vh; height: 100dvh; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(15,18,32,0.62); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  overscroll-behavior: contain; animation: sf-fade .15s ease-out; font-family: 'Inter', system-ui, sans-serif; }
+.sf-modal { position: relative; width: 100%; max-width: 480px; max-height: 100%; display: flex; flex-direction: column; overflow: hidden;
+  background: #fff; border-radius: 20px; box-shadow: 0 30px 80px rgba(15,18,32,0.35); animation: sf-pop .2s ease-out; outline: none; }
+.sf-modal.wide { max-width: 640px; }
+.sf-modal-head { flex-shrink: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 22px 14px; }
+.sf-modal-head h2 { margin: 0; font-size: 18px; font-weight: 800; color: #2a3142; line-height: 1.3; }
+.sf-modal-head p { margin: 3px 0 0; font-size: 13px; color: #74788d; }
+/* Only scrolls on very short screens; the item list scrolls on its own first */
+.sf-modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 22px 16px; }
+.sf-modal-foot { flex-shrink: 0; display: flex; gap: 10px; justify-content: flex-end; padding: 14px 22px 20px; border-top: 1px solid #f0f1f6; background: #fff; }
 .sf-x { width: 34px; height: 34px; border-radius: 10px; border: 1px solid #eceef4; background: #fff; color: #74788d; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .sf-x:hover { background: #f6f7fb; color: #2a3142; }
-.sf-option { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1.5px solid #eceef4; border-radius: 14px; cursor: pointer; margin-bottom: 10px; transition: border-color .15s, background .15s; }
-.sf-option:hover { border-color: #cfc9ef; }
-.sf-option.on { border-color: #7a6fbe; background: #f7f5fe; }
-.sf-option input[type=radio] { accent-color: #7a6fbe; width: 17px; height: 17px; margin: 0; }
-.sf-option b { display: block; font-size: 14px; color: #2a3142; }
-.sf-option small { font-size: 12px; color: #74788d; }
-.sf-amount { position: relative; margin-top: 10px; }
-.sf-amount span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 800; color: #74788d; font-size: 13px; }
-.sf-amount input { width: 100%; box-sizing: border-box; height: 50px; border: 1.5px solid #e2e5ee; border-radius: 12px; padding: 0 14px 0 54px; font: inherit; font-size: 20px; font-weight: 800; color: #2a3142; font-variant-numeric: tabular-nums; }
+.sf-btn-pay { min-width: 170px; }
+
+.sf-tabs { display: grid; gap: 4px; padding: 4px; border-radius: 12px; background: #f3f4f8; margin-bottom: 14px; }
+.sf-tabs button { height: 38px; border: none; border-radius: 9px; background: transparent; color: #5b6275; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background .15s, color .15s, box-shadow .15s; }
+.sf-tabs button:hover { color: #2a3142; }
+.sf-tabs button.on { background: #fff; color: #4b3fa0; box-shadow: 0 1px 3px rgba(16,24,40,0.12); }
+.sf-tabs button:focus-visible { outline: 2px solid #7a6fbe; outline-offset: 1px; }
+.sf-tab-short { display: none; }
+
+.sf-due { text-align: center; padding: 18px 16px; border-radius: 14px; background: linear-gradient(180deg, #f7f5fe, #f1eefc); border: 1px solid #e6e1f8; }
+.sf-due span { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #6b62a8; }
+.sf-due strong { display: block; font-size: 30px; font-weight: 800; color: #2a3142; margin: 4px 0; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.sf-due small { font-size: 12.5px; color: #74788d; }
+
+.sf-pick { border: 1px solid #ece9fa; border-radius: 14px; background: #fbfaff; overflow: hidden; }
+.sf-pick-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; font-size: 12px; font-weight: 700; color: #74788d; border-bottom: 1px solid #ece9fa; }
+.sf-pick-head .sf-link-btn { font-size: 12px; padding: 2px 6px; }
+/* Fits typical breakdowns without scrolling; a long list scrolls inside itself, never the page or the dialog */
+.sf-pick-list { max-height: min(312px, max(132px, calc(100dvh - 380px))); overflow-y: auto; overscroll-behavior: contain; padding: 4px; }
+.sf-pick-row { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 10px; border-radius: 10px; cursor: pointer; font-size: 14px; color: #2a3142; transition: background .12s; }
+.sf-pick-row + .sf-pick-row { margin-top: 2px; }
+.sf-pick-row:hover { background: #f3f0fd; }
+.sf-pick-row.on { background: #ece8fb; }
+.sf-pick-row input { accent-color: #7a6fbe; width: 18px; height: 18px; margin: 0; flex-shrink: 0; cursor: pointer; }
+.sf-pick-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sf-pick-name > span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sf-pick-name small { color: #74788d; font-size: 11.5px; margin-top: 1px; }
+.sf-pick-row b { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 14px; }
+.sf-pick-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-top: 1px solid #ece9fa; background: #fff; font-size: 13px; font-weight: 700; color: #5b6275; }
+.sf-pick-total b { font-size: 16px; color: #2a3142; font-variant-numeric: tabular-nums; }
+
+.sf-part label { display: block; font-size: 12.5px; font-weight: 700; color: #5b6275; margin-bottom: 6px; }
+.sf-amount { position: relative; }
+.sf-amount span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-weight: 800; color: #74788d; font-size: 13px; pointer-events: none; }
+.sf-amount input { width: 100%; box-sizing: border-box; height: 52px; border: 1.5px solid #e2e5ee; border-radius: 12px; padding: 0 14px 0 56px; font: inherit; font-size: 20px; font-weight: 800; color: #2a3142; font-variant-numeric: tabular-nums; background: #fff; }
 .sf-amount input:focus { outline: none; border-color: #7a6fbe; box-shadow: 0 0 0 4px rgba(122,111,190,0.15); }
 .sf-amount input.bad { border-color: #ec4561; }
 .sf-err { color: #d63a55; font-size: 12.5px; margin-top: 6px; font-weight: 600; }
+.sf-hint { color: #74788d; font-size: 12px; margin-top: 6px; }
+
+.sf-secure-line { display: flex; align-items: flex-start; gap: 6px; margin-top: 14px; font-size: 12px; color: #74788d; line-height: 1.45; }
+.sf-secure-line svg { flex-shrink: 0; margin-top: 2px; color: #0f9d6e; }
+.sf-secure-line span { min-width: 0; overflow-wrap: anywhere; }
 .sf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; border: none; border-radius: 12px; background: linear-gradient(135deg, #7a6fbe, #5a4fa3); color: #fff; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; box-shadow: 0 8px 18px rgba(90,79,163,0.3); }
 .sf-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
 .sf-btn.full { width: 100%; }
@@ -164,6 +196,7 @@ export const STUDENT_FEE_CSS = `
 .sf-spin { animation: sf-spin 1s linear infinite; }
 @keyframes sf-spin { to { transform: rotate(360deg); } }
 @keyframes sf-fade { from { opacity: 0; } }
+@keyframes sf-pop { from { opacity: 0; transform: translateY(10px) scale(.98); } }
 @keyframes sf-in { from { opacity: 0; transform: translateY(6px); } }
 @keyframes sf-shimmer { to { background-position: -200% 0; } }
 
@@ -178,7 +211,30 @@ export const STUDENT_FEE_CSS = `
   .sf-pay-btn { width: 100%; justify-content: center; }
   .sf-receipt { padding: 18px; }
   .sf-receipt-grid { grid-template-columns: 1fr; }
-  .sf-modal-foot .sf-btn, .sf-modal-foot .sf-btn-ghost { flex: 1; }
+  .sf-modal-foot .sf-btn, .sf-modal-foot .sf-btn-ghost { flex: 1; min-width: 0; padding: 0 12px; }
+  .sf-btn-pay { flex: 1.6 !important; }
+  .sf-modal { border-radius: 18px; }
+  .sf-modal-head { padding: 16px 16px 12px; }
+  .sf-modal-head h2 { font-size: 17px; }
+  .sf-modal-body { padding: 2px 16px 14px; }
+  .sf-modal-foot { padding: 12px 16px 16px; }
+  .sf-due strong { font-size: 26px; }
+}
+
+@media (max-width: 380px) {
+  .sf-overlay { padding: 10px; }
+  .sf-tab-long { display: none; }
+  .sf-tab-short { display: inline; }
+  .sf-pick-row { gap: 10px; padding: 6px 8px; }
+}
+/* Short screens (landscape phones): give the list what room there is */
+@media (max-height: 520px) {
+  .sf-overlay { padding: 8px; }
+  .sf-modal-head { padding-top: 12px; padding-bottom: 8px; }
+  .sf-due { padding: 10px; }
+  .sf-due strong { font-size: 22px; }
+  .sf-pick-list { max-height: max(96px, calc(100dvh - 300px)); }
+  .sf-secure-line { display: none; }
 }
 
 @media print {

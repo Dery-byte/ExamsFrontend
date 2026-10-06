@@ -14,6 +14,7 @@ import {
 import { formatDate, formatMoney, moneyInput, parseMoney, paymentMethodLabel, roundMoney } from '../../../utils/money';
 import { levelName, tx } from '../../../utils/terms';
 import { STUDENT_FEE_CSS } from './studentFeeStyles';
+import FeeDialog from './FeeDialog';
 
 type Banner =
   | { kind: 'checking' }
@@ -315,31 +316,39 @@ function ResultBanner({ banner, currency, onClose, onRecheck, onReceipt }: {
   }
 }
 
+type PayMode = 'full' | 'items' | 'part';
+
 function PayModal({ data, initialItems, onClose }: { data: MyFees; initialItems: string[]; onClose: () => void }) {
   const { balance, currency, partPayment, minimumPayment } = data;
   const owedItems = data.items.filter(i => i.balance > 0);
   const itemsAllowed = data.itemPayment && !!data.fee?.itemised && owedItems.length > 0;
-  const [mode, setMode] = useState<'full' | 'items' | 'part'>(itemsAllowed && initialItems.length > 0 ? 'items' : 'full');
+  const [mode, setMode] = useState<PayMode>(itemsAllowed && initialItems.length > 0 ? 'items' : 'full');
   const [chosen, setChosen] = useState<string[]>(initialItems.filter(n => owedItems.some(i => i.name === n)));
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busy) onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [busy, onClose]);
+  const tabs: { key: PayMode; label: string; short: string }[] = [
+    { key: 'full', label: 'Full balance', short: 'Full' },
+    ...(itemsAllowed ? [{ key: 'items' as const, label: 'By item', short: 'By item' }] : []),
+    ...(partPayment ? [{ key: 'part' as const, label: 'Other amount', short: 'Other' }] : []),
+  ];
 
   const itemsTotal = roundMoney(owedItems.filter(i => chosen.includes(i.name)).reduce((sum, i) => sum + i.balance, 0));
   const value = mode === 'full' ? balance : mode === 'items' ? itemsTotal : parseMoney(text);
   const problem = mode === 'full' ? null
-    : mode === 'items' ? (chosen.length === 0 ? 'Choose at least one item.' : null)
+    : mode === 'items' ? (chosen.length === 0 ? 'Tick at least one item.' : null)
     : !text ? 'Enter how much you want to pay.'
     : !(value > 0) ? 'Enter a valid amount.'
     : value > balance ? `That's more than your balance of ${formatMoney(balance, currency)}.`
     : value < minimumPayment ? `The smallest payment is ${formatMoney(minimumPayment, currency)}.`
     : null;
+  const allChosen = chosen.length === owedItems.length;
+
+  const choose = (m: PayMode) => {
+    setMode(m);
+    if (m === 'part') setTimeout(() => inputRef.current?.focus(), 0);
+  };
 
   const pay = async () => {
     if (problem || !(value > 0)) return;
@@ -355,86 +364,96 @@ function PayModal({ data, initialItems, onClose }: { data: MyFees; initialItems:
   };
 
   return (
-    <div className="sf-overlay" onMouseDown={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
-      <div className="sf-modal" role="dialog" aria-modal="true" aria-labelledby="sf-pay-title">
-        <div className="sf-modal-head">
-          <div><h2 id="sf-pay-title">Pay school fees</h2><p>{data.session.name} · balance {formatMoney(balance, currency)}</p></div>
-          <button type="button" className="sf-x" onClick={onClose} disabled={busy} aria-label="Close"><X size={16} /></button>
+    <FeeDialog
+      title="Pay school fees"
+      subtitle={<>{data.session.name} · Balance <b style={{ color: '#2a3142' }}>{formatMoney(balance, currency)}</b></>}
+      onClose={onClose}
+      busy={busy}
+      footer={<>
+        <button type="button" className="sf-btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
+        <button type="button" className="sf-btn sf-btn-pay" onClick={pay} disabled={busy || !!problem || !(value > 0)}>
+          {busy ? <><Loader2 size={16} className="sf-spin" /> Opening Paystack…</>
+            : <>Pay {value > 0 ? formatMoney(value, currency) : ''} <ArrowRight size={16} /></>}
+        </button>
+      </>}
+    >
+      {tabs.length > 1 && (
+        <div className="sf-tabs" role="tablist" aria-label="How much to pay" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+          {tabs.map(t => (
+            <button key={t.key} type="button" role="tab" aria-selected={mode === t.key}
+              className={mode === t.key ? 'on' : ''} onClick={() => choose(t.key)}>
+              <span className="sf-tab-long">{t.label}</span><span className="sf-tab-short">{t.short}</span>
+            </button>
+          ))}
         </div>
-        <div className="sf-modal-body">
-          <label className={`sf-option${mode === 'full' ? ' on' : ''}`}>
-            <input type="radio" name="sf-amt" checked={mode === 'full'} onChange={() => setMode('full')} />
-            <div style={{ flex: 1 }}><b>Full balance</b><small>Clear everything you owe for this session</small></div>
-            <b style={{ fontVariantNumeric: 'tabular-nums' }}>{formatMoney(balance, currency)}</b>
-          </label>
-          {itemsAllowed && (
-            <label className={`sf-option${mode === 'items' ? ' on' : ''}`}>
-              <input type="radio" name="sf-amt" checked={mode === 'items'} onChange={() => setMode('items')} />
-              <div style={{ flex: 1 }}><b>Choose items</b><small>Pay for specific items, e.g. {owedItems.slice(0, 2).map(i => i.name).join(' or ')}</small></div>
-            </label>
-          )}
-          {mode === 'items' && (
-            <div className="sf-pick" role="group" aria-label="Items to pay for">
-              {owedItems.map(it => {
-                const on = chosen.includes(it.name);
-                return (
-                  <label key={it.name} className={`sf-pick-row${on ? ' on' : ''}`}>
-                    <input type="checkbox" checked={on}
-                      onChange={() => setChosen(c => on ? c.filter(n => n !== it.name) : [...c, it.name])} />
-                    <span className="sf-pick-name">{it.name}{it.paid > 0 && <small> · {formatMoney(it.paid, currency)} already paid</small>}</span>
-                    <b>{formatMoney(it.balance, currency)}</b>
-                  </label>
-                );
-              })}
-              {owedItems.length > 1 && (
-                <button type="button" className="sf-link-btn" style={{ marginTop: 4 }}
-                  onClick={() => setChosen(chosen.length === owedItems.length ? [] : owedItems.map(i => i.name))}>
-                  {chosen.length === owedItems.length ? 'Clear all' : 'Select all'}
-                </button>
-              )}
-              {problem && <div className="sf-err">{problem}</div>}
-            </div>
-          )}
-          {partPayment && (
-            <label className={`sf-option${mode === 'part' ? ' on' : ''}`} style={{ flexWrap: 'wrap' }}>
-              <input type="radio" name="sf-amt" checked={mode === 'part'} onChange={() => { setMode('part'); setTimeout(() => inputRef.current?.focus(), 0); }} />
-              <div style={{ flex: 1 }}><b>Part payment</b><small>Pay some now and the rest later</small></div>
-            </label>
-          )}
-          {mode === 'part' && (
-            <>
-              <div className="sf-amount">
-                <span>{currency}</span>
-                <input ref={inputRef} inputMode="decimal" placeholder="0.00" value={text} aria-label="Amount to pay"
-                  className={problem && text ? 'bad' : ''} onChange={e => setText(moneyInput(e.target.value))}
-                  onKeyDown={e => { if (e.key === 'Enter') pay(); }} />
-              </div>
-              {problem && text && <div className="sf-err">{problem}</div>}
-            </>
-          )}
-          <div className="sf-callout info" style={{ marginTop: 14 }}>
-            <Lock size={15} />
-            <span>You'll go to Paystack's secure page to pay by <b>Mobile Money</b> or <b>card</b>, then come straight back here. Paystack sends its confirmation to <b>{data.student.email}</b>.</span>
+      )}
+
+      {mode === 'full' && (
+        <div className="sf-due">
+          <span>You'll pay</span>
+          <strong>{formatMoney(balance, currency)}</strong>
+          <small>This clears everything you owe for {data.session.name}.</small>
+        </div>
+      )}
+
+      {mode === 'items' && (
+        <div className="sf-pick" role="group" aria-label="Items to pay for">
+          <div className="sf-pick-head">
+            <span>{chosen.length} of {owedItems.length} selected</span>
+            {owedItems.length > 1 && (
+              <button type="button" className="sf-link-btn" onClick={() => setChosen(allChosen ? [] : owedItems.map(i => i.name))}>
+                {allChosen ? 'Clear' : 'Select all'}
+              </button>
+            )}
+          </div>
+          <div className="sf-pick-list">
+            {owedItems.map(it => {
+              const on = chosen.includes(it.name);
+              return (
+                <label key={it.name} className={`sf-pick-row${on ? ' on' : ''}`}>
+                  <input type="checkbox" checked={on}
+                    onChange={() => setChosen(c => on ? c.filter(n => n !== it.name) : [...c, it.name])} />
+                  <span className="sf-pick-name">
+                    <span>{it.name}</span>
+                    {it.paid > 0 && <small>{formatMoney(it.paid, currency)} of {formatMoney(it.amount, currency)} paid</small>}
+                  </span>
+                  <b>{formatMoney(it.balance, currency)}</b>
+                </label>
+              );
+            })}
+          </div>
+          <div className="sf-pick-total">
+            <span>Total</span>
+            <b>{formatMoney(itemsTotal, currency)}</b>
           </div>
         </div>
-        <div className="sf-modal-foot">
-          <button type="button" className="sf-btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button type="button" className="sf-btn" onClick={pay} disabled={busy || !!problem || !(value > 0)}>
-            {busy ? <><Loader2 size={16} className="sf-spin" /> Opening Paystack…</> : <>Pay {value > 0 ? formatMoney(value, currency) : ''} <ArrowRight size={16} /></>}
-          </button>
+      )}
+
+      {mode === 'part' && (
+        <div className="sf-part">
+          <label htmlFor="sf-part-amt">Amount to pay now</label>
+          <div className="sf-amount">
+            <span>{currency}</span>
+            <input id="sf-part-amt" ref={inputRef} inputMode="decimal" placeholder="0.00" value={text}
+              className={problem && text ? 'bad' : ''} onChange={e => setText(moneyInput(e.target.value))}
+              onKeyDown={e => { if (e.key === 'Enter') pay(); }} />
+          </div>
+          {problem && text
+            ? <div className="sf-err">{problem}</div>
+            : <div className="sf-hint">Between {formatMoney(minimumPayment, currency)} and {formatMoney(balance, currency)}. Pay the rest later.</div>}
         </div>
+      )}
+
+      <div className="sf-secure-line">
+        <Lock size={13} />
+        <span>Secured by Paystack · <b>Mobile Money</b> or <b>card</b>. Confirmation goes to {data.student.email}.</span>
       </div>
-    </div>
+    </FeeDialog>
   );
 }
 
 function ReceiptModal({ payment, data, onClose }: { payment: FeePaymentInfo; data: MyFees; onClose: () => void }) {
   const { institution } = useInstitution();
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
   const method = payment.method === 'PAYSTACK' ? `${paymentMethodLabel(payment)} (Paystack)` : paymentMethodLabel(payment);
   const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -465,59 +484,51 @@ function ReceiptModal({ payment, data, onClose }: { payment: FeePaymentInfo; dat
   };
 
   return (
-    <div className="sf-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="sf-modal wide" role="dialog" aria-modal="true" aria-label="Payment receipt">
-        <div className="sf-modal-head">
-          <div><h2>Receipt</h2><p>Print it or save it as a PDF.</p></div>
-          <button type="button" className="sf-x" onClick={onClose} aria-label="Close"><X size={16} /></button>
-        </div>
-        <div className="sf-modal-body">
-          <div className="sf-receipt" ref={receiptRef}>
-            <div className="sf-receipt-head">
-              <div className="sf-receipt-brand">
-                {institution.hasLogo && <img src={institutionLogoUrl()} alt="" />}
-                <div style={{ minWidth: 0 }}>
-                  <h3>{institution.name}</h3>
-                  {institution.subtitle && <p>{institution.subtitle}</p>}
-                </div>
-              </div>
-              <div className="sf-receipt-title"><b>Payment receipt</b><span>{payment.reference}</span></div>
-            </div>
-            <div className="sf-stamp" aria-hidden="true">PAID</div>
-            <dl className="sf-receipt-grid">
-              <div><dt>{tx('Student')}</dt><dd>{payment.studentName}</dd></div>
-              <div><dt>{tx('Student ID')}</dt><dd>{payment.studentId}</dd></div>
-              <div><dt>{tx('Programme')}</dt><dd>{payment.programName ?? '—'}</dd></div>
-              <div><dt>{tx('Level')}</dt><dd>{payment.level != null ? levelName(payment.level) : '—'}</dd></div>
-              <div><dt>Academic session</dt><dd>{payment.sessionName}</dd></div>
-              <div><dt>Date paid</dt><dd>{formatDate(payment.paidAt ?? payment.createdAt, true)}</dd></div>
-              <div><dt>Payment method</dt><dd>{method}</dd></div>
-              <div><dt>Reference</dt><dd style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>{payment.reference}</dd></div>
-            </dl>
-            {payment.items.length > 0 && (
-              <table className="sf-lines" style={{ marginBottom: 12 }}>
-                <tbody>
-                  {payment.items.map(i => (
-                    <tr key={i.name}><td><span className="sf-dot" />{i.name}</td><td>{formatMoney(i.amount, payment.currency)}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-            <div className="sf-receipt-amount"><span>Amount paid</span><strong>{formatMoney(payment.amount, payment.currency)}</strong></div>
-            <div className="sf-receipt-foot">
-              Fees for {payment.sessionName}: {data.fee && data.session.name === payment.sessionName
-                ? <>total {formatMoney(data.fee.amount, data.currency)}, paid to date {formatMoney(data.paid, data.currency)}, balance {formatMoney(data.balance, data.currency)}.</>
-                : 'see your Fees page for the current balance.'}
-              <br />Issued electronically by {institution.name}. Quote the reference above in any enquiry.
+    <FeeDialog title="Receipt" subtitle="Print it or save it as a PDF." onClose={onClose} wide
+      footer={<>
+        <button type="button" className="sf-btn-ghost" onClick={onClose}>Close</button>
+        <button type="button" className="sf-btn" onClick={print}><Printer size={16} /> Print / Save PDF</button>
+      </>}>
+      <div className="sf-receipt" ref={receiptRef}>
+        <div className="sf-receipt-head">
+          <div className="sf-receipt-brand">
+            {institution.hasLogo && <img src={institutionLogoUrl()} alt="" />}
+            <div style={{ minWidth: 0 }}>
+              <h3>{institution.name}</h3>
+              {institution.subtitle && <p>{institution.subtitle}</p>}
             </div>
           </div>
+          <div className="sf-receipt-title"><b>Payment receipt</b><span>{payment.reference}</span></div>
         </div>
-        <div className="sf-modal-foot">
-          <button type="button" className="sf-btn-ghost" onClick={onClose}>Close</button>
-          <button type="button" className="sf-btn" onClick={print}><Printer size={16} /> Print / Save PDF</button>
+        <div className="sf-stamp" aria-hidden="true">PAID</div>
+        <dl className="sf-receipt-grid">
+          <div><dt>{tx('Student')}</dt><dd>{payment.studentName}</dd></div>
+          <div><dt>{tx('Student ID')}</dt><dd>{payment.studentId}</dd></div>
+          <div><dt>{tx('Programme')}</dt><dd>{payment.programName ?? '—'}</dd></div>
+          <div><dt>{tx('Level')}</dt><dd>{payment.level != null ? levelName(payment.level) : '—'}</dd></div>
+          <div><dt>Academic session</dt><dd>{payment.sessionName}</dd></div>
+          <div><dt>Date paid</dt><dd>{formatDate(payment.paidAt ?? payment.createdAt, true)}</dd></div>
+          <div><dt>Payment method</dt><dd>{method}</dd></div>
+          <div><dt>Reference</dt><dd style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>{payment.reference}</dd></div>
+        </dl>
+        {payment.items.length > 0 && (
+          <table className="sf-lines" style={{ marginBottom: 12 }}>
+            <tbody>
+              {payment.items.map(i => (
+                <tr key={i.name}><td><span className="sf-dot" />{i.name}</td><td>{formatMoney(i.amount, payment.currency)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <div className="sf-receipt-amount"><span>Amount paid</span><strong>{formatMoney(payment.amount, payment.currency)}</strong></div>
+        <div className="sf-receipt-foot">
+          Fees for {payment.sessionName}: {data.fee && data.session.name === payment.sessionName
+            ? <>total {formatMoney(data.fee.amount, data.currency)}, paid to date {formatMoney(data.paid, data.currency)}, balance {formatMoney(data.balance, data.currency)}.</>
+            : 'see your Fees page for the current balance.'}
+          <br />Issued electronically by {institution.name}. Quote the reference above in any enquiry.
         </div>
       </div>
-    </div>
+    </FeeDialog>
   );
 }
 

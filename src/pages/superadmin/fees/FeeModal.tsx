@@ -1,11 +1,14 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
 /** Dialog shell for the Fees pages: closes on Esc or a click outside, unless a save is running. */
 export default function FeeModal({ title, subtitle, onClose, busy, narrow, footer, children }: {
   title: string; subtitle?: ReactNode; onClose: () => void; busy?: boolean; narrow?: boolean;
   footer: ReactNode; children: ReactNode;
 }) {
+  useBodyScrollLock();
   const ref = useRef<HTMLDivElement>(null);
   const busyRef = useRef(busy);
   busyRef.current = busy;
@@ -16,14 +19,13 @@ export default function FeeModal({ title, subtitle, onClose, busy, narrow, foote
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busyRef.current) closeRef.current(); };
     document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     // Focus the first field so keyboard users land inside the dialog
     ref.current?.querySelector<HTMLElement>('input, select, textarea, button:not(.fe-close)')?.focus();
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+    return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  return (
+  // On <body>, so no transformed ancestor can trap the fixed overlay inside the page
+  return createPortal(
     <div className="fe-overlay" onMouseDown={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
       <div ref={ref} className={`fe-modal${narrow ? ' narrow' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="fe-modal-head">
@@ -36,6 +38,7 @@ export default function FeeModal({ title, subtitle, onClose, busy, narrow, foote
         <div className="fe-modal-body">{children}</div>
         <div className="fe-modal-foot">{footer}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

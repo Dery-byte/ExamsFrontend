@@ -98,13 +98,13 @@ export const FEE_ADMIN_CSS = `
 .fe-empty p { margin: 0 auto; max-width: 440px; font-size: 13px; line-height: 1.55; }
 .fe-pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12.5px; color: rgba(255,255,255,0.5); flex-wrap: wrap; }
 
-.fe-overlay { position: fixed; inset: 0; background: rgba(5,5,15,0.72); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fe-fade .15s ease-out; }
-.fe-modal { width: 100%; max-width: 640px; max-height: calc(100vh - 32px); display: flex; flex-direction: column; background: linear-gradient(180deg,#191934,#131329); border: 1px solid rgba(139,92,246,0.28); border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); color: #fff; animation: fe-pop .18s ease-out; }
+.fe-overlay { position: fixed; inset: 0; height: 100vh; height: 100dvh; box-sizing: border-box; overscroll-behavior: contain; font-family: Inter, sans-serif; background: rgba(5,5,15,0.72); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fe-fade .15s ease-out; }
+.fe-modal { width: 100%; max-width: 640px; max-height: 100%; display: flex; flex-direction: column; background: linear-gradient(180deg,#191934,#131329); border: 1px solid rgba(139,92,246,0.28); border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); color: #fff; animation: fe-pop .18s ease-out; }
 .fe-modal.narrow { max-width: 480px; }
 .fe-modal-head { padding: 18px 22px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .fe-modal-head h2 { margin: 0; font-size: 17px; font-weight: 800; }
 .fe-modal-head p { margin: 4px 0 0; font-size: 12.5px; color: rgba(255,255,255,0.5); }
-.fe-modal-body { padding: 18px 22px; overflow-y: auto; }
+.fe-modal-body { padding: 18px 22px; overflow-y: auto; overscroll-behavior: contain; flex: 1 1 auto; min-height: 0; }
 .fe-modal-foot { padding: 14px 22px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .fe-label { display: block; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
 .fe-hint { font-size: 11.5px; color: rgba(255,255,255,0.4); margin-top: 6px; line-height: 1.45; }
