@@ -13,11 +13,14 @@ import {
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
 export default function SuperAdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
   const { term } = useInstitution();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -25,6 +28,14 @@ export default function SuperAdminLayout() {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Follow resizes and tablet rotation, not just the width at first render
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const onChange = () => { setIsDesktop(mq.matches); if (mq.matches) setMobileOpen(false); };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
 
   useEffect(() => { setMobileOpen(false); }, [location]);
@@ -100,7 +111,7 @@ export default function SuperAdminLayout() {
         display: 'flex', flexDirection: 'column', position: 'fixed',
         top: 0, left: mobileOpen ? 0 : -280, bottom: 0, zIndex: 1000,
         transition: 'left 0.3s ease', padding: '0',
-        ...(window.innerWidth >= 1024 ? { left: 0 } : {})
+        ...(isDesktop ? { left: 0 } : {})
       }}>
         {/* Logo */}
         <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid rgba(139,92,246,0.15)' }}>
@@ -195,18 +206,19 @@ export default function SuperAdminLayout() {
       )}
 
       {/* Main */}
-      <main style={{ flex: 1, marginLeft: window.innerWidth >= 1024 ? 260 : 0, minHeight: '100vh' }}>
+      {/* minWidth 0: wide tables scroll inside their cards instead of stretching the page */}
+      <main style={{ flex: 1, minWidth: 0, marginLeft: isDesktop ? 260 : 0, minHeight: '100vh' }}>
         {/* Top bar */}
         <div style={{
           position: 'sticky', top: 0, zIndex: 100,
           background: scrolled ? 'rgba(15,15,26,0.95)' : 'transparent',
           backdropFilter: scrolled ? 'blur(12px)' : 'none',
           borderBottom: scrolled ? '1px solid rgba(139,92,246,0.1)' : '1px solid transparent',
-          padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: isDesktop ? '12px 24px' : '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           transition: 'all 0.3s'
         }}>
-          <button onClick={() => setMobileOpen(true)} style={{
-            display: window.innerWidth < 1024 ? 'flex' : 'none',
+          <button onClick={() => setMobileOpen(true)} aria-label="Open menu" style={{
+            display: isDesktop ? 'none' : 'flex',
             alignItems: 'center', justifyContent: 'center',
             background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)',
             borderRadius: 8, padding: 8, cursor: 'pointer', color: '#a78bfa'
@@ -220,7 +232,9 @@ export default function SuperAdminLayout() {
           </div>
         </div>
 
-        <div style={{ padding: '24px' }}>
+        <div className="sa-content" style={{ padding: isDesktop ? 24 : '16px 16px 24px' }}>
+          {/* The shared page header is styled for light shells; keep it readable on this dark one */}
+          <style>{`.sa-content .ph-title { color: #fff; } .sa-content .ph-crumbs { color: rgba(255,255,255,0.5); } .sa-content .ph-current { color: #a78bfa; }`}</style>
           <Outlet />
         </div>
       </main>

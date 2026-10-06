@@ -1,6 +1,6 @@
 /** Styles for the Super Admin Fees pages (dark shell, violet accents — same family as Configuration). */
 export const FEE_ADMIN_CSS = `
-.fe { color: #fff; padding-bottom: 40px; }
+.fe { color: #fff; padding-bottom: 40px; container: fe / inline-size; }
 .fe-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 .fe-title { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .fe-logo { width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0; background: linear-gradient(135deg,#7c3aed,#4f46e5); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(124,58,237,0.4); }
@@ -155,13 +155,126 @@ export const FEE_ADMIN_CSS = `
 @keyframes fe-pop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
 @keyframes fe-shimmer { to { background-position: -200% 0; } }
 
-@media (max-width: 640px) {
-  .fe-h1 { font-size: 21px; }
-  .fe-grid2 { grid-template-columns: 1fr; }
-  .fe-item { grid-template-columns: minmax(0,1fr) 112px 32px; }
-  .fe-item .fe-order { display: none; }
-  .fe-modal-head, .fe-modal-body, .fe-modal-foot { padding-left: 16px; padding-right: 16px; }
-  .fe-tabs { display: flex; width: 100%; }
-  .fe-tab { flex: 1; justify-content: center; }
+.fe-select.prog { max-width: 220px; }
+.fe-table.pay { min-width: 900px; }
+.fe-table.hold { min-width: 640px; }
+.fe-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; margin-bottom: 14px; overflow: visible; }
+.fe-switch-text { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.fe-switch-ico { width: 42px; height: 42px; border-radius: 12px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25); display: flex; align-items: center; justify-content: center; color: #fbbf24; flex-shrink: 0; }
+.fe-foot-actions { display: flex; gap: 8px; }
+.fe-modal-foot > span:empty { display: none; }
+.fe-modal-foot > span:empty + .fe-foot-actions { margin-left: auto; }
+
+/* Tables become cards once the content area is too narrow for every column (sized by the page, not the window,
+   so the desktop sidebar is accounted for). Browsers without container queries keep the scrolling table. */
+@container fe (max-width: 760px) {
+  .fe-stack.sched { min-width: 0; }
+  .fe-stack.sched thead { display: none; }
+  .fe-stack.sched, .fe-stack.sched tbody { display: block; }
+  .fe-stack.sched tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 10px; padding: 12px; }
+  .fe-stack.sched tr { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px 14px; padding: 14px; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; background: rgba(255,255,255,0.02); }
+  .fe-stack.sched td { display: block; padding: 0; border: none !important; background: none !important; text-align: left !important; min-width: 0; }
+  .fe-stack.sched td[data-label]::before { content: attr(data-label); display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+  .fe-stack.sched .fe-c-title { order: -2; align-self: center; font-size: 15px; }
+  .fe-stack.sched .fe-c-actions { order: -1; align-self: center; }
+  .fe-stack.sched .fe-c-full { grid-column: 1 / -1; }
+  .fe-stack.sched .fe-collected { min-width: 0; }
+  .fe-stack.sched .fe-items-preview { max-width: none; }
 }
+@container fe (max-width: 900px) {
+  .fe-stack.pay { min-width: 0; }
+  .fe-stack.pay thead { display: none; }
+  .fe-stack.pay, .fe-stack.pay tbody { display: block; }
+  .fe-stack.pay tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 10px; padding: 12px; }
+  .fe-stack.pay tr { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px 14px; padding: 14px; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; background: rgba(255,255,255,0.02); align-content: start; }
+  .fe-stack.pay td { display: block; padding: 0; border: none !important; background: none !important; min-width: 0; white-space: normal !important; }
+  .fe-stack.pay td[data-label]::before { content: attr(data-label); display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 3px; }
+  .fe-stack.pay .fe-c-title { order: 1; }
+  .fe-stack.pay .fe-c-amount { order: 2; text-align: right !important; }
+  .fe-stack.pay .fe-c-amount .fe-strong { white-space: nowrap; font-size: 15px; }
+  .fe-stack.pay .fe-c-status { order: 3; }
+  .fe-stack.pay .fe-c-date { order: 4; text-align: right; }
+  .fe-stack.pay .fe-c-date > div { display: inline; }
+  .fe-stack.pay .fe-c-date > div + div::before { content: ' · '; }
+  .fe-stack.pay .fe-c-prog { order: 5; }
+  .fe-stack.pay .fe-c-method { order: 6; text-align: right; }
+  .fe-stack.pay .fe-c-ref { order: 7; grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06) !important; overflow-wrap: anywhere; }
+  .fe-stack.pay .fe-c-actions { order: 8; grid-column: 1 / -1; }
+  .fe-stack.pay .fe-c-actions .fe-row-actions { justify-content: flex-start; }
+  .fe-stack.pay .fe-c-actions:not(:has(button)) { display: none; }
+}
+@container fe (max-width: 640px) {
+  .fe-stack.hold { min-width: 0; }
+  .fe-stack.hold thead { display: none; }
+  .fe-stack.hold, .fe-stack.hold tbody { display: block; }
+  .fe-stack.hold tr { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px 14px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .fe-stack.hold tr:last-child { border-bottom: none; }
+  .fe-stack.hold td { display: block; padding: 0; border: none !important; background: none !important; min-width: 0; }
+  .fe-stack.hold td[data-label]::before { content: attr(data-label); display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 3px; }
+  .fe-stack.hold .fe-c-title { grid-column: 1 / -1; }
+  .fe-stack.hold .fe-c-actions { grid-column: 1 / -1; }
+  .fe-stack.hold .fe-c-actions .fe-row-actions { justify-content: flex-start; }
+}
+@container fe (max-width: 560px) {
+  .fe-switch-row { align-items: flex-start; padding: 16px; gap: 12px; }
+  .fe-switch-ico { width: 38px; height: 38px; border-radius: 10px; }
+  .fe-head { margin-bottom: 14px; }
+  .fe-logo { width: 42px; height: 42px; border-radius: 12px; }
+  .fe-h1 { font-size: 21px; }
+  .fe-actions { width: 100%; }
+  .fe-actions .fe-select { flex: 1 1 0; min-width: 0; }
+  .fe-chips { gap: 6px; margin-bottom: 14px; }
+  .fe-chip { font-size: 11.5px; padding: 5px 10px; }
+  .fe-kpis { gap: 10px; margin-bottom: 16px; }
+  .fe-kpi { padding: 14px 16px; border-radius: 14px; }
+  .fe-kpi-value { font-size: 21px; }
+  .fe-tabs { display: flex; width: 100%; box-sizing: border-box; }
+  .fe-tab { flex: 1; justify-content: center; padding: 9px 10px; }
+  .fe-toolbar .fe-search { flex-basis: 100%; }
+  .fe-toolbar .fe-select { flex: 1 1 140px; min-width: 0; max-width: none; }
+  .fe-toolbar .fe-btn { flex: 1 1 auto; }
+  .fe-card-head { padding: 12px 14px; }
+  .fe-pager { padding: 12px 14px; }
+  .fe-pager > span { flex-basis: 100%; text-align: center; }
+  .fe-pager > div { margin: 0 auto; }
+}
+
+/* Dialogs live on <body>, so these follow the window */
+@media (max-width: 640px) {
+  .fe-overlay { align-items: flex-end; padding: 0; }
+  .fe-modal, .fe-modal.narrow { max-width: none; max-height: 92vh; max-height: 92dvh; border-radius: 20px 20px 0 0; border-bottom: none; animation: fe-sheet .22s ease-out; }
+  .fe-modal::before { content: ''; display: block; width: 38px; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.2); margin: 8px auto 0; flex-shrink: 0; }
+  .fe-modal-head { padding-top: 12px; }
+  .fe-modal-foot { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .fe-modal-head, .fe-modal-body, .fe-modal-foot { padding-left: 16px; padding-right: 16px; }
+  .fe-modal-foot > :not(.fe-foot-actions) { flex-basis: 100%; }
+  .fe-foot-actions { flex: 1 1 100%; }
+  .fe-foot-actions > button { flex: 1 1 0; min-width: 0; }
+  .fe-grid2 { grid-template-columns: 1fr; gap: 0; }
+  .fe-item { grid-template-columns: minmax(0,1fr) 116px 36px; }
+  .fe-item .fe-order { display: none; }
+  .fe-check { padding: 9px 12px; }
+  /* 16px stops iOS Safari zooming into a field when it gets focus */
+  .fe-input, .fe-select, .fe-textarea { font-size: 16px; }
+}
+@media (max-width: 400px) {
+  .fe-seg { grid-template-columns: 1fr; }
+  .fe-switch-ico { display: none; }
+}
+/* Bigger hit areas on touch screens */
+@media (pointer: coarse) {
+  .fe-icon-btn { width: 40px; height: 40px; }
+  .fe-btn.sm, .fe-ghost.sm { height: 38px; padding: 0 14px; }
+  .fe-input, .fe-select, .fe-btn, .fe-ghost { height: 44px; }
+  .fe-money.lg .fe-input { height: 52px; }
+  .fe-order button { height: 20px; width: 28px; }
+  .fe-item { grid-template-columns: 28px minmax(0,1fr) 150px 40px; }
+}
+@media (pointer: coarse) and (max-width: 640px) {
+  .fe-item { grid-template-columns: minmax(0,1fr) 116px 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fe *:not(.fe-spin), .fe-overlay, .fe-modal { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+@keyframes fe-sheet { from { transform: translateY(100%); } }
 `;

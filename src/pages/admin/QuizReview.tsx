@@ -59,18 +59,21 @@ const RESPONSIVE_CSS = `
 
 @media (max-width: 768px) {
   .page-container { padding: 16px 12px !important; }
+  /* Modals keep their desktop arrangement, just tighter */
   .qr-modal-overlay { padding: 10px; }
-  .qr-modal-header, .qr-modal-scores, .qr-modal-body, .qr-modal-footer { padding: 16px !important; }
-  
-  .qr-modal-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .qr-modal-header-right { width: 100%; justify-content: space-between; flex-direction: row-reverse; }
-  
-  .qr-modal-q-header { flex-direction: column; }
-  .qr-modal-q-marks-box { align-self: flex-start; }
-  
-  .qr-modal-footer { flex-direction: column; gap: 16px; align-items: stretch; }
-  .qr-modal-footer-left { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .qr-modal-footer-right { justify-content: flex-end; }
+  .qr-modal-content { margin-top: 0; margin-bottom: 0; }
+  .qr-modal-header, .qr-modal-scores, .qr-modal-body, .qr-modal-footer { padding: 14px 16px !important; }
+  .qr-modal-header { align-items: flex-start; gap: 12px; }
+  .qr-modal-header > :first-child { flex: 1 1 auto; min-width: 0; }
+  .qr-modal-header-right { gap: 10px; flex-shrink: 0; }
+  .qr-modal-scores { gap: 8px 18px; }
+  .qr-modal-body { gap: 16px; }
+  .qr-modal-q-header { padding: 12px 14px; gap: 10px; }
+  .qr-modal-q-header > :first-child { min-width: 0; }
+  .qr-modal-q-marks-box { padding: 6px 10px; }
+  .qr-modal-footer { flex-wrap: wrap; gap: 12px; }
+  .qr-modal-footer-left { flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+  .qr-modal-footer-right { margin-left: auto; gap: 8px; }
   
   .quiz-row-header { flex-direction: column; align-items: flex-start; padding: 16px; }
   .quiz-row-stats { width: 100%; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
@@ -84,6 +87,13 @@ const RESPONSIVE_CSS = `
   .resp-table td:last-child { border-bottom: none; }
   .resp-table td::before { content: attr(data-label); font-weight: 700; font-size: 11px; text-transform: uppercase; color: #94a3b8; flex-shrink: 0; }
   .resp-td-content { display: flex; justify-content: flex-end; align-items: center; text-align: right; word-break: break-word; }
+}
+@media (max-width: 420px) {
+  .qr-modal-overlay { padding: 6px; }
+  .qr-modal-header, .qr-modal-scores, .qr-modal-body, .qr-modal-footer { padding: 12px !important; }
+  .qr-modal-header-stat > :first-child { font-size: 18px !important; }
+  .qr-modal-header-stat > :last-child { font-size: 9px !important; }
+  .qr-modal-footer-right > button { padding: 9px 14px !important; }
 }
 `;
 
@@ -187,16 +197,16 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
               <FileText size={18} color="#60a5fa" />
               <span style={{ color: '#fff', fontWeight: 800, fontSize: 16 }}>Quiz Review</span>
             </div>
-            <p style={{ margin: 0, color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.6)', fontSize: 13, overflowWrap: 'anywhere' }}>
               {quiz.title} &nbsp;·&nbsp; {student.user?.firstName} {student.user?.lastName}
             </p>
           </div>
           <div className="qr-modal-header-right">
-            <div style={{ textAlign: 'center' }}>
+            <div className="qr-modal-header-stat" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#4ade80' }}>{totalReviewed}</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Reviewed Marks</div>
             </div>
-            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button type="button" onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <X size={16} />
             </button>
           </div>

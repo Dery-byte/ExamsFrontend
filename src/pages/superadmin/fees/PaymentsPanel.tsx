@@ -104,7 +104,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
         <select className="fe-select" value={status} onChange={e => setStatus(e.target.value)} aria-label="Status">
           {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
-        <select className="fe-select" value={programId} onChange={e => { setProgramId(e.target.value ? Number(e.target.value) : ''); setLevel(''); }} aria-label={tx('Programme')} style={{ maxWidth: 220 }}>
+        <select className="fe-select prog" value={programId} onChange={e => { setProgramId(e.target.value ? Number(e.target.value) : ''); setLevel(''); }} aria-label={tx('Programme')}>
           <option value="">{tx('All programmes')}</option>
           {overview.programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
@@ -137,7 +137,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
         ) : (
           <>
             <div className="fe-table-wrap">
-              <table className="fe-table" style={{ minWidth: 900 }}>
+              <table className="fe-table fe-stack pay">
                 <thead>
                   <tr>
                     <th>Date</th><th>{tx('Student')}</th><th>{tx('Programme')}</th><th>Reference</th><th>Method</th>
@@ -147,24 +147,24 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
                 <tbody style={{ opacity: isFetching ? 0.6 : 1, transition: 'opacity .15s' }}>
                   {rows.map(p => (
                     <tr key={p.id}>
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td className="fe-c-date" style={{ whiteSpace: 'nowrap' }}>
                         <div>{formatDate(p.paidAt ?? p.createdAt)}</div>
                         <div className="fe-muted fe-small">{new Date(p.paidAt ?? p.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>
-                      <td>
+                      <td className="fe-c-title">
                         <div className="fe-strong">{p.studentName}</div>
                         <div className="fe-muted fe-small">{p.studentId}</div>
                       </td>
-                      <td>
+                      <td className="fe-c-prog" data-label={tx('Programme')}>
                         <div>{p.programName ?? '—'}</div>
                         <div className="fe-muted fe-small">{p.level != null ? levelName(p.level) : ''}</div>
                       </td>
-                      <td><span className="fe-mono">{p.reference}</span></td>
-                      <td>
+                      <td className="fe-c-ref" data-label="Reference"><span className="fe-mono">{p.reference}</span></td>
+                      <td className="fe-c-method" data-label="Method">
                         <div>{paymentMethodLabel(p)}</div>
                         {p.recordedBy && <div className="fe-muted fe-small">by {p.recordedBy}</div>}
                       </td>
-                      <td className="fe-num">
+                      <td className="fe-num fe-c-amount">
                         <div className="fe-strong">{formatMoney(p.amount, p.currency)}</div>
                         {p.items.length > 0 && (
                           <div className="fe-muted fe-small" style={{ maxWidth: 200, marginLeft: 'auto', whiteSpace: 'normal' }}
@@ -173,7 +173,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
                           </div>
                         )}
                       </td>
-                      <td>
+                      <td className="fe-c-status">
                         <span className={`fe-pill ${p.status}`}>{STATUS_LABEL[p.status] ?? p.status}</span>
                         {(p.message || p.note) && p.status !== 'SUCCESS' && (
                           <div className="fe-muted fe-small" style={{ marginTop: 4, maxWidth: 220 }} title={p.note ?? p.message ?? ''}>
@@ -182,7 +182,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
                         )}
                         {p.note && p.status === 'SUCCESS' && <div className="fe-muted fe-small" style={{ marginTop: 4, maxWidth: 220 }} title={p.note}>{truncate(p.note, 60)}</div>}
                       </td>
-                      <td>
+                      <td className="fe-c-actions">
                         <div className="fe-row-actions">
                           {p.method === 'PAYSTACK' && p.status !== 'SUCCESS' && (
                             <button type="button" className="fe-ghost sm" onClick={() => recheck(p)} disabled={busyId === p.id} title="Ask Paystack for the latest status">
@@ -278,7 +278,7 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
       onClose={onClose} busy={saving} narrow
       footer={<>
         <span />
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="fe-foot-actions">
           <button type="button" className="fe-ghost" onClick={onClose} disabled={saving}>Cancel</button>
           <button type="button" className="fe-btn" onClick={save} disabled={!canSave}>
             {saving ? <Loader2 size={15} className="fe-spin" /> : <Receipt size={15} />} Record {value > 0 ? formatMoney(value, currency) : 'payment'}

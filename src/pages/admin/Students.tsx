@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   adminGetAllStudents, getStudentById, updateStudent, deleteStudent,
   adminPromoteStudent, adminPromoteAllAtLevel, adminPromoteSemesterAllAtLevel,
@@ -11,6 +12,7 @@ import { useFeature } from '../../hooks/useFeatureFlags';
 import Swal from "sweetalert2";
 import toast, { Toaster } from "react-hot-toast";
 import PageHeader from "../../components/PageHeader";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import {
   Users, Search, Edit, Trash2, GraduationCap, Mail, Power,
   X, Save, Loader2, ChevronsUp, ArrowRight, RefreshCw, UserPlus,
@@ -115,7 +117,7 @@ export default function Students() {
       html: tx(`Move <b>${name}</b> to <b>Level ${target}</b>?`),
       icon: fwd ? "question" : "warning",
       showCancelButton: true,
-      confirmButtonText: fwd ? "Promote ?" : "? Demote",
+      confirmButtonText: fwd ? "Promote" : "Demote",
       confirmButtonColor: fwd ? "#5156be" : "#f59e0b",
       cancelButtonColor: "#adb5bd",
     });
@@ -273,42 +275,64 @@ export default function Students() {
     }
   };
 
+  const editFields = (() => {
+    const selectedProg = programs.find((p: any) => p.id === Number(studentEdit.programId));
+    const semsCount = selectedProg?.semestersPerLevel?.[Number(studentEdit.currentLevel)] ?? periodsPerLevel();
+    return [
+      { key: "firstname", label: "First Name", autoComplete: "off" }, { key: "lastname", label: "Last Name", autoComplete: "off" },
+      { key: "email", label: "Email", type: "email" }, { key: "username", label: "Username" }, { key: "phone", label: "Phone", type: "tel" },
+      { key: "programId", label: tx("Program"), type: "programSelect" },
+      { key: "currentLevel", label: tx("Level"), type: "select", options: selectedProg?.configuredLevels ?? defaultLevels() },
+      { key: "currentSemester", label: tx("Semester"), type: "select", options: Array.from({ length: semsCount }, (_, i) => i + 1) },
+    ] as Field[];
+  })();
+
+  const addFields = (() => {
+    const selectedProg = programs.find((p: any) => p.id === Number(newStudent.programId));
+    const semsCount = selectedProg?.semestersPerLevel?.[Number(newStudent.currentLevel)] ?? periodsPerLevel();
+    return [
+      { key: "firstname", label: "First Name", autoComplete: "off" }, { key: "lastname", label: "Last Name", autoComplete: "off" },
+      { key: "email", label: "Email (Optional)", type: "email" }, { key: "phone", label: "Phone (Optional)", type: "tel" },
+      { key: "username", label: tx("Student ID (Username)"), autoComplete: "off" }, { key: "password", label: "Password", type: "password", autoComplete: "new-password" },
+      { key: "programId", label: tx("Program"), type: "programSelect" },
+      { key: "currentLevel", label: tx("Level"), type: "select", options: selectedProg?.configuredLevels ?? defaultLevels() },
+      { key: "currentSemester", label: tx("Semester"), type: "select", options: Array.from({ length: semsCount }, (_, i) => i + 1) },
+    ] as Field[];
+  })();
+
+  const filtering = search !== "" || programFilter !== "";
+
   return (
-    <div style={{ paddingBottom: 40 }}>
+    <div className="st" style={{ paddingBottom: 40 }}>
       <Toaster position="top-right" />
       <PageHeader title={tx("Students")} breadcrumbs={["Admin", tx("Students")]} />
 
       {/* Toolbar */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 22, flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flex: 1, minWidth: 200, maxWidth: 440 }}>
-          <Search size={15} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#adb5bd" }} />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder={tx("Search name, email, program…")}
-            style={{ width: "100%", paddingLeft: 36, height: 40, border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+      <div className="st-toolbar">
+        <div className="st-search">
+          <Search size={15} />
+          <input className="st-input" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder={tx("Search name, email, program…")} aria-label={tx("Search students")} />
         </div>
-        <select value={programFilter} onChange={e => setProgramFilter(e.target.value)}
-          style={{ height: 40, padding: "0 14px", border: "1.5px solid #e2e8f0", borderRadius: 10, fontSize: 14, outline: "none", background: "#fff", cursor: "pointer", minWidth: 150 }}>
+        <select className="st-input st-prog" value={programFilter} onChange={e => setProgramFilter(e.target.value)} aria-label={tx("Filter by program")}>
           <option value="">{tx("All Programs")}</option>
           {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <button onClick={load} title="Refresh"
-          style={{ height: 40, width: 40, border: "1.5px solid #e2e8f0", background: "#fff", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <RefreshCw size={15} color="#5156be" />
+        <button type="button" className="st-icon-btn" onClick={load} disabled={loading} title="Refresh" aria-label="Refresh">
+          <RefreshCw size={15} color="#5156be" className={loading ? "st-spin" : undefined} />
         </button>
-        <button onClick={() => setAddModal(true)} title={tx("Add Student")}
-          style={{ height: 40, padding: "0 16px", border: "none", background: "#5156be", color: "#fff", borderRadius: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 13 }}>
+        <button type="button" className="st-btn" onClick={() => setAddModal(true)}>
           <UserPlus size={15} /> {tx("Add Student")}</button>
-        <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600, marginLeft: "auto" }}>{students.length} total</span>
+        <span className="st-count">{filtering ? `${filtered.length} of ${students.length}` : `${students.length} total`}</span>
       </div>
 
-      {loading ? (
-        <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
-          <Loader2 size={36} color="#5156be" style={{ animation: "spin 1s linear infinite" }} />
-        </div>
+      {loading && students.length === 0 ? (
+        <div className="st-loading"><Loader2 size={36} color="#5156be" className="st-spin" /></div>
       ) : sortedLevels.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "#adb5bd" }}>
+        <div className="st-empty">
           <Users size={40} style={{ marginBottom: 12 }} />
-          <p style={{ fontWeight: 700 }}>{tx("No students found")}</p>
+          <p style={{ fontWeight: 700, margin: 0 }}>{tx("No students found")}</p>
+          {filtering && <button type="button" className="st-link" onClick={() => { setSearch(""); setProgramFilter(""); }}>Clear search and filter</button>}
         </div>
       ) : sortedLevels.map(level => {
         const col   = colorFor(level);
@@ -317,257 +341,302 @@ export default function Students() {
         const bulky = promotingLv === level;
 
         return (
-          <div key={level} style={{ marginBottom: 28, borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+          <section key={level} className="st-group" aria-label={`${tx("Level ")}${level}`}>
             {/* Level header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-              background: col.bg, borderBottom: `2px solid ${col.badge}30`, padding: "13px 18px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ background: col.badge, color: "#fff", fontWeight: 800, fontSize: 13,
-                  padding: "4px 14px", borderRadius: 20 }}>{tx("Level ")}{level}</span>
-                <span style={{ fontSize: 13, color: col.text, fontWeight: 600 }}>
-                  {grp.length} {tx("student")}{grp.length !== 1 ? "s" : ""}</span></div><div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="st-group-head" style={{ background: col.bg, borderBottomColor: `${col.badge}30` }}>
+              <div className="st-group-title">
+                <span className="st-level" style={{ background: col.badge }}>{tx("Level ")}{level}</span>
+                <span style={{ color: col.text }}>{grp.length} {tx("student")}{grp.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="st-bulk">
                 {programFilter && canPromote ? (
                   <>
-                    <button onClick={() => demoteSemesterAll(level)} disabled={promotingSem === level + "-demote" || bulky}
-                      style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(245,158,11,0.15)",
-                        color: "#92400e", border: "1px solid #f59e0b", padding: "6px 14px", borderRadius: 8,
-                        fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: promotingSem === level + "-demote" ? 0.7 : 1 }}>
-                      {promotingSem === level + "-demote" ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <ArrowRight size={13} style={{ transform: "rotate(180deg)" }} />}
+                    <button type="button" className="st-bulk-btn" onClick={() => demoteSemesterAll(level)} disabled={promotingSem === level + "-demote" || bulky}
+                      style={{ background: "rgba(245,158,11,0.15)", color: "#92400e", borderColor: "#f59e0b" }}>
+                      {promotingSem === level + "-demote" ? <Loader2 size={13} className="st-spin" /> : <ArrowRight size={13} style={{ transform: "rotate(180deg)" }} />}
                       {tx("Demote Semester")}</button>
-                    <button onClick={() => promoteSemesterAll(level)} disabled={promotingSem === level || bulky}
-                      style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(42,181,125,0.15)",
-                        color: "#065f46", border: "1px solid #2ab57d", padding: "6px 14px", borderRadius: 8,
-                        fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: promotingSem === level ? 0.7 : 1 }}>
-                      {promotingSem === level ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <ArrowRight size={13} />}
+                    <button type="button" className="st-bulk-btn" onClick={() => promoteSemesterAll(level)} disabled={promotingSem === level || bulky}
+                      style={{ background: "rgba(42,181,125,0.15)", color: "#065f46", borderColor: "#2ab57d" }}>
+                      {promotingSem === level ? <Loader2 size={13} className="st-spin" /> : <ArrowRight size={13} />}
                       {tx("Promote Semester")}</button>
                     {nxtG ? (
-                      <button onClick={() => promoteAll(level, nxtG)} disabled={bulky || promotingSem === level}
-                        style={{ display: "flex", alignItems: "center", gap: 6, background: col.badge,
-                          color: "#fff", border: "none", padding: "7px 16px", borderRadius: 8,
-                          fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: bulky ? 0.7 : 1 }}>
-                        {bulky
-                          ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
-                          : <ChevronsUp size={13} />}
+                      <button type="button" className="st-bulk-btn" onClick={() => promoteAll(level, nxtG)} disabled={bulky || promotingSem === level}
+                        style={{ background: col.badge, color: "#fff", borderColor: col.badge }}>
+                        {bulky ? <Loader2 size={13} className="st-spin" /> : <ChevronsUp size={13} />}
                         {tx("Promote Level ")}{nxtG}
                       </button>
                     ) : (
-                      <span style={{ fontSize: 11, color: col.text, opacity: 0.55, fontWeight: 600 }}>
+                      <span className="st-bulk-note" style={{ color: col.text }}>
                         {isSuper ? tx("Final level (Super Admin can demote)") : tx("Final Level")}
                       </span>
                     )}
                   </>
                 ) : (
-                  <span style={{ fontSize: 11, color: col.text, opacity: 0.7, fontWeight: 600, fontStyle: "italic" }}>
+                  <span className="st-bulk-note" style={{ color: col.text, fontStyle: "italic" }}>
                     {tx("Select a Program to enable bulk promotion")}</span>
                 )}
               </div>
             </div>
 
             {/* Student rows */}
-            {grp.map((s, idx) => {
+            {grp.map(s => {
               const name  = s.fullName ?? `${s.firstname ?? ""} ${s.lastname ?? ""}`.trim();
               const nxt   = nextLv(s);
               const prv   = prevLv(s);
               const isPro = promotingId === s.id;
 
               return (
-                <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 18px", background: "#fff",
-                  borderBottom: idx < grp.length - 1 ? "1px solid #f1f5f7" : "none" }}>
-                  {/* Avatar */}
-                  <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-                    background: `linear-gradient(135deg,${col.badge},${col.badge}99)`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#fff", fontWeight: 800, fontSize: 15 }}>
+                <div key={s.id} className="st-row">
+                  <div className="st-avatar" style={{ background: `linear-gradient(135deg,${col.badge},${col.badge}99)` }} aria-hidden>
                     {name.charAt(0).toUpperCase()}
                   </div>
 
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: "#1e293b",
-                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 3 }}>
-                      {s.email && <span style={{ fontSize: 11, color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
-                        <Mail size={10} />{s.email}</span>}
-                      {s.program && <span style={{ fontSize: 11, color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
-                        <GraduationCap size={10} />{s.program}</span>}
-                      {s.currentSemester > 0 && <span style={{ fontSize: 11, color: col.badge, fontWeight: 700 }}>
-                        Sem {s.currentSemester}</span>}
+                  <div className="st-info">
+                    <div className="st-name" title={name}>
+                      {name}
+                      {s.enabled === false && <span className="st-off" title="This account can't sign in">Deactivated</span>}
+                    </div>
+                    <div className="st-meta">
+                      {s.email && <span><Mail size={10} />{s.email}</span>}
+                      {s.program && <span><GraduationCap size={10} />{s.program}</span>}
+                      {s.currentSemester > 0 && <span style={{ color: col.badge, fontWeight: 700 }}>Sem {s.currentSemester}</span>}
                     </div>
                   </div>
 
-                  {/* Action buttons */}
-                  <div style={{ display: "flex", gap: 5, flexShrink: 0, alignItems: "center" }}>
-                    {s.enabled === false && (
-                      <span title="This account can't sign in" style={{ fontSize: 10.5, fontWeight: 800, padding: "3px 8px", borderRadius: 6, background: "#fdeeee", color: "#9f1f1f" }}>
-                        Deactivated
-                      </span>
-                    )}
+                  <div className="st-actions">
                     {isSuper && prv && (
-                      <button onClick={() => promoteOne(s, prv)} disabled={isPro} title={`Demote to ${prv}`}
-                        style={{ padding: "5px 10px", borderRadius: 7, border: "1.5px solid #f59e0b",
-                          background: "rgba(245,158,11,0.07)", color: "#b45309", cursor: "pointer",
-                          fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-                        <ArrowRight size={10} style={{ transform: "rotate(180deg)" }} />L{prv}
+                      <button type="button" className="st-move" onClick={() => promoteOne(s, prv)} disabled={isPro}
+                        title={tx(`Demote to Level ${prv}`)} aria-label={tx(`Demote ${name} to Level ${prv}`)}
+                        style={{ borderColor: "#f59e0b", background: "rgba(245,158,11,0.07)", color: "#b45309" }}>
+                        <ArrowRight size={11} style={{ transform: "rotate(180deg)" }} />L{prv}
                       </button>
                     )}
                     {nxt && canPromote && (
-                      <button onClick={() => promoteOne(s, nxt)} disabled={isPro} title={`Promote to ${nxt}`}
-                        style={{ padding: "5px 10px", borderRadius: 7, border: `1.5px solid ${col.badge}`,
-                          background: col.bg, color: col.text, cursor: "pointer",
-                          fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-                        {isPro ? <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} /> : "?"}
+                      <button type="button" className="st-move" onClick={() => promoteOne(s, nxt)} disabled={isPro}
+                        title={tx(`Promote to Level ${nxt}`)} aria-label={tx(`Promote ${name} to Level ${nxt}`)}
+                        style={{ borderColor: col.badge, background: col.bg, color: col.text }}>
+                        {isPro ? <Loader2 size={11} className="st-spin" /> : <ChevronsUp size={11} />}
                         L{nxt}
                       </button>
                     )}
-                    <button onClick={() => openEdit(s.id)} title="Edit"
-                      style={{ width: 30, height: 30, borderRadius: 7, border: "1.5px solid #e2e8f0",
-                        background: "#f8fafc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span className="st-actions-spacer" />
+                    <button type="button" className="st-icon" onClick={() => openEdit(s.id)} title="Edit" aria-label={`Edit ${name}`}
+                      style={{ borderColor: "#e2e8f0", background: "#f8fafc" }}>
                       <Edit size={13} color="#5156be" />
                     </button>
-                    <button onClick={() => toggleAccount(s, name, load)} title={s.enabled === false ? "Reactivate account" : "Deactivate account"}
+                    <button type="button" className="st-icon" onClick={() => toggleAccount(s, name, load)} title={s.enabled === false ? "Reactivate account" : "Deactivate account"}
                       aria-label={s.enabled === false ? `Reactivate ${name}` : `Deactivate ${name}`}
-                      style={{ width: 30, height: 30, borderRadius: 7, border: `1.5px solid ${s.enabled === false ? "#bbf7d0" : "#fde68a"}`,
-                        background: s.enabled === false ? "#f0fdf4" : "#fffbeb", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      style={{ borderColor: s.enabled === false ? "#bbf7d0" : "#fde68a", background: s.enabled === false ? "#f0fdf4" : "#fffbeb" }}>
                       <Power size={13} color={s.enabled === false ? "#16a34a" : "#b45309"} />
                     </button>
-                    <button onClick={() => remove(s.id, name)} title="Delete"
-                      style={{ width: 30, height: 30, borderRadius: 7, border: "1.5px solid #fee2e2",
-                        background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button type="button" className="st-icon" onClick={() => remove(s.id, name)} title="Delete" aria-label={`Delete ${name}`}
+                      style={{ borderColor: "#fee2e2", background: "#fff5f5" }}>
                       <Trash2 size={13} color="#fd625e" />
                     </button>
                   </div>
                 </div>
               );
             })}
-          </div>
+          </section>
         );
       })}
 
       {/* Edit Modal */}
       {editModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999,
-          display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 540 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{tx("Edit Student")}</h3>
-              <button onClick={() => setEditModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px 16px" }}>
-              {(() => {
-                const selectedProg = programs.find((p: any) => p.id === Number(studentEdit.programId));
-                const dynamicLevels = selectedProg?.configuredLevels ?? defaultLevels();
-                const semsCount = selectedProg?.semestersPerLevel?.[Number(studentEdit.currentLevel)] ?? periodsPerLevel();
-                const dynamicSems = Array.from({ length: semsCount }, (_, i) => i + 1);
-                return [
-                  { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
-                  { key: "email", label: "Email" }, { key: "username", label: "Username" }, { key: "phone", label: "Phone" },
-                  { key: "programId", label: tx("Program"), type: "programSelect" },
-                  { key: "currentLevel", label: tx("Level"), type: "select", options: dynamicLevels },
-                  { key: "currentSemester", label: tx("Semester"), type: "select", options: dynamicSems },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>{f.label}</label>
-                    {(f as any).type === "select" ? (
-                      <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
-                        style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
-                        <option value="" disabled>Select {f.label}</option>
-                        {(f as any).options.map((opt: number) => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    ) : (f as any).type === "programSelect" ? (
-                      <select value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: Number(e.target.value) }))}
-                        style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
-                        <option value="" disabled>{tx("Select Program")}</option>
-                        {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
-                    ) : (
-                      <input type={(f as any).type || "text"} value={studentEdit[f.key] ?? ""} onChange={e => setStudentEdit((p: any) => ({ ...p, [f.key]: e.target.value }))}
-                        style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-                    )}
-                  </div>
-                ))
-              })()}
-            </div>
-            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-              <button onClick={() => setEditModal(false)}
-                style={{ flex: 1, height: 40, border: "1.5px solid #e2e8f0", background: "#f8fafc", borderRadius: 8, cursor: "pointer", fontWeight: 700 }}>Cancel</button>
-              <button onClick={saveEdit} disabled={saving}
-                style={{ flex: 1, height: 40, border: "none", background: "#5156be", color: "#fff", borderRadius: 8, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={14} />}Save
-              </button>
-            </div>
-          </div>
-        </div>
+        <StudentModal title={tx("Edit Student")} busy={saving} onClose={() => setEditModal(false)}
+          footer={<>
+            <button type="button" className="st-ghost" onClick={() => setEditModal(false)} disabled={saving}>Cancel</button>
+            <button type="button" className="st-btn" onClick={saveEdit} disabled={saving}>
+              {saving ? <Loader2 size={14} className="st-spin" /> : <Save size={14} />}Save
+            </button>
+          </>}>
+          <FormFields fields={editFields} programs={programs} value={studentEdit}
+            onChange={(key, v, isSelect) => setStudentEdit((p: any) => ({ ...p, [key]: isSelect ? Number(v) : v }))} />
+        </StudentModal>
       )}
       {/* Add Modal */}
       {addModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999,
-          display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 540 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{tx("Add New Student")}</h3>
-              <button onClick={() => setAddModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-                <X size={20} />
-              </button>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px 16px" }}>
-              {(() => {
-                const selectedProg = programs.find((p: any) => p.id === Number(newStudent.programId));
-                const dynamicLevels = selectedProg?.configuredLevels ?? defaultLevels();
-                const semsCount = selectedProg?.semestersPerLevel?.[Number(newStudent.currentLevel)] ?? periodsPerLevel();
-                const dynamicSems = Array.from({ length: semsCount }, (_, i) => i + 1);
-                return [
-                  { key: "firstname", label: "First Name" }, { key: "lastname", label: "Last Name" },
-                  { key: "email", label: "Email (Optional)" }, { key: "phone", label: "Phone (Optional)" },
-                  { key: "username", label: tx("Student ID (Username)") }, { key: "password", label: "Password", type: "password" },
-                  { key: "programId", label: tx("Program"), type: "programSelect" },
-                  { key: "currentLevel", label: tx("Level"), type: "select", options: dynamicLevels },
-                  { key: "currentSemester", label: tx("Semester"), type: "select", options: dynamicSems },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>
-                      {f.label} {!f.label.includes("Optional") && <span style={{color: "#fd625e"}}>*</span>}
-                    </label>
-                    {(f as any).type === "select" ? (
-                      <select value={newStudent[f.key] ?? ""} onChange={e => setNewStudent((p: any) => ({ ...p, [f.key]: e.target.value }))}
-                        style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
-                        <option value="" disabled>Select {f.label}</option>
-                        {(f as any).options.map((opt: number) => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                  ) : (f as any).type === "programSelect" ? (
-                    <select value={newStudent[f.key] ?? ""} onChange={e => setNewStudent((p: any) => ({ ...p, [f.key]: e.target.value }))}
-                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box", background: "#fff", cursor: "pointer" }}>
-                      <option value="" disabled>{tx("Select Program")}</option>
-                      {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                  ) : (
-                    <input type={(f as any).type || "text"} value={newStudent[f.key] ?? ""} onChange={e => setNewStudent((p: any) => ({ ...p, [f.key]: e.target.value }))}
-                      style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
-                  )}
-                </div>
-              ))
-            })()}
-            </div>
-            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-              <button onClick={() => setAddModal(false)}
-                style={{ flex: 1, height: 40, border: "1.5px solid #e2e8f0", background: "#f8fafc", borderRadius: 8, cursor: "pointer", fontWeight: 700 }}>Cancel</button>
-              <button onClick={saveNewStudent} disabled={adding}
-                style={{ flex: 1, height: 40, border: "none", background: "#5156be", color: "#fff", borderRadius: 8, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                {adding ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <UserPlus size={14} />} {tx("Add Student")}</button>
-            </div>
-          </div>
-        </div>
+        <StudentModal title={tx("Add New Student")} busy={adding} onClose={() => setAddModal(false)}
+          footer={<>
+            <button type="button" className="st-ghost" onClick={() => setAddModal(false)} disabled={adding}>Cancel</button>
+            <button type="button" className="st-btn" onClick={saveNewStudent} disabled={adding}>
+              {adding ? <Loader2 size={14} className="st-spin" /> : <UserPlus size={14} />} {tx("Add Student")}</button>
+          </>}>
+          <FormFields fields={addFields} programs={programs} value={newStudent} markRequired
+            onChange={(key, v) => setNewStudent((p: any) => ({ ...p, [key]: v }))} />
+        </StudentModal>
       )}
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <style>{STUDENTS_CSS}</style>
     </div>
   );
 }
 
+type Field = { key: string; label: string; type?: "select" | "programSelect" | "email" | "tel" | "password"; options?: number[]; autoComplete?: string };
 
+/** The student form's fields; selects report `isSelect` so the edit form can keep numeric ids. */
+function FormFields({ fields, programs, value, onChange, markRequired }: {
+  fields: Field[]; programs: any[]; value: any; markRequired?: boolean;
+  onChange: (key: string, v: string, isSelect: boolean) => void;
+}) {
+  return (
+    <div className="st-form">
+      {fields.map(f => {
+        const id = `st-f-${f.key}`;
+        return (
+          <div key={f.key}>
+            <label className="st-label" htmlFor={id}>
+              {f.label} {markRequired && !f.label.includes("Optional") && <span style={{ color: "#fd625e" }}>*</span>}
+            </label>
+            {f.type === "select" ? (
+              <select id={id} className="st-input" value={value[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value, true)}>
+                <option value="" disabled>Select {f.label}</option>
+                {(f.options ?? []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            ) : f.type === "programSelect" ? (
+              <select id={id} className="st-input" value={value[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value, true)}>
+                <option value="" disabled>{tx("Select Program")}</option>
+                {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            ) : (
+              <input id={id} className="st-input" type={f.type || "text"} autoComplete={f.autoComplete}
+                value={value[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value, false)} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
+/** Scrollable dialog on <body>: centred on larger screens, a bottom sheet on phones; Esc or a click outside closes it. */
+function StudentModal({ title, busy, onClose, footer, children }: {
+  title: string; busy: boolean; onClose: () => void; footer: React.ReactNode; children: React.ReactNode;
+}) {
+  useBodyScrollLock();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !busy) onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [busy, onClose]);
 
+  return createPortal(
+    <div className="st-overlay" onMouseDown={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
+      <div className="st-modal" role="dialog" aria-modal="true" aria-labelledby="st-modal-title">
+        <div className="st-modal-head">
+          <h3 id="st-modal-title">{title}</h3>
+          <button type="button" className="st-close" onClick={onClose} disabled={busy} aria-label="Close"><X size={18} /></button>
+        </div>
+        <div className="st-modal-body">{children}</div>
+        <div className="st-modal-foot">{footer}</div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
+const STUDENTS_CSS = `
+.st { container: st / inline-size; }
+.st-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 22px; flex-wrap: wrap; }
+.st-input { width: 100%; height: 40px; padding: 0 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font: inherit; font-size: 14px; color: #1e293b; background: #fff; outline: none; box-sizing: border-box; transition: border-color .15s, box-shadow .15s; }
+.st-input:focus { border-color: #5156be; box-shadow: 0 0 0 3px rgba(81,86,190,0.15); }
+select.st-input { cursor: pointer; }
+.st-search { position: relative; flex: 1 1 240px; min-width: 0; max-width: 440px; }
+.st-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #adb5bd; pointer-events: none; }
+.st-search .st-input { padding-left: 36px; }
+.st-prog { width: auto; min-width: 150px; max-width: 260px; flex: 0 1 auto; }
+.st-icon-btn { height: 40px; width: 40px; flex-shrink: 0; border: 1.5px solid #e2e8f0; background: #fff; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.st-icon-btn:disabled { opacity: .6; cursor: default; }
+.st-btn, .st-ghost { height: 40px; padding: 0 16px; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-weight: 700; font-size: 13px; white-space: nowrap; transition: filter .15s, background .15s; }
+.st-btn { border: none; background: #5156be; color: #fff; }
+.st-btn:hover:not(:disabled) { filter: brightness(1.08); }
+.st-ghost { border: 1.5px solid #e2e8f0; background: #f8fafc; color: #1e293b; }
+.st-ghost:hover:not(:disabled) { background: #f1f5f9; }
+.st-btn:disabled, .st-ghost:disabled { opacity: .65; cursor: not-allowed; }
+.st-count { font-size: 13px; color: #94a3b8; font-weight: 600; margin-left: auto; white-space: nowrap; }
+.st-link { background: none; border: none; padding: 0; margin-top: 8px; color: #7a6fbe; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.st-loading { display: flex; justify-content: center; padding: 60px 0; }
+.st-empty { text-align: center; padding: 60px 20px; color: #adb5bd; }
+.st-spin { animation: st-spin 1s linear infinite; }
 
+.st-group { margin-bottom: 24px; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.st-group-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; border-bottom: 2px solid; padding: 12px 18px; }
+.st-group-title { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
+.st-level { color: #fff; font-weight: 800; font-size: 13px; padding: 4px 14px; border-radius: 20px; white-space: nowrap; }
+.st-bulk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.st-bulk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; height: 32px; border: 1px solid; border-radius: 8px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.st-bulk-btn:disabled { opacity: .7; cursor: not-allowed; }
+.st-bulk-note { font-size: 11px; font-weight: 600; opacity: .7; }
 
+.st-row { display: flex; align-items: center; gap: 12px; padding: 12px 18px; background: #fff; border-bottom: 1px solid #f1f5f7; }
+.st-row:last-child { border-bottom: none; }
+.st-row:hover { background: #fafbff; }
+.st-avatar { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 15px; }
+.st-info { flex: 1; min-width: 0; }
+.st-name { font-weight: 700; font-size: 14px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-off { display: inline-block; vertical-align: 1px; margin-left: 8px; font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 6px; background: #fdeeee; color: #9f1f1f; }
+.st-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 3px; font-size: 11px; color: #64748b; min-width: 0; }
+.st-meta > span { display: inline-flex; align-items: center; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.st-meta svg { flex-shrink: 0; }
+.st-actions { display: flex; gap: 5px; flex-shrink: 0; align-items: center; }
+.st-actions-spacer { display: none; }
+.st-move { height: 30px; padding: 0 10px; border-radius: 7px; border: 1.5px solid; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }
+.st-icon { width: 30px; height: 30px; border-radius: 7px; border: 1.5px solid; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.st-move:disabled, .st-icon:disabled { opacity: .6; cursor: not-allowed; }
+.st-icon-btn:focus-visible, .st-btn:focus-visible, .st-ghost:focus-visible, .st-bulk-btn:focus-visible, .st-move:focus-visible, .st-icon:focus-visible, .st-close:focus-visible { outline: 2px solid #5156be; outline-offset: 2px; }
+
+.st-overlay { position: fixed; inset: 0; height: 100vh; height: 100dvh; box-sizing: border-box; overscroll-behavior: contain; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: st-fade .15s ease-out; }
+.st-modal { width: 100%; max-width: 560px; max-height: 100%; display: flex; flex-direction: column; background: #fff; border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); color: #1e293b; animation: st-pop .18s ease-out; }
+.st-modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px 24px 14px; border-bottom: 1px solid #f1f5f9; }
+.st-modal-head h3 { margin: 0; font-size: 18px; font-weight: 800; }
+.st-close { width: 36px; height: 36px; border-radius: 8px; border: none; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #475569; }
+.st-close:hover:not(:disabled) { background: #f1f5f9; }
+.st-modal-body { padding: 18px 24px; overflow-y: auto; overscroll-behavior: contain; flex: 1 1 auto; min-height: 0; }
+.st-modal-foot { display: flex; gap: 10px; padding: 14px 24px; border-top: 1px solid #f1f5f9; }
+.st-modal-foot > button { flex: 1 1 0; }
+.st-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 14px 16px; }
+.st-label { font-size: 12px; font-weight: 700; color: #64748b; display: block; margin-bottom: 5px; }
+.st-form .st-input { border-radius: 8px; background: #fff; }
+
+@container st (max-width: 640px) {
+  .st-toolbar { margin-bottom: 16px; }
+  .st-search { flex-basis: 100%; max-width: none; }
+  .st-prog { flex: 1 1 0; min-width: 0; max-width: none; }
+  .st-btn { flex: 0 0 auto; }
+  .st-count { flex-basis: 100%; margin-left: 0; }
+  .st-group { margin-bottom: 18px; }
+  .st-group-head { padding: 12px 14px; }
+  .st-bulk { width: 100%; }
+  .st-bulk-btn { flex: 1 1 auto; }
+  .st-row { flex-wrap: wrap; padding: 12px 14px; row-gap: 10px; }
+  .st-actions { flex-basis: 100%; padding-left: 50px; flex-wrap: wrap; }
+  .st-actions-spacer { display: block; flex: 1; }
+}
+@container st (max-width: 380px) {
+  .st-btn { flex: 1 1 100%; order: 1; }
+  .st-actions { padding-left: 0; }
+}
+@media (max-width: 640px) {
+  .st-overlay { align-items: flex-end; padding: 0; }
+  .st-modal { max-width: none; max-height: 92vh; max-height: 92dvh; border-radius: 20px 20px 0 0; animation: st-sheet .22s ease-out; }
+  .st-modal::before { content: ''; display: block; width: 38px; height: 4px; border-radius: 4px; background: #e2e8f0; margin: 8px auto 0; flex-shrink: 0; }
+  .st-modal-head { padding: 10px 16px 12px; }
+  .st-modal-body { padding: 16px; }
+  .st-modal-foot { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  /* 16px stops iOS Safari zooming into a field when it gets focus */
+  .st-input { font-size: 16px; }
+}
+@media (pointer: coarse) {
+  .st-input, .st-btn, .st-ghost, .st-icon-btn { height: 44px; }
+  .st-icon-btn { width: 44px; }
+  .st-bulk-btn { height: 40px; }
+  .st-move { height: 38px; padding: 0 12px; }
+  .st-icon { width: 38px; height: 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .st-overlay, .st-modal { animation-duration: .01ms !important; }
+}
+@keyframes st-spin { to { transform: rotate(360deg); } }
+@keyframes st-fade { from { opacity: 0; } }
+@keyframes st-pop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+@keyframes st-sheet { from { transform: translateY(100%); } }
+`;

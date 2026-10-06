@@ -30,6 +30,39 @@ const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '
 /** Names and titles are user-controlled and go into SweetAlert HTML, so escape them. */
 const esc = (s: string) => s.replace(/[&<>"']/g, c => HTML_ESCAPES[c]);
 const fmt = (d?: string) => (d ? new Date(d).toLocaleString() : '—');
+/** Date over time, so the column stays narrow on small screens. */
+const DateCell = ({ d }: { d?: string }) => d
+  ? <><div>{new Date(d).toLocaleDateString()}</div><div className="qa-time">{new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div></>
+  : <>—</>;
+
+/* Its own table styles: the review page turns .resp-table into cards on phones, but this keeps its columns */
+const ATTEMPTS_CSS = `
+.swal-above-modal { z-index: 1000000 !important; }
+.qa-body { padding: 20px; }
+.qa-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #e2e8f0; border-radius: 10px; }
+.qa-table { width: 100%; min-width: 520px; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.qa-table th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; background: #f8fafc; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+.qa-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: top; color: #1e293b; }
+.qa-table tbody tr:last-child td { border-bottom: none; }
+.qa-table .qa-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qa-table .qa-date { font-size: 12px; color: #64748b; white-space: nowrap; }
+.qa-time { font-size: 11px; color: #94a3b8; }
+.qa-table th:first-child, .qa-table td:first-child { position: sticky; left: 0; z-index: 1; background: #fff; box-shadow: 1px 0 0 #f1f5f9; }
+.qa-table th:first-child { background: #f8fafc; }
+.qa-pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.qa-void { font-size: 11px; color: #94a3b8; margin-top: 4px; max-width: 220px; }
+.qa-foot-note { font-size: 12px; color: #64748b; flex: 1 1 220px; min-width: 0; }
+.qa-hint { display: none; font-size: 11px; color: #94a3b8; margin: 0 0 8px; }
+@media (max-width: 768px) {
+  .qa-body { padding: 14px 16px; }
+  .qa-table { min-width: 460px; }
+  .qa-table th, .qa-table td { padding: 9px 10px; }
+  .qa-hint { display: block; }
+}
+@media (max-width: 420px) {
+  .qa-body { padding: 12px; }
+}
+`;
 const num = (v?: number | null) => (v === null || v === undefined ? '—' : String(v));
 const total = (a: AttemptRow) =>  (a.marksA == null && a.marksB == null) ? '—' : String(Math.round(((a.marksA ?? 0) + (a.marksB ?? 0)) * 10) / 10);
 
@@ -89,28 +122,31 @@ export default function QuizAttemptsModal({ quiz, student, attempts, onClose, on
 
   return createPortal(
     <div className="qr-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <style>{'.swal-above-modal { z-index: 1000000 !important; }'}</style>
-      <div className="qr-modal-content" style={{ maxWidth: 780 }}>
+      <style>{ATTEMPTS_CSS}</style>
+      <div className="qr-modal-content" style={{ maxWidth: 780 }} role="dialog" aria-modal="true" aria-label={`Attempts — ${student.name}`}>
         <div className="qr-modal-header">
-          <div>
-            <div style={{ color: '#fff', fontWeight: 800, fontSize: 16 }}>Attempts — {student.name}</div>
-            <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: '#fff', fontWeight: 800, fontSize: 16, overflowWrap: 'anywhere' }}>Attempts — {student.name}</div>
+            <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 2, overflowWrap: 'anywhere' }}>
               {quiz.title} · {counted.length} of {max} attempt{max === 1 ? '' : 's'} used
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,.12)', border: 'none', borderRadius: 8, color: '#fff', width: 34, height: 34, cursor: 'pointer' }}>
+          <button type="button" onClick={onClose} aria-label="Close" style={{ background: 'rgba(255,255,255,.12)', border: 'none', borderRadius: 8, color: '#fff', width: 34, height: 34, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <X size={16} />
           </button>
         </div>
 
-        <div style={{ padding: 20, overflowX: 'auto' }}>
+        <div className="qa-body">
           {attempts.length === 0 ? (
             <p style={{ color: '#94a3b8', textAlign: 'center', margin: 24 }}>
               {tx("No attempts are recorded for this student. (Results from before attempts were tracked appear here after their next activity.)")}</p>
           ) : (
-            <table className="resp-table" style={{ minWidth: 560 }}>
+            <>
+            <p className="qa-hint">Swipe the table sideways to see every column.</p>
+            <div className="qa-scroll">
+            <table className="qa-table">
               <thead>
-                <tr>{['#', 'Status', 'Started', 'Submitted', 'Sec A', 'Sec B', 'Total'].map(h => <th key={h}>{h}</th>)}</tr>
+                <tr>{['#', 'Status', 'Started', 'Submitted', 'Sec A', 'Sec B', 'Total'].map((h, i) => <th key={h} className={i >= 4 ? 'qa-num' : undefined}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {attempts.map(a => {
@@ -119,40 +155,43 @@ export default function QuizAttemptsModal({ quiz, student, attempts, onClose, on
                     <tr key={a.id} style={a.status === 'VOIDED' ? { opacity: 0.6 } : undefined}>
                       <td style={{ fontWeight: 800 }}>{a.attemptNumber}</td>
                       <td>
-                        <span style={{ background: s.bg, color: s.fg, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>{s.label}</span>
+                        <span className="qa-pill" style={{ background: s.bg, color: s.fg }}>{s.label}</span>
                         {a.status === 'VOIDED' && (
-                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                          <div className="qa-void">
                             by {a.voidedByName || 'staff'} · {fmt(a.voidedAt)}
                             {a.voidReason ? <><br />“{a.voidReason}”</> : null}
                           </div>
                         )}
                       </td>
-                      <td style={{ fontSize: 12, color: '#64748b' }}>{fmt(a.startedAt)}</td>
-                      <td style={{ fontSize: 12, color: '#64748b' }}>{fmt(a.submittedAt)}</td>
-                      <td style={{ fontWeight: 700, color: '#5156be' }}>{num(a.marksA)}</td>
-                      <td style={{ fontWeight: 700, color: '#2ab57d' }}>{num(a.marksB)}</td>
-                      <td style={{ fontWeight: 800 }}>{total(a)}</td>
+                      <td className="qa-date"><DateCell d={a.startedAt} /></td>
+                      <td className="qa-date"><DateCell d={a.submittedAt} /></td>
+                      <td className="qa-num" style={{ fontWeight: 700, color: '#5156be' }}>{num(a.marksA)}</td>
+                      <td className="qa-num" style={{ fontWeight: 700, color: '#2ab57d' }}>{num(a.marksB)}</td>
+                      <td className="qa-num" style={{ fontWeight: 800 }}>{total(a)}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
+            </>
           )}
         </div>
 
         <div className="qr-modal-footer">
-          <span style={{ fontSize: 12, color: '#64748b' }}>
+          <span className="qa-foot-note">
             The official result always shows the latest non-voided attempt.
           </span>
           {reviewed ? (
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
               <CheckCircle size={14} /> Marked as reviewed — retakes and new attempts are locked
             </span>
           ) : (
             <button
+              type="button"
               onClick={grant}
               disabled={busy || !latest}
-              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', border: 'none', borderRadius: 8, background: latest ? 'linear-gradient(135deg,#5156be,#3d41a8)' : '#cbd5e1', color: '#fff', fontSize: 13, fontWeight: 700, cursor: latest ? 'pointer' : 'not-allowed' }}
+              style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', border: 'none', borderRadius: 8, background: latest ? 'linear-gradient(135deg,#5156be,#3d41a8)' : '#cbd5e1', color: '#fff', fontSize: 13, fontWeight: 700, cursor: latest ? 'pointer' : 'not-allowed' }}
             >
               {busy ? <Loader2 size={14} style={{ animation: 'rSpin 1s linear infinite' }} /> : <RotateCcw size={14} />}
               Allow retake

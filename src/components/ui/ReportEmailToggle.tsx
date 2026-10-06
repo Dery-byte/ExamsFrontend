@@ -33,9 +33,10 @@ export default function ReportEmailToggle({ dark = false }: { dark?: boolean }) 
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '16px 20px',
-      background: c.bg, border: `1px solid ${c.border}`, borderRadius: 14, flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: '1 1 260px' }}>
-        <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(81,86,190,0.1)', color: '#5156be',
+      background: c.bg, border: `1px solid ${c.border}`, borderRadius: 14 }}>
+      <style>{`@media (max-width: 400px) { .ret-ico { display: none !important; } }`}</style>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: '1 1 auto' }}>
+        <div className="ret-ico" style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(81,86,190,0.1)', color: '#5156be',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Mail size={20} />
         </div>

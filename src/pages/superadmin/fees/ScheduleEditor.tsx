@@ -107,7 +107,7 @@ export default function ScheduleEditor({ program, row, session, currency, onClos
           Total <strong style={{ color: '#fff', fontSize: 15, marginLeft: 6 }}>{formatMoney(total, currency)}</strong>
           {also.length > 0 && <span> · also for {also.length} other level{also.length > 1 ? 's' : ''}</span>}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="fe-foot-actions">
           <button type="button" className="fe-ghost" onClick={onClose} disabled={saving}>Cancel</button>
           <button type="button" className="fe-btn" onClick={save} disabled={saving}>
             {saving ? <Loader2 size={15} className="fe-spin" /> : <Wallet size={15} />} Save fee

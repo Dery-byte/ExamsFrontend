@@ -76,7 +76,7 @@ export default function ResultsHoldSettings() {
   const held = data?.programs.filter(p => p.rule).length ?? 0;
 
   return (
-    <div style={{ marginBottom: 40 }}>
+    <div className="fe" style={{ paddingBottom: 0, marginBottom: 36 }}>
       <style>{FEE_ADMIN_CSS}</style>
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
         Results Hold for Unpaid Fees</h2>
@@ -91,9 +91,9 @@ export default function ResultsHoldSettings() {
       ) : (
         <>
           {/* Master switch */}
-          <div className="fe-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '18px 22px', marginBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24', flexShrink: 0 }}>
+          <div className="fe-card fe-switch-row">
+            <div className="fe-switch-text">
+              <div className="fe-switch-ico">
                 <Lock size={20} />
               </div>
               <div style={{ minWidth: 0 }}>
@@ -126,7 +126,7 @@ export default function ResultsHoldSettings() {
           ) : (
             <div className="fe-card" style={{ opacity: data.enabled ? 1 : 0.6 }}>
               <div className="fe-table-wrap">
-                <table className="fe-table" style={{ minWidth: 640 }}>
+                <table className="fe-table fe-stack hold">
                   <thead>
                     <tr><th>{tx('Programme')}</th><th>Students must pay</th><th>Held</th><th /></tr>
                   </thead>
@@ -135,14 +135,14 @@ export default function ResultsHoldSettings() {
                       const d = p.rule ? describe(p.rule) : null;
                       return (
                         <tr key={p.id}>
-                          <td>
+                          <td className="fe-c-title">
                             <div className="fe-strong">{p.name} {!p.enabled && <span className="fe-tag off" style={{ marginLeft: 6 }}>Off</span>}</div>
                             <div className="fe-muted fe-small"><span className="fe-code">{p.code}</span>{p.departmentName ? ` · ${p.departmentName}` : ''}
                               {p.levelsWithFee === 0 && <> · <span style={{ color: '#fbbf24' }}>no fee set for {data.session.name}</span></>}</div>
                           </td>
-                          <td>{d ? <span className="fe-strong">{d.what}</span> : <span className="fe-unset"><Unlock size={12} /> No hold</span>}</td>
-                          <td className="fe-muted">{d?.docs ?? '—'}</td>
-                          <td>
+                          <td data-label="Students must pay">{d ? <span className="fe-strong">{d.what}</span> : <span className="fe-unset"><Unlock size={12} /> No hold</span>}</td>
+                          <td className="fe-muted" data-label="Held">{d?.docs ?? '—'}</td>
+                          <td className="fe-c-actions">
                             <div className="fe-row-actions">
                               <button type="button" className="fe-ghost sm" onClick={() => setEditing(p)}>{p.rule ? 'Edit' : <><Plus size={13} /> Set hold</>}</button>
                               {p.rule && (
@@ -240,7 +240,7 @@ function HoldEditor({ program, all, sessionName, onClose, onSaved }: {
       busy={saving}
       footer={<>
         <div className="fe-muted" style={{ fontSize: 12.5 }}>{also.length > 0 && <>Also for {also.length} other programme{also.length > 1 ? 's' : ''}</>}</div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="fe-foot-actions">
           <button type="button" className="fe-ghost" onClick={onClose} disabled={saving}>Cancel</button>
           <button type="button" className="fe-btn" onClick={save} disabled={saving}>
             {saving ? <Loader2 size={15} className="fe-spin" /> : <Lock size={15} />} Save hold

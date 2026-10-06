@@ -45,12 +45,12 @@ function ChartCard({ title, subtitle, chart, table, empty }: {
           {subtitle && <p className="an-card-sub">{subtitle}</p>}
         </div>
         {!empty && (
-          <button className="an-toggle" onClick={() => setAsTable(t => !t)} aria-pressed={asTable}>
+          <button type="button" className="an-toggle" onClick={() => setAsTable(t => !t)} aria-pressed={asTable}>
             {asTable ? <BarChart3 size={13} /> : <Table2 size={13} />} {asTable ? 'Chart' : 'Table'}
           </button>
         )}
       </header>
-      {empty ? <div className="an-empty">No data yet</div> : asTable ? <div style={{ overflowX: 'auto' }}>{table}</div> : chart}
+      {empty ? <div className="an-empty">No data yet</div> : asTable ? <div className="an-scroll">{table}</div> : chart}
     </section>
   );
 }
@@ -96,7 +96,7 @@ export default function Analytics() {
     if (isSuper) saGetDepartments().then((d: any) => setDepartments(Array.isArray(d) ? d : [])).catch(() => {});
   }, [isSuper]);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['analytics', deptId],
     queryFn: () => getAnalyticsOverview(deptId),
     placeholderData: keepPreviousData,
@@ -106,7 +106,13 @@ export default function Analytics() {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Loader2 size={28} color="#5156be" className="an-spin" /><style>{`.an-spin{animation:an-spin 1s linear infinite}@keyframes an-spin{to{transform:rotate(360deg)}}`}</style></div>;
   }
   if (isError || !data) {
-    return <div style={{ padding: 40, textAlign: 'center', color: MUTED }}>Could not load analytics.</div>;
+    return (
+      <div style={{ padding: '60px 20px', textAlign: 'center', color: MUTED }}>
+        <AlertTriangle size={28} color="#e34948" style={{ marginBottom: 8 }} />
+        <div style={{ fontWeight: 700, marginBottom: 10 }}>Could not load analytics.</div>
+        <button type="button" onClick={() => refetch()} style={{ height: 38, padding: '0 16px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>Try again</button>
+      </div>
+    );
   }
 
   const t = data.totals;
@@ -122,12 +128,12 @@ export default function Analytics() {
   const hasTrend = trend.some(m => m.attempts > 0);
 
   return (
-    <div style={{ paddingBottom: 40 }}>
+    <div className="an" style={{ paddingBottom: 40 }}>
       <PageHeader title="Analytics" breadcrumbs={[isSuper ? 'Super Admin' : 'Admin', 'Analytics']} />
 
       {/* Filter row */}
       <div className="an-filterbar">
-        <span style={{ fontSize: 13, color: '#475569' }}>
+        <span className="an-scope">
           Showing <strong style={{ color: INK }}>{data.scope?.departmentName}</strong> · pass mark {passMark}%
         </span>
         {isSuper && (
@@ -249,17 +255,17 @@ export default function Analytics() {
           </div>
         </header>
         {courses.length === 0 ? <div className="an-empty">No quiz attempts yet</div> : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="an-table">
+          <div className="an-scroll">
+            <table className="an-table stack">
               <thead><tr><th>{tx("Course")}</th><th>{tx("Lecturer")}</th><th className="r">Attempts</th><th className="r">Average</th><th>Pass rate</th></tr></thead>
               <tbody>
                 {courses.slice(0, 15).map(c => (
                   <tr key={c.courseId}>
-                    <td><strong style={{ color: INK }}>{c.courseCode}</strong> <span style={{ color: '#64748b' }}>{c.title}</span></td>
-                    <td style={{ color: '#475569' }}>{c.lecturer ?? '—'}</td>
-                    <td className="r">{num(c.attempts)}</td>
-                    <td className="r">{pct(c.averageScore)}</td>
-                    <td><Meter value={c.passRate} /></td>
+                    <td className="t"><strong style={{ color: INK }}>{c.courseCode}</strong> <span style={{ color: '#64748b' }}>{c.title}</span></td>
+                    <td className="full" data-label={tx('Lecturer')} style={{ color: '#475569' }}>{c.lecturer ?? '—'}</td>
+                    <td className="r" data-label="Attempts">{num(c.attempts)}</td>
+                    <td className="r" data-label="Average">{pct(c.averageScore)}</td>
+                    <td className="full" data-label="Pass rate"><Meter value={c.passRate} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -277,16 +283,16 @@ export default function Analytics() {
             </div>
           </header>
           {lecturers.length === 0 ? <div className="an-empty">No data yet</div> : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="an-table">
+            <div className="an-scroll">
+              <table className="an-table stack">
                 <thead><tr><th>{tx("Lecturer")}</th><th className="r">{tx("Courses")}</th><th className="r">Attempts</th><th>Pass rate</th></tr></thead>
                 <tbody>
                   {lecturers.map(l => (
                     <tr key={l.lecturerId}>
-                      <td style={{ fontWeight: 600, color: INK }}>{l.name}</td>
-                      <td className="r">{num(l.courses)}</td>
-                      <td className="r">{num(l.attempts)}</td>
-                      <td><Meter value={l.passRate} /></td>
+                      <td className="t" style={{ fontWeight: 600, color: INK }}>{l.name}</td>
+                      <td className="r" data-label={tx('Courses')}>{num(l.courses)}</td>
+                      <td className="r" data-label="Attempts">{num(l.attempts)}</td>
+                      <td className="full" data-label="Pass rate"><Meter value={l.passRate} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -304,18 +310,18 @@ export default function Analytics() {
             {atRisk.length > 0 && <span className="an-risk-count"><AlertTriangle size={13} /> {atRisk.length}</span>}
           </header>
           {atRisk.length === 0 ? <div className="an-empty">{tx("No students flagged")}</div> : (
-            <div style={{ overflowX: 'auto', maxHeight: 420 }}>
-              <table className="an-table">
+            <div className="an-scroll" style={{ maxHeight: 420 }}>
+              <table className="an-table stack">
                 <thead><tr><th>{tx("Student")}</th><th>{tx("Program")}</th><th>Why flagged</th></tr></thead>
                 <tbody>
                   {atRisk.map(s => (
                     <tr key={s.studentId}>
-                      <td>
+                      <td className="t">
                         <div style={{ fontWeight: 600, color: INK }}>{s.name}</div>
                         {s.level && <div style={{ fontSize: 11, color: MUTED }}>{tx("Level ")}{s.level}</div>}
                       </td>
-                      <td style={{ color: '#475569' }}>{s.program ?? '—'}</td>
-                      <td>
+                      <td className="full" data-label={tx('Program')} style={{ color: '#475569' }}>{s.program ?? '—'}</td>
+                      <td className="full" data-label="Why flagged">
                         {s.reasons.map((r: string) => (
                           <span key={r} className="an-reason"><AlertTriangle size={11} /> {r}</span>
                         ))}
@@ -330,6 +336,9 @@ export default function Analytics() {
       </div>
 
       <style>{`
+        .an { container: an / inline-size; }
+        .an-scope { font-size: 13px; color: #475569; min-width: 0; }
+        .an-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
         .an-filterbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding: 10px 14px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; }
         .an-select { height: 36px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; padding: 0 10px; background: #f8fafc; color: ${INK}; min-width: 200px; }
         .an-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
@@ -338,10 +347,11 @@ export default function Analytics() {
         .an-tile-value { font-size: 26px; font-weight: 800; color: ${INK}; margin-top: 4px; font-variant-numeric: tabular-nums; }
         .an-tile-sub { font-size: 11.5px; color: ${MUTED}; margin-top: 2px; }
         .an-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-        .an-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.05); padding-bottom: 8px; }
+        .an-card { container: an-card / inline-size; min-width: 0; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.05); padding-bottom: 8px; }
         .an-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 14px 16px 8px; }
         .an-card-title { margin: 0; font-size: 14.5px; font-weight: 800; color: ${INK}; }
         .an-card-sub { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+        .an-toggle:hover { background: #f8fafc; border-color: #cbd5e1; }
         .an-toggle { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 7px; border: 1.5px solid #e2e8f0; background: #fff; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; flex-shrink: 0; }
         .an-empty { padding: 36px 16px; text-align: center; color: ${MUTED}; font-size: 13px; }
         .an-tip { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 18px rgba(15,23,42,0.12); }
@@ -356,8 +366,34 @@ export default function Analytics() {
         .an-stage-arrow { position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: ${MUTED}; font-size: 12px; }
         .an-reason { display: inline-flex; align-items: center; gap: 4px; margin: 2px 6px 2px 0; padding: 2px 8px; border-radius: 6px; background: #fdeeee; color: #9f1f1f; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
         .an-risk-count { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; background: #fdeeee; color: #9f1f1f; font-size: 12px; font-weight: 800; }
-        @media (max-width: 1000px) { .an-grid { grid-template-columns: 1fr; } }
-        @media (max-width: 600px) { .an-stage-arrow { display: none; } .an-select { min-width: 0; width: 100%; } }
+        .an-table tbody tr:hover td { background: #fafbff; }
+        .an-table tbody tr:last-child td { border-bottom: none; }
+
+        /* Sized by the content area (the desktop sidebar takes its share), not the window */
+        @container an (max-width: 900px) { .an-grid { grid-template-columns: 1fr; } }
+        @container an (max-width: 600px) {
+          .an-stage-arrow { display: none; }
+          .an-select { min-width: 0; width: 100%; }
+          .an-filterbar { padding: 10px 12px; }
+          .an-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+          .an-tile { padding: 12px 14px; }
+          .an-tile-value { font-size: 22px; }
+          .an-stage { flex: 1 1 calc(50% - 4px); }
+        }
+        /* Tables become stacked rows once their card is narrow */
+        @container an-card (max-width: 520px) {
+          .an-table.stack thead { display: none; }
+          .an-table.stack, .an-table.stack tbody { display: block; }
+          .an-table.stack tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+          .an-table.stack tr:last-child { border-bottom: none; }
+          .an-table.stack td { display: block; padding: 0; border: none; min-width: 0; text-align: left; background: none !important; }
+          .an-table.stack td.t, .an-table.stack td.full { grid-column: 1 / -1; }
+          .an-table.stack td.t { overflow-wrap: anywhere; }
+          .an-table.stack td[data-label]::before { content: attr(data-label); display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: ${MUTED}; margin-bottom: 2px; }
+          .an-reason { white-space: normal; }
+        }
+        @media (max-width: 640px) { .an-select { font-size: 16px; } }
+        @media (pointer: coarse) { .an-toggle { height: 36px; padding: 0 12px; } .an-select { height: 44px; } }
       `}</style>
     </div>
   );
@@ -365,9 +401,9 @@ export default function Analytics() {
 
 function SimpleTable({ head, rows }: { head: string[]; rows: (string | number)[][] }) {
   return (
-    <table className="an-table">
+    <table className="an-table stack">
       <thead><tr>{head.map((h, i) => <th key={h} className={i ? 'r' : ''}>{h}</th>)}</tr></thead>
-      <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className={j ? 'r' : ''}>{c}</td>)}</tr>)}</tbody>
+      <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className={j ? 'r' : 't'} data-label={j ? head[j] : undefined}>{c}</td>)}</tr>)}</tbody>
     </table>
   );
 }

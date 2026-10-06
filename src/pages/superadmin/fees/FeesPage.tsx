@@ -232,7 +232,7 @@ function Schedules({ data, onEdit, onChanged }: {
               <span className={`fe-tag ${set === all.levels.length ? 'done' : 'part'}`}>{set}/{all.levels.length} {tx('levels set')}</span>
             </div>
             <div className="fe-table-wrap">
-              <table className="fe-table">
+              <table className="fe-table fe-stack sched">
                 <thead>
                   <tr>
                     <th>{tx('Level')}</th>
@@ -249,15 +249,15 @@ function Schedules({ data, onEdit, onChanged }: {
                     const pct = row.billed ? Math.min(100, (row.collected / row.billed) * 100) : 0;
                     return (
                       <tr key={row.level}>
-                        <td className="fe-strong" style={{ whiteSpace: 'nowrap' }}>{levelName(row.level)}</td>
-                        {session.current && <td className="fe-num">{row.students ?? 0}</td>}
-                        <td className="fe-num">
+                        <td className="fe-strong fe-c-title" style={{ whiteSpace: 'nowrap' }}>{levelName(row.level)}</td>
+                        {session.current && <td className="fe-num" data-label={tx('Students')}>{row.students ?? 0}</td>}
+                        <td className="fe-num" data-label="Fee">
                           {s ? <>
                             <div className="fe-strong">{formatMoney(s.amount, currency)}</div>
                             {s.dueDate && <div className="fe-muted fe-small">Due {formatDate(s.dueDate)}</div>}
                           </> : <span className="fe-unset">Not set</span>}
                         </td>
-                        <td>
+                        <td className="fe-c-full" data-label="Breakdown">
                           {!s ? <span className="fe-muted">—</span> : s.itemised ? (
                             <div className="fe-items-preview" title={s.components.map(c => `${c.name}: ${formatMoney(c.amount, currency)}`).join('\n')}>
                               {s.components.slice(0, 3).map(c => <span key={c.name} className="fe-mini">{c.name}</span>)}
@@ -265,7 +265,7 @@ function Schedules({ data, onEdit, onChanged }: {
                             </div>
                           ) : <span className="fe-muted">Lump sum</span>}
                         </td>
-                        <td className="fe-collected">
+                        <td className="fe-collected" data-label="Collected">
                           {s ? <>
                             <div style={{ fontVariantNumeric: 'tabular-nums' }}>{formatMoney(row.collected, currency)}</div>
                             {row.billed != null && row.billed > 0 && (
@@ -276,7 +276,7 @@ function Schedules({ data, onEdit, onChanged }: {
                             )}
                           </> : <span className="fe-muted">—</span>}
                         </td>
-                        <td>
+                        <td className="fe-c-actions">
                           <div className="fe-row-actions">
                             {s ? <>
                               <button type="button" className="fe-ghost sm" onClick={() => onEdit(all, all.levels.find(l => l.level === row.level)!)}><Pencil size={13} /> Edit</button>
@@ -323,7 +323,7 @@ function CopyModal({ data, onClose, onDone }: { data: FeeOverview; onClose: () =
     <FeeModal title="Copy fees" subtitle={<>Into {data.session.name}</>} onClose={onClose} busy={busy} narrow
       footer={<>
         <span />
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="fe-foot-actions">
           <button type="button" className="fe-ghost" onClick={onClose} disabled={busy}>Cancel</button>
           <button type="button" className="fe-btn" onClick={run} disabled={busy || !from}>
             {busy ? <Loader2 size={15} className="fe-spin" /> : <Copy size={15} />} Copy fees
