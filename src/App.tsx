@@ -153,7 +153,7 @@ export default function App() {
           <Route path="data-tools" element={<DataTools />} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="analytics" element={<Analytics />} />
-          <Route path="audit-log" element={<AuditLog />} />
+          <Route path="audit-log" element={<FeatureGate flag="auditLogSuperAdmin" redirectTo="/super-admin"><AuditLog /></FeatureGate>} />
           <Route path="timetable" element={<Timetable />} />
           <Route path="question-bank" element={<QuestionBank />} />
           <Route path="remarks" element={<RemarkRequests />} />

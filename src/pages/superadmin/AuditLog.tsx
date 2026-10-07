@@ -8,7 +8,7 @@ const ROLE_LABEL: Record<string, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 
 const PAGE_SIZE = 50;
 const EMPTY = { actor: '', action: '', role: '', from: '', to: '' };
 
-/** Super Admin: who changed what, and when. */
+/** Super Admin: who changed what, and when (the developer's own activity is not included). */
 export default function AuditLog() {
   const [draftActor, setDraftActor] = useState('');
   const [filters, setFilters] = useState(EMPTY);
@@ -68,19 +68,19 @@ export default function AuditLog() {
         <div className="al-table-wrap">
           <table className="al-table">
             <thead>
-              <tr><th>When</th><th>Who</th><th>Action</th><th>Record</th><th>Result</th><th>Details</th></tr>
+              <tr><th>When</th><th>Who</th><th>Action</th><th>Record</th><th>Result</th></tr>
             </thead>
             <tbody style={{ opacity: logs.isFetching && !logs.isLoading ? 0.6 : 1, transition: 'opacity .15s' }}>
               {logs.isLoading ? (
-                <tr className="al-msg"><td colSpan={6}><Loader2 size={22} color="#5156be" className="al-spin" /></td></tr>
+                <tr className="al-msg"><td colSpan={5}><Loader2 size={22} color="#5156be" className="al-spin" /></td></tr>
               ) : logs.isError ? (
-                <tr className="al-msg"><td colSpan={6}>
+                <tr className="al-msg"><td colSpan={5}>
                   <XCircle size={28} color="#e34948" style={{ marginBottom: 6 }} />
                   <div style={{ fontWeight: 700, color: '#1e293b' }}>Couldn't load the audit log</div>
                   <button type="button" className="al-link" onClick={() => logs.refetch()}>Try again</button>
                 </td></tr>
               ) : items.length === 0 ? (
-                <tr className="al-msg"><td colSpan={6}>
+                <tr className="al-msg"><td colSpan={5}>
                   <ScrollText size={30} style={{ marginBottom: 6 }} /><div style={{ fontWeight: 700 }}>No matching activity</div>
                   {filtered && <button type="button" className="al-link" onClick={reset}>Clear filters</button>}
                 </td></tr>
@@ -102,10 +102,6 @@ export default function AuditLog() {
                       <span className="al-status" style={{ color: ok ? '#0b7a0b' : '#b42323', background: ok ? '#eefbee' : '#fdeeee' }}>
                         {ok ? <CheckCircle2 size={12} /> : <XCircle size={12} />} {ok ? 'Succeeded' : `Failed (${e.statusCode ?? '?'})`}
                       </span>
-                    </td>
-                    <td className="al-c-details" data-label="Details">
-                      <div className="al-details" title={e.path}>{e.details || e.path}</div>
-                      {e.ipAddress && <div className="al-ip">IP {e.ipAddress}</div>}
                     </td>
                   </tr>
                 );
@@ -154,9 +150,6 @@ export default function AuditLog() {
         .al-role { font-size: 11px; color: #94a3b8; }
         .al-c-action { font-weight: 600; color: #1e293b; }
         .al-c-record { color: #64748b; }
-        .al-c-details { max-width: 280px; color: #64748b; font-size: 12px; }
-        .al-details { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .al-ip { font-size: 11px; color: #94a3b8; }
         .al-status { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
         .al-pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; font-size: 12.5px; color: #64748b; flex-wrap: wrap; border-top: 1px solid #f1f5f9; }
         .al-pager-btns { display: flex; gap: 6px; }
@@ -180,8 +173,6 @@ export default function AuditLog() {
           .al-c-action { order: 3; grid-column: 1 / -1; overflow-wrap: anywhere; }
           .al-c-when { order: 4; white-space: normal; }
           .al-c-record { order: 5; text-align: right; }
-          .al-c-details { order: 6; grid-column: 1 / -1; max-width: none; padding-top: 8px !important; border-top: 1px dashed #eef0f4 !important; }
-          .al-details { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
         }
         @container al (max-width: 560px) {
           .al-filters { padding: 12px; }

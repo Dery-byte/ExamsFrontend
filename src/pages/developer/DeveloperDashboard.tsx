@@ -1,28 +1,30 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { TerminalSquare, LogOut, SlidersHorizontal, Activity, Bug, Users, type LucideIcon } from 'lucide-react';
+import { TerminalSquare, LogOut, SlidersHorizontal, Activity, Bug, ScrollText, Users, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSystemHealth } from '../../api/endpoints';
 import ModePanel from './console/ModePanel';
 import HealthPanel from './console/HealthPanel';
 import ErrorsPanel from './console/ErrorsPanel';
+import AuditPanel from './console/AuditPanel';
 import DevelopersPanel from './console/DevelopersPanel';
 import { toneOf, type Tone } from './console/ui';
 import { CSS } from './console/styles';
 
-type Tab = 'mode' | 'health' | 'errors' | 'developers';
+type Tab = 'mode' | 'health' | 'errors' | 'audit' | 'developers';
 
 const NAV: { key: Tab; label: string; short: string; icon: LucideIcon }[] = [
   { key: 'mode', label: 'System mode', short: 'Mode', icon: SlidersHorizontal },
   { key: 'health', label: 'Health', short: 'Health', icon: Activity },
   { key: 'errors', label: 'Errors', short: 'Errors', icon: Bug },
+  { key: 'audit', label: 'Audit log', short: 'Audit', icon: ScrollText },
   { key: 'developers', label: 'Developers', short: 'Team', icon: Users },
 ];
 
 const STATUS_TEXT: Record<Tone, string> = { ok: 'Operational', warn: 'Degraded', bad: 'Down', neutral: 'Checking…' };
 
-/** The developer's console: choose the system mode, watch health and errors. */
+/** The developer's console: choose the system mode, watch health and errors, read the audit log. */
 export default function DeveloperDashboard() {
   const { user, logout } = useAuth();
   const [params, setParams] = useSearchParams();
@@ -96,6 +98,7 @@ export default function DeveloperDashboard() {
           {tab === 'mode' && <ModePanel />}
           {tab === 'health' && <HealthPanel onShowErrors={() => go('errors')} />}
           {tab === 'errors' && <ErrorsPanel />}
+          {tab === 'audit' && <AuditPanel />}
           {tab === 'developers' && <DevelopersPanel />}
         </main>
       </div>

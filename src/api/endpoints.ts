@@ -478,6 +478,8 @@ export interface FeatureFlags {
   marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean;
   /** Super Admin switch: students see School Fees (nav entry, dashboard card, page). */
   feesStudent?: boolean;
+  /** Developer switch: the Super Admin sees the Audit Log (nav entry and page). */
+  auditLogSuperAdmin?: boolean;
   /** Each feature's state for the signed-in user (system switch + their department's choice). */
   features?: Partial<Record<FeatureKey, boolean>>;
 }
@@ -527,9 +529,11 @@ export interface AuditEntry {
   httpMethod: string; path: string; entityId: string | null; details: string | null;
   statusCode: number | null; ipAddress: string | null; createdAt: string;
 }
-export const saGetAuditLogs = (params: {
+export interface AuditQuery {
   actor?: string; action?: string; role?: string; from?: string; to?: string; page?: number; size?: number;
-}): Promise<{ items: AuditEntry[]; page: number; size: number; totalItems: number; totalPages: number }> =>
+}
+export interface AuditPage { items: AuditEntry[]; page: number; size: number; totalItems: number; totalPages: number }
+export const saGetAuditLogs = (params: AuditQuery): Promise<AuditPage> =>
   saClient.get('/audit-logs', { params }).then(r => r.data);
 export const saGetAuditActions = (): Promise<string[]> => saClient.get('/audit-logs/actions').then(r => r.data);
 
@@ -690,6 +694,15 @@ export const reportClientError = (data: { page: string; message: string; stack?:
 
 // Developers: read-only list (rows are added directly in the developer_email table)
 export const getDevelopers = () => client.get(`${developerRootUrl()}/developers`).then(r => r.data);
+
+// Audit log: the developer always sees it and decides whether the Super Admin does
+export const devGetAuditLogs = (params: AuditQuery): Promise<AuditPage> =>
+  client.get(`${developerRootUrl()}/audit-logs`, { params }).then(r => r.data);
+export const devGetAuditActions = (): Promise<string[]> => client.get(`${developerRootUrl()}/audit-logs/actions`).then(r => r.data);
+export const getAuditLogAccess = (): Promise<{ superAdminVisible: boolean }> =>
+  client.get(`${developerRootUrl()}/audit-log/access`).then(r => r.data);
+export const setAuditLogAccess = (superAdminVisible: boolean): Promise<{ superAdminVisible: boolean }> =>
+  client.put(`${developerRootUrl()}/audit-log/access`, { superAdminVisible }).then(r => r.data);
 
 // ── Fees & payments ───────────────────────────────────────────────────────
 export type FeeStatus = 'PAID' | 'PART_PAID' | 'UNPAID' | 'NO_FEE' | 'NO_CLASS';

@@ -7,7 +7,7 @@ type MarksFlag = Exclude<keyof FeatureFlags, 'features'>;
 
 /**
  * Renders children only while the given switch is on for the signed-in user; otherwise redirects.
- * Use `flag` for the Marks Sheet visibility switches and `feature` for the Feature Controls switches.
+ * Use `flag` for the visibility switches (Marks Sheet, Audit Log …) and `feature` for the Feature Controls switches.
  */
 export default function FeatureGate({ flag, feature, redirectTo, children }: {
   flag?: MarksFlag; feature?: FeatureKey; redirectTo: string; children: ReactNode;

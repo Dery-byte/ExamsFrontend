@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
 import {
@@ -18,6 +19,7 @@ const DESKTOP_QUERY = '(min-width: 1024px)';
 export default function SuperAdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
   const { term } = useInstitution();
+  const { auditLogSuperAdmin } = useFeatureFlags();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
@@ -97,7 +99,7 @@ export default function SuperAdminLayout() {
         ...(isSchoolMode() ? [{ to: '/super-admin/term-remarks', icon: <ClipboardPen size={20} />, label: 'Report Remarks' }] : []),
         ...(!isSchoolMode() ? [{ to: '/super-admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' }] : []),
         { to: '/super-admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
-        { to: '/super-admin/audit-log', icon: <ScrollText size={20} />, label: 'Audit Log' },
+        ...(auditLogSuperAdmin !== false ? [{ to: '/super-admin/audit-log', icon: <ScrollText size={20} />, label: 'Audit Log' }] : []),
       ]
     },
   ];
