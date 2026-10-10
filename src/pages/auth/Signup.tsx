@@ -81,7 +81,7 @@ export default function Signup() {
           <h1 style={{ fontSize: 20, margin: '0 0 8px', color: '#1e293b' }}>Sign-up is closed</h1>
           <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: '0 0 18px' }}>
             {tx("Student accounts are created by your department. Please contact your HOD or the examinations office to get your login details.")}</p>
-          <Link to="/login" style={{ fontWeight: 700, color: 'var(--primary, #5156be)', textDecoration: 'none' }}>Back to sign in</Link>
+          <Link to="/login" style={{ fontWeight: 700, color: 'var(--primary, var(--brand-text))', textDecoration: 'none' }}>Back to sign in</Link>
         </div>
       </div>
     );
@@ -100,11 +100,11 @@ export default function Signup() {
         .brand-panel {
           flex: 1;
           display: none;
-          background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+          background: linear-gradient(135deg, #0f172a 0%, var(--brand-deep) 100%);
           position: relative;
           overflow: hidden;
           padding: 60px;
-          color: #fff;
+          color: var(--brand-contrast);
           flex-direction: column;
           justify-content: space-between;
         }
@@ -113,7 +113,7 @@ export default function Signup() {
           position: absolute;
           top: -20%; right: -10%;
           width: 80vh; height: 80vh;
-          background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 60%);
+          background: radial-gradient(circle, rgba(var(--accent-rgb), 0.15) 0%, transparent 60%);
           border-radius: 50%;
           z-index: 0;
         }
@@ -145,10 +145,10 @@ export default function Signup() {
 
         .brand-logo-icon {
           width: 44px; height: 44px;
-          background: linear-gradient(135deg, #818cf8, #c084fc);
+          background: linear-gradient(135deg, var(--brand-light), var(--accent-light));
           border-radius: 12px;
           display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 8px 24px rgba(129,140,248,0.4);
+          box-shadow: 0 8px 24px rgba(var(--brand-rgb), 0.4);
         }
 
         .brand-headline {
@@ -183,7 +183,7 @@ export default function Signup() {
           border-radius: 8px;
           background: rgba(255,255,255,0.1);
           display: flex; align-items: center; justify-content: center;
-          color: #a78bfa;
+          color: var(--accent-light);
           flex-shrink: 0;
         }
 
@@ -295,8 +295,8 @@ export default function Signup() {
         .auth-input:focus {
           outline: none;
           background: #fff;
-          border-color: #818cf8;
-          box-shadow: 0 0 0 4px rgba(129,140,248,0.15);
+          border-color: var(--brand-light);
+          box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.15);
         }
 
         .auth-input.error {
@@ -355,8 +355,8 @@ export default function Signup() {
         .submit-btn {
           grid-column: 1 / -1;
           margin-top: 24px;
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: #fff;
+          background: linear-gradient(135deg, var(--brand), var(--accent));
+          color: var(--brand-contrast);
           border: none;
           padding: 18px;
           border-radius: 16px;
@@ -368,12 +368,12 @@ export default function Signup() {
           justify-content: center;
           gap: 12px;
           transition: all 0.3s;
-          box-shadow: 0 10px 25px rgba(99,102,241,0.3);
+          box-shadow: 0 10px 25px rgba(var(--brand-rgb), 0.3);
         }
 
         .submit-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 15px 35px rgba(99,102,241,0.4);
+          box-shadow: 0 15px 35px rgba(var(--brand-rgb), 0.4);
         }
 
         .submit-btn:disabled {
@@ -391,7 +391,7 @@ export default function Signup() {
         }
 
         .login-link a {
-          color: #6366f1;
+          color: var(--brand-text);
           font-weight: 700;
           text-decoration: none;
           margin-left: 6px;
@@ -399,7 +399,7 @@ export default function Signup() {
         }
 
         .login-link a:hover {
-          color: #4f46e5;
+          color: var(--brand-text);
           text-decoration: underline;
         }
 

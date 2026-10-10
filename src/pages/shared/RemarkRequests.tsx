@@ -61,7 +61,7 @@ export default function RemarkRequests() {
         {tx("To re-mark, open the quiz in the review screen, adjust the marks and save. Then come back here and resolve the request. The student's new score is recorded automatically.")}</p>
 
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={24} color="#5156be" className="rr-spin" /></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={24} color="var(--brand-text)" className="rr-spin" /></div>
       ) : items.length === 0 ? (
         <div className="rr-empty"><MessageSquareWarning size={30} /><p>{filter === 'PENDING' ? 'No pending requests.' : 'No re-mark requests yet.'}</p></div>
       ) : items.map(r => {
@@ -119,8 +119,8 @@ export default function RemarkRequests() {
       <style>{`
         .rr-tabs { display: flex; gap: 4px; border-bottom: 1px solid #e2e8f0; margin-bottom: 12px; }
         .rr-tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border: none; background: none; font-size: 13.5px; font-weight: 700; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-        .rr-tabs button.is-active { color: #5156be; border-bottom-color: #5156be; }
-        .rr-badge { background: #5156be; color: #fff; border-radius: 10px; font-size: 11px; padding: 1px 7px; }
+        .rr-tabs button.is-active { color: var(--brand-text); border-bottom-color: var(--brand); }
+        .rr-badge { background: var(--brand); color: var(--brand-contrast); border-radius: 10px; font-size: 11px; padding: 1px 7px; }
         .rr-help { font-size: 12.5px; color: #64748b; margin: 0 0 14px; }
         .rr-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
         .rr-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
@@ -132,14 +132,14 @@ export default function RemarkRequests() {
         .rr-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 5px; }
         .rr-input { width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; resize: vertical; }
         .rr-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
-        .rr-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 8px; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+        .rr-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; cursor: pointer; }
         .rr-btn-ghost { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer; }
         .rr-btn:disabled, .rr-btn-ghost:disabled { opacity: 0.6; cursor: not-allowed; }
         .rr-outcome { border: none; padding: 0; margin: 0 0 10px; display: flex; flex-wrap: wrap; gap: 8px; }
         .rr-outcome legend { margin-bottom: 5px; }
         .rr-choice { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #334155; cursor: pointer; background: #fff; }
-        .rr-choice.is-on { border-color: #5156be; background: #f5f6ff; color: #1e293b; font-weight: 600; }
-        .rr-choice input { accent-color: #5156be; }
+        .rr-choice.is-on { border-color: var(--brand); background: #f5f6ff; color: #1e293b; font-weight: 600; }
+        .rr-choice input { accent-color: var(--brand); }
         .rr-response { font-size: 13px; color: #334155; background: #f8fafc; border-radius: 8px; padding: 8px 12px; overflow-wrap: anywhere; }
         .rr-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 48px 16px; color: #94a3b8; background: #fff; border: 1.5px dashed #e2e8f0; border-radius: 12px; }
         .rr-empty p { margin: 0; }

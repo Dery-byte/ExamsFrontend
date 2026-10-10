@@ -65,7 +65,7 @@ export default function QuestionImageField({ file, onFileChange, existing, onRem
           padding: 16px 12px; border: 1.5px dashed #cbd5e1; border-radius: 10px;
           background: #f8fafc; color: #475569; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
         }
-        .qif-drop:hover { border-color: #5156be; color: #5156be; background: #f5f6ff; }
+        .qif-drop:hover { border-color: var(--brand); color: var(--brand-text); background: #f5f6ff; }
         .qif-drop em { font-weight: 400; color: #94a3b8; }
         .qif-drop small { font-weight: 400; color: #94a3b8; font-size: 11.5px; text-align: center; }
         .qif-preview { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px;

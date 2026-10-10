@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileSearch, Table2 } from 'lucide-react';
+import { FileSearch, FileText, KeyRound, Table2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 
@@ -18,11 +18,13 @@ export default function QuizReportLinks({ quizId }: { quizId: number }) {
     <div className="qrl">
       <Link to={`${base}/quiz-results?quizId=${quizId}`} className="qrl-link"><Table2 size={14} /> Result sheet</Link>
       <Link to={`${base}/question-analysis?quizId=${quizId}`} className="qrl-link"><FileSearch size={14} /> Question analysis</Link>
+      <Link to={`${base}/question-paper?quizId=${quizId}`} className="qrl-link"><FileText size={14} /> Question paper</Link>
+      <Link to={`${base}/question-paper-answers?quizId=${quizId}`} className="qrl-link"><KeyRound size={14} /> Answer key</Link>
       <style>{`
         .qrl { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 4px; }
-        .qrl-link { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border-radius: 8px; border: 1.5px solid #c7c9f0; background: #f5f6fd; color: #3b3f99; font-size: 12.5px; font-weight: 700; text-decoration: none; }
-        .qrl-link:hover { background: #eef0fb; }
-        .qrl-link:focus-visible { outline: 2px solid #5156be; outline-offset: 2px; }
+        .qrl-link { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border-radius: 8px; border: 1.5px solid var(--brand-border); background: #f5f6fd; color: var(--brand-hover); font-size: 12.5px; font-weight: 700; text-decoration: none; }
+        .qrl-link:hover { background: var(--brand-soft); }
+        .qrl-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
         @media (pointer: coarse) { .qrl-link { min-height: 42px; } }
       `}</style>
     </div>

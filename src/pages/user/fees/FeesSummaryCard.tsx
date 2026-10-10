@@ -17,7 +17,7 @@ export default function FeesSummaryCard() {
     <div className="sf lexa-card" style={{ marginBottom: 16, padding: 0 }}>
       <style>{STUDENT_FEE_CSS}</style>
       <div className="sf-dash">
-        <div className="sf-dash-ico" style={paid ? { background: '#eafaf3', color: '#0f9d6e' } : { background: '#f3f1fc', color: '#7a6fbe' }}>
+        <div className="sf-dash-ico" style={paid ? { background: '#eafaf3', color: '#0f9d6e' } : { background: 'var(--brand-soft)', color: 'var(--brand-text)' }}>
           {paid ? <CheckCircle2 size={26} /> : <Wallet size={26} />}
         </div>
         <div className="sf-dash-main">

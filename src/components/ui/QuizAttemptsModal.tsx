@@ -101,7 +101,7 @@ export default function QuizAttemptsModal({ quiz, student, attempts, onClose, on
       inputAttributes: { maxlength: '500' },
       showCancelButton: true,
       confirmButtonText: 'Allow retake',
-      confirmButtonColor: '#5156be',
+      confirmButtonColor: 'var(--brand)',
       reverseButtons: true,
       target: document.body,
       customClass: { container: 'swal-above-modal' },
@@ -165,7 +165,7 @@ export default function QuizAttemptsModal({ quiz, student, attempts, onClose, on
                       </td>
                       <td className="qa-date"><DateCell d={a.startedAt} /></td>
                       <td className="qa-date"><DateCell d={a.submittedAt} /></td>
-                      <td className="qa-num" style={{ fontWeight: 700, color: '#5156be' }}>{num(a.marksA)}</td>
+                      <td className="qa-num" style={{ fontWeight: 700, color: 'var(--brand-text)' }}>{num(a.marksA)}</td>
                       <td className="qa-num" style={{ fontWeight: 700, color: '#2ab57d' }}>{num(a.marksB)}</td>
                       <td className="qa-num" style={{ fontWeight: 800 }}>{total(a)}</td>
                     </tr>
@@ -191,7 +191,7 @@ export default function QuizAttemptsModal({ quiz, student, attempts, onClose, on
               type="button"
               onClick={grant}
               disabled={busy || !latest}
-              style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', border: 'none', borderRadius: 8, background: latest ? 'linear-gradient(135deg,#5156be,#3d41a8)' : '#cbd5e1', color: '#fff', fontSize: 13, fontWeight: 700, cursor: latest ? 'pointer' : 'not-allowed' }}
+              style={{ marginLeft: 'auto', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px', border: 'none', borderRadius: 8, background: latest ? 'linear-gradient(135deg,var(--brand),var(--brand-hover))' : '#cbd5e1', color: 'var(--brand-contrast)', fontSize: 13, fontWeight: 700, cursor: latest ? 'pointer' : 'not-allowed' }}
             >
               {busy ? <Loader2 size={14} style={{ animation: 'rSpin 1s linear infinite' }} /> : <RotateCcw size={14} />}
               Allow retake

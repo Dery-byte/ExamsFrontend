@@ -58,7 +58,7 @@ export default function ResultsHoldSettings() {
     const ok = await Swal.fire({
       title: 'Lift this hold?',
       text: tx(`Students in ${p.name} will see their results whatever they have paid.`),
-      icon: 'question', showCancelButton: true, confirmButtonText: 'Lift hold', confirmButtonColor: '#7c3aed',
+      icon: 'question', showCancelButton: true, confirmButtonText: 'Lift hold', confirmButtonColor: 'var(--accent)',
     });
     if (!ok.isConfirmed) return;
     setLifting(p.id);

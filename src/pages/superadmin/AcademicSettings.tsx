@@ -47,7 +47,7 @@ function SessionsCard() {
   };
 
   const setCurrent = async (s: any) => {
-    const ok = await Swal.fire({ title: `Make ${s.name} current?`, text: tx('New marks sheets and course enrolments will go into this session.'), icon: 'question', showCancelButton: true, confirmButtonText: 'Make current', confirmButtonColor: '#5156be' });
+    const ok = await Swal.fire({ title: `Make ${s.name} current?`, text: tx('New marks sheets and course enrolments will go into this session.'), icon: 'question', showCancelButton: true, confirmButtonText: 'Make current', confirmButtonColor: 'var(--brand)' });
     if (!ok.isConfirmed) return;
     try { await makeSessionCurrent(s.id); toast.success(`${s.name} is now the current session`); refresh(); }
     catch (e: any) { toast.error(e?.response?.data?.message ?? 'Could not change the session'); }
@@ -63,11 +63,11 @@ function SessionsCard() {
   return (
     <section className="as-card">
       <div className="as-head">
-        <CalendarRange size={18} color="#5156be" style={{ flexShrink: 0, marginTop: 2 }} />
+        <CalendarRange size={18} color="var(--brand-text)" style={{ flexShrink: 0, marginTop: 2 }} />
         <div><h2>Academic sessions</h2><p>Marks sheets and enrolments are filed under the current session, so each year's results stay separate.</p></div>
       </div>
       <div className="as-body">
-        {isLoading ? <div className="as-loading"><Loader2 size={20} className="as-spin" color="#5156be" /></div>
+        {isLoading ? <div className="as-loading"><Loader2 size={20} className="as-spin" color="var(--brand-text)" /></div>
         : isError ? (
           <p className="as-note as-warn">Couldn't load the sessions. <button type="button" className="as-link" onClick={() => refetch()}>Try again</button></p>
         ) : (sessions as any[]).length === 0 ? (
@@ -163,7 +163,7 @@ function GradingCard() {
       html: '<p style="margin:0 0 8px;font-size:14px">Saves the grades and classes shown below so you can load them again later.</p>'
         + '<input id="ps-name" class="swal2-input" placeholder="Preset name, e.g. Mock exams scale" maxlength="80" style="margin:6px auto">'
         + '<input id="ps-desc" class="swal2-input" placeholder="Short description (optional)" maxlength="300" style="margin:6px auto">',
-      showCancelButton: true, confirmButtonText: 'Save preset', confirmButtonColor: '#5156be', focusConfirm: false,
+      showCancelButton: true, confirmButtonText: 'Save preset', confirmButtonColor: 'var(--brand)', focusConfirm: false,
       preConfirm: () => {
         const name = (document.getElementById('ps-name') as HTMLInputElement).value.trim();
         if (!name) { Swal.showValidationMessage('Give the preset a name'); return false; }
@@ -211,7 +211,7 @@ function GradingCard() {
       const again = await Swal.fire({
         title: 'Saved', icon: 'success',
         text: 'Re-grade marks on sheets that are not yet published with the new scale? Published results keep their grades.',
-        showCancelButton: true, confirmButtonText: 'Re-grade unpublished', cancelButtonText: 'Not now', confirmButtonColor: '#5156be',
+        showCancelButton: true, confirmButtonText: 'Re-grade unpublished', cancelButtonText: 'Not now', confirmButtonColor: 'var(--brand)',
       });
       if (again.isConfirmed) {
         const r = await recalculateGrades();
@@ -222,14 +222,14 @@ function GradingCard() {
     } finally { setSaving(false); }
   };
 
-  if (isLoading) return <section className="as-card"><div className="as-body as-loading"><Loader2 size={20} className="as-spin" color="#5156be" /></div></section>;
+  if (isLoading) return <section className="as-card"><div className="as-body as-loading"><Loader2 size={20} className="as-spin" color="var(--brand-text)" /></div></section>;
 
   const sorted = [...bands].map((b, i) => ({ b, i })).sort((x, y) => Number(y.b.minScore) - Number(x.b.minScore));
 
   return (
     <section className="as-card">
       <div className="as-head">
-        <Scale size={18} color="#5156be" style={{ flexShrink: 0, marginTop: 2 }} />
+        <Scale size={18} color="var(--brand-text)" style={{ flexShrink: 0, marginTop: 2 }} />
         <div><h2>{isSchoolMode() ? 'Grading scale & promotion' : 'Grading scale, classes & promotion'}</h2>
           <p>{isSchoolMode() ? tx('Used for every subject grade on terminal reports and for promotion.') : tx("Used for every course grade, GPA, CGPA, transcript and promotion decision.")}</p></div>
       </div>
@@ -337,9 +337,9 @@ const ACADEMIC_CSS = `
 .as-body { padding: 14px 18px; }
 .as-loading { display: flex; justify-content: center; padding: 24px 0; }
 .as-input { height: 36px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; padding: 0 10px; background: #fff; color: #1e293b; font-family: inherit; width: 100%; min-width: 0; box-sizing: border-box; transition: border-color .15s, box-shadow .15s; }
-.as-input:focus { border-color: #5156be; outline: none; box-shadow: 0 0 0 3px rgba(81,86,190,0.15); }
+.as-input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.15); }
 .as-label { display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; }
-.as-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 8px; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.as-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
 .as-btn:hover:not(:disabled) { filter: brightness(1.08); }
 .as-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .as-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 12.5px; cursor: pointer; white-space: nowrap; font-family: inherit; }
@@ -347,8 +347,8 @@ const ACADEMIC_CSS = `
 .as-ghost:disabled { opacity: .55; cursor: not-allowed; }
 .as-icon { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #fee2e2; background: #fff5f5; color: #e34948; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .as-icon:disabled { opacity: .4; cursor: not-allowed; }
-.as-btn:focus-visible, .as-ghost:focus-visible, .as-icon:focus-visible, .as-link:focus-visible { outline: 2px solid #5156be; outline-offset: 2px; }
-.as-link { background: none; border: none; padding: 0; color: #5156be; font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.as-btn:focus-visible, .as-ghost:focus-visible, .as-icon:focus-visible, .as-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.as-link { background: none; border: none; padding: 0; color: var(--brand-text); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .as-scroll { overflow-x: auto; }
 .as-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .as-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; padding: 8px 10px; border-bottom: 1px solid #eef0f4; white-space: nowrap; }
@@ -356,10 +356,10 @@ const ACADEMIC_CSS = `
 .as-sessions td { padding: 10px; }
 .as-sessions tr.is-current td { background: #f8f9ff; }
 .as-row-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
-.as-current { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: #eef2ff; color: #4338ca; vertical-align: 1px; white-space: nowrap; }
+.as-current { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: var(--brand-soft); color: var(--brand-hover); vertical-align: 1px; white-space: nowrap; }
 .as-new-session { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px; align-items: end; padding-top: 14px; border-top: 1px dashed #e2e8f0; }
 .as-check { display: flex; align-items: center; gap: 8px; height: 36px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; user-select: none; }
-.as-check input { width: 16px; height: 16px; accent-color: #5156be; }
+.as-check input { width: 16px; height: 16px; accent-color: var(--brand); }
 .as-presets { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
 .as-preset-select { max-width: 460px; flex: 1 1 260px; }
 .as-spacer { flex: 1; }

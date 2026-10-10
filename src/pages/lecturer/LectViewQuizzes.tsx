@@ -474,7 +474,7 @@ export default function LectViewQuizzes() {
   }, [editQuizId]);
 
   const doDelete = (qId: number) => {
-    Swal.fire({ title: 'Are you sure?', text: "You won't be able to revert this!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#5156be', cancelButtonColor: '#74788d', confirmButtonText: 'Yes, delete it!' })
+    Swal.fire({ title: 'Are you sure?', text: "You won't be able to revert this!", icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--brand)', cancelButtonColor: '#74788d', confirmButtonText: 'Yes, delete it!' })
       .then(r => { if (!r.isConfirmed) return; deleteQuiz(qId).then(() => { toast.success('Quiz deleted'); qc.invalidateQueries({ queryKey: ['lectQuizzes'] }); }).catch(() => toast.error('Deletion failed')); });
   };
 
@@ -504,8 +504,8 @@ export default function LectViewQuizzes() {
       <div className="lvq-grid">
         {isLoading ? (
           <div style={{ gridColumn: '1/-1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '320px', gap: '16px' }}>
-            <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(81,86,190,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Loader2 style={{ animation: 'spin 1s linear infinite', color: '#5156be' }} size={32} />
+            <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(var(--brand-rgb), 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Loader2 style={{ animation: 'spin 1s linear infinite', color: 'var(--brand-text)' }} size={32} />
             </div>
             <p style={{ color: '#74788d', fontWeight: 600, fontSize: '14px', margin: 0 }}>Synchronizing Portfolio...</p>
           </div>
@@ -516,8 +516,8 @@ export default function LectViewQuizzes() {
           </div>
         ) : quizzes.map((q: any) => {
           const isLive = q.status === 'OPEN';
-          const grad = q.quizType === 'OBJ' ? 'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)' : q.quizType === 'THEORY' ? 'linear-gradient(135deg,#fd625e 0%,#d94f4b 100%)' : 'linear-gradient(135deg,#ffbf53 0%,#e6a832 100%)';
-          const accent = q.quizType === 'OBJ' ? '#5156be' : q.quizType === 'THEORY' ? '#fd625e' : '#ffbf53';
+          const grad = q.quizType === 'OBJ' ? 'linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%)' : q.quizType === 'THEORY' ? 'linear-gradient(135deg,#fd625e 0%,#d94f4b 100%)' : 'linear-gradient(135deg,#ffbf53 0%,#e6a832 100%)';
+          const accent = q.quizType === 'OBJ' ? 'var(--brand)' : q.quizType === 'THEORY' ? '#fd625e' : '#ffbf53';
           const typeLabel = q.quizType === 'OBJ' ? 'Objective' : q.quizType === 'THEORY' ? 'Theory' : 'Combined';
 
           return (
@@ -564,13 +564,13 @@ export default function LectViewQuizzes() {
                   {q.startTime && <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#74788d', fontWeight: 500 }}><Clock size={12} /> {q.startTime}</div>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Link to={`/lect/view-quetions/${q.qId}/${q.title}`} style={{ fontSize: '12px', fontWeight: 700, color: accent, textDecoration: 'none', padding: '5px 12px', borderRadius: '20px', border: `1.5px solid ${accent}20`, background: `${accent}10`, transition: '0.2s' }}>Questions</Link>
+                  <Link to={`/lect/view-quetions/${q.qId}/${q.title}`} style={{ fontSize: '12px', fontWeight: 700, color: accent, textDecoration: 'none', padding: '5px 12px', borderRadius: '20px', border: `1.5px solid color-mix(in srgb, ${accent} 12.5%, transparent)`, background: `color-mix(in srgb, ${accent} 6.3%, transparent)`, transition: '0.2s' }}>Questions</Link>
                   <select style={{ fontSize: '11px', fontWeight: 700, color: '#495057', border: '1px solid #e9ecef', borderRadius: '6px', padding: '5px 8px', background: '#f8f9fa', cursor: 'pointer', outline: 'none' }}
                     value={statusMap[q.qId] ?? q.status ?? ''} onChange={e => setStatusMap(m => ({ ...m, [q.qId]: e.target.value }))}>
                     <option value="CLOSED">CLOSE</option>
                     <option value="OPEN">OPEN</option>
                   </select>
-                  <button style={{ padding: '5px 12px', borderRadius: '6px', border: 'none', background: '#5156be', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                  <button style={{ padding: '5px 12px', borderRadius: '6px', border: 'none', background: 'var(--brand)', color: 'var(--brand-contrast)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
                     onClick={() => doUpdateStatus(q)} disabled={updatingMap[q.qId]}>
                     {updatingMap[q.qId] ? <Loader2 style={{ animation: 'spin 1s linear infinite' }} size={12} /> : <Save size={12} />}
                   </button>
@@ -592,8 +592,8 @@ export default function LectViewQuizzes() {
         .lvq-wrap { padding: 24px; font-family: 'Inter', sans-serif; background: #f5f6f8; min-height: 100vh; overflow-x: hidden; }
         .lvq-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
         .lvq-title { font-size: 20px; font-weight: 800; color: #2a3142; margin: 0; }
-        .lvq-create-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg,#5156be,#3d41a8); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(81,86,190,0.3); }
-        .lvq-create-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(81,86,190,0.4); }
+        .lvq-create-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg,var(--brand),var(--brand-hover)); color: var(--brand-contrast); border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.3); }
+        .lvq-create-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(var(--brand-rgb), 0.4); }
         .lvq-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
         .lvq-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(18,38,63,0.07); border: 1px solid #eff0f2; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
         .lvq-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(18,38,63,0.12); }
@@ -638,9 +638,9 @@ export default function LectViewQuizzes() {
         .qe-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
         .qe-header-icon {
           width: 40px; height: 40px; border-radius: 11px;
-          background: linear-gradient(135deg, #5156be, #7c3aed);
-          color: #fff; display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0; box-shadow: 0 4px 12px rgba(81,86,190,0.35);
+          background: linear-gradient(135deg, var(--brand), var(--accent));
+          color: var(--brand-contrast); display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0; box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.35);
         }
         .qe-header-title { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 2px; }
         .qe-header-sub { font-size: 12px; color: #94a3b8; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -669,23 +669,23 @@ export default function LectViewQuizzes() {
 
         /* ── Shared section styles ── */
         .aq-section { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -4px rgba(0,0,0,0.06); overflow: hidden; }
-        .aq-section-blue  { border-left: 4px solid #5156be; }
+        .aq-section-blue  { border-left: 4px solid var(--brand); }
         .aq-section-green { border-left: 4px solid #10b981; }
         .aq-section-head  { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; background: linear-gradient(135deg,#fafbff,#f8fafc); }
         .aq-section-title { font-size: 15px; font-weight: 800; color: #1e293b; margin: 0 0 2px; }
         .aq-section-sub   { font-size: 12px; color: #94a3b8; margin: 0; font-weight: 500; }
 
         .aq-section-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .aq-section-icon.blue   { background: #eef2ff; color: #5156be; }
+        .aq-section-icon.blue   { background: var(--brand-soft); color: var(--brand-text); }
         .aq-section-icon.green  { background: #ecfdf5; color: #10b981; }
         .aq-section-icon.amber  { background: #fffbeb; color: #f59e0b; }
-        .aq-section-icon.purple { background: #f5f3ff; color: #7c3aed; }
+        .aq-section-icon.purple { background: #f5f3ff; color: var(--accent-text); }
         .aq-section-icon.red    { background: #fef2f2; color: #dc2626; }
 
         /* ── Sidebar cards ── */
         .aq-sidebar-card  { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 20px -4px rgba(0,0,0,0.06); }
         .aq-card-deploy   { border-left: 4px solid #f59e0b; }
-        .aq-card-security { border-left: 4px solid #7c3aed; }
+        .aq-card-security { border-left: 4px solid var(--accent); }
         .aq-card-danger   { border-left: 4px solid #dc2626; }
         .aq-sidebar-head  { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
         .aq-sidebar-title { font-size: 14px; font-weight: 800; color: #1e293b; margin: 0; }
@@ -703,14 +703,14 @@ export default function LectViewQuizzes() {
         /* ── Toggle rows ── */
         .aq-toggle { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; transition: .2s; margin-bottom: 6px; }
         .aq-toggle:hover { background: #f8fafc; }
-        .aq-toggle.on { background: rgba(124,58,237,0.04); }
+        .aq-toggle.on { background: rgba(var(--accent-rgb), 0.04); }
         .aq-toggle-icon { width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; transition: .2s; flex-shrink: 0; }
-        .aq-toggle.on .aq-toggle-icon { background: #7c3aed; color: #fff; }
+        .aq-toggle.on .aq-toggle-icon { background: var(--accent); color: var(--accent-contrast); }
         .aq-toggle-info  { flex: 1; }
         .aq-toggle-label { display: block; font-size: 13px; font-weight: 700; color: #334155; }
         .aq-toggle-desc  { display: block; font-size: 10px; color: #94a3b8; }
         .aq-switch { width: 34px; height: 18px; border-radius: 20px; background: #e2e8f0; position: relative; transition: .3s; flex-shrink: 0; }
-        .aq-toggle.on .aq-switch { background: #7c3aed; }
+        .aq-toggle.on .aq-switch { background: var(--accent); }
         .aq-thumb { width: 13px; height: 13px; border-radius: 50%; background: #fff; position: absolute; top: 2.5px; left: 2.5px; transition: .3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         .aq-toggle.on .aq-thumb { left: 18px; }
 
@@ -720,38 +720,38 @@ export default function LectViewQuizzes() {
         .aq-iw  { position: relative; display: flex; align-items: center; }
         .aq-ii  { position: absolute; left: 13px; color: #94a3b8; pointer-events: none; z-index: 1; transition: .2s; }
         .aq-input { width: 100%; padding: 11px 14px 11px 40px; font-size: 14px; font-weight: 500; color: #1e293b; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; transition: all .2s; outline: none; font-family: 'Inter', sans-serif; box-sizing: border-box; }
-        .aq-input:hover { border-color: #c7d2fe; background: #f5f7ff; }
-        .aq-input:focus { border-color: #5156be; background: #fff; box-shadow: 0 0 0 4px rgba(81,86,190,.1); }
-        .aq-iw:focus-within .aq-ii { color: #5156be; }
+        .aq-input:hover { border-color: var(--brand-border); background: #f5f7ff; }
+        .aq-input:focus { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 4px rgba(var(--brand-rgb), .1); }
+        .aq-iw:focus-within .aq-ii { color: var(--brand-text); }
         .aq-textarea { padding: 12px 14px; resize: none; line-height: 1.6; }
         .aq-input-sm  { padding: 9px 10px; font-size: 13px; border-radius: 8px; }
         .aq-eye { position: absolute; right: 12px; background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; align-items: center; }
-        .aq-eye:hover { color: #5156be; }
+        .aq-eye:hover { color: var(--brand-text); }
 
         /* ── Quiz type buttons ── */
         .aq-type-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
         .aq-type-btn { flex: 1; min-width: 90px; padding: 11px 8px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; transition: .25s; }
         .aq-type-btn.active { background: #1e293b; border-color: #1e293b; color: #fff; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
-        .aq-type-btn:hover:not(.active) { background: #f5f7ff; border-color: #c7d2fe; color: #5156be; }
+        .aq-type-btn:hover:not(.active) { background: #f5f7ff; border-color: var(--brand-border); color: var(--brand-text); }
 
         /* ── Notice ── */
         .aq-notice { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 9px; color: #1d4ed8; font-size: 12px; font-weight: 600; margin-top: 8px; flex-wrap: wrap; }
 
         /* ── LLM Provider Card ── */
-        .aq-llm-card { background: linear-gradient(135deg,#f5f3ff,#ede9fe); border: 1.5px solid #c4b5fd; border-radius: 14px; padding: 18px; margin-top: 8px; margin-bottom: 16px; }
+        .aq-llm-card { background: linear-gradient(135deg,#f5f3ff,var(--accent-soft)); border: 1.5px solid var(--accent-border); border-radius: 14px; padding: 18px; margin-top: 8px; margin-bottom: 16px; }
         .aq-llm-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-        .aq-llm-icon { width: 36px; height: 36px; border-radius: 10px; background: #7c3aed; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .aq-llm-title { font-size: 13px; font-weight: 800; color: #4c1d95; margin: 0 0 2px; }
-        .aq-llm-sub { font-size: 11px; color: #7c3aed; margin: 0; font-weight: 500; }
+        .aq-llm-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--accent); color: var(--accent-contrast); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .aq-llm-title { font-size: 13px; font-weight: 800; color: var(--accent-deep); margin: 0 0 2px; }
+        .aq-llm-sub { font-size: 11px; color: var(--accent-text); margin: 0; font-weight: 500; }
         .aq-llm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .aq-llm-btn { background: #fff; border: 2px solid #e2e8f0; border-radius: 11px; padding: 12px 14px; text-align: left; cursor: pointer; transition: all .2s; position: relative; display: flex; flex-direction: column; gap: 4px; }
-        .aq-llm-btn:hover:not(.aq-llm-btn--disabled) { border-color: #7c3aed; background: #faf5ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,.15); }
-        .aq-llm-btn--active { border-color: #7c3aed !important; background: linear-gradient(135deg,#faf5ff,#f3e8ff) !important; box-shadow: 0 0 0 4px rgba(124,58,237,.15); }
+        .aq-llm-btn:hover:not(.aq-llm-btn--disabled) { border-color: var(--accent); background: #faf5ff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--accent-rgb), .15); }
+        .aq-llm-btn--active { border-color: var(--accent) !important; background: linear-gradient(135deg,#faf5ff,var(--accent-soft)) !important; box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .15); }
         .aq-llm-btn--disabled { opacity: .5; cursor: not-allowed; background: #f8fafc; }
         .aq-llm-btn-name { font-size: 13px; font-weight: 700; color: #1e293b; }
         .aq-llm-btn-desc { font-size: 10.5px; color: #64748b; font-weight: 500; line-height: 1.4; }
         .aq-llm-badge { margin-top: 6px; font-size: 9.5px; font-weight: 700; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 20px; padding: 2px 8px; display: inline-block; }
-        .aq-llm-check { margin-top: 6px; font-size: 9.5px; font-weight: 700; color: #7c3aed; background: #f5f3ff; border: 1px solid #c4b5fd; border-radius: 20px; padding: 2px 8px; display: inline-block; }
+        .aq-llm-check { margin-top: 6px; font-size: 9.5px; font-weight: 700; color: var(--accent-text); background: #f5f3ff; border: 1px solid var(--accent-border); border-radius: 20px; padding: 2px 8px; display: inline-block; }
 
         /* ── Grids ── */
         .aq-grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; padding: 24px; }
@@ -759,8 +759,8 @@ export default function LectViewQuizzes() {
         .text-center { text-align: center; }
 
         /* ── Action buttons ── */
-        .aq-btn-primary { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg,#5156be,#7c3aed); color: #fff; border: none; padding: 12px 28px; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .3s; box-shadow: 0 6px 20px -4px rgba(81,86,190,.5); font-family: 'Inter',sans-serif; }
-        .aq-btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px -4px rgba(81,86,190,.55); }
+        .aq-btn-primary { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg,var(--brand),var(--accent)); color: var(--brand-contrast); border: none; padding: 12px 28px; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .3s; box-shadow: 0 6px 20px -4px rgba(var(--brand-rgb), .5); font-family: 'Inter',sans-serif; }
+        .aq-btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px -4px rgba(var(--brand-rgb), .55); }
         .aq-btn-primary:disabled { opacity: .6; cursor: not-allowed; }
         .aq-btn-ghost  { display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid #e2e8f0; color: #64748b; padding: 12px 24px; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; transition: .2s; font-family: 'Inter',sans-serif; }
         .aq-btn-ghost:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }

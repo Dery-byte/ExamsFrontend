@@ -499,8 +499,8 @@ export default function Lecturers() {
         .compact-actions { display:flex; align-items:center; gap:15px; }
         .mini-search { height:36px; width:240px; background:#f8fafc; border-radius:10px; display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid #f1f5f9; }
         .mini-search input { background:none; border:none; outline:none; font-size:11px; font-weight:600; color:#475569; width:100%; }
-        .add-p-btn { height:38px; padding:0 20px; background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border:none; border-radius:11px; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; cursor:pointer; transition:0.2s; box-shadow:0 4px 14px rgba(99,102,241,0.3); }
-        .add-p-btn:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(99,102,241,0.4); }
+        .add-p-btn { height:38px; padding:0 20px; background:linear-gradient(135deg,var(--brand),var(--brand)); color:var(--brand-contrast); border:none; border-radius:11px; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; cursor:pointer; transition:0.2s; box-shadow:0 4px 14px rgba(var(--brand-rgb), 0.3); }
+        .add-p-btn:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(var(--brand-rgb), 0.4); }
 
         .reg-row-premium { background:#fff; border-radius:15px; padding:10px 25px; display:grid; grid-template-columns:60px 1fr 120px 100px; gap:15px; align-items:center; border:1px solid #f1f5f9; margin-bottom:8px; transition:0.2s; }
         .reg-row-premium:hover { border-color:#e2e8f0; box-shadow:0 4px 20px rgba(0,0,0,0.04); transform:translateY(-1px); }
@@ -508,7 +508,7 @@ export default function Lecturers() {
         .reg-col.info .t { margin:0; font-size:14px; font-weight:800; color:#1e293b; }
         .reg-col.info .sub { display:flex; align-items:center; gap:8px; font-size:11px; color:#94a3b8; font-weight:600; margin-top:2px; flex-wrap:wrap; }
         .reg-col.info .sub .dot { width:3px; height:3px; border-radius:50%; background:#cbd5e1; }
-        .p-badge { display:flex; align-items:center; gap:5px; font-size:10px; font-weight:800; color:#6366f1; text-transform:uppercase; background:rgba(99,102,241,0.07); padding:4px 10px; border-radius:6px; }
+        .p-badge { display:flex; align-items:center; gap:5px; font-size:10px; font-weight:800; color:var(--brand-text); text-transform:uppercase; background:rgba(var(--brand-rgb), 0.07); padding:4px 10px; border-radius:6px; }
         .reg-col.acts { display:flex; gap:6px; justify-content:flex-end; }
         .a-btn { width:32px; height:32px; border-radius:8px; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; }
         .a-btn.p { background:#eff6ff; color:#2563eb; }
@@ -532,7 +532,7 @@ export default function Lecturers() {
         /* ── Left accent panel ─────────────────────────────────── */
         .lx-modal-aside {
           width:220px; flex-shrink:0;
-          background:linear-gradient(160deg,#1e1b4b 0%,#312e81 45%,#4338ca 100%);
+          background:linear-gradient(160deg,var(--brand-deep) 0%,var(--brand-deep) 45%,var(--brand-hover) 100%);
           padding:36px 24px; display:flex; flex-direction:column; gap:16px;
           position:relative; overflow:hidden;
         }
@@ -585,7 +585,7 @@ export default function Lecturers() {
           padding:24px 28px 20px; border-bottom:1px solid #f1f5f9;
           flex-shrink:0;
         }
-        .lx-modal-label-tag { margin:0 0 2px; font-size:10px; font-weight:800; color:#a5b4fc; text-transform:uppercase; letter-spacing:0.1em; }
+        .lx-modal-label-tag { margin:0 0 2px; font-size:10px; font-weight:800; color:var(--brand-light); text-transform:uppercase; letter-spacing:0.1em; }
         .lx-modal-heading { margin:0; font-size:20px; font-weight:800; color:#0f172a; }
         .lx-close-btn {
           width:34px; height:34px; border-radius:10px; border:1.5px solid #e2e8f0;
@@ -602,10 +602,10 @@ export default function Lecturers() {
         /* ── Section labels ────────────────────────────────────── */
         .lx-section-label {
           display:flex; align-items:center; gap:8px;
-          font-size:10px; font-weight:800; color:#6366f1;
+          font-size:10px; font-weight:800; color:var(--brand-text);
           text-transform:uppercase; letter-spacing:0.1em;
           margin-bottom:14px;
-          padding-bottom:8px; border-bottom:1.5px solid #eef2ff;
+          padding-bottom:8px; border-bottom:1.5px solid var(--brand-soft);
         }
 
         /* ── Field grid ────────────────────────────────────────── */
@@ -621,8 +621,8 @@ export default function Lecturers() {
           background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px;
           padding:0 14px; transition:0.2s;
         }
-        .lx-input-wrap:focus-within { background:#fff; border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.1); }
-        .lx-input-accent:focus-within { border-color:#8b5cf6; box-shadow:0 0 0 3px rgba(139,92,246,0.1); }
+        .lx-input-wrap:focus-within { background:#fff; border-color:var(--brand); box-shadow:0 0 0 3px rgba(var(--brand-rgb), 0.1); }
+        .lx-input-accent:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(var(--accent-rgb), 0.1); }
         .lx-input-icon { color:#94a3b8; flex-shrink:0; }
         .lx-input-wrap input, .lx-input-wrap select {
           flex:1; background:none; border:none; outline:none;
@@ -632,8 +632,8 @@ export default function Lecturers() {
         }
         .lx-input-wrap select { cursor:pointer; }
         .lx-input-wrap input::placeholder { color:#cbd5e1; font-weight:500; }
-        .lx-input-accent .lx-input-icon { color:#8b5cf6; }
-        .lx-input-accent input { color:#6d28d9; font-weight:700; }
+        .lx-input-accent .lx-input-icon { color:var(--accent-text); }
+        .lx-input-accent input { color:var(--accent-hover); font-weight:700; }
 
         /* ── Dept chips ────────────────────────────────────────── */
         .lx-hint-text { font-size:11px; color:#94a3b8; margin:4px 0 12px; line-height:1.5; }
@@ -646,14 +646,14 @@ export default function Lecturers() {
           cursor:pointer; transition:all 0.18s; white-space:nowrap;
           font-family:inherit;
         }
-        .lx-chip:hover { border-color:#a5b4fc; background:#eef2ff; color:#4f46e5; }
-        .lx-chip-on { border-color:#6366f1; background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(79,70,229,0.06)); color:#4338ca; font-weight:700; }
-        .lx-chip-on svg { color:#6366f1; }
+        .lx-chip:hover { border-color:var(--brand-light); background:var(--brand-soft); color:var(--brand-text); }
+        .lx-chip-on { border-color:var(--brand); background:linear-gradient(135deg,rgba(var(--brand-rgb), 0.1),rgba(var(--brand-rgb), 0.06)); color:var(--brand-hover); font-weight:700; }
+        .lx-chip-on svg { color:var(--brand-text); }
 
         /* ── Super admin badge ─────────────────────────────────── */
         .lx-super-badge {
-          background:linear-gradient(135deg,#7c3aed,#4f46e5);
-          color:#fff; font-size:8px; font-weight:800; padding:3px 8px;
+          background:linear-gradient(135deg,var(--accent),var(--brand));
+          color:var(--brand-contrast); font-size:8px; font-weight:800; padding:3px 8px;
           border-radius:50px; text-transform:uppercase; letter-spacing:0.08em;
         }
 
@@ -671,13 +671,13 @@ export default function Lecturers() {
         .lx-btn-ghost:hover { background:#f1f5f9; color:#1e293b; }
         .lx-btn-primary {
           height:40px; padding:0 22px;
-          background:linear-gradient(135deg,#6366f1,#4f46e5);
-          color:#fff; border:none; border-radius:11px;
+          background:linear-gradient(135deg,var(--brand),var(--brand));
+          color:var(--brand-contrast); border:none; border-radius:11px;
           font-size:13px; font-weight:700; cursor:pointer;
           display:flex; align-items:center; gap:8px; transition:0.2s;
-          box-shadow:0 4px 14px rgba(99,102,241,0.35); font-family:inherit;
+          box-shadow:0 4px 14px rgba(var(--brand-rgb), 0.35); font-family:inherit;
         }
-        .lx-btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 20px rgba(99,102,241,0.45); }
+        .lx-btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 20px rgba(var(--brand-rgb), 0.45); }
         .lx-btn-primary:disabled { opacity:0.6; cursor:not-allowed; }
         .lx-btn-enroll { background:linear-gradient(135deg,#059669,#047857); box-shadow:0 4px 14px rgba(5,150,105,0.35); }
         .lx-btn-enroll:hover:not(:disabled) { box-shadow:0 8px 20px rgba(5,150,105,0.45); }

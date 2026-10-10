@@ -216,7 +216,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
         {/* Scores Summary */}
         <div className="qr-modal-scores">
           {[
-            { label: 'Sec A (OBJ)', value: student.marks ?? '—', color: '#5156be' },
+            { label: 'Sec A (OBJ)', value: student.marks ?? '—', color: 'var(--brand-text)' },
             { label: 'Sec B (Theory)', value: student.marksB ?? '—', color: '#2ab57d' },
             { label: 'Max Marks', value: quiz.maxMarks ?? '—', color: '#f59e0b' },
           ].map(({ label, value, color }) => (
@@ -232,7 +232,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
         <div className="qr-modal-body">
           {(loadingTQ || loadingAns) ? (
             <div style={{ textAlign: 'center', padding: 48 }}>
-              <Loader2 size={32} style={{ animation: 'rSpin 1s linear infinite', color: '#5156be' }} />
+              <Loader2 size={32} style={{ animation: 'rSpin 1s linear infinite', color: 'var(--brand-text)' }} />
               <p style={{ color: '#64748b', marginTop: 12 }}>Loading questions & answers...</p>
             </div>
           ) : answeredTheoryQs.length === 0 ? (
@@ -249,7 +249,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
                 <div className="qr-modal-q-header">
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <span style={{ background: '#5156be', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{tq.quesNo}</span>
+                      <span style={{ background: 'var(--brand)', color: 'var(--brand-contrast)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{tq.quesNo}</span>
                       <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Theory Question</span>
                     </div>
                     <QuestionImage src={tq.image} />
@@ -283,7 +283,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
                 <div style={{ padding: '0 20px 16px', background: '#fff' }}>
                   <button
                     onClick={() => setShowComments(prev => ({ ...prev, [key]: !prev[key] }))}
-                    style={{ background: 'none', border: 'none', color: '#8b5cf6', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0 }}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-text)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0 }}
                   >
                     <MessageSquare size={14} />
                     {showComments[key] ? 'Hide Comment Box' : (comments[key] ? 'Edit Comment' : 'Add Comment')}
@@ -295,7 +295,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
                         onChange={e => setComments(c => ({ ...c, [key]: e.target.value }))}
                         placeholder="Add a comment for this response (optional)..."
                         rows={3}
-                        style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #ddd6fe', borderRadius: 8, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', background: '#fdf8ff', color: '#4c1d95', outline: 'none', boxSizing: 'border-box' }}
+                        style={{ width: '100%', padding: '10px 14px', border: '1.5px solid var(--accent-border)', borderRadius: 8, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', background: '#fdf8ff', color: 'var(--accent-deep)', outline: 'none', boxSizing: 'border-box' }}
                       />
                     </div>
                   )}
@@ -358,7 +358,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
             <button onClick={onClose} style={{ padding: '10px 22px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
               Cancel
             </button>
-            <button onClick={handleSave} disabled={saving || Object.keys(errors).length > 0} style={{ padding: '10px 24px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#5156be,#3d41a8)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, opacity: (saving || Object.keys(errors).length > 0) ? 0.7 : 1 }}>
+            <button onClick={handleSave} disabled={saving || Object.keys(errors).length > 0} style={{ padding: '10px 24px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,var(--brand),var(--brand-hover))', color: 'var(--brand-contrast)', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, opacity: (saving || Object.keys(errors).length > 0) ? 0.7 : 1 }}>
               {saving ? <Loader2 size={14} style={{ animation: 'rSpin 1s linear infinite' }} /> : <CheckCircle size={14} />}
               {saving ? 'Saving...' : 'Save Review'}
             </button>
@@ -399,7 +399,7 @@ function BulkConfirmModal({
         <div style={{ padding: '24px 28px' }}>
           <p style={{ margin: '0 0 12px', fontSize: 15, color: '#1e293b', fontWeight: 600, lineHeight: 1.65 }}>
             You are about to mark{' '}
-            <strong style={{ color: '#5156be' }}>{count} unreviewed submission{count !== 1 ? 's' : ''}</strong>{' '}
+            <strong style={{ color: 'var(--brand-text)' }}>{count} unreviewed submission{count !== 1 ? 's' : ''}</strong>{' '}
             as <strong style={{ color: '#16a34a' }}>Reviewed</strong> for:
           </p>
           <div style={{ padding: '10px 14px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 13, color: '#334155', fontWeight: 700, marginBottom: 18 }}>
@@ -482,7 +482,7 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
       {/* Page Header */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,#5156be,#3d41a8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,var(--brand),var(--brand-hover))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Eye size={20} color="#fff" />
           </div>
           <div>
@@ -497,7 +497,7 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
       {/* Quiz List */}
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: 80 }}>
-          <Loader2 size={40} style={{ animation: 'rSpin 1s linear infinite', color: '#5156be' }} />
+          <Loader2 size={40} style={{ animation: 'rSpin 1s linear infinite', color: 'var(--brand-text)' }} />
           <p style={{ color: '#64748b', marginTop: 16 }}>Loading quizzes...</p>
         </div>
       ) : quizzes.length === 0 ? (
@@ -584,8 +584,8 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
     }
   };
 
-  const typeColor: Record<string, string> = { OBJ: '#5156be', THEORY: '#fd625e', BOTH: '#f59e0b' };
-  const color = typeColor[quiz.quizType] || '#5156be';
+  const typeColor: Record<string, string> = { OBJ: 'var(--brand)', THEORY: '#fd625e', BOTH: '#f59e0b' };
+  const color = typeColor[quiz.quizType] || 'var(--brand-text)';
 
   return (
     <div className="quiz-row-container">
@@ -595,13 +595,13 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
         className="quiz-row-header"
         style={{ background: expanded ? '#fafafe' : '#fff' }}
       >
-        <div style={{ width: 44, height: 44, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 10, background: `color-mix(in srgb, ${color} 9.4%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <FileText size={20} color={color} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="quiz-row-meta">
             <span style={{ fontWeight: 800, fontSize: 15, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{quiz.title}</span>
-            <span style={{ background: `${color}18`, color, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', flexShrink: 0 }}>{quiz.quizType}</span>
+            <span style={{ background: `color-mix(in srgb, ${color} 9.4%, transparent)`, color, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', flexShrink: 0 }}>{quiz.quizType}</span>
             <span style={{ background: quiz.status === 'OPEN' ? '#ecfdf5' : '#f1f5f9', color: quiz.status === 'OPEN' ? '#16a34a' : '#94a3b8', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, flexShrink: 0 }}>{quiz.status}</span>
           </div>
           <div className="quiz-row-info">
@@ -619,7 +619,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
             <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase' }}>Questions</div>
           </div>
           <div style={{ width: 1, height: 36, background: '#e2e8f0' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#5156be' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--brand-text)' }}>
             <Users size={16} />
             <span style={{ fontWeight: 700, fontSize: 14 }}>{tx("Students")}</span>
           </div>
@@ -634,7 +634,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
           {(quiz.quizType === 'THEORY' || quiz.quizType === 'BOTH') && <MarkingStatus quizId={quiz.qId} />}
           {isLoading ? (
             <div style={{ padding: 32, textAlign: 'center' }}>
-              <Loader2 size={24} style={{ animation: 'rSpin 1s linear infinite', color: '#5156be' }} />
+              <Loader2 size={24} style={{ animation: 'rSpin 1s linear infinite', color: 'var(--brand-text)' }} />
               <p style={{ color: '#64748b', marginTop: 8, fontSize: 13 }}>{tx("Loading student submissions...")}</p>
             </div>
           ) : reports.length === 0 ? (
@@ -677,7 +677,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                       <tr key={r.id || i}>
                         <td data-label="Student">
                           <div className="resp-td-content" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#eff6ff', color: '#5156be', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, flexShrink: 0 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#eff6ff', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, flexShrink: 0 }}>
                               {name.charAt(0).toUpperCase()}
                             </div>
                             <div style={{ textAlign: 'left' }}>
@@ -691,7 +691,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                         </td>
                         <td data-label="Sec A">
                           <div className="resp-td-content">
-                            <span style={{ fontWeight: 700, fontSize: 14, color: '#5156be' }}>{r.marks ?? '—'}</span>
+                            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--brand-text)' }}>{r.marks ?? '—'}</span>
                           </div>
                         </td>
                         <td data-label="Sec B">
@@ -729,13 +729,13 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                           <div className="resp-td-content" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <button
                               onClick={() => setAttemptsTarget({ id: r.user?.id, name })}
-                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px solid #c7d2fe', borderRadius: 8, background: '#fff', color: '#5156be', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px solid var(--brand-border)', borderRadius: 8, background: '#fff', color: 'var(--brand-text)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >
                               <RotateCcw size={13} /> Attempts
                             </button>
                             <button
                               onClick={() => onReview(r)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,#5156be,#3d41a8)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,var(--brand),var(--brand-hover))', color: 'var(--brand-contrast)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >
                               <Award size={13} /> Review
                             </button>

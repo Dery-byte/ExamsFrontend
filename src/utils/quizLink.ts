@@ -147,7 +147,7 @@ export async function showQuizLinkDialog(qId: number | string, meta?: QuizLinkMe
     showCancelButton: true,
     confirmButtonText: 'Copy link',
     cancelButtonText: 'Done',
-    confirmButtonColor: '#5156be',
+    confirmButtonColor: 'var(--brand)',
     reverseButtons: true,
     allowOutsideClick: false,
   });

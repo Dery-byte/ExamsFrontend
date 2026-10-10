@@ -73,6 +73,8 @@ export default function ReportView() {
     queryFn: () => api.run(key, params),
     enabled: !!def && !needsSession,
     placeholderData: keepPreviousData,
+    // Reports can be heavy, and some openings are audited (answer keys): no silent re-runs on tab focus
+    refetchOnWindowFocus: false,
   });
 
   const setParam = (name: string, value: string | number | null | undefined) => {
@@ -421,8 +423,15 @@ function ExportMenu({ api, report, reportKey, params }: { api: ReportsApi; repor
 
   return (
     <div className="rv-menu" ref={ref}>
-      <button type="button" className="rv-primary" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-haspopup="menu" disabled={busy}>
-        <Download size={15} /> <span>{busy ? 'Preparing…' : 'Download'}</span> <ChevronDown size={14} />
+      {report.printable && (
+        <button type="button" className="rv-primary" onClick={pdf} disabled={busy || !hasRows}
+          title={hasRows ? 'Download the printable PDF' : 'Choose a quiz first'}>
+          <FileText size={15} /> <span>{busy ? 'Preparing…' : 'Download PDF'}</span>
+        </button>
+      )}
+      <button type="button" className={report.printable ? 'rv-secondary' : 'rv-primary'} onClick={() => setOpen(o => !o)}
+        aria-expanded={open} aria-haspopup="menu" disabled={busy && !report.printable}>
+        <Download size={15} /> <span>{report.printable ? 'More' : busy ? 'Preparing…' : 'Download'}</span> <ChevronDown size={14} />
       </button>
       {open && (sheet ? createPortal(<div className="rv-sheet">{menu}<style>{STYLES}</style></div>, document.body) : menu)}
     </div>
@@ -635,26 +644,29 @@ const STYLES = `
   .rv-notice-title { font-weight: 700; color: #334155; max-width: 460px; }
 
   .rv-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-  .rv-back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-size: 13px; font-weight: 700; color: #5156be; text-decoration: none; }
-  .rv-back:focus-visible, .rv-btn:focus-visible { outline: 2px solid #5156be; outline-offset: 2px; border-radius: 6px; }
-  .rv-primary { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 9px; border: none; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
-  .rv-primary:hover:not(:disabled) { background: #464ab0; }
+  .rv-back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-size: 13px; font-weight: 700; color: var(--brand-text); text-decoration: none; }
+  .rv-back:focus-visible, .rv-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+  .rv-primary { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 9px; border: none; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .rv-primary:hover:not(:disabled) { background: var(--brand); }
   .rv-primary:focus-visible { outline: 2px solid #1e293b; outline-offset: 2px; }
   .rv-primary:disabled { opacity: .7; cursor: wait; }
 
-  .rv-menu { position: relative; }
+  .rv-menu { position: relative; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .rv-secondary { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 9px; border: 1.5px solid var(--brand-border); background: #fff; color: var(--brand-text); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .rv-secondary:hover:not(:disabled) { background: var(--brand-soft); }
+  .rv-secondary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
   .rv-menu-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: 310px; max-height: min(420px, 70vh); overflow-y: auto; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(15,23,42,.16); padding: 6px; }
   .rv-menu-list button { display: flex; align-items: flex-start; gap: 10px; width: 100%; min-height: 44px; padding: 9px 10px; border: none; background: none; border-radius: 8px; text-align: left; cursor: pointer; color: #334155; }
-  .rv-menu-list button:hover:not(:disabled), .rv-menu-list button:focus-visible { background: #f5f6fd; outline: none; }
+  .rv-menu-list button:hover:not(:disabled), .rv-menu-list button:focus-visible { background: var(--brand-soft); outline: none; }
   .rv-menu-list button:disabled { opacity: .45; cursor: default; }
-  .rv-menu-list button svg { margin-top: 2px; flex-shrink: 0; color: #5156be; }
+  .rv-menu-list button svg { margin-top: 2px; flex-shrink: 0; color: var(--brand-text); }
   .rv-menu-list strong { display: block; font-size: 13px; color: ${INK}; overflow-wrap: anywhere; }
   .rv-menu-list small { display: block; font-size: 11.5px; color: #64748b; margin-top: 1px; }
   .rv-sheet-backdrop, .rv-sheet-handle { display: none; }
 
   .rv-filterwrap { margin-bottom: 14px; }
   .rv-filter-toggle { display: none; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; font-weight: 700; font-size: 13.5px; cursor: pointer; }
-  .rv-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #5156be; color: #fff; font-size: 11px; }
+  .rv-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--brand); color: var(--brand-contrast); font-size: 11px; }
   .rv-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; padding: 12px 14px; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; }
   .rv-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 0 1 auto; }
   .rv-field.wide { flex: 1 1 320px; max-width: 520px; }
@@ -662,29 +674,29 @@ const STYLES = `
   .rv-req { color: #d97706; }
   .rv-select { height: 38px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; padding: 0 10px; background: #f8fafc; color: ${INK}; min-width: 190px; max-width: 100%; width: 100%; }
   .rv-select.narrow { min-width: 140px; }
-  .rv-select:focus { outline: none; border-color: #5156be; box-shadow: 0 0 0 3px rgba(81,86,190,.15); }
+  .rv-select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(var(--brand-rgb), .15); }
   .rv-field.needed .rv-select, .rv-field.needed .rv-picker-field { border-color: #d97706; background: #fffbeb; }
   .rv-reset { display: inline-flex; align-items: center; gap: 5px; height: 38px; padding: 0 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-size: 12.5px; font-weight: 700; cursor: pointer; margin-left: auto; }
 
   .rv-picker { position: relative; min-width: 240px; width: 100%; }
   .rv-picker-field { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 8px 0 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #f8fafc; cursor: text; }
-  .rv-picker-field.open, .rv-picker-field:focus-within { border-color: #5156be; box-shadow: 0 0 0 3px rgba(81,86,190,.15); background: #fff; }
+  .rv-picker-field.open, .rv-picker-field:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(var(--brand-rgb), .15); background: #fff; }
   .rv-picker-field input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 13px; color: ${INK}; }
   .rv-picker-field input::placeholder { color: #64748b; }
   .rv-picker-clear { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: none; border-radius: 6px; background: #eef0f4; color: #475569; cursor: pointer; }
   .rv-picker-list { position: absolute; z-index: 45; left: 0; right: 0; top: calc(100% + 4px); max-height: 300px; overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; box-shadow: 0 12px 28px rgba(15,23,42,.14); }
   .rv-picker-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 7px 10px; border-radius: 7px; font-size: 13px; color: #334155; cursor: pointer; }
   .rv-picker-list li span { overflow-wrap: anywhere; }
-  .rv-picker-list li.hi { background: #f1f2fc; }
-  .rv-picker-list li.sel { color: #3b3f99; font-weight: 700; }
+  .rv-picker-list li.hi { background: var(--brand-soft); }
+  .rv-picker-list li.sel { color: var(--brand-hover); font-weight: 700; }
   .rv-picker-empty { color: #94a3b8 !important; cursor: default !important; }
 
-  .rv-drill { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 14px; border-radius: 10px; background: #eef0fb; color: #3b3f99; font-size: 13px; font-weight: 600; }
-  .rv-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 12px; border-radius: 16px; border: 1.5px solid #c7c9f0; background: #fff; color: #3b3f99; font-weight: 700; font-size: 12px; cursor: pointer; }
+  .rv-drill { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 14px; border-radius: 10px; background: var(--brand-soft); color: var(--brand-hover); font-size: 13px; font-weight: 600; }
+  .rv-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 12px; border-radius: 16px; border: 1.5px solid var(--brand-border); background: #fff; color: var(--brand-hover); font-weight: 700; font-size: 12px; cursor: pointer; }
 
   .rv-body { position: relative; transition: opacity .15s; }
   .rv-body.busy { opacity: .6; }
-  .rv-progress { position: sticky; top: 0; z-index: 5; height: 3px; margin-bottom: 8px; border-radius: 2px; background: linear-gradient(90deg, transparent, #5156be, transparent); background-size: 200% 100%; animation: rv-slide 1.1s linear infinite; }
+  .rv-progress { position: sticky; top: 0; z-index: 5; height: 3px; margin-bottom: 8px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--brand), transparent); background-size: 200% 100%; animation: rv-slide 1.1s linear infinite; }
   @keyframes rv-slide { from { background-position: 200% 0; } to { background-position: -200% 0; } }
   .rv-inline-error { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; background: #fdeeee; color: #9f1f1f; font-size: 12.5px; font-weight: 600; }
   .rv-desc { margin: 0 0 6px; font-size: 13px; color: #475569; }
@@ -706,7 +718,7 @@ const STYLES = `
   .rv-card-sub { margin: 3px 0 0; font-size: 12px; color: #64748b; }
   .rv-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .rv-find { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 8px 0 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
-  .rv-find:focus-within { border-color: #5156be; background: #fff; }
+  .rv-find:focus-within { border-color: var(--brand); background: #fff; }
   .rv-find input { border: none; outline: none; background: transparent; font-size: 12.5px; width: 160px; color: ${INK}; }
   .rv-find-clear { display: inline-flex; border: none; background: none; color: #94a3b8; cursor: pointer; padding: 2px; }
   .rv-small { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 7px; border: 1.5px solid #e2e8f0; background: #fff; font-size: 12px; font-weight: 700; color: #475569; cursor: pointer; }
@@ -720,11 +732,11 @@ const STYLES = `
   .rv-tip { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 18px rgba(15,23,42,0.12); max-width: 260px; }
 
   .rv-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
-  .rv-scroll.wide:focus-visible { outline: 2px solid #5156be; outline-offset: -2px; }
+  .rv-scroll.wide:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
   .rv-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
   .rv-table th { text-align: left; border-bottom: 1px solid #eef0f4; white-space: nowrap; padding: 0; background: #fafbfd; }
   .rv-table th button { display: inline-flex; align-items: center; gap: 4px; width: 100%; min-height: 36px; padding: 8px 14px; border: none; background: none; cursor: pointer; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; font-weight: 700; text-align: left; }
-  .rv-table th button:focus-visible { outline: 2px solid #5156be; outline-offset: -2px; }
+  .rv-table th button:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
   .rv-table th.r button { justify-content: flex-end; text-align: right; }
   .rv-table td { padding: 8px 14px; border-bottom: 1px solid #f4f5f8; color: #334155; vertical-align: top; max-width: 340px; overflow-wrap: anywhere; background: #fff; }
   .rv-table .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -732,8 +744,8 @@ const STYLES = `
   .rv-table tbody tr:hover td { background: #fafbff; }
   .rv-table tbody tr:last-child td { border-bottom: none; }
   .rv-table tr.drill { cursor: pointer; }
-  .rv-table tr.drill td.first { color: #3b3f99; font-weight: 700; text-decoration: underline; text-decoration-color: #c7c9f0; text-underline-offset: 3px; }
-  .rv-table tr.drill:focus-visible { outline: 2px solid #5156be; outline-offset: -2px; }
+  .rv-table tr.drill td.first { color: var(--brand-hover); font-weight: 700; text-decoration: underline; text-decoration-color: var(--brand-border); text-underline-offset: 3px; }
+  .rv-table tr.drill:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
   /* Wide tables: the first column stays put while the rest scrolls */
   .rv-table.sticky th:first-child, .rv-table.sticky td.first { position: sticky; left: 0; z-index: 1; box-shadow: 1px 0 0 #eef0f4; }
   .rv-table.sticky th:first-child { z-index: 2; background: #fafbfd; }

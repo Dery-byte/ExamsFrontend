@@ -12,7 +12,7 @@ import {
 import { isSchoolMode, periodsPerLevel, tx } from '../../utils/terms';
 
 const LEVELS = [
-  { label: tx('Level 100'), sub: '1st Year', color: '#5156be' },
+  { label: tx('Level 100'), sub: '1st Year', color: 'var(--brand-text)' },
   { label: tx('Level 200'), sub: '2nd Year', color: '#2ab57d' },
   { label: tx('Level 300'), sub: '3rd Year', color: '#f59e0b' },
   { label: tx('Level 400'), sub: '4th Year', color: '#fd625e' },
@@ -234,7 +234,7 @@ export default function AddCategory() {
                     return (
                       <label key={p.id} style={{
                         display: 'flex', alignItems: 'center', gap: '8px', padding: '10px',
-                        border: isSelected ? '1px solid #5156be' : '1px solid #e2e8f0',
+                        border: isSelected ? '1px solid var(--brand)' : '1px solid #e2e8f0',
                         borderRadius: '6px', background: isSelected ? '#5156be0a' : '#fff',
                         cursor: 'pointer', transition: 'all 0.2s'
                       }}>
@@ -249,7 +249,7 @@ export default function AddCategory() {
                               return { ...c, programIds: newIds };
                             });
                           }}
-                          style={{ width: '16px', height: '16px', accentColor: '#5156be' }}
+                          style={{ width: '16px', height: '16px', accentColor: 'var(--brand)' }}
                         />
                         <span style={{ fontSize: '14px', fontWeight: isSelected ? 600 : 500, color: '#334155' }}>
                           {p.name}
@@ -269,14 +269,14 @@ export default function AddCategory() {
               </label>
               <div className="acp-level-grid">
                 {availableLevels.map((lv, i) => {
-                  const colors = ['#5156be','#2ab57d','#f59e0b','#fd625e','#0ea5e9','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f43f5e'];
+                  const colors = ['var(--brand)','#2ab57d','#f59e0b','#fd625e','#0ea5e9','var(--accent)','#ec4899','#06b6d4','#84cc16','#f43f5e'];
                   const color = colors[i % colors.length];
                   const yearSuffix = ['st','nd','rd'][i] || 'th';
                   return (
                     <button key={lv} type="button"
                       onClick={() => setCategory(c => ({ ...c, level: lv }))}
                       className={`acp-level-btn ${category.level === lv ? 'is-active' : ''}`}
-                      style={category.level === lv ? { '--lv-color': color, borderColor: color, background: `${color}12` } as any : { '--lv-color': color } as any}
+                      style={category.level === lv ? { '--lv-color': color, borderColor: color, background: `color-mix(in srgb, ${color} 7.1%, transparent)` } as any : { '--lv-color': color } as any}
                     >
                       <span className="acp-level-dot" style={{ background: color }} />
                       <div className="acp-level-info">
@@ -304,14 +304,14 @@ export default function AddCategory() {
                     <button key={val} type="button"
                       onClick={() => setCategory(c => ({ ...c, semester: val }))}
                       className={`acp-level-btn ${category.semester === val ? 'is-active' : ''}`}
-                      style={category.semester === val ? { '--lv-color': '#5156be', borderColor: '#5156be', background: 'rgba(81,86,190,0.08)', flex: 1, minWidth: 120 } as any : { '--lv-color': '#5156be', flex: 1, minWidth: 120 } as any}
+                      style={category.semester === val ? { '--lv-color': 'var(--brand)', borderColor: 'var(--brand)', background: 'rgba(var(--brand-rgb), 0.08)', flex: 1, minWidth: 120 } as any : { '--lv-color': 'var(--brand)', flex: 1, minWidth: 120 } as any}
                     >
-                      <span className="acp-level-dot" style={{ background: '#5156be' }} />
+                      <span className="acp-level-dot" style={{ background: 'var(--brand)' }} />
                       <div className="acp-level-info">
                         <span className="acp-level-name">{label}</span>
                         <span className="acp-level-sub">{sub}</span>
                       </div>
-                      {category.semester === val && <CheckCircle2 size={16} className="acp-level-check" style={{ color: '#5156be' }} />}
+                      {category.semester === val && <CheckCircle2 size={16} className="acp-level-check" style={{ color: 'var(--brand-text)' }} />}
                     </button>
                   );
                 })}
@@ -453,7 +453,7 @@ export default function AddCategory() {
           position: absolute;
           top: 0; left: 0; right: 0;
           height: 4px;
-          background: linear-gradient(90deg, #5156be 0%, #2ab57d 50%, #f59e0b 100%);
+          background: linear-gradient(90deg, var(--brand) 0%, #2ab57d 50%, #f59e0b 100%);
         }
 
         /* Card header */
@@ -470,10 +470,10 @@ export default function AddCategory() {
         .acp-card-hd-left { display: flex; align-items: center; gap: 16px; }
         .acp-card-hd-icon {
           width: 48px; height: 48px; border-radius: 14px;
-          background: linear-gradient(135deg, #5156be, #6c70d4);
+          background: linear-gradient(135deg, var(--brand), var(--brand));
           display: flex; align-items: center; justify-content: center;
-          color: #fff; flex-shrink: 0;
-          box-shadow: 0 4px 14px rgba(81,86,190,0.3);
+          color: var(--brand-contrast); flex-shrink: 0;
+          box-shadow: 0 4px 14px rgba(var(--brand-rgb), 0.3);
         }
         .acp-card-title { font-size: 17px; font-weight: 800; color: #2a3142; margin: 0 0 3px; letter-spacing: -0.3px; }
         .acp-card-sub { font-size: 12px; color: #adb5bd; font-weight: 500; margin: 0; }
@@ -482,11 +482,11 @@ export default function AddCategory() {
           display: inline-flex; align-items: center; gap: 7px;
           padding: 9px 16px; border-radius: 10px;
           border: 1.5px solid #e2e8f0; background: #fff;
-          color: #5156be; font-size: 12px; font-weight: 700;
+          color: var(--brand-text); font-size: 12px; font-weight: 700;
           cursor: pointer; transition: all 0.2s;
           white-space: nowrap;
         }
-        .acp-btn-back:hover { background: #f0f1ff; border-color: #c7caf5; }
+        .acp-btn-back:hover { background: #f0f1ff; border-color: var(--brand-border); }
 
         /* Progress bar */
         .acp-progress-wrap {
@@ -496,11 +496,11 @@ export default function AddCategory() {
         }
         .acp-progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .acp-progress-label { font-size: 10px; font-weight: 700; color: #adb5bd; text-transform: uppercase; letter-spacing: 0.8px; }
-        .acp-progress-pct { font-size: 12px; font-weight: 800; color: #5156be; }
+        .acp-progress-pct { font-size: 12px; font-weight: 800; color: var(--brand-text); }
         .acp-progress-track { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
         .acp-progress-fill {
           height: 100%; border-radius: 99px;
-          background: linear-gradient(90deg, #5156be, #2ab57d);
+          background: linear-gradient(90deg, var(--brand), #2ab57d);
           transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
         }
 
@@ -530,7 +530,7 @@ export default function AddCategory() {
           overflow: hidden;
           position: relative;
         }
-        .acp-input-wrap.is-focused { border-color: #5156be; background: #fff; box-shadow: 0 0 0 4px rgba(81,86,190,0.1); }
+        .acp-input-wrap.is-focused { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.1); }
         .acp-input-wrap.is-filled:not(.is-focused) { border-color: #c7f0e0; background: #fff; }
 
         .acp-input {
@@ -548,7 +548,7 @@ export default function AddCategory() {
 
         /* Code input */
         .acp-code-wrap { justify-content: center; }
-        .acp-code-input { text-align: center; font-weight: 900; font-size: 16px; color: #5156be; letter-spacing: 0.05em; }
+        .acp-code-input { text-align: center; font-weight: 900; font-size: 16px; color: var(--brand-text); letter-spacing: 0.05em; }
 
         /* Textarea */
         .acp-area-wrap { align-items: flex-start; flex-direction: column; padding-bottom: 6px; }
@@ -575,7 +575,7 @@ export default function AddCategory() {
           cursor: pointer; transition: all 0.2s;
           text-align: left; position: relative;
         }
-        .acp-level-btn:hover { background: #f8f9ff; border-color: #c7caf5; transform: translateY(-1px); }
+        .acp-level-btn:hover { background: #f8f9ff; border-color: var(--brand-border); transform: translateY(-1px); }
         .acp-level-btn.is-active { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
         .acp-level-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
         .acp-level-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
@@ -601,12 +601,12 @@ export default function AddCategory() {
         .acp-btn-submit {
           display: inline-flex; align-items: center; gap: 9px;
           padding: 11px 28px; border-radius: 10px; border: none;
-          background: linear-gradient(135deg, #5156be, #6c70d4);
-          color: #fff; font-size: 13px; font-weight: 800;
+          background: linear-gradient(135deg, var(--brand), var(--brand));
+          color: var(--brand-contrast); font-size: 13px; font-weight: 800;
           cursor: pointer; transition: all 0.2s;
-          box-shadow: 0 4px 14px rgba(81,86,190,0.35);
+          box-shadow: 0 4px 14px rgba(var(--brand-rgb), 0.35);
         }
-        .acp-btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(81,86,190,0.42); }
+        .acp-btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(var(--brand-rgb), 0.42); }
         .acp-btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
         .acp-spin { animation: acpSpin 1s linear infinite; }
         @keyframes acpSpin { to { transform: rotate(360deg); } }
@@ -622,7 +622,7 @@ export default function AddCategory() {
         /* Banner */
         .acp-sb-banner {
           border-radius: 18px; overflow: hidden; position: relative;
-          background: linear-gradient(135deg, #3730a3 0%, #5156be 50%, #6c70d4 100%);
+          background: linear-gradient(135deg, var(--brand-hover) 0%, var(--brand) 50%, var(--brand) 100%);
         }
         .acp-sb-banner-pattern {
           position: absolute; inset: 0;
@@ -652,7 +652,7 @@ export default function AddCategory() {
         .acp-sb-completion-ring { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
         .acp-sb-completion-ring svg { width: 56px; height: 56px; transform: rotate(-90deg); }
         .ring-track { fill: none; stroke: #f1f5f9; stroke-width: 4; }
-        .ring-fill { fill: none; stroke: #5156be; stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray 0.4s cubic-bezier(0.4,0,0.2,1); }
+        .ring-fill { fill: none; stroke: var(--brand); stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray 0.4s cubic-bezier(0.4,0,0.2,1); }
         .acp-sb-pct {
           position: absolute; inset: 0;
           display: flex; align-items: center; justify-content: center;
@@ -679,7 +679,7 @@ export default function AddCategory() {
         .acp-sb-info-item { display: flex; align-items: flex-start; gap: 10px; }
         .acp-sb-info-ico {
           width: 28px; height: 28px; border-radius: 8px;
-          background: rgba(81,86,190,0.08); color: #5156be;
+          background: rgba(var(--brand-rgb), 0.08); color: var(--brand-text);
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }

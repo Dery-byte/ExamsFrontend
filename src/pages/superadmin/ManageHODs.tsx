@@ -8,11 +8,11 @@ import { tx } from '../../utils/terms';
 interface Hod { id: number; firstname: string; lastname: string; email: string; username: string; phone: string; departmentId?: number; }
 interface Department { id: number; name: string; code: string; }
 
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139,92,246,0.2)', color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(var(--accent-rgb), 0.2)', color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' };
 const labelStyle: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 };
 const iconInput = (icon: React.ReactNode, input: React.ReactNode) => (
   <div style={{ position: 'relative' }}>
-    <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(139,92,246,0.6)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>{icon}</div>
+    <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(var(--accent-rgb), 0.6)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>{icon}</div>
     <div style={{ paddingLeft: 36 }}>{input}</div>
   </div>
 );
@@ -166,8 +166,8 @@ export default function ManageHODs() {
               {[1,2,3].map(i => <div key={i} style={{ height: 72, borderRadius: 12, background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s infinite' }} />)}
             </div>
           ) : hods.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '50px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 14, border: '1px dashed rgba(139,92,246,0.2)' }}>
-              <UserCog size={36} style={{ color: 'rgba(139,92,246,0.3)', marginBottom: 10 }} />
+            <div style={{ textAlign: 'center', padding: '50px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 14, border: '1px dashed rgba(var(--accent-rgb), 0.2)' }}>
+              <UserCog size={36} style={{ color: 'rgba(var(--accent-rgb), 0.3)', marginBottom: 10 }} />
               <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>{tx("No HOD accounts yet.")}</p>
             </div>
           ) : (
@@ -185,7 +185,7 @@ export default function ManageHODs() {
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{h.email} · {h.username}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => openEdit(h)} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)', color: '#a78bfa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button onClick={() => openEdit(h)} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(var(--accent-rgb), 0.12)', border: '1px solid rgba(var(--accent-rgb), 0.25)', color: 'var(--accent-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Edit2 size={13} />
                     </button>
                     <button onClick={() => handleDelete(h)} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -199,9 +199,9 @@ export default function ManageHODs() {
         </div></div>   {/* Edit Modal */}
       {editingHod && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-          <form onSubmit={handleUpdate} style={{ background: '#12122a', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 20, padding: 24, width: '90%', maxWidth: 500, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }}>
+          <form onSubmit={handleUpdate} style={{ background: '#12122a', border: '1px solid rgba(var(--accent-rgb), 0.3)', borderRadius: 20, padding: 24, width: '90%', maxWidth: 500, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ margin: 0, fontSize: 18, color: '#a78bfa' }}>{tx("Edit HOD Account")}</h2>
+              <h2 style={{ margin: 0, fontSize: 18, color: 'var(--accent-light)' }}>{tx("Edit HOD Account")}</h2>
               <button type="button" onClick={() => setEditingHod(null)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={20} /></button>
             </div>
             
@@ -231,7 +231,7 @@ export default function ManageHODs() {
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
                 <button type="button" onClick={() => setEditingHod(null)} style={{ flex: 1, padding: '11px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" disabled={saving} style={{ flex: 1, padding: '11px', borderRadius: 10, background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                <button type="submit" disabled={saving} style={{ flex: 1, padding: '11px', borderRadius: 10, background: 'linear-gradient(135deg,var(--accent),var(--accent-hover))', border: 'none', color: 'var(--accent-contrast)', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
                   {saving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>

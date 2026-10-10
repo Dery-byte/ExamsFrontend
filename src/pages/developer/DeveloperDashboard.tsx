@@ -1,21 +1,27 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { TerminalSquare, LogOut, SlidersHorizontal, Activity, Bug, ScrollText, Users, type LucideIcon } from 'lucide-react';
+import { TerminalSquare, LogOut, SlidersHorizontal, Activity, Bug, ScrollText, Users, ListChecks, Palette, Wrench, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getSystemHealth } from '../../api/endpoints';
+import { getSystemHealth, getMaintenance } from '../../api/endpoints';
 import ModePanel from './console/ModePanel';
 import HealthPanel from './console/HealthPanel';
 import ErrorsPanel from './console/ErrorsPanel';
 import AuditPanel from './console/AuditPanel';
 import DevelopersPanel from './console/DevelopersPanel';
+import SetupPanel from './console/SetupPanel';
+import BrandingPanel from './console/BrandingPanel';
+import MaintenancePanel from './console/MaintenancePanel';
 import { toneOf, type Tone } from './console/ui';
 import { CSS } from './console/styles';
 
-type Tab = 'mode' | 'health' | 'errors' | 'audit' | 'developers';
+type Tab = 'setup' | 'mode' | 'branding' | 'maintenance' | 'health' | 'errors' | 'audit' | 'developers';
 
 const NAV: { key: Tab; label: string; short: string; icon: LucideIcon }[] = [
+  { key: 'setup', label: 'Setup', short: 'Setup', icon: ListChecks },
   { key: 'mode', label: 'System mode', short: 'Mode', icon: SlidersHorizontal },
+  { key: 'branding', label: 'Branding', short: 'Brand', icon: Palette },
+  { key: 'maintenance', label: 'Maintenance', short: 'Maint.', icon: Wrench },
   { key: 'health', label: 'Health', short: 'Health', icon: Activity },
   { key: 'errors', label: 'Errors', short: 'Errors', icon: Bug },
   { key: 'audit', label: 'Audit log', short: 'Audit', icon: ScrollText },
@@ -24,19 +30,21 @@ const NAV: { key: Tab; label: string; short: string; icon: LucideIcon }[] = [
 
 const STATUS_TEXT: Record<Tone, string> = { ok: 'Operational', warn: 'Degraded', bad: 'Down', neutral: 'Checking…' };
 
-/** The developer's console: choose the system mode, watch health and errors, read the audit log. */
+/** The developer's console: set the system up, choose its mode and colours, watch health and errors, read the audit log. */
 export default function DeveloperDashboard() {
   const { user, logout } = useAuth();
   const [params, setParams] = useSearchParams();
-  const tab: Tab = NAV.some(n => n.key === params.get('tab')) ? params.get('tab') as Tab : 'mode';
+  const tab: Tab = NAV.some(n => n.key === params.get('tab')) ? params.get('tab') as Tab : 'setup';
 
   // Shared with HealthPanel's query, so the nav shows live status and open errors on every tab
   const health = useQuery({ queryKey: ['dev-health'], queryFn: getSystemHealth, refetchInterval: 60_000 });
   const tone: Tone = health.isError ? 'bad' : toneOf(health.data?.status);
   const openErrors: number = health.data?.errors?.open ?? 0;
+  const maintenance = useQuery({ queryKey: ['dev-maintenance'], queryFn: getMaintenance });
+  const maintenanceOn = !!maintenance.data?.enabled;
 
   const go = (t: Tab) => {
-    setParams(t === 'mode' ? {} : { tab: t }, { replace: true });
+    setParams(t === 'setup' ? {} : { tab: t }, { replace: true });
     window.scrollTo({ top: 0 });
   };
 
@@ -53,6 +61,9 @@ export default function DeveloperDashboard() {
       <span className="dd-nav-short">{short}</span>
       {key === 'health' && (
         <span className="dd-nav-ind"><span className={`dd-dot dd-tone-${tone}`} aria-label={STATUS_TEXT[tone]} /></span>
+      )}
+      {key === 'maintenance' && maintenanceOn && (
+        <span className="dd-nav-ind"><span className="dd-dot dd-tone-warn" aria-label="On" /></span>
       )}
       {key === 'errors' && openErrors > 0 && (
         <span className="dd-nav-ind"><span className="dd-count-badge" aria-label={`${openErrors} open`}>{openErrors > 99 ? '99+' : openErrors}</span></span>
@@ -95,7 +106,10 @@ export default function DeveloperDashboard() {
         <nav className="dd-mnav" aria-label="Console sections">{items}</nav>
 
         <main className="dd-main">
+          {tab === 'setup' && <SetupPanel onOpen={go} />}
           {tab === 'mode' && <ModePanel />}
+          {tab === 'branding' && <BrandingPanel />}
+          {tab === 'maintenance' && <MaintenancePanel />}
           {tab === 'health' && <HealthPanel onShowErrors={() => go('errors')} />}
           {tab === 'errors' && <ErrorsPanel />}
           {tab === 'audit' && <AuditPanel />}

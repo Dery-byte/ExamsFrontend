@@ -250,13 +250,13 @@ export default function AvailableQuizzes() {
 
       {isLoadingUserRecords || isLoadingQuizzes ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
-          <Loader2 className="spin-ico" size={48} style={{ color: 'var(--primary)', marginBottom: 20 }} />
+          <Loader2 className="spin-ico" size={48} style={{ color: 'var(--brand-text)', marginBottom: 20 }} />
           <h5 style={{ fontWeight: 700, color: '#495057' }}>Syncing Assessment Data</h5>
           <p style={{ color: '#adb5bd', fontSize: 14 }}>Initializing secure connection to examination server...</p>
         </div>
       ) : !selectedCid ? (
         <div className="lexa-card animate-fade-in-up" style={{ padding: '100px 20px', textAlign: 'center', background: '#fff' }}>
-          <div style={{ width: 90, height: 90, borderRadius: '24px', background: 'rgba(122, 111, 190, 0.05)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', transform: 'rotate(-5deg)' }}>
+          <div style={{ width: 90, height: 90, borderRadius: '24px', background: 'rgba(var(--brand-rgb), 0.05)', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', transform: 'rotate(-5deg)' }}>
             <BookOpen size={45} />
           </div>
           <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>Ready for Evaluation?</h4>
@@ -291,7 +291,7 @@ export default function AvailableQuizzes() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div style={{ padding: '14px', background: '#fcfdfe', border: '1px solid #f1f5f7', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 6, background: 'rgba(122, 111, 190, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 6, background: 'rgba(var(--brand-rgb), 0.1)', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                        <FileText size={16} />
                     </div>
                     <div>
@@ -385,7 +385,7 @@ export default function AvailableQuizzes() {
         .ah-index {
           width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
-          background: rgba(122, 111, 190, 0.1); color: var(--primary);
+          background: rgba(var(--brand-rgb), 0.1); color: var(--brand-text);
           font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums;
         }
         .ah-main { min-width: 0; }

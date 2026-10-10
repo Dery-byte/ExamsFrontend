@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { resetPasswordWithToken } from '../../api/endpoints';
+import { useInstitution } from '../../hooks/useInstitution';
 import toast, { Toaster } from 'react-hot-toast';
 import { Lock, Eye, EyeOff, ShieldCheck, AlertCircle, Loader2, Key } from 'lucide-react';
 
 export default function ResetPassword() {
+  const { institution } = useInstitution();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tokenParam = searchParams.get('token') || '';
@@ -145,7 +147,7 @@ export default function ResetPassword() {
                 width: 64, height: 64,
                 background: 'var(--primary)', borderRadius: '20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', boxShadow: 'var(--shadow-lg)'
+                color: 'var(--brand-contrast)', boxShadow: 'var(--shadow-lg)'
               }}>
                 <Lock size={32} />
               </div>
@@ -262,14 +264,14 @@ export default function ResetPassword() {
 
             <div style={{ marginTop: 36, textAlign: 'center' }}>
               <span style={{ fontSize: 14, color: 'var(--gray-500)', fontWeight: 500 }}>Remember your password? </span>
-              <Link to="/login" style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
+              <Link to="/login" style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand-text)', textDecoration: 'none' }}>
                 Back to Login
               </Link>
             </div>
           </div>
           
           <div style={{ marginTop: 22, textAlign: 'center', fontSize: 12, color: 'var(--gray-400)', fontWeight: 600, letterSpacing: '0.05em' }}>
-            OTC · © 2026
+            {institution.shortName} · © {new Date().getFullYear()}
           </div>
         </div>
       </div>

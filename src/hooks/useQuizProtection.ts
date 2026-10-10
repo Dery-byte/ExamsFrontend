@@ -37,6 +37,8 @@ export interface QuizProtectionConfig {
   username: string;
    _savedViolationCount?: number;
   _pendingViolationDelay?: number;
+  /** Super Admin setting: the lock-out stops while the student is away and runs on when they return. */
+  _delayPausesWhileAway?: boolean;
   onAutoSubmit: () => void;
 }
 
@@ -652,6 +654,19 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     return d;
   };
 
+  /**
+   * Saves what is left of the lock-out. When it pauses while the student is away, this is where it
+   * picks up again after a closed browser, power cut or lost connection.
+   */
+  const saveDelayLeft = (seconds: number) => {
+    const c = cfgRef.current;
+    queueViolationDelay(c.quizId, seconds, !!c._delayPausesWhileAway);
+  };
+  /** Each second of a running lock-out: a paused-while-away one is saved every 5 s. */
+  const delayTicked = (t: number) => {
+    if (cfgRef.current._delayPausesWhileAway && t > 0 && t % 5 === 0) saveDelayLeft(t);
+  };
+
   const endDelay = useCallback(() => {
     removeOv();
     const c = cfgRef.current;
@@ -660,7 +675,8 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     s.delayRemaining = 0;
     if (delayIv.current) { clearInterval(delayIv.current); delayIv.current = null; }
     s.totalDelayServed += s.curDelayDuration;
-    // Nothing to save: the server already knows when this lock-out ends
+    // Served in full here: a paused lock-out must not come back after a reload
+    saveDelayLeft(0);
 
     showToast('Quiz access restored');
     
@@ -686,15 +702,15 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
       willAutoNext, c.violationAction, st.current.totalDelayServed);
     beep(440, 0.5);
 
-    // Saved once: the server stores when the lock-out ends, so it carries over to a reload or
-    // another device without a save every second
-    queueViolationDelay(c.quizId, dur);
+    // The server stores when the lock-out ends, so it carries over to a reload or another device
+    saveDelayLeft(dur);
 
     let t = dur;
     delayIv.current = setInterval(() => {
       t--;
       st.current.delayRemaining = t;
       tickDelayOv(t, dur);
+      delayTicked(t);
       if (t <= 5 && t > 0) beep(880, 0.2, 0.2);
       if (t <= 0) endDelay();
     }, 1000);
@@ -803,9 +819,9 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
         cfg.maxViolations, false, cfg.violationAction, s.totalDelayServed);
       beep(440, 0.5);
 
-      // Saved once: restarts the server's end time from now, which matters when the exam clock
-      // (and with it the lock-out) is paused while the student is away
-      queueViolationDelay(cfg.quizId, pendingDelayVal);
+      // Restarts the server's end time from now, which matters when the lock-out is paused while
+      // the student is away
+      saveDelayLeft(pendingDelayVal);
 
       let t = pendingDelayVal;
       if (delayIv.current) clearInterval(delayIv.current);
@@ -813,6 +829,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
         t--;
         s.delayRemaining = t;
         tickDelayOv(t, pendingDelayVal);
+        delayTicked(t);
         if (t <= 5 && t > 0) beep(880, 0.2, 0.2);
         if (t <= 0) {
           endDelay();
@@ -960,6 +977,20 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     };
     window.addEventListener('beforeunload', unload);
     add(() => window.removeEventListener('beforeunload', unload));
+
+    // ── Lock-out left as the student goes away (pauses until they return, if set) ──
+    const leaving = () => {
+      if (s.isDelayActive && !s.autoSubmitDone && s.delayRemaining > 0 && cfgRef.current._delayPausesWhileAway) {
+        saveDelayLeft(s.delayRemaining);
+      }
+    };
+    const hidden = () => { if (document.visibilityState === 'hidden') leaving(); };
+    window.addEventListener('pagehide', leaving);
+    document.addEventListener('visibilitychange', hidden);
+    add(() => {
+      window.removeEventListener('pagehide', leaving);
+      document.removeEventListener('visibilitychange', hidden);
+    });
 
     // ── Fullscreen lock ──
     if (cfg.enableFullscreenLock) {

@@ -163,16 +163,16 @@ export default function TermRemarks() {
         .tr-toolbar { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
         .tr-inline { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #475569; }
         .tr-inline input { width: 120px; height: 36px; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0 9px; }
-        .tr-btn { height: 36px; padding: 0 16px; border: none; border-radius: 8px; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+        .tr-btn { height: 36px; padding: 0 16px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
         .tr-btn:disabled { opacity: 0.5; cursor: default; }
-        .tr-ghost { height: 36px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #c7c9f0; background: #fff; color: #5156be; font-weight: 700; font-size: 13px; cursor: pointer; }
+        .tr-ghost { height: 36px; padding: 0 14px; border-radius: 8px; border: 1.5px solid var(--brand-border); background: #fff; color: var(--brand-text); font-weight: 700; font-size: 13px; cursor: pointer; }
         .tr-ghost:disabled { opacity: 0.5; cursor: default; }
         .tr-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
         .tr-table th { text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b; padding: 8px 6px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
         .tr-table td { padding: 6px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
         .tr-table input, .tr-table textarea { width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 7px; padding: 6px 8px; font-size: 13px; font-family: inherit; color: #1e293b; }
         .tr-table textarea { resize: vertical; min-width: 180px; }
-        .tr-table input:focus, .tr-table textarea:focus { outline: none; border-color: #5156be; }
+        .tr-table input:focus, .tr-table textarea:focus { outline: none; border-color: var(--brand); }
         .tr-num { width: 64px !important; }
         .tr-name { font-weight: 600; color: #1e293b; min-width: 150px; }
         .tr-name div { font-size: 11.5px; color: #94a3b8; font-weight: 400; }

@@ -120,7 +120,7 @@ export default function Announcements() {
         {canPost && (
           <form onSubmit={submit} className="ann-card" style={{ padding: 18, alignSelf: 'start' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Megaphone size={18} color="#5156be" />
+              <Megaphone size={18} color="var(--brand-text)" />
               <span style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>New announcement</span>
             </div>
 
@@ -175,7 +175,7 @@ export default function Announcements() {
                 <input id="ann-exp" type="date" className="ann-input" value={form.expiresOn} onChange={e => set('expiresOn', e.target.value)} />
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 38, marginBottom: 12, fontSize: 13, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
-                <input type="checkbox" checked={form.pinned} onChange={e => set('pinned', e.target.checked)} style={{ width: 16, height: 16, accentColor: '#5156be' }} />
+                <input type="checkbox" checked={form.pinned} onChange={e => set('pinned', e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--brand)' }} />
                 Pin to top
               </label>
             </div>
@@ -203,7 +203,7 @@ export default function Announcements() {
           )}
 
           {list.isLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={24} color="#5156be" className="ann-spin" /></div>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={24} color="var(--brand-text)" className="ann-spin" /></div>
           ) : items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 20px', color: '#94a3b8' }}>
               <Megaphone size={32} style={{ marginBottom: 8 }} />
@@ -214,7 +214,7 @@ export default function Announcements() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    {a.pinned && <span className="ann-chip" style={{ background: '#eef2ff', color: '#4338ca' }}><Pin size={11} /> Pinned</span>}
+                    {a.pinned && <span className="ann-chip" style={{ background: 'var(--brand-soft)', color: 'var(--brand-hover)' }}><Pin size={11} /> Pinned</span>}
                     <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#1e293b' }}>{a.title}</h3>
                   </div>
                   <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 4, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -239,11 +239,11 @@ export default function Announcements() {
         .ann-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
         .ann-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 5px; }
         .ann-input { width: 100%; box-sizing: border-box; height: 38px; padding: 0 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; margin-bottom: 12px; outline: none; font-family: inherit; background: #fff; color: #1e293b; }
-        .ann-input:focus { border-color: #5156be; }
-        .ann-btn { width: 100%; height: 40px; border: none; border-radius: 8px; background: #5156be; color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+        .ann-input:focus { border-color: var(--brand); }
+        .ann-btn { width: 100%; height: 40px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
         .ann-btn:disabled { opacity: 0.7; cursor: not-allowed; }
         .ann-tab { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border: none; background: none; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-        .ann-tab.is-active { color: #5156be; border-bottom-color: #5156be; }
+        .ann-tab.is-active { color: var(--brand-text); border-bottom-color: var(--brand); }
         .ann-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #475569; }
         .ann-del { flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #fee2e2; background: #fff5f5; color: #e34948; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .ann-spin { animation: ann-spin 1s linear infinite; }

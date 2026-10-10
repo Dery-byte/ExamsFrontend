@@ -15,7 +15,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; 
     ACTIVE:    { label: 'Active',    bg: '#dbeafe', color: '#1d4ed8', dotColor: '#3b82f6' },
     SUBMITTED: { label: 'Submitted', bg: '#fef3c7', color: '#92400e', dotColor: '#f59e0b' },
     APPROVED:  { label: 'Approved',  bg: '#d1fae5', color: '#065f46', dotColor: '#10b981' },
-    PUBLISHED: { label: 'Published', bg: '#ede9fe', color: '#5b21b6', dotColor: '#7c3aed' },
+    PUBLISHED: { label: 'Published', bg: 'var(--accent-soft)', color: 'var(--accent-hover)', dotColor: 'var(--accent)' },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -326,7 +326,7 @@ const ManualMarksEntry = () => {
                 <div className="mme-stat-grid">
                     {[
                         { icon: <Users size={18} color="#3b82f6" />, label: tx('Students'), value: studentCount, bg: '#eff6ff' },
-                        { icon: <BookOpen size={18} color="#7c3aed" />, label: tx('Courses'), value: allCourses.length, bg: '#f5f3ff' },
+                        { icon: <BookOpen size={18} color="var(--accent-text)" />, label: tx('Courses'), value: allCourses.length, bg: '#f5f3ff' },
                         { icon: <Award size={18} color="#10b981" />, label: 'Sections', value: sheetData.sections?.length || 0, bg: '#f0fdf4' },
                         { icon: <TrendingUp size={18} color="#f59e0b" />, label: 'Status', value: STATUS_CONFIG[sheetData.status]?.label || sheetData.status, bg: '#fffbeb' },
                     ].map((card, i) => (
@@ -512,7 +512,7 @@ const mmeStyles = `
         align-items: center;
         gap: 16px;
         padding: 16px 24px;
-        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+        background: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-deep) 100%);
         flex-shrink: 0;
         flex-wrap: wrap;
         row-gap: 12px;
@@ -599,7 +599,7 @@ const mmeStyles = `
     .mme-pill:disabled { cursor: not-allowed; opacity: 0.6; }
 
     .mme-pill-warning { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1.5px solid rgba(245,158,11,0.5); }
-    .mme-pill-purple { background: linear-gradient(135deg,#7c3aed,#5b21b6); box-shadow: 0 4px 14px rgba(124,58,237,0.35); }
+    .mme-pill-purple { background: linear-gradient(135deg,var(--accent),var(--accent-hover)); box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35); }
     .mme-pill-blue { background: linear-gradient(135deg,#3b82f6,#1d4ed8); box-shadow: 0 4px 14px rgba(59,130,246,0.35); }
     .mme-pill-green { background: linear-gradient(135deg,#10b981,#059669); box-shadow: 0 4px 14px rgba(16,185,129,0.35); }
 
@@ -712,7 +712,7 @@ const mmeStyles = `
         border-collapse: collapse;
     }
 
-    .mme-thead-course-row { background: linear-gradient(135deg,#1e1b4b,#312e81); }
+    .mme-thead-course-row { background: linear-gradient(135deg,var(--brand-deep),var(--brand-deep)); }
     .mme-thead-section-row { background: #f1f5f9; border-bottom: 2px solid #e2e8f0; }
 
     .mme-th {
@@ -733,7 +733,7 @@ const mmeStyles = `
         text-transform: uppercase;
         position: sticky;
         left: 0;
-        background: #1e1b4b;
+        background: var(--brand-deep);
         z-index: 3;
         vertical-align: middle;
     }
@@ -749,7 +749,7 @@ const mmeStyles = `
     .mme-course-title { font-weight: 400; font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
 
     .mme-th-section {
-        color: #5156be;
+        color: var(--brand-text);
         font-weight: 700;
         border-left: 1px solid #e2e8f0;
         white-space: nowrap;
@@ -805,8 +805,8 @@ const mmeStyles = `
         gap: 4px;
         padding: 4px 10px;
         border-radius: 8px;
-        background: #ede9fe;
-        color: #5b21b6;
+        background: var(--accent-soft);
+        color: var(--accent-hover);
         font-weight: 800;
         font-size: 14px;
     }
@@ -826,8 +826,8 @@ const mmeStyles = `
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background: #ede9fe;
-        color: #7c3aed;
+        background: var(--accent-soft);
+        color: var(--accent-text);
         font-weight: 800;
         font-size: 12px;
         display: flex;
@@ -857,7 +857,7 @@ const mmeStyles = `
     .mme-sync-btn {
         background: transparent;
         border: none;
-        color: #8b5cf6;
+        color: var(--accent-text);
         padding: 4px;
         cursor: pointer;
         flex-shrink: 0;

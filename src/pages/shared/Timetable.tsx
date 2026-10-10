@@ -94,7 +94,7 @@ export default function Timetable() {
       )}
 
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="#5156be" className="tt-spin" /></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="var(--brand-text)" className="tt-spin" /></div>
       ) : isError ? (
         <div className="tt-empty">Could not load the timetable.</div>
       ) : byDay.length === 0 ? (
@@ -142,18 +142,18 @@ export default function Timetable() {
         .tt-day { margin-bottom: 16px; }
         .tt-day.is-past { opacity: 0.6; }
         .tt-day-head { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: #334155; margin: 0 0 8px; }
-        .tt-today { font-size: 11px; font-weight: 800; background: #5156be; color: #fff; padding: 2px 8px; border-radius: 10px; }
-        .tt-item { display: flex; gap: 16px; align-items: flex-start; background: #fff; border: 1.5px solid #e2e8f0; border-left: 4px solid #5156be; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+        .tt-today { font-size: 11px; font-weight: 800; background: var(--brand); color: var(--brand-contrast); padding: 2px 8px; border-radius: 10px; }
+        .tt-item { display: flex; gap: 16px; align-items: flex-start; background: #fff; border: 1.5px solid #e2e8f0; border-left: 4px solid var(--brand); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
         .tt-item.has-clash { border-left-color: #d03b3b; }
         .tt-time { display: flex; flex-direction: column; gap: 2px; min-width: 110px; font-weight: 800; color: #1e293b; font-size: 13.5px; font-variant-numeric: tabular-nums; }
-        .tt-time svg { color: #5156be; }
+        .tt-time svg { color: var(--brand-text); }
         .tt-dur { font-size: 11.5px; font-weight: 600; color: #94a3b8; }
         .tt-title { font-size: 14.5px; color: #1e293b; font-weight: 600; }
         .tt-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: #64748b; margin-top: 4px; }
         .tt-meta span { display: inline-flex; align-items: center; gap: 4px; }
         .tt-clash { display: inline-flex; gap: 5px; align-items: center; margin-top: 6px; font-size: 12px; font-weight: 700; color: #9f1f1f; background: #fdeeee; padding: 3px 8px; border-radius: 6px; }
         .tt-status { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: #f1f5f9; color: #475569; white-space: nowrap; }
-        .tt-status.on { background: #eef2ff; color: #4338ca; }
+        .tt-status.on { background: var(--brand-soft); color: var(--brand-hover); }
         .tt-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 48px 16px; color: #94a3b8; background: #fff; border: 1.5px dashed #e2e8f0; border-radius: 12px; text-align: center; }
         .tt-empty p { margin: 0; }
         .tt-spin { animation: tt-spin 1s linear infinite; }

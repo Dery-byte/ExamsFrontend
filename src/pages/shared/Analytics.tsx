@@ -103,7 +103,7 @@ export default function Analytics() {
   });
 
   if (isLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Loader2 size={28} color="#5156be" className="an-spin" /><style>{`.an-spin{animation:an-spin 1s linear infinite}@keyframes an-spin{to{transform:rotate(360deg)}}`}</style></div>;
+    return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Loader2 size={28} color="var(--brand-text)" className="an-spin" /><style>{`.an-spin{animation:an-spin 1s linear infinite}@keyframes an-spin{to{transform:rotate(360deg)}}`}</style></div>;
   }
   if (isError || !data) {
     return (

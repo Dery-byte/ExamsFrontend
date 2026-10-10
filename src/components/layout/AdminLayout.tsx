@@ -34,10 +34,11 @@ import {
   FileBarChart
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import InstitutionMark from '../common/InstitutionMark';
 
 export default function AdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
-  const { term } = useInstitution();
+  const { term, institution } = useInstitution();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -105,11 +106,9 @@ export default function AdminLayout() {
       <aside className={`lexa-sidebar ${mobileOpen ? 'mobile-active' : ''}`}>
         <div className="lexa-sidebar-header">
           <div className="lexa-brand">
-            <div className="lexa-logo-box">
-              <ShieldCheck size={24} />
-            </div>
+            <InstitutionMark size={40} radius={12} />
             <div className="lexa-brand-text">
-              <span className="main" style={{ fontSize: '14px', lineHeight: '1.2' }}>{user?.department?.name || 'OTC'}</span>
+              <span className="main" style={{ fontSize: '14px', lineHeight: '1.2' }}>{user?.department?.name || institution.shortName}</span>
               <span className="sub">ADMIN PORTAL</span>
             </div>
           </div>
@@ -163,7 +162,7 @@ export default function AdminLayout() {
               <Menu size={24} />
             </button>
             <div className="lexa-nav-identity">
-               <ShieldCheck size={20} style={{ color: 'var(--lexa-primary)' }} />
+               <ShieldCheck size={20} style={{ color: 'var(--brand-text)' }} />
                <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--lexa-dark)', letterSpacing: '0.05em' }}>REGISTRY MANAGEMENT CONSOLE</span>
             </div>
           </div>
@@ -198,12 +197,12 @@ export default function AdminLayout() {
         :root {
           --sidebar-width: 280px;
           --navbar-height: 80px;
-          --lexa-primary: #626ed4;
+          --lexa-primary: var(--brand);
           --lexa-dark: #2a3142;
           --lexa-bg: #f5f7fb;
           --lexa-card-shadow: 0 0.75rem 1.5rem rgba(18, 38, 63, 0.03);
-          --lexa-sidebar-bg: #2a3142;
-          --lexa-sidebar-item-active: rgba(255, 255, 255, 0.1);
+          --lexa-sidebar-bg: var(--sidebar-bg);
+          --lexa-sidebar-item-active: rgba(var(--sidebar-fg-rgb), 0.1);
         }
         .lexa-admin-shell {
           display: flex;
@@ -243,8 +242,8 @@ export default function AdminLayout() {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
-          box-shadow: 0 4px 12px rgba(98, 110, 212, 0.4);
+          color: var(--brand-contrast);
+          box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.4);
         }
         .lexa-brand-text {
           display: flex;
@@ -252,14 +251,14 @@ export default function AdminLayout() {
         }
 
         .lexa-brand-text .main {
-          color: white;
+          color: var(--sidebar-fg);
           font-weight: 800;
           font-size: 18px;
           letter-spacing: 1px;
         }
 
         .lexa-brand-text .sub {
-          color: rgba(255, 255, 255, 0.5);
+          color: rgba(var(--sidebar-fg-rgb), 0.5);
           font-size: 10px;
           font-weight: 700;
           letter-spacing: 0.5px;
@@ -269,7 +268,7 @@ export default function AdminLayout() {
           display: none;
           background: none;
           border: none;
-          color: white;
+          color: var(--sidebar-fg);
           cursor: pointer;
         }
 
@@ -293,7 +292,7 @@ export default function AdminLayout() {
           padding: 0 15px 12px;
           font-size: 11px;
           font-weight: 700;
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(var(--sidebar-fg-rgb), 0.4);
           text-transform: uppercase;
           letter-spacing: 1px;
         }
@@ -308,7 +307,7 @@ export default function AdminLayout() {
           display: flex;
           align-items: center;
           padding: 12px 15px;
-          color: rgba(255, 255, 255, 0.6);
+          color: rgba(var(--sidebar-fg-rgb), 0.6);
           text-decoration: none;
           border-radius: 10px;
           font-size: 14px;
@@ -317,14 +316,14 @@ export default function AdminLayout() {
         }
 
         .lexa-nav-link:hover {
-          color: white;
-          background: rgba(255, 255, 255, 0.05);
+          color: var(--sidebar-fg);
+          background: rgba(var(--sidebar-fg-rgb), 0.05);
         }
 
         .lexa-nav-link.active {
-          color: white;
+          color: var(--brand-contrast);
           background: var(--lexa-primary);
-          box-shadow: 0 4px 12px rgba(98, 110, 212, 0.3);
+          box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.3);
         }
 
         .lexa-nav-icon {
@@ -349,7 +348,7 @@ export default function AdminLayout() {
 
         .lexa-sidebar-footer {
           padding: 24px;
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          border-top: 1px solid rgba(var(--sidebar-fg-rgb), 0.05);
           background: rgba(0, 0, 0, 0.1);
         }
 
@@ -363,12 +362,12 @@ export default function AdminLayout() {
         .lexa-avatar {
           width: 40px;
           height: 40px;
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(var(--sidebar-fg-rgb), 0.1);
           border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
+          color: var(--sidebar-fg);
           font-weight: 700;
         }
 
@@ -379,7 +378,7 @@ export default function AdminLayout() {
         }
 
         .lexa-user-info .name {
-          color: white;
+          color: var(--sidebar-fg);
           font-weight: 600;
           font-size: 14px;
           white-space: nowrap;
@@ -388,7 +387,7 @@ export default function AdminLayout() {
         }
 
         .lexa-user-info .role {
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(var(--sidebar-fg-rgb), 0.4);
           font-size: 11px;
         }
 
@@ -483,7 +482,7 @@ export default function AdminLayout() {
           font-weight: 800;
         }
 
-        .lexa-status-badge.info { background: rgba(98, 110, 212, 0.08); color: var(--lexa-primary); }
+        .lexa-status-badge.info { background: rgba(var(--brand-rgb), 0.08); color: var(--brand-text); }
         .lexa-status-badge.danger { background: rgba(236, 69, 97, 0.08); color: #ec4561; }
 
         .lexa-profile-pill {
@@ -510,7 +509,7 @@ export default function AdminLayout() {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--lexa-primary);
+          color: var(--brand-text);
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 

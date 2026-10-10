@@ -250,7 +250,7 @@ export default function AddCourse() {
           cursor: pointer;
           transition: all 0.2s;
         }
-        .ac-back-btn:hover { background: #f8fafc; color: #5156be; border-color: #5156be; }
+        .ac-back-btn:hover { background: #f8fafc; color: var(--brand-text); border-color: var(--brand); }
 
         .ac-breadcrumb {
           display: flex;
@@ -260,7 +260,7 @@ export default function AddCourse() {
           color: #94a3b8;
           font-weight: 500;
         }
-        .ac-breadcrumb .active { color: #5156be; font-weight: 700; }
+        .ac-breadcrumb .active { color: var(--brand-text); font-weight: 700; }
 
         /* ── Layout ── */
         .ac-layout {
@@ -272,7 +272,7 @@ export default function AddCourse() {
 
         /* ── Hero Panel ── */
         .ac-hero {
-          background: linear-gradient(145deg, #5156be 0%, #3f43a3 40%, #2e3187 100%);
+          background: linear-gradient(145deg, var(--brand) 0%, var(--brand-hover) 40%, var(--brand-hover) 100%);
           padding: 60px 48px;
           position: relative;
           overflow: hidden;
@@ -346,7 +346,7 @@ export default function AddCourse() {
         }
         .ac-blob-1 {
           width: 350px; height: 350px;
-          background: #818cf8;
+          background: var(--brand-light);
           top: -100px; right: -80px;
         }
         .ac-blob-2 {
@@ -367,7 +367,7 @@ export default function AddCourse() {
           background: #fff;
           border-radius: 20px;
           border: 1px solid #e2e8f0;
-          box-shadow: 0 20px 60px -10px rgba(81, 86, 190, 0.1), 0 4px 16px rgba(0,0,0,0.04);
+          box-shadow: 0 20px 60px -10px rgba(var(--brand-rgb), 0.1), 0 4px 16px rgba(0,0,0,0.04);
           width: 100%;
           max-width: 560px;
           overflow: hidden;
@@ -382,13 +382,13 @@ export default function AddCourse() {
         }
         .ac-card-icon {
           width: 48px; height: 48px;
-          background: linear-gradient(135deg, #5156be, #7c3aed);
+          background: linear-gradient(135deg, var(--brand), var(--accent));
           border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #fff;
-          box-shadow: 0 8px 20px -4px rgba(81, 86, 190, 0.4);
+          color: var(--brand-contrast);
+          box-shadow: 0 8px 20px -4px rgba(var(--brand-rgb), 0.4);
           flex-shrink: 0;
         }
         .ac-card-title {
@@ -454,13 +454,13 @@ export default function AddCourse() {
           outline: none;
           font-family: 'Inter', sans-serif;
         }
-        .ac-input:hover { border-color: #c7d2fe; background: #f5f7ff; }
+        .ac-input:hover { border-color: var(--brand-border); background: #f5f7ff; }
         .ac-input:focus {
-          border-color: #5156be;
+          border-color: var(--brand);
           background: #fff;
-          box-shadow: 0 0 0 4px rgba(81, 86, 190, 0.12);
+          box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.12);
         }
-        .ac-input-wrap:focus-within .ac-input-icon { color: #5156be; }
+        .ac-input-wrap:focus-within .ac-input-icon { color: var(--brand-text); }
         .ac-select { cursor: pointer; }
         .ac-textarea {
           padding: 14px 16px;
@@ -482,8 +482,8 @@ export default function AddCourse() {
           display: flex;
           align-items: center;
           gap: 8px;
-          background: linear-gradient(135deg, #5156be, #7c3aed);
-          color: #fff;
+          background: linear-gradient(135deg, var(--brand), var(--accent));
+          color: var(--brand-contrast);
           border: none;
           padding: 13px 28px;
           border-radius: 11px;
@@ -491,12 +491,12 @@ export default function AddCourse() {
           font-weight: 700;
           cursor: pointer;
           transition: all 0.3s;
-          box-shadow: 0 6px 20px -4px rgba(81, 86, 190, 0.5);
+          box-shadow: 0 6px 20px -4px rgba(var(--brand-rgb), 0.5);
           font-family: 'Inter', sans-serif;
         }
         .ac-btn-primary:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 10px 28px -4px rgba(81, 86, 190, 0.55);
+          box-shadow: 0 10px 28px -4px rgba(var(--brand-rgb), 0.55);
         }
         .ac-btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
         .ac-btn-ghost {

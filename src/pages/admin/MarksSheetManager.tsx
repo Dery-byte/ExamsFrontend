@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; 
   ACTIVE:    { label: 'Active',    bg: '#dbeafe', color: '#1d4ed8', dotColor: '#3b82f6' },
   SUBMITTED: { label: 'Submitted', bg: '#fef3c7', color: '#92400e', dotColor: '#f59e0b' },
   APPROVED:  { label: 'Approved',  bg: '#d1fae5', color: '#065f46', dotColor: '#10b981' },
-  PUBLISHED: { label: 'Published', bg: '#ede9fe', color: '#5b21b6', dotColor: '#7c3aed' },
+  PUBLISHED: { label: 'Published', bg: 'var(--accent-soft)', color: 'var(--accent-hover)', dotColor: 'var(--accent)' },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -92,7 +92,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
       {/* Header bar */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px',
-        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+        background: 'linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-deep) 100%)',
         flexShrink: 0, flexWrap: 'wrap', rowGap: 12
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
@@ -159,10 +159,10 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 18px', border: 'none',
-                borderRadius: 8, background: 'linear-gradient(135deg,#7c3aed,#5b21b6)',
-                color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                borderRadius: 8, background: 'linear-gradient(135deg,var(--accent),var(--accent-hover))',
+                color: 'var(--accent-contrast)', fontWeight: 700, fontSize: 12, cursor: 'pointer',
                 opacity: actionLoading ? 0.6 : 1,
-                boxShadow: '0 4px 14px rgba(124,58,237,0.35)'
+                boxShadow: '0 4px 14px rgba(var(--accent-rgb), 0.35)'
               }}
             >
               {actionLoading === 'publish' ? <Loader2 size={12} style={{ animation: 'rSpin 1s linear infinite' }} /> : <Globe size={12} />}
@@ -187,7 +187,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
       <div style={{ flex: 1, overflow: 'auto', background: '#f8fafc' }}>
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
-            <Loader2 size={40} color="#5b21b6" style={{ animation: 'rSpin 1s linear infinite' }} />
+            <Loader2 size={40} color="var(--accent-hover)" style={{ animation: 'rSpin 1s linear infinite' }} />
             <p style={{ color: '#64748b', fontSize: 14 }}>Loading marks data…</p>
           </div>
         ) : error ? (
@@ -206,7 +206,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
               {[
                 { icon: <Users size={18} color="#3b82f6" />, label: tx('Students'), value: studentMarks.length, bg: '#eff6ff' },
-                { icon: <BookOpen size={18} color="#7c3aed" />, label: tx('Courses'), value: courseList.length, bg: '#f5f3ff' },
+                { icon: <BookOpen size={18} color="var(--accent-text)" />, label: tx('Courses'), value: courseList.length, bg: '#f5f3ff' },
                 { icon: <Award size={18} color="#10b981" />, label: 'Sections', value: sections.length, bg: '#f0fdf4' },
                 { icon: <TrendingUp size={18} color="#f59e0b" />, label: 'Status', value: STATUS_CONFIG[sheet.status]?.label || sheet.status, bg: '#fffbeb' },
               ].map((card, i) => (
@@ -228,8 +228,8 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: courseList.length > 2 ? 700 : 400 }}>
                   <thead>
                     {/* Course headers (spanning sections) */}
-                    <tr style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
-                      <th style={{ padding: '14px 18px', textAlign: 'left', color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', minWidth: 180, position: 'sticky', left: 0, background: '#1e1b4b', zIndex: 2 }}>
+                    <tr style={{ background: 'linear-gradient(135deg,var(--brand-deep),var(--brand-deep))' }}>
+                      <th style={{ padding: '14px 18px', textAlign: 'left', color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', minWidth: 180, position: 'sticky', left: 0, background: 'var(--brand-deep)', zIndex: 2 }}>
                         {tx("Student")}</th>
                       {courseList.map(course => (
                         <th key={course.id} colSpan={sections.length + 1} style={{ padding: '14px 10px', textAlign: 'center', color: '#fff', fontSize: 12, fontWeight: 800, borderLeft: '1px solid rgba(255,255,255,0.1)', minWidth: (sections.length + 1) * 90 }}>
@@ -246,7 +246,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
                       {courseList.map(course => (
                         <React.Fragment key={course.id}>
                           {sections.map(sec => (
-                            <th key={sec.id} style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, color: '#5156be', fontWeight: 700, borderLeft: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                            <th key={sec.id} style={{ padding: '10px 8px', textAlign: 'center', fontSize: 11, color: 'var(--brand-text)', fontWeight: 700, borderLeft: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
                               {sec.sectionName}<br />
                               <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: 10 }}>/{sec.maxScore}</span>
                             </th>
@@ -267,7 +267,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
                           {/* Student name – sticky */}
                           <td style={{ padding: '12px 18px', position: 'sticky', left: 0, background: idx % 2 === 0 ? '#fff' : '#fafbfc', zIndex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#ede9fe', color: '#7c3aed', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent-soft)', color: 'var(--accent-text)', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 {(sm.studentName || '?').charAt(0).toUpperCase()}
                               </div>
                               <div>
@@ -304,8 +304,8 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
                                   <span style={{
                                     display: 'inline-flex', alignItems: 'center', gap: 4,
                                     padding: '4px 10px', borderRadius: 8,
-                                    background: cm?.totalScore != null ? '#ede9fe' : '#f3f4f6',
-                                    color: cm?.totalScore != null ? '#5b21b6' : '#9ca3af',
+                                    background: cm?.totalScore != null ? 'var(--accent-soft)' : '#f3f4f6',
+                                    color: cm?.totalScore != null ? 'var(--accent-hover)' : '#9ca3af',
                                     fontWeight: 800, fontSize: 14
                                   }}>
                                     {cm?.totalScore != null ? Number(cm.totalScore).toFixed(1) : '—'}
@@ -403,7 +403,7 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
       {/* Top color stripe by status */}
       <div style={{
         height: 4,
-        background: sheet.status === 'PUBLISHED' ? 'linear-gradient(90deg,#7c3aed,#5b21b6)'
+        background: sheet.status === 'PUBLISHED' ? 'linear-gradient(90deg,var(--accent),var(--accent-hover))'
           : sheet.status === 'APPROVED'  ? 'linear-gradient(90deg,#10b981,#059669)'
           : sheet.status === 'SUBMITTED' ? 'linear-gradient(90deg,#f59e0b,#d97706)'
           : sheet.status === 'ACTIVE'    ? 'linear-gradient(90deg,#3b82f6,#1d4ed8)'
@@ -427,10 +427,10 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
         {/* Row 2: meta chips */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569' }}>
-            <Users size={14} color="#5156be" />
+            <Users size={14} color="var(--brand-text)" />
             <strong style={{ color: '#1e293b' }}>{sheet.enrolledStudentCount ?? 0}</strong> {tx("students")}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#475569' }}>
-            <Award size={14} color="#5156be" />
+            <Award size={14} color="var(--brand-text)" />
             <span>Teacher: <strong style={{ color: '#1e293b' }}>{sheet.classTeacherName || 'Not Assigned'}</strong></span>
           </div>
         </div>
@@ -478,11 +478,11 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
               onClick={() => onViewMarks(sheet)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
-                border: '1.5px solid #5156be', borderRadius: 8,
-                background: '#fff', color: '#5156be', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                border: '1.5px solid var(--brand)', borderRadius: 8,
+                background: '#fff', color: 'var(--brand-text)', fontWeight: 700, fontSize: 12, cursor: 'pointer',
                 transition: 'all 0.15s'
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#ede9fe'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-soft)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; }}
             >
               <Eye size={13} /> View Marks
@@ -515,9 +515,9 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
                 border: 'none', borderRadius: 8,
-                background: isLoading('publish') ? '#ede9fe' : 'linear-gradient(135deg,#7c3aed,#5b21b6)',
-                color: '#fff', fontWeight: 700, fontSize: 12, cursor: actionLoading ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 14px rgba(124,58,237,0.3)', opacity: actionLoading && !isLoading('publish') ? 0.5 : 1
+                background: isLoading('publish') ? 'var(--accent-soft)' : 'linear-gradient(135deg,var(--accent),var(--accent-hover))',
+                color: 'var(--accent-contrast)', fontWeight: 700, fontSize: 12, cursor: actionLoading ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 14px rgba(var(--accent-rgb), 0.3)', opacity: actionLoading && !isLoading('publish') ? 0.5 : 1
               }}
             >
               {isLoading('publish') ? <Loader2 size={12} style={{ animation: 'rSpin 1s linear infinite' }} /> : <Globe size={13} />}
@@ -532,7 +532,7 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
               disabled={!!actionLoading}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px',
-                border: '1.5px solid #c4b5fd', borderRadius: 8, background: '#f5f3ff', color: '#5b21b6',
+                border: '1.5px solid var(--accent-border)', borderRadius: 8, background: '#f5f3ff', color: 'var(--accent-hover)',
                 fontWeight: 700, fontSize: 12, cursor: actionLoading ? 'not-allowed' : 'pointer'
               }}
             >
@@ -554,14 +554,14 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
           {(scheduling || scheduledFor) && (
             <div style={{
               flexBasis: '100%', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-              padding: '10px 12px', borderRadius: 10, background: '#f5f3ff', border: '1px solid #ddd6fe', fontSize: 12.5, color: '#4c1d95'
+              padding: '10px 12px', borderRadius: 10, background: '#f5f3ff', border: '1px solid var(--accent-border)', fontSize: 12.5, color: 'var(--accent-deep)'
             }}>
               <CalendarClock size={15} />
               {scheduledFor && !scheduling ? (
                 <>
                   <span>Results release automatically on <strong>{scheduledFor.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</strong></span>
                   <button onClick={() => { setWhen(toLocalInput(scheduledFor)); setScheduling(true); }} disabled={savingSchedule}
-                    style={{ border: 'none', background: 'none', color: '#5b21b6', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>Change</button>
+                    style={{ border: 'none', background: 'none', color: 'var(--accent-hover)', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>Change</button>
                   <button onClick={() => saveSchedule(null)} disabled={savingSchedule}
                     style={{ border: 'none', background: 'none', color: '#b91c1c', fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
                     {savingSchedule ? 'Cancelling…' : 'Cancel schedule'}
@@ -572,9 +572,9 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
                   <label htmlFor={`release-${sheet.id}`}>Release on</label>
                   <input id={`release-${sheet.id}`} type="datetime-local" value={when} min={toLocalInput(new Date())}
                     onChange={e => setWhen(e.target.value)}
-                    style={{ height: 32, border: '1.5px solid #c4b5fd', borderRadius: 7, padding: '0 8px', fontSize: 12.5, color: '#1e293b' }} />
+                    style={{ height: 32, border: '1.5px solid var(--accent-border)', borderRadius: 7, padding: '0 8px', fontSize: 12.5, color: '#1e293b' }} />
                   <button onClick={() => saveSchedule(when)} disabled={savingSchedule}
-                    style={{ height: 32, padding: '0 12px', border: 'none', borderRadius: 7, background: '#6d28d9', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    style={{ height: 32, padding: '0 12px', border: 'none', borderRadius: 7, background: 'var(--accent-hover)', color: 'var(--accent-contrast)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                     {savingSchedule && <Loader2 size={12} style={{ animation: 'rSpin 1s linear infinite' }} />} Save
                   </button>
                   <button onClick={() => setScheduling(false)} disabled={savingSchedule}
@@ -831,7 +831,7 @@ const MarksSheetManager = () => {
       <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#5156be,#3d41a8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,var(--brand),var(--brand-hover))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <ClipboardCheck size={24} color="#fff" />
             </div>
             <div>
@@ -846,9 +846,9 @@ const MarksSheetManager = () => {
           style={{
             display: 'flex', alignItems: 'center', gap: 8, padding: '11px 22px',
             border: 'none', borderRadius: 10,
-            background: showCreateForm ? '#f1f5f9' : 'linear-gradient(135deg,#5156be,#3d41a8)',
-            color: showCreateForm ? '#475569' : '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
-            boxShadow: showCreateForm ? 'none' : '0 4px 18px rgba(81,86,190,0.35)',
+            background: showCreateForm ? '#f1f5f9' : 'linear-gradient(135deg,var(--brand),var(--brand-hover))',
+            color: showCreateForm ? '#475569' : 'var(--brand-contrast)', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            boxShadow: showCreateForm ? 'none' : '0 4px 18px rgba(var(--brand-rgb), 0.35)',
             transition: 'all 0.2s'
           }}
         >
@@ -863,7 +863,7 @@ const MarksSheetManager = () => {
           {Object.entries(statusCounts).map(([status, count]) => {
             const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT;
             return (
-              <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 20, background: cfg.bg, border: `1px solid ${cfg.dotColor}30` }}>
+              <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 20, background: cfg.bg, border: `1px solid color-mix(in srgb, ${cfg.dotColor} 18.8%, transparent)` }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.dotColor }} />
                 <span style={{ fontSize: 12, fontWeight: 700, color: cfg.color }}>{count} {cfg.label}</span>
               </div>
@@ -877,7 +877,7 @@ const MarksSheetManager = () => {
         <div style={{ background: '#fff', borderRadius: 18, boxShadow: '0 8px 30px rgba(0,0,0,0.1)', marginBottom: 32, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
           <div style={{ padding: '20px 28px 0', borderBottom: '1px solid #f1f5f9', marginBottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <PlusCircle size={18} color="#5156be" />
+              <PlusCircle size={18} color="var(--brand-text)" />
               <h3 style={{ margin: 0, fontWeight: 800, color: '#1e293b', fontSize: 16 }}>
                 {editingSheetId ? tx('Edit Semester Sheet') : tx('Activate New Semester Sheet')}
               </h3>
@@ -1011,15 +1011,15 @@ const MarksSheetManager = () => {
                 </div>
               ))}
               <button type="button" onClick={() => setSections([...sections, { sectionName: '', maxScore: 0, deletable: true }])}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f8fafc', color: '#5156be', border: '1.5px dashed #c7d2fe', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, marginBottom: 28 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f8fafc', color: 'var(--brand-text)', border: '1.5px dashed var(--brand-border)', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, marginBottom: 28 }}>
                 <PlusCircle size={14} /> Add Section
               </button>
 
               <button type="submit" disabled={formLoading} style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '12px 30px',
-                background: 'linear-gradient(135deg,#5156be,#3d41a8)', color: '#fff',
+                background: 'linear-gradient(135deg,var(--brand),var(--brand-hover))', color: 'var(--brand-contrast)',
                 border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: formLoading ? 'not-allowed' : 'pointer',
-                opacity: formLoading ? 0.8 : 1, boxShadow: '0 4px 18px rgba(81,86,190,0.35)'
+                opacity: formLoading ? 0.8 : 1, boxShadow: '0 4px 18px rgba(var(--brand-rgb), 0.35)'
               }}>
                 {formLoading ? <Loader2 size={16} style={{ animation: 'rSpin 1s linear infinite' }} /> : <CheckCircle size={16} />}
                 {formLoading ? 'Activating…' : 'Activate Sheet'}
@@ -1067,7 +1067,7 @@ const MarksSheetManager = () => {
 
       <style>{`
         @keyframes rSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        select:focus, input:focus { border-color: #5156be !important; box-shadow: 0 0 0 3px rgba(81,86,190,0.12); }
+        select:focus, input:focus { border-color: var(--brand) !important; box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.12); }
         .ms-container { padding: 24px; max-width: 1200px; margin: 0 auto; }
         .ms-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 20px; }
         @media(max-width: 768px) {

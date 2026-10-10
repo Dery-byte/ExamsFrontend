@@ -94,8 +94,14 @@ const enqueue = (kind: Kind, quizId: number | string, key: string, payload: any)
   schedule(50);   // short pause so saves fired together (blur + visibilitychange) merge first
 };
 
-/** Seconds of a queued lock-out still to run: it kept running while the entry waited. */
-const delayLeft = (e: Entry) => Math.max(0, e.payload.seconds - Math.floor((Date.now() - e.at) / 1000));
+/**
+ * Seconds of a queued lock-out still to run. A lock-out that runs while the student is away kept
+ * running while the entry waited; one that pauses stopped where it was when the entry was queued
+ * (the entry may be sent only after the student returns).
+ */
+const delayLeft = (e: Entry) => e.payload.paused
+  ? Math.max(0, e.payload.seconds)
+  : Math.max(0, e.payload.seconds - Math.floor((Date.now() - e.at) / 1000));
 
 /** The entries one request will carry, starting from the head of the queue. */
 const batchFor = (head: Entry, q: Entry[]): Entry[] =>
@@ -183,9 +189,12 @@ export const queueTimer = (quizId: number | string, remainingTime: number) =>
 export const queueViolation = (quizId: number | string, type: string, violationNumber?: number) =>
   enqueue('violation', quizId, `violation:${quizId}:${Date.now()}:${Math.random()}`, { type, violationNumber });
 
-/** A lock-out starting now, saved once; the server works out when it ends. */
-export const queueViolationDelay = (quizId: number | string, seconds: number) =>
-  enqueue('delay', quizId, `delay:${quizId}`, { seconds });
+/**
+ * A lock-out starting now (0 clears it); the server works out when it ends. A lock-out that pauses
+ * while the student is away (paused) is also queued every few seconds with what is left.
+ */
+export const queueViolationDelay = (quizId: number | string, seconds: number, paused = false) =>
+  enqueue('delay', quizId, `delay:${quizId}`, { seconds, paused });
 
 /** Violations queued on this device but not confirmed yet: the highest count and any lock-out still running. */
 export const pendingViolationState = (quizId: number | string) => {

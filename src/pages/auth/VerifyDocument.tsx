@@ -107,8 +107,8 @@ export default function VerifyDocument() {
         .vd-sub { margin: 0 0 18px; color: #64748b; font-size: 14px; }
         .vd-form { display: flex; gap: 8px; }
         .vd-form input { flex: 1; min-width: 0; height: 44px; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0 12px; font-size: 16px; font-family: monospace; letter-spacing: 1px; }
-        .vd-form input:focus { outline: none; border-color: #5156be; }
-        .vd-form button { height: 44px; padding: 0 16px; border: none; border-radius: 10px; background: #5156be; color: #fff; font-weight: 700; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .vd-form input:focus { outline: none; border-color: var(--brand); }
+        .vd-form button { height: 44px; padding: 0 16px; border: none; border-radius: 10px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .vd-form button:disabled { opacity: 0.6; cursor: default; }
         .vd-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
         .vd-box { display: flex; gap: 12px; margin-top: 18px; padding: 14px; border-radius: 12px; font-size: 14px; }
@@ -120,7 +120,7 @@ export default function VerifyDocument() {
         .vd-box dt { font-weight: 700; color: #475569; }
         .vd-box dd { margin: 0; word-break: break-word; }
         .vd-note { font-size: 12.5px; color: #047857; margin-top: 10px !important; }
-        .vd-back { display: inline-block; margin-top: 20px; font-size: 13px; color: #5156be; font-weight: 600; }
+        .vd-back { display: inline-block; margin-top: 20px; font-size: 13px; color: var(--brand-text); font-weight: 600; }
         .vd-spin { animation: vd-spin 1s linear infinite; }
         @keyframes vd-spin { to { transform: rotate(360deg); } }
       `}</style>

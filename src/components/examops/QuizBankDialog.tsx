@@ -66,7 +66,7 @@ export default function QuizBankDialog({ quizId, courseId, mode, onClose, onDone
       <div role="dialog" aria-modal="true" aria-label={mode === 'draw' ? 'Add questions from bank' : 'Save questions to bank'} className="qbd-modal">
         <div className="qbd-head">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {mode === 'draw' ? <Shuffle size={18} color="#5156be" /> : <Upload size={18} color="#5156be" />}
+            {mode === 'draw' ? <Shuffle size={18} color="var(--brand-text)" /> : <Upload size={18} color="var(--brand-text)" />}
             <strong style={{ fontSize: 15, color: '#1e293b' }}>{mode === 'draw' ? 'Add questions from the bank' : 'Save these questions to the bank'}</strong>
           </div>
           <button onClick={onClose} aria-label="Close" className="qbd-x"><X size={16} /></button>
@@ -129,7 +129,7 @@ export default function QuizBankDialog({ quizId, courseId, mode, onClose, onDone
         .qbd-note { display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; color: #475569; background: #f8fafc; border: 1px solid #eef0f4; border-radius: 8px; padding: 8px 10px; margin: 0 0 12px; line-height: 1.45; }
         .qbd-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 5px; }
         .qbd-input { width: 100%; box-sizing: border-box; height: 38px; padding: 0 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; margin-bottom: 12px; background: #fff; color: #1e293b; }
-        .qbd-btn { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border: none; border-radius: 8px; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+        .qbd-btn { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; cursor: pointer; }
         .qbd-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .qbd-btn-ghost { height: 38px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer; }
         .qbd-spin { animation: qbd-spin 1s linear infinite; }

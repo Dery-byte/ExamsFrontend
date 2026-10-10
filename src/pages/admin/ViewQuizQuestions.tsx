@@ -420,8 +420,8 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
       {isLoading ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '380px', gap: '20px' }}>
-          <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(81,86,190,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Loader2 style={{ animation: 'spin 1s linear infinite', color: '#5156be' }} size={36} />
+          <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(var(--brand-rgb), 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Loader2 style={{ animation: 'spin 1s linear infinite', color: 'var(--brand-text)' }} size={36} />
           </div>
           <div style={{ textAlign: 'center' }}>
             <p style={{ color: '#2a3142', fontWeight: 700, fontSize: '15px', margin: '0 0 4px' }}>Retrieving Assessment Bank...</p>
@@ -464,11 +464,11 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                   const typeLabel = isMatching ? 'Matching' : isTF ? 'True / False'
                     : q.questionType === 'FILL_BLANK' ? 'Fill in the Blank' : q.questionType === 'NUMERIC' ? 'Numeric' : 'MCQ';
                   const headerGrad = isMatching
-                    ? 'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)'
+                    ? 'linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%)'
                     : isTF
                     ? 'linear-gradient(135deg,#2ab57d 0%,#1a9666 100%)'
                     : 'linear-gradient(135deg,#4ba3ff 0%,#2b7de9 100%)';
-                  const accentColor = isMatching ? '#5156be' : isTF ? '#2ab57d' : '#4ba3ff';
+                  const accentColor = isMatching ? 'var(--brand)' : isTF ? '#2ab57d' : '#4ba3ff';
                   const correctAnswers = q.correctAnswer ?? q.correct_answer ?? [];
 
                   return (
@@ -497,7 +497,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                         {/* Fill in the blank / numeric: accepted answers */}
                         {isTyped && (
                           <div className="vqq-opts-list">
-                            <div className="vqq-opt vqq-opt-correct" style={{ borderColor: accentColor, background: `${accentColor}12` }}>
+                            <div className="vqq-opt vqq-opt-correct" style={{ borderColor: accentColor, background: `color-mix(in srgb, ${accentColor} 7.1%, transparent)` }}>
                               <span className="vqq-opt-letter" style={{ background: accentColor, color: '#fff' }}>✓</span>
                               <span className="vqq-opt-text">
                                 {q.questionType === 'NUMERIC'
@@ -516,8 +516,8 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                               if (!optVal) return null;
                               const isCorrect = correctAnswers.includes(optVal);
                               return (
-                                <div key={idx} className={`vqq-opt ${isCorrect ? 'vqq-opt-correct' : ''}`} style={isCorrect ? { borderColor: accentColor, background: `${accentColor}12` } : {}}>
-                                  <span className="vqq-opt-letter" style={isCorrect ? { background: accentColor, color: '#fff' } : { background: `${accentColor}18`, color: accentColor }}>{String.fromCharCode(65 + idx)}</span>
+                                <div key={idx} className={`vqq-opt ${isCorrect ? 'vqq-opt-correct' : ''}`} style={isCorrect ? { borderColor: accentColor, background: `color-mix(in srgb, ${accentColor} 7.1%, transparent)` } : {}}>
+                                  <span className="vqq-opt-letter" style={isCorrect ? { background: accentColor, color: '#fff' } : { background: `color-mix(in srgb, ${accentColor} 9.4%, transparent)`, color: accentColor }}>{String.fromCharCode(65 + idx)}</span>
                                   <span className="vqq-opt-text">{optVal}</span>
                                   {isCorrect && <CheckCircle size={14} style={{ color: accentColor, flexShrink: 0 }} />}
                                 </div>
@@ -558,7 +558,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
                       {/* Footer: Marks */}
                       <div className="vqq-obj-footer">
-                        <div className="vqq-marks-pill" style={{ background: `${accentColor}15`, color: accentColor }}>
+                        <div className="vqq-marks-pill" style={{ background: `color-mix(in srgb, ${accentColor} 8.2%, transparent)`, color: accentColor }}>
                           <Award size={13} />
                           <span className="fw-bold">{q.marks}</span>
                           <span className="font-size-10 fw-medium">pts</span>
@@ -712,12 +712,12 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
               {isModalLoading ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Loader2 style={{ animation: 'spin 1s linear infinite', color: '#5156be' }} size={18} />
+                  <Loader2 style={{ animation: 'spin 1s linear infinite', color: 'var(--brand-text)' }} size={18} />
                   <span style={{ fontWeight: 700, fontSize: '15px', color: '#2a3142' }}>Synchronizing...</span>
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(81,86,190,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5156be' }}><Edit size={16} /></div>
+                  <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(var(--brand-rgb), 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-text)' }}><Edit size={16} /></div>
                   <h5 style={{ margin: 0, fontWeight: 800, fontSize: '15px', color: '#2a3142' }}>Edit Objective Question</h5>
                 </div>
               )}
@@ -748,7 +748,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                 </div>
                 <div style={{ flex: 1, minWidth: '80px' }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Marks</label>
-                  <input type="number" style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '14px', fontWeight: 700, color: '#5156be', textAlign: 'center', height: '38px', boxSizing: 'border-box' }}
+                  <input type="number" style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '14px', fontWeight: 700, color: 'var(--brand-text)', textAlign: 'center', height: '38px', boxSizing: 'border-box' }}
                     value={specificObj.marks || ''} onChange={e => setSpecificObj(prev => ({ ...prev, marks: Number(e.target.value) }))} placeholder="0" />
                 </div>
               </div>
@@ -792,7 +792,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                     </div>
                   ))}
                   <button type="button" onClick={() => setSpecificObj((prev: any) => ({ ...prev, correctAnswer: [...(prev.correctAnswer ?? []), ''] }))}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: 'none', background: 'none', color: '#5156be', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: 'none', background: 'none', color: 'var(--brand-text)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
                     <Plus size={13} /> Add accepted answer
                   </button>
                 </div>
@@ -825,13 +825,13 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                       const optVal = specificObj[opt];
                       const isSel = (specificObj.correctAnswer || []).includes(optVal);
                       return (
-                        <div key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '8px', border: `1px solid ${isSel ? '#5156be' : '#e9ecef'}`, background: isSel ? 'rgba(81,86,190,0.06)' : '#fff' }}>
+                        <div key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '8px', border: `1px solid ${isSel ? 'var(--brand)' : '#e9ecef'}`, background: isSel ? 'rgba(var(--brand-rgb), 0.06)' : '#fff' }}>
                         <button type="button" onClick={() => {
                             if (!optVal) return;
                             const cur = specificObj.correctAnswer || [];
                             setSpecificObj(prev => ({ ...prev, correctAnswer: isSel ? cur.filter((v: any) => v !== optVal) : [...cur, optVal] }));
                           }}
-                            style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: isSel ? '#5156be' : '#f1f3fa', color: isSel ? '#fff' : '#74788d', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: isSel ? 'var(--brand)' : '#f1f3fa', color: isSel ? 'var(--brand-contrast)' : '#74788d', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             {isSel ? <Check size={12} strokeWidth={3} /> : <span style={{ fontSize: '9px', fontWeight: 700 }}>{String.fromCharCode(65 + i)}</span>}
                           </button>
                           <input style={{ flex: 1, border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 500, outline: 'none', minWidth: 0 }}
@@ -861,7 +861,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                       const color = val === 'True' ? '#2ab57d' : '#fd625e';
                       return (
                         <button key={val} type="button" onClick={() => setSpecificObj(prev => ({ ...prev, correctAnswer: [val] }))}
-                          style={{ flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${isSel ? color : '#e9ecef'}`, background: isSel ? `${color}10` : '#fff', color: isSel ? color : '#74788d', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}>
+                          style={{ flex: 1, padding: '12px', borderRadius: '10px', border: `2px solid ${isSel ? color : '#e9ecef'}`, background: isSel ? `color-mix(in srgb, ${color} 6.3%, transparent)` : '#fff', color: isSel ? color : '#74788d', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}>
                           {isSel ? (val === 'True' ? <CheckCircle size={18} /> : <X size={18} />) : <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid #ced4da' }} />}
                           {val.toUpperCase()}
                         </button>
@@ -876,7 +876,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <label style={{ fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Matching Pairs</label>
-                    <span style={{ background: '#f1f3fa', color: '#5156be', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>{specificObj.matchingPairs?.length || 0} PAIRS</span>
+                    <span style={{ background: '#f1f3fa', color: 'var(--brand-text)', fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>{specificObj.matchingPairs?.length || 0} PAIRS</span>
                   </div>
                   <div style={{ background: '#f8f9fa', borderRadius: '10px', border: '1px solid #e9ecef', padding: '10px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto', marginBottom: '8px' }}>
@@ -884,7 +884,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                         <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 16px 1fr 28px', gap: '4px', alignItems: 'center', background: '#fff', padding: '6px 8px', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                           <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 500, outline: 'none', minWidth: 0 }} value={pair.prompt} onChange={e => { setSpecificObj(prev => { const p = [...prev.matchingPairs]; p[idx] = { ...p[idx], prompt: e.target.value }; return { ...prev, matchingPairs: p }; }); }} placeholder="Prompt..." />
                           <span style={{ color: '#adb5bd', fontSize: '10px', textAlign: 'center' }}>→</span>
-                          <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 600, color: '#5156be', outline: 'none', minWidth: 0 }} value={pair.answer} onChange={e => { setSpecificObj(prev => { const p = [...prev.matchingPairs]; p[idx] = { ...p[idx], answer: e.target.value }; return { ...prev, matchingPairs: p }; }); }} placeholder="Match..." />
+                          <input style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 600, color: 'var(--brand-text)', outline: 'none', minWidth: 0 }} value={pair.answer} onChange={e => { setSpecificObj(prev => { const p = [...prev.matchingPairs]; p[idx] = { ...p[idx], answer: e.target.value }; return { ...prev, matchingPairs: p }; }); }} placeholder="Match..." />
                           <button type="button" onClick={() => setSpecificObj(prev => ({ ...prev, matchingPairs: prev.matchingPairs.filter((_: any, i: number) => i !== idx) }))}
                             style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'rgba(236,69,97,0.1)', color: '#ec4561', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={11} /></button>
                         </div>
@@ -894,7 +894,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                       )}
                     </div>
                     <button type="button" onClick={() => setSpecificObj(prev => ({ ...prev, matchingPairs: [...(prev.matchingPairs || []), { prompt: '', answer: '' }] }))}
-                      style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px dashed #5156be', background: 'rgba(81,86,190,0.04)', color: '#5156be', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px dashed var(--brand)', background: 'rgba(var(--brand-rgb), 0.04)', color: 'var(--brand-text)', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                       <PlusCircle size={14} /> Add Pair
                     </button>
                   </div>
@@ -905,7 +905,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
             {/* FOOTER */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '14px 20px', borderTop: '1px solid #f1f5f9', flexShrink: 0 }}>
               <button type="button" onClick={() => setEditObjModal(false)} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#fff', color: '#74788d', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Discard</button>
-              <button type="button" onClick={updateObjQuestion} disabled={saving} style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: '#5156be', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: saving ? 0.7 : 1 }}>
+              <button type="button" onClick={updateObjQuestion} disabled={saving} style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', background: 'var(--brand)', color: 'var(--brand-contrast)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: saving ? 0.7 : 1 }}>
                 {saving ? <Loader2 style={{ animation: 'spin 1s linear infinite' }} size={14} /> : <Save size={14} />}
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1030,7 +1030,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
             {/* ── HEADER ── */}
             <div style={{
-              background: 'linear-gradient(135deg, #3d41a8 0%, #5156be 50%, #6c70d4 100%)',
+              background: 'linear-gradient(135deg, var(--brand-hover) 0%, var(--brand) 50%, var(--brand) 100%)',
               padding: '24px 28px 20px',
               position: 'relative', overflow: 'hidden'
             }}>
@@ -1090,34 +1090,34 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
               {/* Question count stepper */}
               <div>
                 <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, color:'#74788d', textTransform:'uppercase', letterSpacing:'0.7px', marginBottom:12 }}>
-                  <Target size={12} style={{ color:'#5156be' }} /> Questions to Answer
+                  <Target size={12} style={{ color:'var(--brand-text)' }} /> Questions to Answer
                 </label>
                 <div style={{
                   display:'flex', alignItems:'center', justifyContent:'space-between',
-                  background:'#f8f9ff', border:'1.5px solid #e2e6ff',
+                  background:'#f8f9ff', border:'1.5px solid var(--brand-border)',
                   borderRadius:14, padding:'12px 16px'
                 }}>
                   <button onClick={() => { const n=[...countData]; n[0].totalQuestToAnswer=Math.max(0,n[0].totalQuestToAnswer-1); setCountData(n); }}
                     style={{
-                      width:40, height:40, borderRadius:10, border:'1.5px solid #dde1f7',
-                      background:'#fff', color:'#5156be', cursor:'pointer',
+                      width:40, height:40, borderRadius:10, border:'1.5px solid var(--brand-border)',
+                      background:'#fff', color:'var(--brand-text)', cursor:'pointer',
                       display:'flex', alignItems:'center', justifyContent:'center',
-                      boxShadow:'0 2px 6px rgba(81,86,190,0.12)', transition:'all 0.15s'
+                      boxShadow:'0 2px 6px rgba(var(--brand-rgb), 0.12)', transition:'all 0.15s'
                     }}>
                     <MinusCircle size={20} />
                   </button>
                   <div style={{ textAlign:'center' }}>
-                    <div style={{ fontSize:42, fontWeight:800, color:'#5156be', lineHeight:1, fontVariantNumeric:'tabular-nums' }}>
+                    <div style={{ fontSize:42, fontWeight:800, color:'var(--brand-text)', lineHeight:1, fontVariantNumeric:'tabular-nums' }}>
                       {countData[0]?.totalQuestToAnswer ?? 0}
                     </div>
-                    <div style={{ fontSize:10, fontWeight:600, color:'#a0a5c9', marginTop:2, textTransform:'uppercase', letterSpacing:'0.7px' }}>questions</div>
+                    <div style={{ fontSize:10, fontWeight:600, color:'var(--brand-light)', marginTop:2, textTransform:'uppercase', letterSpacing:'0.7px' }}>questions</div>
                   </div>
                   <button onClick={() => { const n=[...countData]; n[0].totalQuestToAnswer++; setCountData(n); }}
                     style={{
-                      width:40, height:40, borderRadius:10, border:'1.5px solid #dde1f7',
-                      background:'#5156be', color:'#fff', cursor:'pointer',
+                      width:40, height:40, borderRadius:10, border:'1.5px solid var(--brand-border)',
+                      background:'var(--brand)', color:'var(--brand-contrast)', cursor:'pointer',
                       display:'flex', alignItems:'center', justifyContent:'center',
-                      boxShadow:'0 2px 8px rgba(81,86,190,0.3)', transition:'all 0.15s'
+                      boxShadow:'0 2px 8px rgba(var(--brand-rgb), 0.3)', transition:'all 0.15s'
                     }}>
                     <PlusCircle size={20} />
                   </button>
@@ -1127,10 +1127,10 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
               {/* Time input */}
               <div>
                 <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, color:'#74788d', textTransform:'uppercase', letterSpacing:'0.7px', marginBottom:12 }}>
-                  <Clock size={12} style={{ color:'#5156be' }} /> Time Allowed (Minutes)
+                  <Clock size={12} style={{ color:'var(--brand-text)' }} /> Time Allowed (Minutes)
                 </label>
-                <div style={{ display:'flex', alignItems:'center', gap:0, borderRadius:12, border:'1.5px solid #e2e6ff', overflow:'hidden', background:'#f8f9ff' }}>
-                  <div style={{ padding:'0 16px', background:'#eef0fc', borderRight:'1.5px solid #e2e6ff', height:52, display:'flex', alignItems:'center', color:'#5156be' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:0, borderRadius:12, border:'1.5px solid var(--brand-border)', overflow:'hidden', background:'#f8f9ff' }}>
+                  <div style={{ padding:'0 16px', background:'var(--brand-soft)', borderRight:'1.5px solid var(--brand-border)', height:52, display:'flex', alignItems:'center', color:'var(--brand-text)' }}>
                     <Clock size={18} />
                   </div>
                   <input
@@ -1143,7 +1143,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                       color:'#2a3142', textAlign:'center', fontVariantNumeric:'tabular-nums'
                     }}
                   />
-                  <div style={{ padding:'0 16px', background:'#eef0fc', borderLeft:'1.5px solid #e2e6ff', height:52, display:'flex', alignItems:'center', fontSize:12, fontWeight:700, color:'#a0a5c9', textTransform:'uppercase', letterSpacing:'0.7px' }}>
+                  <div style={{ padding:'0 16px', background:'var(--brand-soft)', borderLeft:'1.5px solid var(--brand-border)', height:52, display:'flex', alignItems:'center', fontSize:12, fontWeight:700, color:'var(--brand-light)', textTransform:'uppercase', letterSpacing:'0.7px' }}>
                     min
                   </div>
                 </div>
@@ -1154,16 +1154,16 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
             <div style={{ display:'flex', gap:10, padding:'0 28px 24px' }}>
               <button onClick={() => setEditCountModal(false)} style={{
                 flex:1, height:46, borderRadius:12,
-                border:'1.5px solid #e2e6ff', background:'#fff',
+                border:'1.5px solid var(--brand-border)', background:'#fff',
                 color:'#74788d', fontWeight:700, fontSize:14, cursor:'pointer',
                 transition:'all 0.15s'
               }}>Cancel</button>
               <button onClick={updateCountAction} disabled={saving} style={{
                 flex:2, height:46, borderRadius:12, border:'none',
-                background: saving ? '#a0a5c9' : 'linear-gradient(135deg,#5156be,#6c70d4)',
-                color:'#fff', fontWeight:700, fontSize:14, cursor: saving ? 'not-allowed' : 'pointer',
+                background: saving ? 'var(--brand-light)' : 'linear-gradient(135deg,var(--brand),var(--brand))',
+                color:'var(--brand-contrast)', fontWeight:700, fontSize:14, cursor: saving ? 'not-allowed' : 'pointer',
                 display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                boxShadow:'0 4px 14px rgba(81,86,190,0.35)', transition:'all 0.15s'
+                boxShadow:'0 4px 14px rgba(var(--brand-rgb), 0.35)', transition:'all 0.15s'
               }}>
                 {saving
                   ? <><Loader2 size={16} style={{ animation:'spin 1s linear infinite' }} /> Saving…</>
@@ -1196,7 +1196,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         
         .transition-2 { transition: all 0.2s ease; }
         .bg-light-subtle { background-color: #f8f9fa; }
-        .bg-soft-primary { background-color: rgba(81, 86, 190, 0.1); color: #5156be; }
+        .bg-soft-primary { background-color: rgba(var(--brand-rgb), 0.1); color: var(--brand-text); }
         .bg-soft-success { background-color: rgba(42, 181, 125, 0.1); color: #2ab57d; }
         .bg-soft-info { background-color: rgba(75, 163, 255, 0.1); color: #4ba3ff; }
         .bg-soft-danger { background-color: rgba(253, 98, 94, 0.1); color: #fd625e; }
@@ -1210,10 +1210,10 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .avatar-xs { width: 28px; height: 28px; }
         .avatar-title { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-weight: 700; }
         
-        .btn-primary-custom { background-color: #5156be; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: 0.2s; box-shadow: 0 4px 6px rgba(81, 86, 190, 0.2); }
-        .btn-primary-custom:hover { background-color: #4549a2; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(81, 86, 190, 0.3); }
+        .btn-primary-custom { background-color: var(--brand); color: var(--brand-contrast); border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: 0.2s; box-shadow: 0 4px 6px rgba(var(--brand-rgb), 0.2); }
+        .btn-primary-custom:hover { background-color: var(--brand-hover); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(var(--brand-rgb), 0.3); }
         .btn-light-custom { background: #fff; border: 1px solid #eff0f2; color: #74788d; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: 0.2s; }
-        .btn-light-custom:hover { background: #f8f9fa; color: #5156be; border-color: #5156be; }
+        .btn-light-custom:hover { background: #f8f9fa; color: var(--brand-text); border-color: var(--brand); }
         
         .btn-icon-sm { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; transition: all 0.2s; }
         .btn-icon-sm:hover { transform: scale(1.1); }
@@ -1224,10 +1224,10 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
 
         .form-label-custom { display: block; font-size: 11px; font-weight: 700; color: #74788d; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
         .form-control-custom { display: block; width: 100%; padding: 8px 12px; font-size: 13px; font-weight: 500; color: #495057; background-color: #fff; border: 1px solid #e2e8f0; border-radius: 8px; transition: 0.2s; }
-        .form-control-custom:focus { border-color: #5156be; outline: 0; box-shadow: 0 0 0 4px rgba(81, 86, 190, 0.1); }
+        .form-control-custom:focus { border-color: var(--brand); outline: 0; box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.1); }
 
         .minia-switch { width: 44px; height: 22px; border-radius: 12px; background: #e2e8f0; position: relative; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .minia-switch.on { background: #5156be; }
+        .minia-switch.on { background: var(--brand); }
         .minia-switch .switch-dot { width: 16px; height: 16px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .minia-switch.on .switch-dot { left: 25px; }
 
@@ -1244,27 +1244,27 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         ═══════════════════════════════════════════ */
         .vqq-page-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding-bottom:20px; border-bottom:1px solid #eff0f2; margin-bottom:28px !important; }
         .vqq-phd-left { display:flex; align-items:center; gap:14px; }
-        .vqq-phd-icon { width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#5156be,#6c70d4); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(81,86,190,0.3); flex-shrink:0; }
+        .vqq-phd-icon { width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,var(--brand),var(--brand)); display:flex; align-items:center; justify-content:center; color:var(--brand-contrast); box-shadow:0 4px 12px rgba(var(--brand-rgb), 0.3); flex-shrink:0; }
         .vqq-phd-title { font-size:18px; font-weight:800; color:#2a3142; margin:0 0 4px; letter-spacing:-0.3px; }
         .vqq-breadcrumb { display:flex; align-items:center; gap:5px; font-size:12px; color:#adb5bd; font-weight:500; flex-wrap:wrap; }
-        .vqq-bc-active { color:#5156be; font-weight:700; }
+        .vqq-bc-active { color:var(--brand-text); font-weight:700; }
         .vqq-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-        .vqq-btn-back { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:1.5px solid #e2e8f0; background:#fff; color:#5156be; font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer; font-family:inherit; }
-        .vqq-btn-back:hover { background:#f8f9ff; border-color:#c7caf5; }
-        .vqq-btn-add { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:none; background:linear-gradient(135deg,#5156be,#6c70d4); color:#fff; font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 4px 12px rgba(81,86,190,0.28); }
-        .vqq-btn-add:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(81,86,190,0.38); }
+        .vqq-btn-back { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:1.5px solid #e2e8f0; background:#fff; color:var(--brand-text); font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 2px 6px rgba(0,0,0,0.04); cursor:pointer; font-family:inherit; }
+        .vqq-btn-back:hover { background:#f8f9ff; border-color:var(--brand-border); }
+        .vqq-btn-add { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:none; background:linear-gradient(135deg,var(--brand),var(--brand)); color:var(--brand-contrast); font-size:13px; font-weight:700; text-decoration:none; transition:all 0.2s; box-shadow:0 4px 12px rgba(var(--brand-rgb), 0.28); }
+        .vqq-btn-add:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(var(--brand-rgb), 0.38); }
 
         /* ═══════════════════════════════════════════
            QUIZ BANNER
         ═══════════════════════════════════════════ */
         .vqq-quiz-banner { background:#fff; border-radius:16px; border:1px solid #eff0f2; box-shadow:0 4px 20px rgba(18,38,63,0.06); display:flex; align-items:center; gap:20px; padding:20px 24px; overflow:hidden; position:relative; flex-wrap:wrap; }
-        .vqq-quiz-banner-accent { position:absolute; left:0; top:0; bottom:0; width:5px; background:linear-gradient(180deg,#5156be,#6c70d4); border-radius:0; }
+        .vqq-quiz-banner-accent { position:absolute; left:0; top:0; bottom:0; width:5px; background:linear-gradient(180deg,var(--brand),var(--brand)); border-radius:0; }
         .vqq-quiz-banner-body { display:flex; align-items:center; gap:16px; flex:1; min-width:0; }
-        .vqq-quiz-banner-icon { width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,#5156be,#6c70d4); display:flex; align-items:center; justify-content:center; color:#fff; box-shadow:0 4px 12px rgba(81,86,190,0.25); flex-shrink:0; }
+        .vqq-quiz-banner-icon { width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,var(--brand),var(--brand)); display:flex; align-items:center; justify-content:center; color:var(--brand-contrast); box-shadow:0 4px 12px rgba(var(--brand-rgb), 0.25); flex-shrink:0; }
         .vqq-quiz-banner-info { min-width:0; }
         .vqq-quiz-banner-title { font-size:17px; font-weight:800; color:#2a3142; margin:0 0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.2px; }
         .vqq-quiz-banner-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-        .vqq-quiz-id-badge { background:rgba(81,86,190,0.1); color:#5156be; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; letter-spacing:0.3px; }
+        .vqq-quiz-id-badge { background:rgba(var(--brand-rgb), 0.1); color:var(--brand-text); font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; letter-spacing:0.3px; }
         .vqq-quiz-role-tag { font-size:11px; font-weight:600; color:#adb5bd; text-transform:uppercase; letter-spacing:0.8px; }
         .vqq-quiz-banner-stats { display:flex; align-items:center; gap:16px; flex-shrink:0; }
         .vqq-bstat { text-align:center; }
@@ -1324,8 +1324,8 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .vqq-lstat-val { display:block; font-size:18px; font-weight:800; color:#2a3142; line-height:1; }
         .vqq-lstat-val em { font-size:11px; font-weight:600; color:#adb5bd; font-style:normal; margin-left:3px; }
         .vqq-lstat-sep { width:1px; height:40px; background:#eff0f2; margin:0 4px; }
-        .vqq-logistics-btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8f9ff; color:#5156be; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap; flex-shrink:0; }
-        .vqq-logistics-btn:hover { background:#eef0fc; border-color:#c7caf5; }
+        .vqq-logistics-btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8f9ff; color:var(--brand-text); font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap; flex-shrink:0; }
+        .vqq-logistics-btn:hover { background:var(--brand-soft); border-color:var(--brand-border); }
 
         /* ═══════════════════════════════════════════
            THEORY CARD
@@ -1382,8 +1382,8 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .vqq-action-btns { display:flex; gap:6px; }
         .vqq-act-btn { width:32px; height:32px; border-radius:9px; border:1.5px solid #e9ecef; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.06); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
         .vqq-act-btn:hover { transform:scale(1.1); box-shadow:0 4px 12px rgba(0,0,0,0.14); }
-        .vqq-act-edit { color:#5156be; }
-        .vqq-act-edit:hover { background:#5156be; color:#fff; border-color:#5156be; }
+        .vqq-act-edit { color:var(--brand-text); }
+        .vqq-act-edit:hover { background:var(--brand); color:var(--brand-contrast); border-color:var(--brand); }
         .vqq-act-del { color:#fd625e; }
         .vqq-act-del:hover { background:#fd625e; color:#fff; border-color:#fd625e; }
 

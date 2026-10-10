@@ -209,7 +209,7 @@ export default function ViewCategories() {
                   </div>
                   <div style={{ width: 110, flexShrink: 0 }}>
                     <label style={{ display: 'block', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>Code</label>
-                    <input className="mini-input" style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', fontWeight: 900, color: '#6366f1' }} value={categoryEdit.courseCode||''} onChange={e=>setCategoryEdit({...categoryEdit,courseCode:e.target.value.toUpperCase()})} placeholder="CODE"/>
+                    <input className="mini-input" style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center', fontWeight: 900, color: 'var(--brand-text)' }} value={categoryEdit.courseCode||''} onChange={e=>setCategoryEdit({...categoryEdit,courseCode:e.target.value.toUpperCase()})} placeholder="CODE"/>
                   </div>
                   <div style={{ width: 80, flexShrink: 0 }}>
                     <label htmlFor="vc-cu" style={{ display: 'block', fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 }}>Credits</label>
@@ -258,7 +258,7 @@ export default function ViewCategories() {
                           return (
                             <label key={p.id} style={{
                               display: 'flex', alignItems: 'center', gap: '8px', padding: '8px',
-                              border: isSelected ? '1px solid #6366f1' : '1px solid #e2e8f0',
+                              border: isSelected ? '1px solid var(--brand)' : '1px solid #e2e8f0',
                               borderRadius: '6px', background: isSelected ? '#6366f10a' : '#fff',
                               cursor: 'pointer'
                             }}>
@@ -272,7 +272,7 @@ export default function ViewCategories() {
                                     : currentIds.filter((id: number) => id !== p.id);
                                   setCategoryEdit({ ...categoryEdit, programIds: newIds });
                                 }}
-                                style={{ accentColor: '#6366f1' }}
+                                style={{ accentColor: 'var(--brand)' }}
                               />
                               <span style={{ fontSize: '12px', fontWeight: isSelected ? 600 : 500, color: '#334155' }}>
                                 {p.name}
@@ -344,12 +344,12 @@ export default function ViewCategories() {
         .compact-actions { display: flex; align-items: center; gap: 12px; }
         .mini-search { height: 36px; width: 220px; background: #f8fafc; border-radius: 10px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid #f1f5f9; }
         .mini-search input { background: none; border: none; outline: none; font-size: 11px; font-weight: 600; color: #475569; width: 100%; }
-        .mini-add-btn { height: 36px; padding: 0 16px; background: #6366f1; color: #fff; border: none; border-radius: 10px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s; }
-        .mini-add-btn:hover { background: #4f46e5; }
+        .mini-add-btn { height: 36px; padding: 0 16px; background: var(--brand); color: var(--brand-contrast); border: none; border-radius: 10px; font-size: 11px; font-weight: 800; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s; }
+        .mini-add-btn:hover { background: var(--brand); }
 
         .reg-row-premium { background: #fff; border-radius: 15px; padding: 12px 25px; display: grid; grid-template-columns: 100px 1fr 180px 120px; gap: 15px; align-items: center; border: 1px solid #f1f5f9; margin-bottom: 10px; transition: 0.2s; }
         .reg-row-premium:hover { border-color: #e2e8f0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-        .c-badge { padding: 4px 10px; background: rgba(99, 102, 241, 0.05); color: #6366f1; border-radius: 8px; font-size: 10px; font-weight: 900; letter-spacing: 0.05em; }
+        .c-badge { padding: 4px 10px; background: rgba(var(--brand-rgb), 0.05); color: var(--brand-text); border-radius: 8px; font-size: 10px; font-weight: 900; letter-spacing: 0.05em; }
         .reg-col.title .t { margin: 0; font-size: 14px; font-weight: 800; color: #1e293b; }
         .reg-col.title .m { font-size: 11px; color: #94a3b8; font-weight: 600; }
         .l-pill { display: flex; align-items: center; gap: 8px; }
@@ -373,11 +373,11 @@ export default function ViewCategories() {
         .f-grp-mini { display: flex; flex-direction: column; gap: 6px; }
         .f-grp-mini label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; padding-left: 2px; }
         .mini-input, .mini-area { border-radius: 10px; border: 1.5px solid #f1f5f9; background: #f8fafc; padding: 10px 14px; font-size: 13px; font-weight: 600; color: #1e293b; outline: none; transition: 0.2s; }
-        .mini-input:focus, .mini-area:focus { border-color: #6366f1; background: #fff; }
+        .mini-input:focus, .mini-area:focus { border-color: var(--brand); background: #fff; }
 
         .mini-level-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .l-pill-btn { height: 34px; border-radius: 8px; border: 1.5px solid #f1f5f9; background: #f8fafc; font-size: 10px; font-weight: 800; color: #64748b; cursor: pointer; transition: 0.2s; }
-        .l-pill-btn.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+        .l-pill-btn.active { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
 
         .modal-lexa-footer-mini { padding: 15px 25px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; background: #fcfdfe; }
         .m-btn-sec { background: none; border: none; font-size: 12px; font-weight: 700; color: #94a3b8; cursor: pointer; padding: 0 15px; height: 38px; }

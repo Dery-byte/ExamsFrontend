@@ -356,7 +356,7 @@ export default function LoadQuiz() {
 
   if (isLoadingInit) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <Loader2 className="spin-ico" size={48} style={{ color: 'var(--primary)', marginBottom: 20 }} />
+      <Loader2 className="spin-ico" size={48} style={{ color: 'var(--brand-text)', marginBottom: 20 }} />
       <h5 style={{ fontWeight: 800, color: '#2a3142' }}>Synchronizing Secure Vault</h5>
       <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 600 }}>Accessing candidate examination records...</p>
     </div>
@@ -388,15 +388,15 @@ export default function LoadQuiz() {
                     style={{
                       width: '100%', textAlign: 'left', padding: '14px 18px', borderRadius: 10,
                       background: active ? 'var(--primary)' : 'transparent',
-                      color: active ? '#fff' : '#495057',
+                      color: active ? 'var(--brand-contrast)' : '#495057',
                       display: 'flex', alignItems: 'center', gap: 14, border: 'none', cursor: 'pointer', transition: 'all 0.3s',
-                      boxShadow: active ? '0 4px 12px rgba(122, 111, 190, 0.25)' : 'none'
+                      boxShadow: active ? '0 4px 12px rgba(var(--brand-rgb), 0.25)' : 'none'
                     }}
                   >
                     <div style={{ 
                       width: 32, height: 32, borderRadius: '8px', 
-                      background: active ? 'rgba(255,255,255,0.2)' : 'rgba(122, 111, 190, 0.08)',
-                      color: active ? '#fff' : 'var(--primary)',
+                      background: active ? 'rgba(255,255,255,0.2)' : 'rgba(var(--brand-rgb), 0.08)',
+                      color: active ? 'var(--brand-contrast)' : 'var(--brand-text)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                     }}>
                        <BookOpen size={16} />
@@ -425,7 +425,7 @@ export default function LoadQuiz() {
         <div className="loadquiz-mobile-only lexa-card" style={{ marginBottom: 0, padding: 0 }}>
           <div className="lexa-card-body" style={{ padding: '16px 20px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 800, color: '#2a3142', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
-              <BookOpen size={15} style={{ color: 'var(--primary)' }} /> Academic Portfolio
+              <BookOpen size={15} style={{ color: 'var(--brand-text)' }} /> Academic Portfolio
             </label>
             <div style={{ position: 'relative' }}>
               <select
@@ -462,7 +462,7 @@ export default function LoadQuiz() {
             </div>
           ) : quizzes.length === 0 ? (
             <div className="lexa-card" style={{ padding: '100px 20px', textAlign: 'center', background: '#fff', border: '1px dashed #e1e9f1' }}>
-              <div style={{ width: 100, height: 100, borderRadius: '24px', background: 'rgba(122, 111, 190, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#adb5bd', transform: 'rotate(-5deg)' }}>
+              <div style={{ width: 100, height: 100, borderRadius: '24px', background: 'rgba(var(--brand-rgb), 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#adb5bd', transform: 'rotate(-5deg)' }}>
                 <FileText size={45} />
               </div>
               <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>No Assessment History</h4>
@@ -568,7 +568,7 @@ export default function LoadQuiz() {
         @media (prefers-reduced-motion: reduce) {
           .am-ring-value, .am-bar-fill { transition: none; }
         }
-        .text-primary { color: var(--primary); }
+        .text-primary { color: var(--brand-text); }
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .loadquiz-grid {

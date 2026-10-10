@@ -234,12 +234,12 @@
   gap: 6px;
 }
 .icon-btn.link {
-  color: #5156be;
-  background: #eef2ff;
+  color: var(--brand-text);
+  background: var(--brand-soft);
 }
 .icon-btn.link:hover {
-  background: #e0e7ff;
-  color: #3d41a8;
+  background: var(--brand-border);
+  color: var(--brand-hover);
 }
 /* Touch screens have no hover, so keep the other actions visible there */
 @media (hover: none) {

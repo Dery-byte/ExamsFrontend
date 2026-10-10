@@ -12,10 +12,13 @@ import {
   Download, Activity, Target, LineChart as LineChartIcon,
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import { useThemeColors, hexAlpha } from '../../utils/theme';
 
 type ChartType = 'bar' | 'line' | 'area' | 'radar';
 
 export default function LectWelcome() {
+  // Charts draw SVG attributes, which need real colours rather than CSS variables
+  const tc = useThemeColors();
   const [selCatId, setSelCatId]         = useState<number | null>(null);
   const [selQuizId, setSelQuizId]       = useState<number | null>(null);
   const [assocQuizzes, setAssocQuizzes] = useState<any[]>([]);
@@ -80,7 +83,7 @@ export default function LectWelcome() {
 
   const SparklineUp = () => (
     <svg width="60" height="30" viewBox="0 0 60 30" fill="none">
-      <path d="M2 20 L15 15 L25 25 L35 10 L45 15 L58 5" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M2 20 L15 15 L25 25 L35 10 L45 15 L58 5" stroke={tc.brand} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
   const SparklineDown = () => (
@@ -103,7 +106,7 @@ export default function LectWelcome() {
     { key: 'radar', label: 'Radar',  icon: <Target size={16} /> },
   ];
 
-  const ACCENT = '#6366f1';
+  const ACCENT = tc.brand;
   const BLUE   = '#0ea5e9';
 
   const renderChart = () => {
@@ -114,7 +117,7 @@ export default function LectWelcome() {
     const grid  = <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />;
     const xAxis = <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} dy={15} />;
     const yAxis = <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} />;
-    const tip   = <Tooltip cursor={{ fill: 'rgba(99,102,241,0.04)' }} contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.12)', padding: '16px 20px' }} />;
+    const tip   = <Tooltip cursor={{ fill: hexAlpha(tc.brand, 0.04) }} contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.12)', padding: '16px 20px' }} />;
     const leg   = <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', fontWeight: 700 }} />;
 
     if (chartType === 'bar') return (
@@ -138,9 +141,9 @@ export default function LectWelcome() {
     if (chartType === 'area') return (
       <AreaChart {...commonProps}>
         {grid}{xAxis}{yAxis}{tip}{leg}
-        {showOBJ    && <Area type="monotone" dataKey="objScore" name="Objective" stroke={ACCENT} fill="rgba(99,102,241,0.12)" strokeWidth={2.5} dot={{ r: 4 }} />}
+        {showOBJ    && <Area type="monotone" dataKey="objScore" name="Objective" stroke={ACCENT} fill={hexAlpha(tc.brand, 0.12)} strokeWidth={2.5} dot={{ r: 4 }} />}
         {showTheory && <Area type="monotone" dataKey="thScore"  name="Theory"    stroke={BLUE}   fill="rgba(14,165,233,0.1)"   strokeWidth={2.5} dot={{ r: 4 }} />}
-        {!showOBJ && !showTheory && <Area type="monotone" dataKey="score" name="Total" stroke={ACCENT} fill="rgba(99,102,241,0.12)" strokeWidth={2.5} dot={{ r: 4 }} />}
+        {!showOBJ && !showTheory && <Area type="monotone" dataKey="score" name="Total" stroke={ACCENT} fill={hexAlpha(tc.brand, 0.12)} strokeWidth={2.5} dot={{ r: 4 }} />}
       </AreaChart>
     );
 
@@ -344,7 +347,7 @@ export default function LectWelcome() {
           font-family: 'Outfit', 'Inter', sans-serif;
           color: #1e293b;
           padding: 0 0 60px;
-          --ap: #6366f1;
+          --ap: var(--brand);
           --as: #0ea5e9;
           --tm: #1e293b;
           --tmu: #64748b;
@@ -392,9 +395,9 @@ export default function LectWelcome() {
         .lect-h-identity  { display: flex; align-items: center; gap: 22px; }
         .lect-h-icon-glow {
           width: 56px; height: 56px; border-radius: 18px;
-          background: rgba(99,102,241,0.1); color: var(--ap);
+          background: rgba(var(--brand-rgb), 0.1); color: var(--ap);
           display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 8px 16px rgba(99,102,241,0.15);
+          box-shadow: 0 8px 16px rgba(var(--brand-rgb), 0.15);
         }
         .lect-h-icon-glow.secondary { background: rgba(14,165,233,0.1); color: var(--as); box-shadow: 0 8px 16px rgba(14,165,233,0.15); }
         .lect-h-title     { margin: 0; font-size: 22px; font-weight: 800; color: var(--tm); letter-spacing: -0.02em; }
@@ -409,7 +412,7 @@ export default function LectWelcome() {
           color: var(--tm); background: #fff; transition: 0.3s; cursor: pointer; min-width: 210px;
           font-family: 'Outfit', 'Inter', sans-serif;
         }
-        .lect-premium-select:focus    { border-color: var(--ap); outline: none; box-shadow: 0 0 0 4px rgba(99,102,241,0.08); }
+        .lect-premium-select:focus    { border-color: var(--ap); outline: none; box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.08); }
         .lect-premium-select:disabled { opacity: 0.4; cursor: not-allowed; }
 
         /* Body */
@@ -461,7 +464,7 @@ export default function LectWelcome() {
           font-family: 'Outfit', 'Inter', sans-serif;
         }
         .lect-toggle-btn:hover  { background: #fff; color: var(--tm); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-        .lect-toggle-btn.active { background: var(--ap); color: #fff; box-shadow: 0 6px 16px rgba(99,102,241,0.3); }
+        .lect-toggle-btn.active { background: var(--ap); color: #fff; box-shadow: 0 6px 16px rgba(var(--brand-rgb), 0.3); }
 
         /* Chart container */
         .lect-chart-container { height: 420px; }
@@ -488,9 +491,9 @@ export default function LectWelcome() {
         .lect-user-stack { display: flex; align-items: center; gap: 18px; }
         .lect-avatar {
           width: 48px; height: 48px; border-radius: 15px;
-          background: rgba(99,102,241,0.1); color: var(--ap);
+          background: rgba(var(--brand-rgb), 0.1); color: var(--ap);
           display: flex; align-items: center; justify-content: center;
-          font-weight: 900; font-size: 18px; border: 1px solid rgba(99,102,241,0.1);
+          font-weight: 900; font-size: 18px; border: 1px solid rgba(var(--brand-rgb), 0.1);
         }
         .lect-u-name { display: block; font-size: 15px; font-weight: 800; color: var(--tm); }
         .lect-u-id   { font-size: 12px; color: var(--tmu); font-weight: 600; }

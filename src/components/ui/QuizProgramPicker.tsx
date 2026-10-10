@@ -43,9 +43,9 @@ export default function QuizProgramPicker({ programs, selectedIds, onChange, sho
         .qpp-hint { font-size:11px; font-weight:500; color:#94a3b8; text-transform:none; letter-spacing:0; margin:0; }
         .qpp-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .qpp-opt { display:flex; align-items:center; gap:8px; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; background:#fff; color:#64748b; cursor:pointer; transition:.2s; }
-        .qpp-opt:hover { border-color:#c7d2fe; background:#f5f7ff; }
-        .qpp-opt.selected { border-color:#5156be; background:#eef2ff; color:#5156be; }
-        .qpp-opt input { width:16px; height:16px; accent-color:#5156be; flex-shrink:0; }
+        .qpp-opt:hover { border-color:var(--brand-border); background:#f5f7ff; }
+        .qpp-opt.selected { border-color:var(--brand); background:var(--brand-soft); color:var(--brand-text); }
+        .qpp-opt input { width:16px; height:16px; accent-color:var(--brand); flex-shrink:0; }
         .qpp-name { font-size:13px; font-weight:600; color:#334155; flex:1; min-width:0; }
         .qpp-dept { font-size:10.5px; color:#94a3b8; font-weight:500; }
         @media (max-width:560px) { .qpp-grid { grid-template-columns:1fr; } }

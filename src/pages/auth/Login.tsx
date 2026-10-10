@@ -251,7 +251,7 @@ export default function Login() {
         }
         .channel-tab.active {
           background: #fff;
-          color: var(--primary);
+          color: var(--brand-text);
           box-shadow: 0 2px 10px rgba(0,0,0,0.09);
         }
         .channel-tab:hover:not(.active) {
@@ -294,7 +294,7 @@ export default function Login() {
                 width: 64, height: 64,
                 background: 'var(--primary)', borderRadius: '20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', boxShadow: 'var(--shadow-lg)'
+                color: 'var(--brand-contrast)', boxShadow: 'var(--shadow-lg)'
               }}>
                 <GraduationCap size={32} />
               </div>
@@ -303,12 +303,12 @@ export default function Login() {
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               <h1 className="login-title">Welcome back</h1>
               <p className="login-subtitle">
-                {typed}<span style={{ color: 'var(--primary)', fontWeight: 700, marginLeft: 2, animation: 'pulse 1s infinite' }}>|</span>
+                {typed}<span style={{ color: 'var(--brand-text)', fontWeight: 700, marginLeft: 2, animation: 'pulse 1s infinite' }}>|</span>
               </p>
             </div>
 
             {fromState.quizLink && (
-              <div style={{ padding: '12px 16px', background: 'var(--primary-bg, #eef2ff)', color: 'var(--primary)', borderRadius: '14px', marginBottom: 24, fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
+              <div style={{ padding: '12px 16px', background: 'var(--primary-bg, var(--brand-soft))', color: 'var(--brand-text)', borderRadius: '14px', marginBottom: 24, fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
                 <div>Sign in to continue to your quiz{quizSummary?.title ? ` — ${quizSummary.title}` : ''}.</div>
                 {!!quizSummary?.programNames?.length && (
                   <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12.5, fontWeight: 500, opacity: 0.9 }}>
@@ -366,7 +366,7 @@ export default function Login() {
                     id="forgot-password-btn"
                     type="button"
                     onClick={openModal}
-                    style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+                    style={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-text)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
                   >
                     Forgot?
                   </button>
@@ -408,7 +408,7 @@ export default function Login() {
             {signupOpen && (
             <div style={{ marginTop: 36, textAlign: 'center' }}>
               <span style={{ fontSize: 14, color: 'var(--gray-500)', fontWeight: 500 }}>New member? </span>
-              <Link to="/signup" style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
+              <Link to="/signup" style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand-text)', textDecoration: 'none' }}>
                 {tx("Create Student Account")}</Link>
             </div>
             )}
@@ -418,7 +418,7 @@ export default function Login() {
             {institution.shortName} · © {new Date().getFullYear()}
             {showVerifyLink && (
             <div style={{ marginTop: 6, letterSpacing: 0 }}>
-              <Link to="/verify" style={{ color: 'var(--primary)', fontWeight: 600 }}>{tx("Verify a transcript or report card")}</Link>
+              <Link to="/verify" style={{ color: 'var(--brand-text)', fontWeight: 600 }}>{tx("Verify a transcript or report card")}</Link>
             </div>
             )}
           </div>
@@ -435,7 +435,7 @@ export default function Login() {
                   <div style={{
                     width: 42, height: 42,
                     background: 'var(--primary-glow)', borderRadius: '13px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-text)'
                   }}>
                     <ShieldCheck size={20} />
                   </div>

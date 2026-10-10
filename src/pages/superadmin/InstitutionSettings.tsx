@@ -181,26 +181,26 @@ export default function InstitutionSettings() {
         .is-card h2 { font-size: 15px; margin: 0 0 6px; color: #1e293b; }
         .is-card h2:not(:first-child) { margin-top: 20px; }
         .is-help { font-size: 13px; color: #64748b; margin: 0 0 12px; }
-        .is-help a { color: #5156be; font-weight: 600; }
-        .is-mode { display: flex; gap: 12px; align-items: flex-start; border: 1.5px solid #c7c9f0; background: #f5f5ff; color: #5156be; border-radius: 12px; padding: 14px; margin-bottom: 6px; }
+        .is-help a { color: var(--brand-text); font-weight: 600; }
+        .is-mode { display: flex; gap: 12px; align-items: flex-start; border: 1.5px solid var(--brand-border); background: #f5f5ff; color: var(--brand-text); border-radius: 12px; padding: 14px; margin-bottom: 6px; }
         .is-mode strong { display: block; color: #1e293b; font-size: 14px; }
         .is-mode span { font-size: 12.5px; color: #475569; }
         .is-types { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .is-types button { text-align: left; border: 1.5px solid #e2e8f0; border-radius: 12px; background: #fff; padding: 14px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; color: #475569; }
         .is-types button strong { color: #1e293b; font-size: 14px; }
         .is-types button span { font-size: 12.5px; }
-        .is-types button.on { border-color: #5156be; background: #f5f5ff; color: #5156be; }
+        .is-types button.on { border-color: var(--brand); background: #f5f5ff; color: var(--brand-text); }
         .is-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
         .is-grid label, .is-wide { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 700; color: #475569; }
         .is-wide { grid-column: 1 / -1; }
         .is-grid input, .is-search { height: 40px; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 0 11px; font-size: 14px; font-weight: 400; color: #1e293b; }
         .is-search { flex: 1; min-width: 0; }
-        .is-grid input:focus, .is-search:focus { outline: none; border-color: #5156be; }
+        .is-grid input:focus, .is-search:focus { outline: none; border-color: var(--brand); }
         .is-check { display: flex; align-items: center; gap: 8px; margin: 14px 0; font-size: 13.5px; color: #334155; }
-        .is-check input { width: 16px; height: 16px; accent-color: #5156be; }
-        .is-btn { height: 38px; padding: 0 16px; border-radius: 9px; border: none; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+        .is-check input { width: 16px; height: 16px; accent-color: var(--brand); }
+        .is-btn { height: 38px; padding: 0 16px; border-radius: 9px; border: none; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
         .is-btn:disabled { opacity: 0.6; cursor: default; }
-        .is-btn-ghost { background: #fff; color: #5156be; border: 1.5px solid #c7c9f0; }
+        .is-btn-ghost { background: #fff; color: var(--brand-text); border: 1.5px solid var(--brand-border); }
         .is-btn-danger { background: #fff; color: #dc2626; border: 1.5px solid #fecaca; }
         .is-logo { width: 72px; height: 72px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: #1a2744; color: #fff; font-weight: 800; overflow: hidden; }
         .is-logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
@@ -209,7 +209,7 @@ export default function InstitutionSettings() {
         .is-table td { padding: 9px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; color: #1e293b; }
         .is-muted { font-size: 11.5px; color: #94a3b8; }
         .is-revoked { font-size: 12px; color: #dc2626; font-weight: 600; margin-top: 3px; }
-        .is-link { border: none; background: none; color: #5156be; font-weight: 700; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .is-link { border: none; background: none; color: var(--brand-text); font-weight: 700; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
         .is-link-danger { color: #dc2626; }
         .is-spin { animation: is-spin 1s linear infinite; }
         @keyframes is-spin { to { transform: rotate(360deg); } }

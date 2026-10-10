@@ -115,13 +115,13 @@ export default function CoursesRegistered() {
         <div className="lexa-card-body" style={{ padding: 0 }}>
           {isLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-              <Loader2 className="spin-ico" size={48} style={{ color: 'var(--primary)', marginBottom: 20 }} />
+              <Loader2 className="spin-ico" size={48} style={{ color: 'var(--brand-text)', marginBottom: 20 }} />
               <h6 style={{ fontWeight: 700, color: '#495057' }}>Retrieving Curriculum Data</h6>
               <p style={{ color: '#adb5bd', fontSize: 13 }}>Connecting to academic database...</p>
             </div>
           ) : filteredData.length === 0 ? (
             <div style={{ padding: '100px 20px', textAlign: 'center', background: '#fcfdfe' }}>
-              <div style={{ width: 90, height: 90, borderRadius: '24px', background: 'rgba(122, 111, 190, 0.05)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', transform: 'rotate(-5deg)' }}>
+              <div style={{ width: 90, height: 90, borderRadius: '24px', background: 'rgba(var(--brand-rgb), 0.05)', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', transform: 'rotate(-5deg)' }}>
                 <BookOpen size={45} />
               </div>
               <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>Empty Curriculum</h4>
@@ -181,7 +181,7 @@ export default function CoursesRegistered() {
       <style>{`
         .search-input-lexa:focus {
           border-color: var(--primary) !important;
-          box-shadow: 0 0 0 4px rgba(122, 111, 190, 0.1) !important;
+          box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.1) !important;
         }
         .btn-lexa-outline {
           background: transparent;

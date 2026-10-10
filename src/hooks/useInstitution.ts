@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getInstitution } from '../api/endpoints';
 import { getMode, isSchoolMode, tx, type SystemMode } from '../utils/terms';
+import type { ThemeSettings } from '../utils/theme';
 
 export type InstitutionType = 'UNIVERSITY' | 'SCHOOL';
 
@@ -18,6 +19,14 @@ export interface Institution {
   /** Changes on every logo upload; goes into the logo URL to bust the browser cache. */
   logoVersion: number;
   terms: Record<string, string>;
+  /** Colours chosen by the developer (absent on servers older than the theme feature). */
+  theme?: ThemeSettings & { customised?: boolean };
+  /** Maintenance mode: while on, only developers (and Super Admins, if allowed) can sign in. */
+  maintenance?: {
+    enabled: boolean; message?: string; until?: string | null; since?: string | null;
+    /** Whether the Super Admin may still sign in (the sign-in page then offers a link). */
+    adminSignIn?: boolean;
+  };
 }
 
 const FALLBACK: Institution = {

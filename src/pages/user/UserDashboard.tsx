@@ -23,6 +23,7 @@ import PageHeader from '../../components/PageHeader';
 import FeesSummaryCard from './fees/FeesSummaryCard';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { tx } from '../../utils/terms';
+import { useThemeColors } from '../../utils/theme';
 
 function MiniStat({ title, value, icon: Icon, color, trend, trendValue }: { title: string; value: number | string; icon: any; color: string; trend?: 'up' | 'down'; trendValue?: string }) {
   return (
@@ -67,6 +68,7 @@ function MiniStat({ title, value, icon: Icon, color, trend, trendValue }: { titl
 }
 
 export default function UserDashboard() {
+  const tc = useThemeColors();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { feesStudent } = useFeatureFlags();
@@ -130,13 +132,13 @@ export default function UserDashboard() {
         <div className="lexa-card-body" style={{ padding: '20px 25px', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
             <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-              <h2 style={{ margin: 0, color: '#fff', fontSize: 24, fontWeight: 800 }}>Welcome back, {user?.firstname}!</h2>
-              <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.8)', fontSize: 14, maxWidth: 500, lineHeight: 1.4 }}>
+              <h2 style={{ margin: 0, color: 'var(--brand-contrast)', fontSize: 24, fontWeight: 800 }}>Welcome back, {user?.firstname}!</h2>
+              <p style={{ margin: '4px 0 0', color: 'var(--brand-contrast)', opacity: 0.85, fontSize: 14, maxWidth: 500, lineHeight: 1.4 }}>
                 You have <strong>{activeQuizzes.length} active assessments</strong> scheduled for your enrolled modules today.
               </p>
               <button
                 onClick={() => navigate('/user-dashboard/quizzes')}
-                style={{ marginTop: 15, background: '#fff', color: 'var(--primary)', border: 'none', padding: '8px 20px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s' }}
+                style={{ marginTop: 15, background: '#fff', color: 'var(--brand-text)', border: 'none', padding: '8px 20px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s' }}
                 className="welcome-btn-hover"
               >
                 View Assignments <ArrowRight size={18} />
@@ -144,7 +146,7 @@ export default function UserDashboard() {
             </div>
             <div className="d-none d-md-block" style={{ textAlign: 'right' }}>
               <div style={{ width: 72, height: 72, borderRadius: '16px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <GraduationCap size={36} color="#fff" />
+                <GraduationCap size={36} color="var(--brand-contrast)" />
               </div>
             </div>
           </div>
@@ -172,7 +174,7 @@ export default function UserDashboard() {
             </div>
             <div style={{ display: 'flex', background: '#f8f9fa', borderRadius: 8, padding: 4 }}>
               <button className="chart-tab-btn" style={{ background: 'transparent', border: 'none', padding: '6px 15px', fontSize: 12, fontWeight: 700, color: '#adb5bd', cursor: 'pointer' }}>Weekly</button>
-              <button className="chart-tab-btn active" style={{ background: '#fff', border: 'none', padding: '6px 15px', fontSize: 12, fontWeight: 800, color: 'var(--primary)', borderRadius: 6, boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}>Monthly</button>
+              <button className="chart-tab-btn active" style={{ background: '#fff', border: 'none', padding: '6px 15px', fontSize: 12, fontWeight: 800, color: 'var(--brand-text)', borderRadius: 6, boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer' }}>Monthly</button>
             </div>
           </div>
           <div className="lexa-card-body" style={{ padding: '16px' }}>
@@ -181,8 +183,8 @@ export default function UserDashboard() {
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                      <stop offset="5%" stopColor={tc.brand} stopOpacity={0.15} />
+                      <stop offset="95%" stopColor={tc.brand} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f7" />
@@ -190,10 +192,10 @@ export default function UserDashboard() {
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#adb5bd', fontSize: 11, fontWeight: 600 }} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 8px 24px rgba(18, 38, 63, 0.12)', padding: '12px 16px' }}
-                    itemStyle={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}
+                    itemStyle={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-text)' }}
                     labelStyle={{ fontSize: 11, color: '#adb5bd', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}
                   />
-                  <Area type="monotone" dataKey="score" stroke="var(--primary)" strokeWidth={4} fillOpacity={1} fill="url(#colorScore)" />
+                  <Area type="monotone" dataKey="score" stroke={tc.brand} strokeWidth={4} fillOpacity={1} fill="url(#colorScore)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -238,7 +240,7 @@ export default function UserDashboard() {
             </div>
           </div>
           <div className="mt-auto" style={{ padding: '12px 20px', borderTop: '1px solid #f1f5f7', background: '#fcfdfe' }}>
-            <Link to="/user-dashboard/quizzes" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--primary)', fontWeight: 800, fontSize: 13, textDecoration: 'none' }}>
+            <Link to="/user-dashboard/quizzes" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--brand-text)', fontWeight: 800, fontSize: 13, textDecoration: 'none' }}>
               Explore All Sessions <ArrowRight size={16} />
             </Link>
           </div>
@@ -331,7 +333,7 @@ export default function UserDashboard() {
         .welcome-btn-hover:hover { background: #f0f0f0 !important; }
         .dashboard-item-hover:hover { background: #f8fafc; }
         .row-hover-lexa:hover { background: #f8fafc; }
-        .text-primary { color: var(--primary); }
+        .text-primary { color: var(--brand-text); }
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         

@@ -26,7 +26,7 @@ interface Program {
 
 const card = {
   background: 'rgba(255,255,255,0.03)',
-  border: '1px solid rgba(139,92,246,0.15)',
+  border: '1px solid rgba(var(--accent-rgb), 0.15)',
   borderRadius: 14,
   padding: '20px',
   backdropFilter: 'blur(12px)',
@@ -91,7 +91,7 @@ export default function ManageStudentLevel() {
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,var(--accent),var(--brand))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <GraduationCap size={20} color="#fff" />
           </div>
           <div>
@@ -103,18 +103,18 @@ export default function ManageStudentLevel() {
 
       {/* Search */}
       <div style={{ ...card, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <Search size={18} color="rgba(139,92,246,0.7)" />
+        <Search size={18} color="rgba(var(--accent-rgb), 0.7)" />
         <input
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder={tx("Search by name, ID, email or program…")}
           style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 14 }}
         />
         <select value={programFilter} onChange={e => setProgramFilter(e.target.value)}
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 8, padding: '6px 12px', color: '#fff', outline: 'none' }}>
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(var(--accent-rgb), 0.3)', borderRadius: 8, padding: '6px 12px', color: '#fff', outline: 'none' }}>
           <option value="" style={{ background: '#1a1a35' }}>{tx("All Programs")}</option>
           {programs.map(p => <option key={p.id} value={p.id} style={{ background: '#1a1a35' }}>{p.name}</option>)}
         </select>
-        <button onClick={loadData} style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: '#a78bfa' }}>
+        <button onClick={loadData} style={{ background: 'rgba(var(--accent-rgb), 0.1)', border: '1px solid rgba(var(--accent-rgb), 0.25)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: 'var(--accent-light)' }}>
           <RefreshCw size={15} />
         </button>
         <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{filtered.length} {tx("students")}</span>
@@ -123,12 +123,12 @@ export default function ManageStudentLevel() {
       {/* Table */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: 'rgba(255,255,255,0.4)' }}>
-          <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: 12, color: '#a78bfa' }} />
+          <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: 12, color: 'var(--accent-light)' }} />
           <p>{tx("Loading students…")}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ ...card, textAlign: 'center', padding: 60 }}>
-          <Users size={40} style={{ color: 'rgba(139,92,246,0.3)', marginBottom: 12 }} />
+          <Users size={40} style={{ color: 'rgba(var(--accent-rgb), 0.3)', marginBottom: 12 }} />
           <p style={{ color: 'rgba(255,255,255,0.4)' }}>{tx("No students found.")}</p>
         </div>
       ) : (
@@ -140,16 +140,16 @@ export default function ManageStudentLevel() {
             return (
               <div key={student.id} className="sml-row" style={{
                 ...card,
-                border: isDirty ? '1px solid rgba(139,92,246,0.4)' : '1px solid rgba(139,92,246,0.12)',
+                border: isDirty ? '1px solid rgba(var(--accent-rgb), 0.4)' : '1px solid rgba(var(--accent-rgb), 0.12)',
                 transition: 'all 0.2s',
               }}>
                 {/* Student info */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
                     width: 38, height: 38, borderRadius: '50%',
-                    background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                    background: 'linear-gradient(135deg,var(--accent),var(--brand))',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
+                    fontSize: 14, fontWeight: 700, color: 'var(--brand-contrast)', flexShrink: 0,
                   }}>{student.firstname?.[0]?.toUpperCase() || 'S'}</div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{student.firstname} {student.lastname}</div>
@@ -165,7 +165,7 @@ export default function ManageStudentLevel() {
                     onChange={e => setEdit(student.id, 'currentLevel', Number(e.target.value))}
                     style={{
                       width: '100%', padding: '7px 10px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(139,92,246,0.25)',
+                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
                       color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
@@ -181,7 +181,7 @@ export default function ManageStudentLevel() {
                     onChange={e => setEdit(student.id, 'currentSemester', Number(e.target.value))}
                     style={{
                       width: '100%', padding: '7px 10px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(139,92,246,0.25)',
+                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
                       color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
@@ -199,8 +199,8 @@ export default function ManageStudentLevel() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     padding: '8px 14px', borderRadius: 8, cursor: isDirty ? 'pointer' : 'default',
                     border: 'none', fontSize: 13, fontWeight: 600,
-                    background: isDirty ? 'linear-gradient(135deg,#7c3aed,#4f46e5)' : 'rgba(255,255,255,0.05)',
-                    color: isDirty ? '#fff' : 'rgba(255,255,255,0.25)',
+                    background: isDirty ? 'linear-gradient(135deg,var(--accent),var(--brand))' : 'rgba(255,255,255,0.05)',
+                    color: isDirty ? 'var(--brand-contrast)' : 'rgba(255,255,255,0.25)',
                     transition: 'all 0.2s',
                     opacity: saving === student.id ? 0.6 : 1,
                   }}

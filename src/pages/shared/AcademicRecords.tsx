@@ -50,7 +50,7 @@ export default function AcademicRecords() {
             <input aria-label={tx("Search students")} className="ar-input" placeholder={tx("Search name, ID or program…")} value={q} onChange={ev => setQ(ev.target.value)} />
           </div>
           <div style={{ maxHeight: 560, overflowY: 'auto' }}>
-            {students.isLoading ? <div style={{ padding: 20, textAlign: 'center' }}><Loader2 size={20} color="#5156be" className="spin-ico" style={{ animation: 'spin 1s linear infinite' }} /></div>
+            {students.isLoading ? <div style={{ padding: 20, textAlign: 'center' }}><Loader2 size={20} color="var(--brand-text)" className="spin-ico" style={{ animation: 'spin 1s linear infinite' }} /></div>
               : list.length === 0 ? <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{tx("No students found")}</div>
               : list.map(s => (
                 <button key={s.id} onClick={() => setSelected(s)} className={`ar-stu ${selected?.id === s.id ? 'is-active' : ''}`} aria-current={selected?.id === s.id}>
@@ -82,7 +82,7 @@ export default function AcademicRecords() {
                   {downloading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={14} />} Transcript PDF
                 </button>
               </div>
-              {transcript.isLoading ? <div style={{ padding: 40, textAlign: 'center' }}><Loader2 size={24} color="#5156be" style={{ animation: 'spin 1s linear infinite' }} /></div>
+              {transcript.isLoading ? <div style={{ padding: 40, textAlign: 'center' }}><Loader2 size={24} color="var(--brand-text)" style={{ animation: 'spin 1s linear infinite' }} /></div>
                 : transcript.isError ? <div className="ar-empty">{(transcript.error as any)?.response?.data?.message ?? 'Could not load this record.'}</div>
                 : <TranscriptView t={transcript.data} />}
             </>
@@ -96,11 +96,11 @@ export default function AcademicRecords() {
         .ar-input { width: 100%; box-sizing: border-box; height: 36px; padding: 0 10px 0 28px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; }
         .ar-stu { display: flex; flex-direction: column; gap: 1px; width: 100%; text-align: left; padding: 9px 14px; border: none; border-bottom: 1px solid #f8fafc; background: #fff; cursor: pointer; font-family: inherit; font-size: 13px; }
         .ar-stu:hover { background: #fafbff; }
-        .ar-stu.is-active { background: #eef0ff; }
+        .ar-stu.is-active { background: var(--brand-soft); }
         .ar-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
         .ar-banner > div:first-child { flex: 1; }
         .ar-elig { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 8px; max-width: 100%; }
-        .ar-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 8px; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+        .ar-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; cursor: pointer; }
         .ar-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .ar-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 60px 20px; color: #94a3b8; background: #fff; border: 1.5px dashed #e2e8f0; border-radius: 12px; text-align: center; }
         .ar-empty p { margin: 0; }

@@ -51,8 +51,8 @@
   margin-top: 10px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(122, 111, 190, 0.08);
-  color: var(--primary);
+  background: rgba(var(--brand-rgb), 0.08);
+  color: var(--brand-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -119,7 +119,7 @@
   color: #adb5bd;
 }
 .am-state-icon-error { background: #feeef1; color: var(--danger); }
-.am-state-icon-loading { background: transparent; color: var(--primary); margin-bottom: 8px; }
+.am-state-icon-loading { background: transparent; color: var(--brand-text); margin-bottom: 8px; }
 .am-state h3 { margin: 0 0 6px; font-size: 15px; font-weight: 800; color: #2a3142; }
 .am-state p { margin: 0; max-width: 320px; font-size: 13px; font-weight: 600; color: #74788d; line-height: 1.5; }
 .am-retry { margin-top: 18px; gap: 6px; padding: 8px 18px; border-radius: 8px; cursor: pointer; }

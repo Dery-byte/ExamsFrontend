@@ -92,7 +92,7 @@ export default function PrintQuiz() {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8f9fa', flexDirection: 'column', gap: 24 }}>
-      <Loader2 className="spin-ico" size={48} style={{ color: 'var(--primary)' }} />
+      <Loader2 className="spin-ico" size={48} style={{ color: 'var(--brand-text)' }} />
       <div style={{ color: '#2a3142', fontSize: 16, fontWeight: 800 }}>Assembling Academic Transcript...</div>
       <style>{`
         .spin-ico { animation: spin 1s linear infinite; }
@@ -165,7 +165,7 @@ export default function PrintQuiz() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={() => { document.title = username || 'exam-results'; window.print(); }} style={{ padding: '10px 25px', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 10, background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', boxShadow: '0 4px 12px rgba(122, 111, 190, 0.25)' }} className="btn-hover">
+          <button onClick={() => { document.title = username || 'exam-results'; window.print(); }} style={{ padding: '10px 25px', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 10, background: 'var(--primary)', color: 'var(--brand-contrast)', border: 'none', borderRadius: 8, cursor: 'pointer', boxShadow: '0 4px 12px rgba(var(--brand-rgb), 0.25)' }} className="btn-hover">
             <Printer size={18} /> Print Record
           </button>
         </div>
@@ -178,17 +178,17 @@ export default function PrintQuiz() {
           <div className="print-header" style={{ borderBottom: '1px solid #f1f5f7', background: 'linear-gradient(to right, #ffffff, #fcfdfe)' }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 30 }}>
-                <div style={{ width: 64, height: 64, background: 'var(--primary)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 24, color: '#fff', boxShadow: '0 8px 20px rgba(122, 111, 190, 0.3)' }}>{institution.shortName}</div>
+                <div style={{ width: 64, height: 64, background: 'var(--primary)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 24, color: 'var(--brand-contrast)', boxShadow: '0 8px 20px rgba(var(--brand-rgb), 0.3)' }}>{institution.shortName}</div>
                 <div>
                   <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#2a3142', letterSpacing: '-0.02em' }}>{institution.name}</h1>
-                  <div style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.05em' }}>{institution.subtitle || 'Examination Portal'}</div>
+                  <div style={{ fontSize: 13, color: 'var(--brand-text)', fontWeight: 800, textTransform: 'uppercase', marginTop: 4, letterSpacing: '0.05em' }}>{institution.subtitle || 'Examination Portal'}</div>
                 </div>
               </div>
 
               {r0 && (
                 <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
-                  <div style={{ padding: '8px 15px', background: 'rgba(122, 111, 190, 0.05)', borderRadius: 10, border: '1px solid rgba(122, 111, 190, 0.1)' }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--primary)' }}>{r0.quiz?.category?.courseCode}</span>
+                  <div style={{ padding: '8px 15px', background: 'rgba(var(--brand-rgb), 0.05)', borderRadius: 10, border: '1px solid rgba(var(--brand-rgb), 0.1)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-text)' }}>{r0.quiz?.category?.courseCode}</span>
                   </div>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#adb5bd', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{r0.quiz?.category?.title}</div>
@@ -198,7 +198,7 @@ export default function PrintQuiz() {
               )}
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ padding: '20px 25px', background: '#fcfdfe', borderRadius: 12, border: '1px solid #f1eefb' }}>
+              <div style={{ padding: '20px 25px', background: '#fcfdfe', borderRadius: 12, border: '1px solid var(--brand-soft)' }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: '#adb5bd', textTransform: 'uppercase', marginBottom: 5, letterSpacing: '0.05em' }}>Reference ID</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: '#2a3142' }}>#{qid?.padStart(6, '0')}</div>
                 <div style={{ fontSize: 12, color: '#adb5bd', marginTop: 6, fontWeight: 700 }}>{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
@@ -217,7 +217,7 @@ export default function PrintQuiz() {
               ].map((item, i) => (
                 <div key={i} style={{ padding: '25px 30px', borderRight: i < 3 ? '1px solid #f1f5f7' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <span style={{ color: 'var(--primary)' }}>{item.icon}</span>
+                    <span style={{ color: 'var(--brand-text)' }}>{item.icon}</span>
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#adb5bd', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</span>
                   </div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: item.label === 'Merit Status' ? gradeColor(totalPct) : '#2a3142' }}>{item.value}</div>
@@ -240,7 +240,7 @@ export default function PrintQuiz() {
                     <div style={{ fontSize: 11, fontWeight: 800, color: '#adb5bd', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Score</div>
                   </div>
                 </div>
-                <div style={{ marginTop: 25, padding: '6px 18px', background: `${gradeColor(totalPct)}15`, borderRadius: 8, border: `1px solid ${gradeColor(totalPct)}30` }}>
+                <div style={{ marginTop: 25, padding: '6px 18px', background: `color-mix(in srgb, ${gradeColor(totalPct)} 8.2%, transparent)`, borderRadius: 8, border: `1px solid color-mix(in srgb, ${gradeColor(totalPct)} 18.8%, transparent)` }}>
                   <span style={{ fontSize: 11, fontWeight: 800, color: gradeColor(totalPct), textTransform: 'uppercase', letterSpacing: '0.05em' }}>{gradeLabel(totalPct)}</span>
                 </div>
               </div>
@@ -257,7 +257,7 @@ export default function PrintQuiz() {
                           <div style={{ fontSize: 15, fontWeight: 800, color: '#2a3142' }}>Objective Evaluation</div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--primary)' }}>{objScore}</span>
+                          <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--brand-text)' }}>{objScore}</span>
                           <span style={{ fontSize: 13, color: '#adb5bd', fontWeight: 600 }}> / {maxObj}</span>
                         </div>
                       </div>
@@ -298,7 +298,7 @@ export default function PrintQuiz() {
           {showSectionA && (
             <div className="print-section-pad">
               <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginBottom: 25, padding: '15px 20px', background: '#fcfdfe', borderRadius: 12, border: '1px solid #f1f5f7' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(122, 111, 190, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(var(--brand-rgb), 0.1)', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <CheckCircle size={20} />
                 </div>
                 <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#2a3142' }}>Section A: Objective Assessment Details</h4>
@@ -402,10 +402,10 @@ export default function PrintQuiz() {
                           <div key={qi} style={{ border: '1px solid #f1f5f7', borderRadius: 12, padding: '30px', background: '#fff' }}>
                             <div className="print-question-flex">
                               <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{q.quesO}</div>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand-text)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{q.quesO}</div>
                                 <h5 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#2a3142', lineHeight: 1.5 }} className="ql-content" dangerouslySetInnerHTML={{ __html: q.question }} />
                               </div>
-                              <div style={{ textAlign: 'center', padding: '12px 20px', background: '#fcfdfe', borderRadius: 12, border: '1px solid #f1eefb', minWidth: 80 }}>
+                              <div style={{ textAlign: 'center', padding: '12px 20px', background: '#fcfdfe', borderRadius: 12, border: '1px solid var(--brand-soft)', minWidth: 80 }}>
                                 <div style={{ fontSize: 22, fontWeight: 800, color: gradeColor(p) }}>{q.score}</div>
                                 <div style={{ fontSize: 11, fontWeight: 800, color: '#adb5bd' }}>/ {q.maxMarks}</div>
                               </div>

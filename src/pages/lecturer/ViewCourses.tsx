@@ -177,7 +177,7 @@
 //           justify-content: center;
 //           font-size: 20px;
 //         }
-//         .bg-soft-primary { background-color: rgba(81, 86, 190, 0.1); color: #5156be; }
+//         .bg-soft-primary { background-color: rgba(var(--brand-rgb), 0.1); color: var(--brand-text); }
 //         .bg-soft-success { background-color: rgba(42, 181, 125, 0.1); color: #2ab57d; }
 //         .bg-soft-warning { background-color: rgba(241, 187, 85, 0.1); color: #f1bb55; }
 //         .bg-soft-info { background-color: rgba(80, 165, 241, 0.1); color: #50a5f1; }
@@ -255,7 +255,7 @@
 //         .btn-view-details {
 //           background: transparent;
 //           border: none;
-//           color: #5156be;
+//           color: var(--brand-text);
 //           font-weight: 700;
 //           font-size: 14px;
 //           padding: 8px 0;
@@ -263,7 +263,7 @@
 //         }
 //         .btn-view-details:hover {
 //           gap: 12px !important;
-//           color: #4549a2;
+//           color: var(--brand-hover);
 //         }
 
 //         .status-indicator {
@@ -292,18 +292,18 @@
 
 //         /* Buttons */
 //         .btn-primary-premium {
-//           background: linear-gradient(135deg, #5156be, #4549a2);
+//           background: linear-gradient(135deg, var(--brand), var(--brand-hover));
 //           border: none;
-//           color: white;
+//           color: var(--brand-contrast);
 //           padding: 10px 20px;
 //           border-radius: 10px;
 //           font-weight: 600;
-//           box-shadow: 0 4px 15px rgba(81, 86, 190, 0.3);
+//           box-shadow: 0 4px 15px rgba(var(--brand-rgb), 0.3);
 //           transition: all 0.3s;
 //         }
 //         .btn-primary-premium:hover {
 //           transform: translateY(-2px);
-//           box-shadow: 0 6px 20px rgba(81, 86, 190, 0.4);
+//           box-shadow: 0 6px 20px rgba(var(--brand-rgb), 0.4);
 //           color: white;
 //         }
 
@@ -316,7 +316,7 @@
 //         .empty-icon-bg {
 //           width: 120px;
 //           height: 120px;
-//           background: rgba(81, 86, 190, 0.05);
+//           background: rgba(var(--brand-rgb), 0.05);
 //           border-radius: 50%;
 //           display: flex;
 //           align-items: center;
@@ -345,7 +345,7 @@
 //           content: '';
 //           position: absolute;
 //           top: 0; left: 0; width: 100%; height: 100%;
-//           border: 2px dashed rgba(81, 86, 190, 0.2);
+//           border: 2px dashed rgba(var(--brand-rgb), 0.2);
 //           border-radius: 50%;
 //           animation: spin 8s linear infinite;
 //         }
@@ -369,14 +369,14 @@
 // // Helper for dynamic colors
 // function getRandomColor(index: number) {
 //   const colors = [
-//     '#5156be', // Primary
+//     'var(--brand)', // Primary
 //     '#2ab57d', // Success
 //     '#f1bb55', // Warning
 //     '#50a5f1', // Info
 //     '#fd625e', // Danger
 //     '#4ba6ef', // Blue
 //     '#ff7f5c', // Coral
-//     '#a55eea', // Purple
+//     'var(--accent)', // Purple
 //   ];
 //   return colors[index % colors.length];
 // }

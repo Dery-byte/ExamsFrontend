@@ -559,6 +559,8 @@ export interface ReportResult {
   key: string; title: string; description: string; scope: string[];
   summary: { label: string; value: unknown; hint: string | null; tone: 'good' | 'warn' | 'bad' | null }[];
   tables: ReportTable[]; notes: string[]; generatedAt: string; generatedBy: string | null;
+  /** A document meant for printing (a question paper): the page offers its PDF first. */
+  printable?: boolean;
 }
 /** Query parameters a report accepts; unset ones are left out. courseId / quizId are drill-downs. */
 export interface ReportParams {
@@ -749,6 +751,24 @@ export const clearResolvedErrors = () => client.delete(`${developerRootUrl()}/er
 export const sendTestAlert = () => client.post(`${developerRootUrl()}/alerts/test`).then(r => r.data);
 export const reportClientError = (data: { page: string; message: string; stack?: string }) =>
   client.post('/client-errors', data);
+
+// Setup tools: colour theme, maintenance mode, setup checklist, settings backup
+export const getThemeSettings = () => client.get(`${developerRootUrl()}/theme`).then(r => r.data);
+export const saveThemeSettings = (theme: { brand: string; sidebar: string; accent: string | null; preset?: string | null }) =>
+  client.put(`${developerRootUrl()}/theme`, theme).then(r => r.data);
+export const resetThemeSettings = () => client.delete(`${developerRootUrl()}/theme`).then(r => r.data);
+export interface MaintenanceState { enabled: boolean; message: string; until: string | null; allowAdmins: boolean; since: string | null }
+export const getMaintenance = (): Promise<MaintenanceState> => client.get(`${developerRootUrl()}/maintenance`).then(r => r.data);
+export const saveMaintenance = (data: Partial<MaintenanceState>): Promise<MaintenanceState> =>
+  client.put(`${developerRootUrl()}/maintenance`, data).then(r => r.data);
+export const getSetupChecklist = () => client.get(`${developerRootUrl()}/setup`).then(r => r.data);
+export const sendSetupTestEmail = (to: string) => client.post(`${developerRootUrl()}/setup/test-email`, { to }).then(r => r.data);
+export const createSuperAdminAccount = (data: Record<string, string>) =>
+  client.post(`${developerRootUrl()}/setup/super-admin`, data).then(r => r.data);
+export const exportSystemConfig = (logo: boolean) =>
+  client.get(`${developerRootUrl()}/config/export`, { params: { logo } }).then(r => r.data);
+export const previewSystemConfig = (file: object) => client.post(`${developerRootUrl()}/config/preview`, file).then(r => r.data);
+export const importSystemConfig = (file: object) => client.post(`${developerRootUrl()}/config/import`, file).then(r => r.data);
 
 // Developers: read-only list (rows are added directly in the developer_email table)
 export const getDevelopers = () => client.get(`${developerRootUrl()}/developers`).then(r => r.data);

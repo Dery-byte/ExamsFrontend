@@ -10,7 +10,7 @@ import {
 import { tx } from '../../utils/terms';
 
 const ROLE_META: Record<string, { label: string; color: string; bg: string; grad: string; icon: React.ReactNode }> = {
-  ADMIN:    { label: 'Administrator',   color: '#5156be', bg: '#eef2ff', grad: 'linear-gradient(135deg,#5156be,#7c3aed)', icon: <Shield size={18}/> },
+  ADMIN:    { label: 'Administrator',   color: 'var(--brand-text)', bg: 'var(--brand-soft)', grad: 'linear-gradient(135deg,var(--brand),var(--accent))', icon: <Shield size={18}/> },
   LECTURER: { label: tx('Academic Faculty'), color: '#0891b2', bg: '#ecfeff', grad: 'linear-gradient(135deg,#0891b2,#06b6d4)', icon: <Briefcase size={18}/> },
   NORMAL:   { label: tx('Student'),          color: '#059669', bg: '#ecfdf5', grad: 'linear-gradient(135deg,#059669,#10b981)', icon: <User size={18}/> },
 };
@@ -526,7 +526,7 @@ export default function Profile() {
         .pf-page { font-family:'Inter',sans-serif; padding:24px; background:#f0f2f8; min-height:100vh; color:#1e293b; }
 
         .pf-breadcrumb { display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8; font-weight:500; margin-bottom:24px; }
-        .pf-breadcrumb .active { color:#5156be; font-weight:700; }
+        .pf-breadcrumb .active { color:var(--brand-text); font-weight:700; }
 
         .pf-grid { display:grid; grid-template-columns:320px 1fr; gap:20px; align-items:start; }
 
@@ -540,12 +540,12 @@ export default function Profile() {
         .pf-avatar-wrap { position:relative; display:inline-block; margin-bottom:16px; }
         .pf-avatar { width:88px; height:88px; border-radius:22px; display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:900; border:4px solid #fff; box-shadow:0 8px 24px -4px rgba(0,0,0,0.12); }
         .pf-avatar-btn { position:absolute; bottom:-4px; right:-4px; width:28px; height:28px; border-radius:8px; background:#fff; border:1px solid #e2e8f0; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.2s; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-        .pf-avatar-btn:hover { background:#5156be; color:#fff; border-color:#5156be; }
+        .pf-avatar-btn:hover { background:var(--brand); color:var(--brand-contrast); border-color:var(--brand); }
         .pf-name { font-size:20px; font-weight:800; color:#1e293b; margin:0 0 4px; }
         .pf-username { font-size:13px; color:#94a3b8; font-weight:600; margin:0 0 14px; }
         .pf-role-badge { display:inline-flex; align-items:center; gap:7px; padding:7px 16px; border-radius:10px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; margin-bottom:16px; }
         .pf-bio { font-size:13px; color:#94a3b8; line-height:1.65; margin:0 0 20px; padding:14px; background:#f8fafc; border-radius:12px; font-weight:500; }
-        .pf-btn-primary { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border-radius:12px; border:none; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:.3s; font-family:'Inter',sans-serif; box-shadow:0 4px 16px -4px rgba(81,86,190,.5); }
+        .pf-btn-primary { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; border-radius:12px; border:none; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:.3s; font-family:'Inter',sans-serif; box-shadow:0 4px 16px -4px rgba(var(--brand-rgb), .5); }
         .pf-btn-primary:hover { transform:translateY(-1px); filter:brightness(1.08); }
 
         /* Stats */
@@ -570,7 +570,7 @@ export default function Profile() {
         /* Info Grid */
         .pf-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
         .pf-info-item { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:12px; background:#f8fafc; border:1px solid #f1f5f9; transition:.2s; }
-        .pf-info-item:hover { background:#f5f7ff; border-color:#c7d2fe; }
+        .pf-info-item:hover { background:#f5f7ff; border-color:var(--brand-border); }
         .pf-info-icon { width:34px; height:34px; border-radius:9px; background:#fff; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; color:#64748b; flex-shrink:0; }
         .pf-info-label { font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.05em; margin:0 0 3px; }
         .pf-info-value { font-size:13px; font-weight:700; color:#1e293b; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -588,7 +588,7 @@ export default function Profile() {
         .pf-actions-title { font-size:14px; font-weight:800; color:#1e293b; margin:0 0 16px; }
         .pf-actions-row { display:flex; gap:12px; }
         .pf-action-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:13px 16px; border-radius:12px; border:none; font-size:13px; font-weight:700; cursor:pointer; transition:.25s; font-family:'Inter',sans-serif; }
-        .pf-action-primary { color:#fff; box-shadow:0 4px 14px -4px rgba(81,86,190,.45); }
+        .pf-action-primary { color:#fff; box-shadow:0 4px 14px -4px rgba(var(--brand-rgb), .45); }
         .pf-action-primary:hover { filter:brightness(1.08); transform:translateY(-1px); }
         .pf-action-danger { background:#fef2f2; color:#dc2626; border:1.5px solid #fecaca; }
         .pf-action-danger:hover { background:#dc2626; color:#fff; }
@@ -620,7 +620,7 @@ export default function Profile() {
         /* Modal notice bar */
         .pf-modal-notice {
           display:flex; align-items:center; gap:9px; padding:11px 14px; border-radius:10px;
-          background:#f0f2ff; border:1px solid #c7d2fe; color:#4338ca;
+          background:#f0f2ff; border:1px solid var(--brand-border); color:var(--brand-hover);
           font-size:12px; font-weight:600; margin-bottom:20px;
         }
         .pf-modal-notice-warn { background:#fffbeb; border-color:#fde68a; color:#92400e; }
@@ -635,10 +635,10 @@ export default function Profile() {
           font-size:14px; font-weight:500; color:#1e293b; background:#f8fafc;
           font-family:'Inter',sans-serif; transition:.2s; outline:none; box-sizing:border-box;
         }
-        .pf-field-input:focus { border-color:#5156be; background:#fff; box-shadow:0 0 0 3px rgba(81,86,190,0.12); }
+        .pf-field-input:focus { border-color:var(--brand); background:#fff; box-shadow:0 0 0 3px rgba(var(--brand-rgb), 0.12); }
         .pf-field-disabled { background:#f1f5f9; color:#94a3b8; cursor:not-allowed; }
         .pf-field-eye { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:#94a3b8; cursor:pointer; display:flex; align-items:center; padding:4px; }
-        .pf-field-eye:hover { color:#5156be; }
+        .pf-field-eye:hover { color:var(--brand-text); }
         .pf-field-hint { font-size:11px; color:#94a3b8; margin:4px 0 0; }
 
         /* Password strength */
@@ -656,7 +656,7 @@ export default function Profile() {
         .pf-modal-actions { display:flex; gap:10px; margin-top:8px; }
         .pf-btn-cancel { flex:1; padding:12px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:14px; font-weight:700; cursor:pointer; transition:.2s; font-family:'Inter',sans-serif; }
         .pf-btn-cancel:hover:not(:disabled) { background:#f1f5f9; border-color:#cbd5e1; }
-        .pf-btn-save { flex:2; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:10px; border:none; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:.25s; font-family:'Inter',sans-serif; box-shadow:0 4px 14px -4px rgba(81,86,190,.45); }
+        .pf-btn-save { flex:2; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px; border-radius:10px; border:none; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:.25s; font-family:'Inter',sans-serif; box-shadow:0 4px 14px -4px rgba(var(--brand-rgb), .45); }
         .pf-btn-save:hover:not(:disabled) { filter:brightness(1.08); transform:translateY(-1px); }
         .pf-btn-save:disabled { opacity:.65; cursor:not-allowed; transform:none; filter:none; }
         .pf-btn-danger { background:linear-gradient(135deg,#dc2626,#ef4444) !important; box-shadow:0 4px 14px -4px rgba(220,38,38,.45) !important; }

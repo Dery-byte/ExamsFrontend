@@ -5,12 +5,12 @@ import { Loader2, BookOpen, Layers, ChevronRight, GraduationCap } from 'lucide-r
 import { tx } from '../../utils/terms';
 
 const CARD_GRADS = [
-  'linear-gradient(135deg,#5156be 0%,#3d41a8 100%)',
+  'linear-gradient(135deg,var(--brand) 0%,var(--brand-hover) 100%)',
   'linear-gradient(135deg,#2ab57d 0%,#1a9666 100%)',
   'linear-gradient(135deg,#fd625e 0%,#d94f4b 100%)',
   'linear-gradient(135deg,#ffbf53 0%,#e6a832 100%)',
   'linear-gradient(135deg,#4ba3ff 0%,#2b7de9 100%)',
-  'linear-gradient(135deg,#a55eea 0%,#8843d4 100%)',
+  'linear-gradient(135deg,var(--accent) 0%,var(--accent) 100%)',
 ];
 
 export default function ViewCourse() {
@@ -27,7 +27,7 @@ export default function ViewCourse() {
         <div>
           <h4 style={{ margin:0, fontSize:'20px', fontWeight:800, color:'#2a3142' }}>{tx("My Courses")}</h4>
           <div style={{ display:'flex', alignItems:'center', gap:'6px', color:'#74788d', fontSize:'13px', marginTop:'3px' }}>
-            <span>{tx("Lecturer")}</span><ChevronRight size={12}/><span style={{ color:'#5156be', fontWeight:600 }}>{tx("Courses")}</span>
+            <span>{tx("Lecturer")}</span><ChevronRight size={12}/><span style={{ color:'var(--brand-text)', fontWeight:600 }}>{tx("Courses")}</span>
           </div>
         </div>
       </div>
@@ -35,8 +35,8 @@ export default function ViewCourse() {
       {/* Cards Grid */}
       {isLoading ? (
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'320px', gap:'16px' }}>
-          <div style={{ width:68, height:68, borderRadius:'50%', background:'rgba(81,86,190,0.08)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Loader2 style={{ animation:'spin 1s linear infinite', color:'#5156be' }} size={32}/>
+          <div style={{ width:68, height:68, borderRadius:'50%', background:'rgba(var(--brand-rgb), 0.08)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Loader2 style={{ animation:'spin 1s linear infinite', color:'var(--brand-text)' }} size={32}/>
           </div>
           <p style={{ color:'#74788d', fontWeight:600, fontSize:'14px', margin:0 }}>{tx("Loading courses...")}</p>
         </div>

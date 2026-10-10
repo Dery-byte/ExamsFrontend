@@ -92,7 +92,7 @@ export default function QuestionBank() {
       <PageHeader title="Question Bank" breadcrumbs={['Assessments', 'Question Bank']} />
 
       {courses.isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="#5156be" className="qb-spin" /></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="var(--brand-text)" className="qb-spin" /></div>
       ) : !courses.data?.length ? (
         <div className="qb-card qb-empty"><BookOpen size={32} /><p>{tx("You don't manage any courses yet, so there is no bank to show.")}</p></div>
       ) : (
@@ -137,7 +137,7 @@ export default function QuestionBank() {
             <div className="qb-meta">{filtered.length} of {questions.length} question{questions.length !== 1 ? 's' : ''}</div>
 
             {bank.isLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={22} color="#5156be" className="qb-spin" /></div>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={22} color="var(--brand-text)" className="qb-spin" /></div>
             ) : filtered.length === 0 ? (
               <div className="qb-empty"><Library size={30} />
                 <p>{questions.length ? 'No questions match these filters.' : 'This bank is empty. Add or upload questions here, or use "Save to bank" on any quiz\'s questions page.'}</p>
@@ -212,12 +212,12 @@ export default function QuestionBank() {
         .qb-course { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; border: none; border-bottom: 1px solid #f8fafc; background: #fff; text-align: left; cursor: pointer; font-family: inherit; }
         .qb-course strong { display: block; font-size: 13px; color: #1e293b; }
         .qb-course-title { display: block; font-size: 11.5px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .qb-course.is-active { background: #eef0ff; }
-        .qb-count { font-size: 11px; font-weight: 800; color: #4338ca; background: #e0e7ff; border-radius: 10px; padding: 2px 8px; flex-shrink: 0; }
+        .qb-course.is-active { background: var(--brand-soft); }
+        .qb-count { font-size: 11px; font-weight: 800; color: var(--brand-hover); background: var(--brand-border); border-radius: 10px; padding: 2px 8px; flex-shrink: 0; }
         .qb-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #f1f5f9; }
         .qb-input { height: 36px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; padding: 0 10px; background: #f8fafc; color: #1e293b; width: 100%; box-sizing: border-box; font-family: inherit; }
         .qb-select { width: auto; flex: 0 1 150px; }
-        .qb-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 8px; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+        .qb-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
         .qb-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .qb-meta { padding: 8px 16px; font-size: 12px; color: #94a3b8; }
         .qb-item { padding: 14px 16px; border-top: 1px solid #f4f5f8; }
@@ -226,7 +226,7 @@ export default function QuestionBank() {
         .qb-content { font-size: 14px; color: #1e293b; line-height: 1.5; overflow-wrap: anywhere; }
         .qb-content p { margin: 0; }
         .qb-theory { font-size: 12.5px; color: #475569; margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
-        .qb-marks { align-self: flex-start; background: #eef2ff; color: #4338ca; font-weight: 700; font-size: 11.5px; padding: 2px 8px; border-radius: 6px; }
+        .qb-marks { align-self: flex-start; background: var(--brand-soft); color: var(--brand-hover); font-weight: 700; font-size: 11.5px; padding: 2px 8px; border-radius: 6px; }
         .qb-opts { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: #475569; }
         .qb-opts li { margin: 2px 0; }
         .qb-icon { width: 30px; height: 30px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #475569; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -236,8 +236,8 @@ export default function QuestionBank() {
         .qb-spin { animation: qb-spin 1s linear infinite; }
         @keyframes qb-spin { to { transform: rotate(360deg); } }
         @media (max-width: 860px) { .qb-grid { grid-template-columns: 1fr; } .qb-select { flex: 1 1 140px; } }
-        .qb-btn-outline { background: #fff; color: #5156be; border: 1.5px solid #c7d2fe; }
-        .qb-btn-outline:hover:not(:disabled) { background: #eef0ff; }
+        .qb-btn-outline { background: #fff; color: var(--brand-text); border: 1.5px solid var(--brand-border); }
+        .qb-btn-outline:hover:not(:disabled) { background: var(--brand-soft); }
 
         /* Dialogs (question editor, upload) */
         .qbe-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 3000; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
@@ -245,28 +245,28 @@ export default function QuestionBank() {
         .qbe-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .qbe-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin: 4px 0 5px; }
         .qbe-note { font-size: 12px; color: #64748b; margin: 8px 0 0; }
-        .qbe-link { display: inline-flex; align-items: center; gap: 4px; border: none; background: none; color: #5156be; font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 0; }
+        .qbe-link { display: inline-flex; align-items: center; gap: 4px; border: none; background: none; color: var(--brand-text); font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 0; }
         .qbe-ghost { height: 36px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer; }
         .qbe-ghost:disabled, .qb-icon:disabled { opacity: 0.6; cursor: not-allowed; }
         .qbu-templates { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
         .qbu-tpl { display: inline-flex; align-items: center; gap: 6px; height: 32px; font-size: 12.5px; }
         .qbu-defaults { display: grid; grid-template-columns: 1fr 180px; gap: 10px; }
-        .qbu-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; margin-top: 12px; padding: 18px; border: 2px dashed #c7d2fe; border-radius: 12px; background: #f8fafc; color: #5156be; cursor: pointer; text-align: center; transition: .2s; }
-        .qbu-drop:hover { background: #eef0ff; border-color: #5156be; }
+        .qbu-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; margin-top: 12px; padding: 18px; border: 2px dashed var(--brand-border); border-radius: 12px; background: #f8fafc; color: var(--brand-text); cursor: pointer; text-align: center; transition: .2s; }
+        .qbu-drop:hover { background: var(--brand-soft); border-color: var(--brand); }
         .qbu-drop strong { font-size: 13px; color: #1e293b; word-break: break-all; }
         .qbu-drop span { font-size: 11.5px; color: #94a3b8; }
         .qbu-preview { margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; background: #fff; }
-        .qbu-preview-head { font-size: 12px; font-weight: 800; color: #4338ca; margin-bottom: 6px; }
+        .qbu-preview-head { font-size: 12px; font-weight: 800; color: var(--brand-hover); margin-bottom: 6px; }
         .qbu-preview-row { font-size: 12.5px; color: #475569; padding: 3px 0; overflow-wrap: anywhere; }
         .qbu-preview-sub { font-size: 12px; color: #64748b; margin: -2px 0 6px; }
         .qbu-types { border: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .qbu-types legend { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0; }
         .qbu-types-actions { display: inline-flex; gap: 10px; }
         .qbu-type { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 9px; font-size: 12.5px; color: #475569; cursor: pointer; background: #fff; transition: .15s; }
-        .qbu-type input { width: 15px; height: 15px; accent-color: #5156be; flex-shrink: 0; }
-        .qbu-type.is-on { border-color: #a5b4fc; background: #eef0ff; color: #1e293b; font-weight: 600; }
+        .qbu-type input { width: 15px; height: 15px; accent-color: var(--brand); flex-shrink: 0; }
+        .qbu-type.is-on { border-color: var(--brand-light); background: var(--brand-soft); color: #1e293b; font-weight: 600; }
         .qbu-type.is-empty { opacity: 0.5; cursor: not-allowed; }
-        .qbu-type-count { margin-left: auto; font-size: 11px; font-weight: 800; color: #4338ca; background: #e0e7ff; border-radius: 10px; padding: 1px 8px; }
+        .qbu-type-count { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--brand-hover); background: var(--brand-border); border-radius: 10px; padding: 1px 8px; }
         .qbu-error { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fdeeee; border: 1px solid #f5c2c2; color: #9f1f1f; font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
         @media (max-width: 560px) { .qbe-row3, .qbu-defaults, .qbu-types { grid-template-columns: 1fr; } }
       `}</style>

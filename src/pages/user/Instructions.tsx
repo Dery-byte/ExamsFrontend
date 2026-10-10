@@ -169,7 +169,7 @@ export default function Instructions() {
           title: 'Submitted!',
           text: 'Your assessment has been successfully submitted for grading.',
           icon: 'success',
-          confirmButtonColor: '#7a6fbe',
+          confirmButtonColor: 'var(--brand)',
           customClass: { popup: 'swal2-premium-popup' }
         }).then(() => {
           window.location.reload();
@@ -299,7 +299,7 @@ export default function Instructions() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <Loader2 className="spin-ico" size={40} style={{ color: 'var(--primary)', marginBottom: 16 }} />
+        <Loader2 className="spin-ico" size={40} style={{ color: 'var(--brand-text)', marginBottom: 16 }} />
         <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 600 }}>Configuring examination parameters...</p>
       </div>
     );
@@ -336,7 +336,7 @@ export default function Instructions() {
             </div>
             <div className="lexa-card-body">
               <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginBottom: 25 }}>
-                <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(122, 111, 190, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'rgba(var(--brand-rgb), 0.1)', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <FileText size={24} />
                 </div>
                 <div>
@@ -404,7 +404,7 @@ export default function Instructions() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#adb5bd', fontWeight: 600 }}>
                       <stat.icon size={14} /> {stat.label}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: stat.highlight ? 'var(--primary)' : '#495057' }}>{stat.value}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: stat.highlight ? 'var(--brand-text)' : '#495057' }}>{stat.value}</div>
                   </div>
                 ))}
               </div>
@@ -437,7 +437,7 @@ export default function Instructions() {
                   </div>
                   <button 
                     onClick={() => navigate('/user-dashboard/quizzes')}
-                    style={{ marginTop: 15, background: 'none', border: 'none', color: 'var(--primary)', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, margin: '15px auto 0' }}
+                    style={{ marginTop: 15, background: 'none', border: 'none', color: 'var(--brand-text)', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, margin: '15px auto 0' }}
                   >
                     Browse Others <ChevronRight size={14} />
                   </button>
@@ -445,7 +445,7 @@ export default function Instructions() {
               ) : (
                 <>
                   {attempts?.retakeGranted && (
-                    <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 4, background: 'rgba(122, 111, 190, 0.1)', color: 'var(--primary)', fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
+                    <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 4, background: 'rgba(var(--brand-rgb), 0.1)', color: 'var(--brand-text)', fontSize: 12, fontWeight: 600, lineHeight: 1.5 }}>
                       {tx("Your lecturer has allowed you to retake this quiz. Your new marks will replace your previous result.")}</div>
                   )}
 
@@ -506,7 +506,7 @@ export default function Instructions() {
             </div>
           </div>
 
-          <div className="lexa-card" style={{ background: 'var(--primary)', color: '#fff' }}>
+          <div className="lexa-card" style={{ background: 'var(--primary)', color: 'var(--brand-contrast)' }}>
             <div className="lexa-card-body">
               <div style={{ display: 'flex', gap: 15 }}>
                 <div style={{ width: 35, height: 35, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

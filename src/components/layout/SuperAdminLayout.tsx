@@ -18,7 +18,7 @@ const DESKTOP_QUERY = '(min-width: 1024px)';
 
 export default function SuperAdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
-  const { term } = useInstitution();
+  const { term, institution } = useInstitution();
   const { auditLogSuperAdmin } = useFeatureFlags();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -109,27 +109,27 @@ export default function SuperAdminLayout() {
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary, #0f0f1a)', fontFamily: 'Inter, sans-serif' }}>
       {/* Sidebar */}
       <aside style={{
-        width: 260, background: 'linear-gradient(180deg,#12122a 0%,#1a1a35 100%)',
-        borderRight: '1px solid rgba(139,92,246,0.15)',
+        width: 260, background: 'var(--sidebar-bg)',
+        borderRight: '1px solid rgba(var(--accent-rgb), 0.15)',
         display: 'flex', flexDirection: 'column', position: 'fixed',
         top: 0, left: mobileOpen ? 0 : -280, bottom: 0, zIndex: 1000,
         transition: 'left 0.3s ease', padding: '0',
         ...(isDesktop ? { left: 0 } : {})
       }}>
         {/* Logo */}
-        <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid rgba(139,92,246,0.15)' }}>
+        <div style={{ padding: '24px 20px 16px', borderBottom: '1px solid rgba(var(--accent-rgb), 0.15)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
               width: 40, height: 40, borderRadius: 10,
-              background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
+              background: 'linear-gradient(135deg,var(--accent),var(--brand))',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 20px rgba(124,58,237,0.4)'
+              boxShadow: '0 0 20px rgba(var(--accent-rgb), 0.4)'
             }}>
-              <ShieldCheck size={20} color="#fff" />
+              <ShieldCheck size={20} color="var(--brand-contrast)" />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Super Admin</div>
-              <div style={{ fontSize: 11, color: 'rgba(139,92,246,0.8)' }}>University Control</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--sidebar-fg)' }}>Super Admin</div>
+              <div style={{ fontSize: 11, color: 'rgba(var(--sidebar-fg-rgb), 0.6)' }} title={institution.name}>{institution.shortName}</div>
             </div>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function SuperAdminLayout() {
         <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 12px' }}>
           {navItems.map((group) => (
             <div key={group.label} style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(139,92,246,0.6)', textTransform: 'uppercase', letterSpacing: 1.2, padding: '0 8px 8px' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(var(--sidebar-fg-rgb), 0.45)', textTransform: 'uppercase', letterSpacing: 1.2, padding: '0 8px 8px' }}>
                 {term(group.label)}
               </div>
               {group.items.map((item) => (
@@ -151,9 +151,9 @@ export default function SuperAdminLayout() {
                     padding: '9px 12px', borderRadius: 9, marginBottom: 3,
                     textDecoration: 'none', fontSize: 13, fontWeight: 500,
                     transition: 'all 0.2s',
-                    background: isActive ? 'linear-gradient(135deg,rgba(124,58,237,0.25),rgba(79,70,229,0.15))' : 'transparent',
-                    color: isActive ? '#a78bfa' : 'rgba(255,255,255,0.65)',
-                    border: isActive ? '1px solid rgba(139,92,246,0.3)' : '1px solid transparent',
+                    background: isActive ? 'linear-gradient(135deg,rgba(var(--accent-rgb), 0.25),rgba(var(--brand-rgb), 0.15))' : 'transparent',
+                    color: isActive ? 'var(--sidebar-fg)' : 'rgba(var(--sidebar-fg-rgb), 0.65)',
+                    border: isActive ? '1px solid rgba(var(--accent-rgb), 0.3)' : '1px solid transparent',
                   })}
                 >
                   {item.icon}
@@ -166,16 +166,16 @@ export default function SuperAdminLayout() {
         </nav>
 
         {/* User Info */}
-        <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(139,92,246,0.15)' }}>
+        <div style={{ padding: '16px 12px', borderTop: '1px solid rgba(var(--accent-rgb), 0.15)' }}>
           {timeDisplay && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: timeDisplay.className === 'danger' ? 'rgba(239,68,68,0.1)' : 'rgba(139,92,246,0.08)',
-              border: `1px solid ${timeDisplay.className === 'danger' ? 'rgba(239,68,68,0.3)' : 'rgba(139,92,246,0.2)'}`,
+              background: timeDisplay.className === 'danger' ? 'rgba(239,68,68,0.1)' : 'rgba(var(--accent-rgb), 0.08)',
+              border: `1px solid ${timeDisplay.className === 'danger' ? 'rgba(239,68,68,0.3)' : 'rgba(var(--accent-rgb), 0.2)'}`,
               borderRadius: 8, padding: '6px 10px', marginBottom: 10
             }}>
-              <Clock size={13} color={timeDisplay.className === 'danger' ? '#ef4444' : '#a78bfa'} />
-              <span style={{ fontSize: 12, color: timeDisplay.className === 'danger' ? '#ef4444' : '#a78bfa', fontWeight: 600 }}>
+              <Clock size={13} color={timeDisplay.className === 'danger' ? '#ef4444' : 'var(--sidebar-fg)'} />
+              <span style={{ fontSize: 12, color: timeDisplay.className === 'danger' ? '#ef4444' : 'var(--sidebar-fg)', fontWeight: 600 }}>
                 {timeDisplay.display}
               </span>
             </div>
@@ -183,12 +183,12 @@ export default function SuperAdminLayout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <div style={{
               width: 34, height: 34, borderRadius: '50%',
-              background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff'
+              background: 'linear-gradient(135deg,var(--accent),var(--brand))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--brand-contrast)'
             }}>{user?.firstname?.[0]?.toUpperCase() || 'S'}</div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{user?.firstname} {user?.lastname}</div>
-              <div style={{ fontSize: 10, color: 'rgba(139,92,246,0.7)' }}>Super Administrator</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--sidebar-fg)' }}>{user?.firstname} {user?.lastname}</div>
+              <div style={{ fontSize: 10, color: 'rgba(var(--sidebar-fg-rgb), 0.55)' }}>Super Administrator</div>
             </div>
           </div>
           <button onClick={() => logout()} style={{
@@ -216,20 +216,20 @@ export default function SuperAdminLayout() {
           position: 'sticky', top: 0, zIndex: 100,
           background: scrolled ? 'rgba(15,15,26,0.95)' : 'transparent',
           backdropFilter: scrolled ? 'blur(12px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(139,92,246,0.1)' : '1px solid transparent',
+          borderBottom: scrolled ? '1px solid rgba(var(--accent-rgb), 0.1)' : '1px solid transparent',
           padding: isDesktop ? '12px 24px' : '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           transition: 'all 0.3s'
         }}>
           <button onClick={() => setMobileOpen(true)} aria-label="Open menu" style={{
             display: isDesktop ? 'none' : 'flex',
             alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)',
-            borderRadius: 8, padding: 8, cursor: 'pointer', color: '#a78bfa'
+            background: 'rgba(var(--accent-rgb), 0.1)', border: '1px solid rgba(var(--accent-rgb), 0.2)',
+            borderRadius: 8, padding: 8, cursor: 'pointer', color: 'var(--accent-light)'
           }}>
             <Menu size={20} />
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ShieldCheck size={18} color="#a78bfa" />
+            <ShieldCheck size={18} color="var(--accent-light)" />
             <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>Super Admin Portal</span>
             <div style={{ marginLeft: 12 }}><NotificationBell dark /></div>
           </div>
@@ -237,7 +237,7 @@ export default function SuperAdminLayout() {
 
         <div className="sa-content" style={{ padding: isDesktop ? 24 : '16px 16px 24px' }}>
           {/* The shared page header is styled for light shells; keep it readable on this dark one */}
-          <style>{`.sa-content .ph-title { color: #fff; } .sa-content .ph-crumbs { color: rgba(255,255,255,0.5); } .sa-content .ph-current { color: #a78bfa; }`}</style>
+          <style>{`.sa-content .ph-title { color: #fff; } .sa-content .ph-crumbs { color: rgba(255,255,255,0.5); } .sa-content .ph-current { color: var(--accent-light); }`}</style>
           <Outlet />
         </div>
       </main>

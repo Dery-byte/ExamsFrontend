@@ -162,7 +162,7 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
 
             <section className="sf-card">
               <div className="sf-card-head">
-                <h3><FileText size={17} color="#7a6fbe" /> {fee.itemised ? 'Fee breakdown' : 'Fee'}</h3>
+                <h3><FileText size={17} color="var(--brand-text)" /> {fee.itemised ? 'Fee breakdown' : 'Fee'}</h3>
                 <span style={{ fontSize: 12, color: '#74788d', fontWeight: 600 }}>{session.name}</span>
               </div>
               {fee.itemised && data.items.length > 0 ? (
@@ -195,7 +195,7 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
                       <div><b>Mobile Money</b><small>MTN MoMo · Telecel Cash · AirtelTigo Money</small></div>
                     </div>
                     <div className="sf-method">
-                      <div className="sf-method-ico" style={{ background: '#eef2ff', color: '#4f46e5' }}><CreditCard size={19} /></div>
+                      <div className="sf-method-ico" style={{ background: 'var(--brand-soft)', color: 'var(--brand-text)' }}><CreditCard size={19} /></div>
                       <div><b>Card</b><small>Visa · Mastercard · Verve</small></div>
                     </div>
                   </div>
@@ -209,7 +209,7 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
         )}
 
         <section className="sf-card">
-          <div className="sf-card-head"><h3><Receipt size={17} color="#7a6fbe" /> Payment history</h3></div>
+          <div className="sf-card-head"><h3><Receipt size={17} color="var(--brand-text)" /> Payment history</h3></div>
           {data.payments.length === 0 ? (
             <div style={{ padding: '28px 20px', textAlign: 'center', color: '#74788d', fontSize: 13.5 }}>No payments yet.</div>
           ) : (

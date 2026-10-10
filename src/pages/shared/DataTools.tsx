@@ -60,17 +60,17 @@ export default function DataTools() {
       <style>{`
         .dt-tabs { display: flex; gap: 4px; border-bottom: 1px solid #e2e8f0; margin-bottom: 16px; flex-wrap: wrap; }
         .dt-tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border: none; background: none; font-size: 13.5px; font-weight: 700; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-        .dt-tabs button.is-active { color: #5156be; border-bottom-color: #5156be; }
+        .dt-tabs button.is-active { color: var(--brand-text); border-bottom-color: var(--brand); }
         .dt-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
         .dt-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
         .dt-field { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-weight: 700; color: #475569; flex: 1 1 160px; }
         .dt-input { height: 38px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; padding: 0 10px; background: #fff; color: #1e293b; font-family: inherit; }
-        .dt-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 16px; border: none; border-radius: 8px; background: #5156be; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+        .dt-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 16px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
         .dt-btn:disabled { opacity: 0.55; cursor: not-allowed; }
         .dt-ghost { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
         .dt-note { font-size: 12.5px; color: #64748b; margin: 8px 0 0; line-height: 1.5; }
         .dt-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 26px; border: 2px dashed #cbd5e1; border-radius: 12px; color: #64748b; cursor: pointer; text-align: center; background: #f8fafc; }
-        .dt-drop:hover, .dt-drop.is-over { border-color: #5156be; background: #f5f6ff; }
+        .dt-drop:hover, .dt-drop.is-over { border-color: var(--brand); background: #f5f6ff; }
         .dt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .dt-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; padding: 8px 10px; border-bottom: 1px solid #eef0f4; background: #f8fafc; }
         .dt-table td { padding: 8px 10px; border-bottom: 1px solid #f4f5f8; vertical-align: top; }
@@ -128,7 +128,7 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
       title: `Import ${result.valid} ${tpl.label.toLowerCase()}?`,
       text: (invalid ? `${invalid} row(s) with problems will be skipped.` : 'All rows passed the checks.')
         + (isPeople && notify ? ' Each new user will be emailed their username and temporary password.' : ''),
-      icon: 'question', showCancelButton: true, confirmButtonText: 'Import', confirmButtonColor: '#5156be',
+      icon: 'question', showCancelButton: true, confirmButtonText: 'Import', confirmButtonColor: 'var(--brand)',
     });
     if (!ok.isConfirmed) return;
     setBusy(true);
@@ -177,7 +177,7 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
         </div>
         <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" hidden onChange={e => { onFile(e.target.files?.[0]); e.target.value = ''; }} />
 
-        {busy && <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}><Loader2 size={22} color="#5156be" style={{ animation: 'spin 1s linear infinite' }} /></div>}
+        {busy && <div style={{ display: 'flex', justifyContent: 'center', padding: 16 }}><Loader2 size={22} color="var(--brand-text)" style={{ animation: 'spin 1s linear infinite' }} /></div>}
 
         {result && !busy && (
           <>
@@ -296,7 +296,7 @@ function EnrollPanel({ programs }: { programs: any[] }) {
       </div>
       <p className="dt-note">{tx("Enrols every active student at this program and level in all of the level's courses for the program. Existing enrolments are kept; deactivated students are skipped.")}</p>
 
-      {busy && <div style={{ padding: 16, textAlign: 'center' }}><Loader2 size={22} color="#5156be" style={{ animation: 'spin 1s linear infinite' }} /></div>}
+      {busy && <div style={{ padding: 16, textAlign: 'center' }}><Loader2 size={22} color="var(--brand-text)" style={{ animation: 'spin 1s linear infinite' }} /></div>}
       {preview && !busy && (
         <>
           <div className="dt-stats">

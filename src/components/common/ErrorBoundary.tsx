@@ -30,7 +30,7 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
             It has been reported to the developers automatically. Reload the page, or go back and try again.
           </p>
           <button onClick={() => window.location.reload()}
-            style={{ height: 40, padding: '0 18px', border: 'none', borderRadius: 9, background: '#5156be', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+            style={{ height: 40, padding: '0 18px', border: 'none', borderRadius: 9, background: 'var(--brand)', color: 'var(--brand-contrast)', fontWeight: 700, cursor: 'pointer' }}>
             Reload page
           </button>
         </div>

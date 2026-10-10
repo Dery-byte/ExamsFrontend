@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getQuiz, getQuestionsForStudent, getTheoryQuestions, getNumberOfTheoryToAnswer,
@@ -184,6 +184,7 @@ export default function StartQuiz() {
     onAutoSubmit: () => submitAllRef.current(true),
     _pendingViolationDelay: quizConfig._pendingViolationDelay ?? 0,
     _savedViolationCount: quizConfig._savedViolationCount ?? 0,
+    _delayPausesWhileAway: quizConfig._delayPausesWhileAway ?? true,
   } : {
     quizId: realId, violationAction: 'NONE' as const,
     maxViolations: 0, delaySeconds: 0, delayMultiplier: 3,
@@ -276,7 +277,7 @@ export default function StartQuiz() {
           title: 'Cannot start this quiz',
           text: e?.response?.data?.message || 'This quiz is not available for you right now.',
           icon: 'warning',
-          confirmButtonColor: '#7a6fbe',
+          confirmButtonColor: 'var(--brand)',
         });
         (window as any).__allow_unload = true;
         if (window.opener && !window.opener.closed) window.close();
@@ -308,6 +309,7 @@ export default function StartQuiz() {
         ...quizData,
         _pendingViolationDelay: unsent.delay ?? savedDelay?.violationDelayTime ?? savedDelay?.delaySeconds ?? 0,
         _savedViolationCount: Math.max(Number(serverCount) || 0, unsent.count),
+        _delayPausesWhileAway: savedDelay?.pausesWhileAway ?? true,
       });
       const qt: QuizType = ((quizData.quizType as string)?.toUpperCase().trim() as QuizType) || 'OBJ';
       setQuizType(qt);
@@ -503,7 +505,7 @@ export default function StartQuiz() {
         showCancelButton: true,
         confirmButtonText: 'Yes, Submit Now',
         cancelButtonText: 'Review Answers',
-        confirmButtonColor: '#7a6fbe',
+        confirmButtonColor: 'var(--brand)',
         cancelButtonColor: '#adb5bd',
         reverseButtons: true,
       });
@@ -654,10 +656,16 @@ export default function StartQuiz() {
     title: isLight ? '#1e293b' : '#f1f5f9',
     muted: isLight ? '#94a3b8' : '#64748b'
   };
+  // Brand-coloured labels: the shade that reads on white in light mode, on the dark cards in dark mode
+  const brandInk = isLight ? 'var(--brand-text)' : 'var(--brand-light)';
+  const shellVars = {
+    '--q-title': theme.title, '--q-border': theme.border, '--q-muted': theme.muted,
+    '--q-hover': isLight ? '#f1f5f9' : '#2d333b', '--q-ink': brandInk,
+  } as CSSProperties;
 
   if (loading || submitting) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 20, background: theme.bg }}>
-      <Loader2 className="spin-ico" size={48} style={{ color: '#7a6fbe' }} />
+      <Loader2 className="spin-ico" size={48} style={{ color: brandInk }} />
       <div style={{ textAlign: 'center' }}>
         <h5 style={{ fontWeight: 700, color: theme.title }}>{loading ? 'Initializing Assessment...' : 'Submitting Responses...'}</h5>
         <p style={{ fontSize: 13, color: theme.muted }}>Please do not close this window.</p>
@@ -666,7 +674,7 @@ export default function StartQuiz() {
   );
 
   return (
-    <div className="quiz-shell" style={{ background: theme.bg, color: theme.text, transition: 'all 0.3s', fontFamily: "'Inter', sans-serif" }}>
+    <div className={`quiz-shell${isLight ? '' : ' quiz-dark'}`} style={{ ...shellVars, background: theme.bg, color: theme.text, transition: 'all 0.3s', fontFamily: "'Inter', sans-serif" }}>
       {/* ── HEADER ── */}
       <header className="mobile-sticky-header" style={{
         position: 'relative', zIndex: 100, background: theme.card, padding: '10px 30px',
@@ -674,11 +682,11 @@ export default function StartQuiz() {
         borderBottom: `1px solid ${theme.border}`, boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 4, background: '#7a6fbe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+          <div style={{ width: 32, height: 32, borderRadius: 4, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-contrast)' }}>
             <Monitor size={18} />
           </div>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: '#7a6fbe' }}>Assessment Portal</div>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: brandInk }}>Assessment Portal</div>
             <div style={{ fontSize: 14, fontWeight: 700, color: theme.title }}>{quiz?.title}</div>
           </div>
         </div>
@@ -742,7 +750,7 @@ export default function StartQuiz() {
           </div>
 
           <div style={{ marginTop: 'auto', padding: 12, background: theme.card, borderRadius: 4, display: 'flex', gap: 10, alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: `1px solid ${theme.border}` }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: isLight ? '#f8f9fa' : '#2d333b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7a6fbe', fontWeight: 700, fontSize: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: isLight ? '#f8f9fa' : '#2d333b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: brandInk, fontWeight: 700, fontSize: 12 }}>
               {user?.firstname?.[0]}
             </div>
             <div style={{ overflow: 'hidden' }}>
@@ -764,14 +772,14 @@ export default function StartQuiz() {
             <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
               <button
                 onClick={() => setSection('A')}
-                className={`btn-lexa ${section === 'A' ? 'btn-lexa-primary' : 'btn-lexa-outline'}`}
+                className={`btn-lexa quiz-opt${section === 'A' ? ' sel' : ''}`}
                 style={{ flex: 1 }}
               >
                 Section A: Objective
               </button>
               <button
                 onClick={() => setSection('B')}
-                className={`btn-lexa ${section === 'B' ? 'btn-lexa-primary' : 'btn-lexa-outline'}`}
+                className={`btn-lexa quiz-opt${section === 'B' ? ' sel' : ''}`}
                 style={{ flex: 1 }}
               >
                 Section B: Theory
@@ -794,7 +802,7 @@ export default function StartQuiz() {
                     <div className="lexa-card-body">
                       <QuestionImage src={q.image} />
                       <div style={{ display: 'flex', gap: 12, marginBottom: 15 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#7a6fbe', background: 'rgba(122, 111, 190, 0.1)', padding: '2px 8px', borderRadius: 4, height: 'fit-content' }}>Q{q.count}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: brandInk, background: 'rgba(var(--brand-rgb), 0.1)', padding: '2px 8px', borderRadius: 4, height: 'fit-content' }}>Q{q.count}</span>
                         <div className="ql-content" style={{ fontSize: 15, fontWeight: 600, color: theme.title, lineHeight: 1.7, userSelect: 'none', WebkitUserSelect: 'none' }} dangerouslySetInnerHTML={{ __html: q.content }} />
                       </div>
 
@@ -803,7 +811,7 @@ export default function StartQuiz() {
                           {['True', 'False'].map(opt => {
                             const sel = q.givenAnswer?.[0] === opt;
                             return (
-                              <button key={opt} onClick={() => setTFAnswer(q, opt)} className={`btn-lexa ${sel ? 'btn-lexa-primary' : 'btn-lexa-outline'}`} style={{ padding: '12px' }}>
+                              <button key={opt} onClick={() => setTFAnswer(q, opt)} className={`btn-lexa quiz-opt${sel ? ' sel' : ''}`} style={{ padding: '12px' }}>
                                 {opt}
                               </button>
                             );
@@ -833,7 +841,7 @@ export default function StartQuiz() {
                                       const answer = e.dataTransfer.getData('text');
                                       if (answer) setMatchAnswer(q, i, answer);
                                     }}
-                                    style={{ height: 38, border: `1px dashed ${theme.muted}`, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: val ? '#7a6fbe' : theme.muted, fontWeight: 600, background: val ? 'rgba(122, 111, 190, 0.05)' : 'transparent', cursor: val ? 'pointer' : 'default' }}
+                                    style={{ height: 38, border: `1px dashed ${theme.muted}`, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: val ? brandInk : theme.muted, fontWeight: 600, background: val ? 'rgba(var(--brand-rgb), 0.05)' : 'transparent', cursor: val ? 'pointer' : 'default' }}
                                   >
                                     {val || 'Drop Here'}
                                   </div>
@@ -863,7 +871,7 @@ export default function StartQuiz() {
                             onBlur={e => saveTypedAnswer(q.quesId, e.target.value)}
                             placeholder={q.questionType === 'NUMERIC' ? 'e.g. 42.5' : 'Your answer'}
                             style={{ width: '100%', maxWidth: 420, boxSizing: 'border-box', padding: '11px 14px', fontSize: 15, borderRadius: 6,
-                              border: `1.5px solid ${(q.givenAnswer?.[0] ?? '') ? '#7a6fbe' : theme.border}`, background: theme.card, color: theme.title, outline: 'none' }}
+                              border: `1.5px solid ${(q.givenAnswer?.[0] ?? '') ? 'var(--brand)' : theme.border}`, background: theme.card, color: theme.title, outline: 'none' }}
                           />
                         </div>
                       ) : (
@@ -872,8 +880,8 @@ export default function StartQuiz() {
                             const val = q[k];
                             const sel = (q.givenAnswer ?? []).includes(val);
                             return (
-                              <button key={k} onClick={() => setMCQAnswer(q, val, !sel)} className={`btn-lexa ${sel ? 'btn-lexa-primary' : 'btn-lexa-outline'}`} style={{ textAlign: 'left', padding: '10px 15px' }}>
-                                <span style={{ width: 22, height: 22, borderRadius: 2, background: sel ? '#fff' : (isLight ? '#f8f9fa' : '#2d333b'), color: sel ? '#7a6fbe' : theme.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, marginRight: 10 }}>{String.fromCharCode(65 + i)}</span>
+                              <button key={k} onClick={() => setMCQAnswer(q, val, !sel)} className={`btn-lexa quiz-opt${sel ? ' sel' : ''}`} style={{ textAlign: 'left', padding: '10px 15px' }}>
+                                <span style={{ width: 22, height: 22, borderRadius: 2, background: sel ? '#fff' : (isLight ? '#f8f9fa' : '#2d333b'), color: sel ? 'var(--brand-text)' : theme.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, marginRight: 10 }}>{String.fromCharCode(65 + i)}</span>
                                 {val}
                               </button>
                             );
@@ -887,11 +895,11 @@ export default function StartQuiz() {
 
               {totalObjPgs > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 30 }}>
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} className="btn-lexa btn-lexa-outline" disabled={page === 1}><ChevronLeft size={16} /></button>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} className="btn-lexa quiz-opt" disabled={page === 1}><ChevronLeft size={16} /></button>
                   {Array.from({ length: totalObjPgs }).map((_, i) => (
-                    <button key={i} onClick={() => setPage(i + 1)} className={`btn-lexa ${page === i + 1 ? 'btn-lexa-primary' : 'btn-lexa-outline'}`} style={{ width: 40, padding: 0 }}>{i + 1}</button>
+                    <button key={i} onClick={() => setPage(i + 1)} className={`btn-lexa quiz-opt${page === i + 1 ? ' sel' : ''}`} style={{ width: 40, padding: 0 }}>{i + 1}</button>
                   ))}
-                  <button onClick={() => setPage(p => Math.min(totalObjPgs, p + 1))} className="btn-lexa btn-lexa-outline" disabled={page === totalObjPgs}><ChevronRight size={16} /></button>
+                  <button onClick={() => setPage(p => Math.min(totalObjPgs, p + 1))} className="btn-lexa quiz-opt" disabled={page === totalObjPgs}><ChevronRight size={16} /></button>
                 </div>
               )}
             </div>
@@ -941,7 +949,7 @@ export default function StartQuiz() {
                     <button
                       key={p}
                       onClick={() => togglePrefix(p)}
-                      className={`btn-lexa ${selectedPfx[p] ? 'btn-lexa-primary' : 'btn-lexa-outline'}`}
+                      className={`btn-lexa quiz-opt${selectedPfx[p] ? ' sel' : ''}`}
                       style={{ justifyContent: 'center', padding: '8px 4px', fontSize: 11 }}
                     >
                       {compulsoryPfx.includes(p) && <Shield size={12} style={{ marginRight: 4 }} />} {p}
@@ -985,10 +993,10 @@ export default function StartQuiz() {
                 <div style={{ marginTop: 24, textAlign: 'left' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
                     <span style={{ color: theme.title }}>Objective</span>
-                    <span style={{ color: '#7a6fbe' }}>{Math.round((answered / (questions.length || 1)) * 100)}%</span>
+                    <span style={{ color: brandInk }}>{Math.round((answered / (questions.length || 1)) * 100)}%</span>
                   </div>
                   <div style={{ height: 6, background: isLight ? '#f1f5f7' : '#2d333b', borderRadius: 100, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(answered / (questions.length || 1)) * 100}%`, background: '#7a6fbe' }} />
+                    <div style={{ height: '100%', width: `${(answered / (questions.length || 1)) * 100}%`, background: 'var(--brand)' }} />
                   </div>
                 </div>
 
@@ -1023,8 +1031,8 @@ export default function StartQuiz() {
                       }}
                       style={{
                         width: 26, height: 26, borderRadius: 4, border: 'none',
-                        background: (q.givenAnswer?.length > 0) ? '#7a6fbe' : (isLight ? '#f1f5f7' : '#2d333b'),
-                        color: (q.givenAnswer?.length > 0) ? '#fff' : theme.text,
+                        background: (q.givenAnswer?.length > 0) ? 'var(--brand)' : (isLight ? '#f1f5f7' : '#2d333b'),
+                        color: (q.givenAnswer?.length > 0) ? 'var(--brand-contrast)' : theme.text,
                         fontSize: 10, fontWeight: 700, cursor: 'pointer',
                         transition: 'all 0.2s',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 'auto'
@@ -1049,7 +1057,7 @@ export default function StartQuiz() {
                     <button
                       key={p}
                       onClick={() => togglePrefix(p)}
-                      className={`btn-lexa ${selectedPfx[p] ? 'btn-lexa-primary' : 'btn-lexa-outline'}`}
+                      className={`btn-lexa quiz-opt${selectedPfx[p] ? ' sel' : ''}`}
                       style={{ justifyContent: 'center', padding: '8px 4px', fontSize: 11 }}
                     >
                       {compulsoryPfx.includes(p) && <Shield size={12} style={{ marginRight: 4 }} />} {p}
@@ -1083,6 +1091,16 @@ export default function StartQuiz() {
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-fade-in { animation: fade-in .4s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes fade-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Answer options and paging: readable in light and dark mode whatever the institution's colours */
+        .quiz-shell .quiz-opt { background: transparent; border: 1px solid var(--q-border); color: var(--q-title); }
+        .quiz-shell .quiz-opt:hover:not(:disabled) { background: var(--q-hover); border-color: var(--q-muted); }
+        .quiz-shell .quiz-opt.sel, .quiz-shell .quiz-opt.sel:hover:not(:disabled) { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
+        .quiz-shell .quiz-opt:disabled { opacity: .45; cursor: not-allowed; }
+        .quiz-shell .ql-content a { color: var(--q-ink); }
+        .quiz-dark .badge-soft-primary { color: var(--brand-light); }
+        /* Colours pasted into a question were chosen on white; on the dark cards the text inherits instead */
+        .quiz-dark .ql-content *:not(img) { color: inherit !important; background-color: transparent !important; }
 
         .quiz-shell {
           height: 100vh;

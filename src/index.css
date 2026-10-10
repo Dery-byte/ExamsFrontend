@@ -13,10 +13,39 @@ body {
 }
 
 :root {
-  /* Lexa Palette - Authentic Colors */
-  --primary: #7a6fbe;
-  --primary-rgb: 122, 111, 190;
-  --secondary: #626ed4;
+  /* Institution theme. These are the defaults; utils/theme.ts derives and overrides them from the
+     developer's brand / sidebar / accent colours (index.html applies the cached copy before React loads).
+     Text never uses --brand directly: --brand-text on light surfaces, --brand-light on dark ones,
+     --brand-contrast on a brand background. */
+  --brand: #5156be;
+  --brand-rgb: 81, 86, 190;
+  --brand-hover: #4549a2;
+  --brand-deep: #242755;
+  --brand-light: #9497d7;
+  --brand-border: #d4d5ef;
+  --brand-soft: #f1f1fa;
+  --brand-contrast: #ffffff;
+  --brand-text: #5156be;
+  --accent: #7c3aed;
+  --accent-rgb: 124, 58, 237;
+  --accent-hover: #6931c9;
+  --accent-deep: #381a6b;
+  --accent-light: #ae85f4;
+  --accent-border: #decefb;
+  --accent-soft: #f5effe;
+  --accent-contrast: #ffffff;
+  --accent-text: #7c3aed;
+  --sidebar-bg: #2a3142;
+  --sidebar-rgb: 42, 49, 66;
+  --sidebar-fg: #ffffff;
+  --sidebar-fg-rgb: 255, 255, 255;
+  --sidebar-raised: #33394a;
+  --sidebar-deep: #1d222e;
+
+  /* Older names, kept pointing at the theme */
+  --primary: var(--brand);
+  --primary-rgb: var(--brand-rgb);
+  --secondary: var(--brand);
   --success: #28bbe3;
   --info: #38a4f8;
   --warning: #f1b44c;
@@ -28,7 +57,7 @@ body {
   /* Backgrounds */
   --bg-app: #f0f2f5;
   --bg-card: #ffffff;
-  --sidebar-dark-bg: #2a3142;
+  --sidebar-dark-bg: var(--sidebar-bg);
   --topbar-bg: #ffffff;
 
   /* Shadows - Lexa specific subtle shadows */
@@ -102,13 +131,13 @@ body {
 }
 
 .btn-lexa-primary {
-  background-color: var(--primary);
-  color: #fff;
+  background-color: var(--brand);
+  color: var(--brand-contrast);
 }
 
 .btn-lexa-primary:hover {
-  background-color: #695eaf;
-  box-shadow: 0 4px 11px rgba(122, 111, 190, 0.35);
+  background-color: var(--brand-hover);
+  box-shadow: 0 4px 11px rgba(var(--brand-rgb), 0.35);
 }
 
 .btn-lexa-info {
@@ -156,8 +185,8 @@ body {
 }
 
 .badge-soft-primary {
-  background-color: rgba(122, 111, 190, 0.1);
-  color: var(--primary);
+  background-color: rgba(var(--brand-rgb), 0.1);
+  color: var(--brand-text);
 }
 
 .badge-soft-success {
@@ -357,7 +386,7 @@ body {
   justify-content: center;
   font-weight: 800;
   font-size: 15px;
-  color: #fff;
+  color: var(--brand-contrast);
   position: relative;
 }
 
@@ -422,8 +451,8 @@ body {
 }
 
 .sidebar a.active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
-  color: var(--primary);
+  background: linear-gradient(135deg, rgba(var(--brand-rgb), 0.1), rgba(var(--brand-rgb), 0.05));
+  color: var(--brand-text);
   font-weight: 600;
 }
 
@@ -436,7 +465,7 @@ body {
   width: 3px;
   background: var(--primary);
   border-radius: 0 4px 4px 0;
-  box-shadow: 4px 0 12px rgba(99, 102, 241, 0.5);
+  box-shadow: 4px 0 12px rgba(var(--brand-rgb), 0.5);
 }
 
 .nav-icon {
@@ -560,12 +589,12 @@ body {
 
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: #fff;
+  color: var(--brand-contrast);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 20px rgba(var(--brand-rgb), 0.4);
 }
 
 .btn-secondary {
@@ -954,7 +983,7 @@ body {
   position: absolute;
   top: -10%; left: -10%;
   width: 40%; height: 40%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.03) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--brand-rgb), 0.03) 0%, transparent 70%);
   z-index: 0;
 }
 
@@ -963,7 +992,7 @@ body {
   position: absolute;
   bottom: -10%; right: -10%;
   width: 40%; height: 40%;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.03) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.03) 0%, transparent 70%);
   z-index: 0;
 }
 
@@ -979,16 +1008,16 @@ body {
 .sleet-logo {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: linear-gradient(135deg, var(--brand), var(--accent));
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: #fff;
+  color: var(--brand-contrast);
   font-size: 24px;
   margin: 0 auto 32px;
-  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 10px 25px rgba(var(--brand-rgb), 0.2);
 }
 
 .sleet-title {
@@ -1037,7 +1066,7 @@ body {
 
 .role-section {
   padding: 120px 8%;
-  background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(var(--brand-rgb), 0.05) 0%, transparent 70%);
 }
 
 .role-switcher {
@@ -1128,15 +1157,15 @@ body {
 .welcome-nav-logo {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: linear-gradient(135deg, var(--brand), var(--accent));
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: #fff;
+  color: var(--brand-contrast);
   font-size: 16px;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.2);
 }
 .welcome-nav-title {
   font-size: 22px;
@@ -1180,11 +1209,12 @@ body {
 .ql-content ol,
 .ql-content ul     { padding-left: 1.5em; margin: 0.4em 0; }
 .ql-content li     { margin: 0.2em 0; }
+.ql-content a { color: var(--brand-text); }
 .ql-content blockquote {
-  border-left: 3px solid #5156be;
+  border-left: 3px solid var(--brand);
   margin: 0.6em 0;
   padding: 6px 12px;
-  background: rgba(81,86,190,0.06);
+  background: rgba(var(--brand-rgb), 0.06);
   border-radius: 0 6px 6px 0;
   font-style: italic;
   color: #475569;

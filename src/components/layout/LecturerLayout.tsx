@@ -22,6 +22,7 @@ import {
   FileBarChart
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import InstitutionMark from '../common/InstitutionMark';
 
 export default function LecturerLayout() {
   const { user, logout } = useAuth();
@@ -55,9 +56,7 @@ export default function LecturerLayout() {
       {/* Slim Sidebar */}
       <aside className={`slim-sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <div className="logo-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-          </div>
+          <InstitutionMark size={34} radius={9} />
         </div>
         <nav className="sidebar-menu">
           {navItems.map((item, i) => (
@@ -129,8 +128,8 @@ export default function LecturerLayout() {
         /* Sidebar */
         .slim-sidebar {
           width: 220px;
-          background: #ffffff;
-          border-right: 1px solid #e9e9ef;
+          background: var(--sidebar-bg);
+          border-right: 1px solid rgba(var(--sidebar-fg-rgb), 0.08);
           display: flex;
           flex-direction: column;
           align-items: stretch;
@@ -148,11 +147,11 @@ export default function LecturerLayout() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid rgba(var(--sidebar-fg-rgb), 0.08);
         }
 
         .logo-box {
-          color: #5156be;
+          color: var(--brand-text);
           width: 24px;
           height: 24px;
         }
@@ -174,7 +173,7 @@ export default function LecturerLayout() {
           align-items: center;
           gap: 12px;
           padding: 10px 14px;
-          color: #74788d;
+          color: rgba(var(--sidebar-fg-rgb), 0.68);
           border-radius: 8px;
           transition: all 0.2s;
           text-decoration: none;
@@ -191,14 +190,14 @@ export default function LecturerLayout() {
         }
 
         .sidebar-item:hover {
-          color: #5156be;
-          background: rgba(81, 86, 190, 0.05);
+          color: var(--sidebar-fg);
+          background: rgba(var(--sidebar-fg-rgb), 0.07);
         }
 
         .sidebar-item.active {
-          color: #ffffff;
-          background: #5156be;
-          box-shadow: 0 4px 10px rgba(81, 86, 190, 0.3);
+          color: var(--brand-contrast);
+          background: var(--brand);
+          box-shadow: 0 4px 10px rgba(var(--brand-rgb), 0.3);
         }
 
         /* Main Wrapper */
@@ -265,8 +264,8 @@ export default function LecturerLayout() {
         }
 
         .search-btn {
-          background: #5156be;
-          color: white;
+          background: var(--brand);
+          color: var(--brand-contrast);
           border: none;
           width: 38px;
           height: 38px;
@@ -277,7 +276,7 @@ export default function LecturerLayout() {
           transition: background 0.2s;
         }
         
-        .search-btn:hover { background: #4549a2; }
+        .search-btn:hover { background: var(--brand-hover); }
 
         .header-right {
           display: flex;
@@ -342,7 +341,7 @@ export default function LecturerLayout() {
           align-items: center;
           justify-content: center;
           font-weight: 600;
-          color: #5156be;
+          color: var(--brand-text);
         }
 
         .name {

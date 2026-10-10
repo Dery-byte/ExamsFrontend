@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { saGetSystemSettings, saUpdateSystemSettings, saGetPrograms, saToggleProgram } from '../../api/endpoints';
-import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks, FileCheck2, AlertTriangle } from 'lucide-react';
+import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks, FileCheck2, AlertTriangle, Hourglass } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -10,7 +10,7 @@ import { isSchoolMode, tx } from '../../utils/terms';
 
 /** Per-role switches for the Marks Sheet navigation entry (default on when never set). */
 const MARKS_SHEET_TOGGLES = [
-  { key: 'MARKS_SHEET_VISIBLE_ADMIN',    label: tx('Admins (HODs)'), sub: 'Show "Marks Sheets" in the Admin navigation.',         icon: <ClipboardList size={20} />, color: '#8b5cf6' },
+  { key: 'MARKS_SHEET_VISIBLE_ADMIN',    label: tx('Admins (HODs)'), sub: 'Show "Marks Sheets" in the Admin navigation.',         icon: <ClipboardList size={20} />, color: 'var(--accent-light)' },
   { key: 'MARKS_SHEET_VISIBLE_LECTURER', label: tx('Lecturers'),     sub: tx('Show "Marks Sheet" (marks entry) in the Lecturer navigation.'), icon: <PenLine size={20} />,       color: '#0ea5e9' },
   { key: 'MARKS_SHEET_VISIBLE_STUDENT',  label: tx('Students'),      sub: tx('Show "Report Cards" (published marks) in the Student navigation.'), icon: <GraduationCap size={20} />, color: '#10b981' },
 ];
@@ -20,7 +20,7 @@ const FEE_TOGGLES = [
   { key: 'FEES_VISIBLE_STUDENT', def: false, label: tx('Show fees to students'), sub: tx('Adds "School Fees" to the student navigation and a fee card to their dashboard, with the breakdown when you have set one.'), icon: <Wallet size={20} />, color: '#10b981' },
   { key: 'FEES_ONLINE_PAYMENT', def: true, label: 'Online payment (Paystack)', sub: 'Students pay by card or Mobile Money. When off, they pay at the accounts office and you record the payment.', icon: <CreditCard size={20} />, color: '#0ea5e9' },
   { key: 'FEES_PART_PAYMENT', def: true, label: 'Allow part payments', sub: 'Students can pay in instalments. When off, each payment must clear the full balance.', icon: <Layers size={20} />, color: '#f59e0b' },
-  { key: 'FEES_ITEM_PAYMENT', def: true, label: 'Pay by item', sub: 'Where a fee has a breakdown, students can pay for chosen items (e.g. Tuition, then SRC dues), even when part payments are off.', icon: <ListChecks size={20} />, color: '#8b5cf6' },
+  { key: 'FEES_ITEM_PAYMENT', def: true, label: 'Pay by item', sub: 'Where a fee has a breakdown, students can pay for chosen items (e.g. Tuition, then SRC dues), even when part payments are off.', icon: <ListChecks size={20} />, color: 'var(--accent-light)' },
 ];
 
 interface Program { id: number; name: string; code: string; departmentName: string; enabled: boolean; }
@@ -39,7 +39,7 @@ function Switch({ on, busy, onClick, label, disabled }: { on: boolean; busy?: bo
 function SettingRow({ icon, color, title, sub, children }: { icon: ReactNode; color: string; title: ReactNode; sub: ReactNode; children: ReactNode }) {
   return (
     <div className="sc-card sc-row">
-      <div className="sc-ico" style={{ background: `${color}1a`, border: `1px solid ${color}33`, color }}>{icon}</div>
+      <div className="sc-ico" style={{ background: `color-mix(in srgb, ${color} 10.2%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`, color }}>{icon}</div>
       <div className="sc-text">
         <div className="sc-title">{title}</div>
         <div className="sc-sub">{sub}</div>
@@ -159,6 +159,21 @@ export default function SuperAdminConfiguration() {
     }
   };
 
+  const handleToggleLockout = async () => {
+    const key = 'EXAM_LOCKOUT_RUNS_WHILE_AWAY';
+    const next = !isSet(key, false);
+    setSavingKey(key);
+    try {
+      await saUpdateSystemSettings({ [key]: next.toString() });
+      setSettings(prev => ({ ...prev, [key]: next.toString() }));
+      toast.success(next ? tx('Violation lock-outs now keep counting down while a student is away') : tx('Violation lock-outs now pause while a student is away'));
+    } catch {
+      toast.error('Failed to update setting');
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
   const handleToggleVerifyLink = async () => {
     const key = 'LOGIN_VERIFY_LINK_VISIBLE';
     const next = !isOn(key);
@@ -229,6 +244,11 @@ export default function SuperAdminConfiguration() {
           <Switch on={isOn('EXAM_CLOCK_RUNS_WHILE_AWAY')} busy={savingKey === 'EXAM_CLOCK_RUNS_WHILE_AWAY'} disabled={locked}
             onClick={handleToggleExamClock} label={tx("Exam clock keeps running while a student is away")} />
         </SettingRow>
+        <SettingRow icon={<Hourglass size={22} />} color="#f59e0b" title={tx("Violation lock-out keeps counting down while a student is away")}
+          sub={tx("Off: if a student closes the browser, loses power or drops offline during a lock-out, it pauses. When they return, the lock-out shows again and counts down the time that was left before they can go on with the quiz. On: the time away counts towards the lock-out, so it may already be over when they return. This is separate from the exam clock setting above.")}>
+          <Switch on={isSet('EXAM_LOCKOUT_RUNS_WHILE_AWAY', false)} busy={savingKey === 'EXAM_LOCKOUT_RUNS_WHILE_AWAY'} disabled={locked}
+            onClick={handleToggleLockout} label={tx("Violation lock-out keeps counting down while a student is away")} />
+        </SettingRow>
       </section>
 
       {/* ── Result Slips ────────────────────────────────────────────────── */}
@@ -296,7 +316,7 @@ export default function SuperAdminConfiguration() {
           </div>
         ) : programs.length === 0 ? (
           <div className="sc-empty">
-            <BookMarked size={36} style={{ color: 'rgba(139,92,246,0.3)', marginBottom: 10 }} />
+            <BookMarked size={36} style={{ color: 'rgba(var(--accent-rgb), 0.3)', marginBottom: 10 }} />
             <p>{tx("No programs found.")} <Link to="/super-admin/programs" className="sc-link" style={{ display: 'inline' }}>{tx("Create programs first.")}</Link></p>
           </div>
         ) : (
@@ -336,8 +356,8 @@ export default function SuperAdminConfiguration() {
 const CONFIG_CSS = `
 .sc { color: #fff; padding-bottom: 32px; container: sc / inline-size; }
 .sc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
-.sc-logo { width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0; background: linear-gradient(135deg,#7c3aed,#4f46e5); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(124,58,237,0.4); }
-.sc-h1 { margin: 0; font-size: 26px; font-weight: 800; background: linear-gradient(135deg,#a78bfa,#818cf8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.sc-logo { width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0; background: linear-gradient(135deg,var(--accent),var(--brand)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.4); }
+.sc-h1 { margin: 0; font-size: 26px; font-weight: 800; background: linear-gradient(135deg,var(--accent-light),var(--brand-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .sc-lead { margin: 0; font-size: 13px; color: rgba(255,255,255,0.45); }
 
 .sc-alert { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 14px; margin-bottom: 24px; border-radius: 12px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; font-size: 13px; }
@@ -349,11 +369,11 @@ const CONFIG_CSS = `
 .sc-h2 { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.7); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
 .sc-sec-sub { margin: 4px 0 0; font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.5; }
 .sc-sec-aside { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.sc-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #a78bfa; text-decoration: none; }
+.sc-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--accent-light); text-decoration: none; }
 .sc-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .sc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
-.sc-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(139,92,246,0.15); border-radius: 16px; }
+.sc-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(var(--accent-rgb), 0.15); border-radius: 16px; }
 .sc-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px 16px; padding: 18px 22px; height: 100%; box-sizing: border-box; }
 .sc-ico { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .sc-text { min-width: 0; }
@@ -366,7 +386,7 @@ const CONFIG_CSS = `
 .sc-switch::after { content: ''; position: absolute; inset: -9px -6px; }
 .sc-switch:disabled { cursor: not-allowed; opacity: .55; }
 .sc-switch[aria-busy="true"] { opacity: 1; }
-.sc-switch:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
+.sc-switch:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 3px; }
 .sc-knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; transition: transform .25s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 .sc-switch.on .sc-knob { transform: translateX(24px); }
 
@@ -378,7 +398,7 @@ const CONFIG_CSS = `
 .sc-icon-btn:disabled { cursor: default; }
 
 .sc-prog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
-.sc-prog { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(139,92,246,0.15); transition: border-color .2s, background .2s; }
+.sc-prog { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(var(--accent-rgb), 0.15); transition: border-color .2s, background .2s; }
 .sc-prog.off { background: rgba(239,68,68,0.04); border-color: rgba(239,68,68,0.25); }
 .sc-prog-ico { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(14,165,233,0.12); border: 1px solid rgba(14,165,233,0.25); color: #38bdf8; }
 .sc-prog.off .sc-prog-ico { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #f87171; }
@@ -388,7 +408,7 @@ const CONFIG_CSS = `
 .sc-prog.off .sc-prog-code { color: #f87171; }
 .sc-badge { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
 .sc-badge.off { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #f87171; }
-.sc-empty { text-align: center; padding: 40px 20px; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed rgba(139,92,246,0.2); }
+.sc-empty { text-align: center; padding: 40px 20px; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed rgba(var(--accent-rgb), 0.2); }
 .sc-empty p { color: rgba(255,255,255,0.45); margin: 0; font-size: 13px; }
 .sc-skel { border-radius: 12px; background: rgba(255,255,255,0.04); animation: sc-pulse 1.5s infinite; }
 .sc-spin { animation: sc-spin 1s linear infinite; }

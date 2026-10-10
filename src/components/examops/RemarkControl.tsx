@@ -51,7 +51,7 @@ export default function RemarkControl({ report }: { report: any }) {
 
   return (
     <div style={{ padding: '8px 24px 14px', borderTop: '1px solid #f1f5f7' }}>
-      <button onClick={() => setOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'none', color: '#5156be', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>
+      <button onClick={() => setOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: 'none', color: 'var(--brand-text)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>
         <MessageSquareWarning size={14} /> Request a re-mark
       </button>
 
@@ -72,7 +72,7 @@ export default function RemarkControl({ report }: { report: any }) {
               style={{ width: '100%', boxSizing: 'border-box', border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
               <button onClick={() => setOpen(false)} style={{ height: 36, padding: '0 14px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={submit} disabled={sending} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 16px', borderRadius: 8, border: 'none', background: '#5156be', color: '#fff', fontWeight: 700, cursor: 'pointer', opacity: sending ? 0.7 : 1 }}>
+              <button onClick={submit} disabled={sending} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 16px', borderRadius: 8, border: 'none', background: 'var(--brand)', color: 'var(--brand-contrast)', fontWeight: 700, cursor: 'pointer', opacity: sending ? 0.7 : 1 }}>
                 {sending && <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />} Send request
               </button>
             </div>

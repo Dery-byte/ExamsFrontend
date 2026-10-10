@@ -119,7 +119,7 @@ function Kpis({ data }: { data: FeeOverview }) {
   const setRate = totals.levelsTotal ? (totals.levelsSet / totals.levelsTotal) * 100 : 0;
   return (
     <div className="fe-kpis">
-      <Kpi label="Expected this session" icon={<Users size={18} />} color="#a78bfa"
+      <Kpi label="Expected this session" icon={<Users size={18} />} color="var(--accent-light)"
         value={totals.billed == null ? '—' : formatMoney(totals.billed, currency)}
         foot={totals.billed == null ? `Only worked out for the current session` : tx(`${(totals.students ?? 0).toLocaleString()} active students × their fee`)} />
       <Kpi label="Collected" icon={<TrendingUp size={18} />} color="#34d399" value={formatMoney(totals.collected, currency)}
@@ -142,7 +142,7 @@ function Kpis({ data }: { data: FeeOverview }) {
 function Kpi({ label, value, foot, icon, color }: { label: string; value: string; foot: ReactNode; icon: ReactNode; color: string }) {
   return (
     <div className="fe-kpi">
-      <div className="fe-kpi-ico" style={{ background: `${color}1f`, color, border: `1px solid ${color}40` }}>{icon}</div>
+      <div className="fe-kpi-ico" style={{ background: `color-mix(in srgb, ${color} 12.2%, transparent)`, color, border: `1px solid color-mix(in srgb, ${color} 25.1%, transparent)` }}>{icon}</div>
       <div className="fe-kpi-label">{label}</div>
       <div className="fe-kpi-value">{value}</div>
       <div className="fe-kpi-foot">{foot}</div>
@@ -187,9 +187,9 @@ function Schedules({ data, onEdit, onChanged }: {
   if (data.programs.length === 0) {
     return (
       <div className="fe-card"><div className="fe-empty">
-        <BookMarked size={34} style={{ color: 'rgba(139,92,246,0.45)' }} />
+        <BookMarked size={34} style={{ color: 'rgba(var(--accent-rgb), 0.45)' }} />
         <h3>{tx('No programmes yet')}</h3>
-        <p>{tx('Fees are set per programme and level.')} <Link to="/super-admin/programs" style={{ color: '#a78bfa' }}>{tx('Create a programme')}</Link> first.</p>
+        <p>{tx('Fees are set per programme and level.')} <Link to="/super-admin/programs" style={{ color: 'var(--accent-light)' }}>{tx('Create a programme')}</Link> first.</p>
       </div></div>
     );
   }

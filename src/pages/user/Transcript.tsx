@@ -24,7 +24,7 @@ export default function Transcript() {
     <div style={{ paddingBottom: 40 }}>
       <PageHeader title="My Transcript" breadcrumbs={['Academic Performance', 'Transcript']} />
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="#5156be" style={{ animation: 'spin 1s linear infinite' }} /></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="var(--brand-text)" style={{ animation: 'spin 1s linear infinite' }} /></div>
       ) : hold ? (
         <ResultsHoldNotice hold={hold} />
       ) : isError ? (
@@ -33,7 +33,7 @@ export default function Transcript() {
         <>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
             <button onClick={download} disabled={downloading}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px', border: 'none', borderRadius: 8, background: '#5156be', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px', border: 'none', borderRadius: 8, background: 'var(--brand)', color: 'var(--brand-contrast)', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}>
               {downloading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={14} />} Download transcript (PDF)
             </button>
           </div>

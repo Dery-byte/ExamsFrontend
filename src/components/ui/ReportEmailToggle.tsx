@@ -28,7 +28,7 @@ export default function ReportEmailToggle({ dark = false }: { dark?: boolean }) 
   };
 
   const c = dark
-    ? { bg: 'rgba(255,255,255,0.03)', border: 'rgba(139,92,246,0.15)', title: '#fff', sub: 'rgba(255,255,255,0.4)', off: 'rgba(255,255,255,0.1)' }
+    ? { bg: 'rgba(255,255,255,0.03)', border: 'rgba(var(--accent-rgb), 0.15)', title: '#fff', sub: 'rgba(255,255,255,0.4)', off: 'rgba(255,255,255,0.1)' }
     : { bg: '#fff', border: '#e2e8f0', title: '#1e293b', sub: '#64748b', off: '#cbd5e1' };
 
   return (
@@ -36,7 +36,7 @@ export default function ReportEmailToggle({ dark = false }: { dark?: boolean }) 
       background: c.bg, border: `1px solid ${c.border}`, borderRadius: 14 }}>
       <style>{`@media (max-width: 400px) { .ret-ico { display: none !important; } }`}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: '1 1 auto' }}>
-        <div className="ret-ico" style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(81,86,190,0.1)', color: '#5156be',
+        <div className="ret-ico" style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(var(--brand-rgb), 0.1)', color: 'var(--brand-text)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Mail size={20} />
         </div>

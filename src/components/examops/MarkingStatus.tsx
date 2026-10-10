@@ -54,7 +54,7 @@ export default function MarkingStatus({ quizId }: { quizId: number }) {
   return (
     <div style={{ borderBottom: '1px solid #e2e8f0' }}>
       {data.marking > 0 && (
-        <div style={{ padding: '10px 20px', background: '#eef2ff', color: '#3730a3', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ padding: '10px 20px', background: 'var(--brand-soft)', color: 'var(--brand-hover)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Loader2 size={13} style={{ animation: 'rSpin 1s linear infinite' }} />
           {data.marking} theory submission{data.marking !== 1 ? 's are' : ' is'} still being marked by AI
           {data.retrying > 0 && ` (${data.retrying} retrying after an error)`} — {tx('they will appear below when done.')}

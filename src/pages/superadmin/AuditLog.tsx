@@ -72,7 +72,7 @@ export default function AuditLog() {
             </thead>
             <tbody style={{ opacity: logs.isFetching && !logs.isLoading ? 0.6 : 1, transition: 'opacity .15s' }}>
               {logs.isLoading ? (
-                <tr className="al-msg"><td colSpan={5}><Loader2 size={22} color="#5156be" className="al-spin" /></td></tr>
+                <tr className="al-msg"><td colSpan={5}><Loader2 size={22} color="var(--brand-text)" className="al-spin" /></td></tr>
               ) : logs.isError ? (
                 <tr className="al-msg"><td colSpan={5}>
                   <XCircle size={28} color="#e34948" style={{ marginBottom: 6 }} />
@@ -128,7 +128,7 @@ export default function AuditLog() {
         .al-card { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
         .al-filters { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #f1f5f7; align-items: center; }
         .al-input { height: 36px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; padding: 0 10px; background: #f8fafc; outline: none; color: #1e293b; width: 100%; min-width: 0; box-sizing: border-box; font-family: inherit; transition: border-color .15s, box-shadow .15s; }
-        .al-input:focus { border-color: #5156be; box-shadow: 0 0 0 3px rgba(81,86,190,0.15); background: #fff; }
+        .al-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.15); background: #fff; }
         .al-search { position: relative; flex: 1 1 200px; min-width: 0; }
         .al-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #adb5bd; pointer-events: none; }
         .al-search .al-input { padding-left: 30px; }
@@ -138,7 +138,7 @@ export default function AuditLog() {
         .al-reset { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .al-reset:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; }
         .al-reset:disabled { opacity: .5; cursor: default; }
-        .al-link { background: none; border: none; padding: 0; margin-top: 6px; color: #5156be; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+        .al-link { background: none; border: none; padding: 0; margin-top: 6px; color: var(--brand-text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .al-table-wrap { overflow-x: auto; }
         .al-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .al-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #eef0f4; white-space: nowrap; }

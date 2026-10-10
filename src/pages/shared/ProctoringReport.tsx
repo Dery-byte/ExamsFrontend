@@ -31,7 +31,7 @@ export default function ProctoringReport() {
     enabled: !!qId,
   });
 
-  if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Loader2 size={26} color="#5156be" className="pr-spin" /><style>{`.pr-spin{animation:pr-spin 1s linear infinite}@keyframes pr-spin{to{transform:rotate(360deg)}}`}</style></div>;
+  if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Loader2 size={26} color="var(--brand-text)" className="pr-spin" /><style>{`.pr-spin{animation:pr-spin 1s linear infinite}@keyframes pr-spin{to{transform:rotate(360deg)}}`}</style></div>;
   if (isError || !data) return <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>{(error as any)?.response?.data?.message ?? 'Could not load the proctoring report.'}</div>;
 
   const rows: any[] = data.students ?? [];
@@ -128,7 +128,7 @@ function Timeline({ quizId, studentId }: { quizId: string; studentId: number }) 
     queryKey: ['proctoring', quizId, 'student', studentId],
     queryFn: () => getProctoringTimeline(quizId, studentId),
   });
-  if (isLoading) return <div style={{ padding: 10 }}><Loader2 size={16} color="#5156be" className="pr-spin" /></div>;
+  if (isLoading) return <div style={{ padding: 10 }}><Loader2 size={16} color="var(--brand-text)" className="pr-spin" /></div>;
   const events: any[] = data ?? [];
   return (
     <ol style={{ margin: '6px 0 0', padding: 0, listStyle: 'none' }}>

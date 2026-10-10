@@ -114,7 +114,8 @@ body:has(.dd-shell) { margin: 0; background: #f5f7fa; }
   .dd-mnav { position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 40; padding: 0 4px env(safe-area-inset-bottom);
     border-top: 1px solid var(--dd-border); border-bottom: 0; gap: 0; overflow: visible;
     background: color-mix(in srgb, var(--dd-surface) 92%, transparent); backdrop-filter: saturate(1.6) blur(12px); -webkit-backdrop-filter: saturate(1.6) blur(12px); }
-  .dd-mnav .dd-nav-item { flex: 1 1 0; min-width: 0; height: var(--dd-bnav-h); flex-direction: column; justify-content: center; gap: 3px;
+  .dd-mnav { overflow-x: auto; scrollbar-width: none; }
+  .dd-mnav .dd-nav-item { flex: 1 0 48px; min-width: 48px; height: var(--dd-bnav-h); flex-direction: column; justify-content: center; gap: 3px;
     padding: 6px 2px; font-size: 11px; border-bottom: 0; margin: 0; }
   .dd-mnav .dd-nav-item[aria-current="page"]::before { content: ''; position: absolute; top: 0; left: 28%; right: 28%; height: 2px; border-radius: 0 0 2px 2px; background: var(--dd-accent); }
   .dd-mnav .dd-nav-label { display: none; }

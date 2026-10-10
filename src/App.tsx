@@ -9,6 +9,7 @@ import DeveloperDashboard from './pages/developer/DeveloperDashboard';
 import { useInstitution } from './hooks/useInstitution';
 import { syncMode } from './utils/terms';
 import { Toaster } from 'react-hot-toast';
+import BrandingSync from './components/common/BrandingSync';
 
 // Layouts
 import AdminLayout from './components/layout/AdminLayout';
@@ -20,6 +21,7 @@ import SuperAdminLayout from './components/layout/SuperAdminLayout';
 import Welcome from './pages/auth/Welcome';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
+import MaintenanceGate from './components/common/MaintenanceGate';
 import ResetPassword from './pages/auth/ResetPassword';
 import ChangePassword from './pages/auth/ChangePassword';
 import Profile from './pages/auth/Profile';
@@ -126,6 +128,7 @@ export default function App() {
         }}
       />
       <ModeSync />
+      <BrandingSync />
       <ErrorBoundary resetKey={location.pathname}>
       <Routes>
         {/* Developer: email code sign-in, system mode, health */}
@@ -133,8 +136,9 @@ export default function App() {
         <Route path="/developer/dashboard" element={<ProtectedRoute role="DEVELOPER"><DeveloperDashboard /></ProtectedRoute>} />
         {/* Public */}
         <Route path="/" element={<Welcome />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        {/* Under maintenance both are replaced by the maintenance notice */}
+        <Route path="/login" element={<MaintenanceGate page="signin"><Login /></MaintenanceGate>} />
+        <Route path="/signup" element={<MaintenanceGate page="signup"><Signup /></MaintenanceGate>} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
         <Route path="/verify" element={<VerifyDocument />} />

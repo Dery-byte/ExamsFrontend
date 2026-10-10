@@ -32,7 +32,7 @@ export default function ResultsHoldNotice({ hold, compact = false }: { hold: Res
           </ul>
         )}
         {!compact && hold.feesPage && (
-          <Link to="/user-dashboard/fees" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 18, height: 40, padding: '0 18px', borderRadius: 10, background: '#5156be', color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+          <Link to="/user-dashboard/fees" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 18, height: 40, padding: '0 18px', borderRadius: 10, background: 'var(--brand)', color: 'var(--brand-contrast)', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
             <Wallet size={16} /> {tx('Go to School Fees')}
           </Link>
         )}

@@ -108,7 +108,7 @@ const SemesterReportCard = () => {
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
-        <Loader2 size={40} color="#5156be" style={{ animation: 'spin 1s linear infinite' }} />
+        <Loader2 size={40} color="var(--brand-text)" style={{ animation: 'spin 1s linear infinite' }} />
         <p style={{ color: '#64748b', fontSize: 14, fontWeight: 600 }}>Loading your academic progress…</p>
         <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
       </div>
@@ -155,10 +155,10 @@ const SemesterReportCard = () => {
           style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '11px 24px', border: 'none', borderRadius: 10,
-            background: downloadingAll ? '#e8ecf8' : 'linear-gradient(135deg,#5156be,#3d41a8)',
-            color: downloadingAll ? '#5156be' : '#fff',
+            background: downloadingAll ? 'var(--brand-soft)' : 'linear-gradient(135deg,var(--brand),var(--brand-hover))',
+            color: downloadingAll ? 'var(--brand-text)' : 'var(--brand-contrast)',
             fontWeight: 700, fontSize: 14, cursor: downloadingAll ? 'not-allowed' : 'pointer',
-            boxShadow: downloadingAll ? 'none' : '0 4px 18px rgba(81,86,190,0.35)',
+            boxShadow: downloadingAll ? 'none' : '0 4px 18px rgba(var(--brand-rgb), 0.35)',
             transition: 'all 0.2s'
           }}
         >
@@ -183,10 +183,10 @@ const SemesterReportCard = () => {
           background: '#fff'
         }}>
           {[
-            { icon: <User size={15} color="#5156be" />, label: tx('Student Name'), value: studentInfo.studentName || '—' },
-            { icon: <FileText size={15} color="#5156be" />, label: tx('Student ID'), value: studentInfo.username || '—' },
-            { icon: <GraduationCap size={15} color="#5156be" />, label: tx('Programme'), value: studentInfo.programName || '—' },
-            { icon: <TrendingUp size={15} color="#5156be" />, label: tx('Semesters Completed'), value: allReports.length },
+            { icon: <User size={15} color="var(--brand-text)" />, label: tx('Student Name'), value: studentInfo.studentName || '—' },
+            { icon: <FileText size={15} color="var(--brand-text)" />, label: tx('Student ID'), value: studentInfo.username || '—' },
+            { icon: <GraduationCap size={15} color="var(--brand-text)" />, label: tx('Programme'), value: studentInfo.programName || '—' },
+            { icon: <TrendingUp size={15} color="var(--brand-text)" />, label: tx('Semesters Completed'), value: allReports.length },
           ].map((item, i, arr) => (
             <div
               key={i}
@@ -238,10 +238,10 @@ const SemesterReportCard = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: 10,
-                  background: 'linear-gradient(135deg,#ede9fe,#ddd6fe)',
+                  background: 'linear-gradient(135deg,var(--accent-soft),var(--accent-border))',
                   display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                  <BookOpen size={20} color="#7c3aed" />
+                  <BookOpen size={20} color="var(--accent-text)" />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#1e293b' }}>
@@ -296,7 +296,7 @@ const SemesterReportCard = () => {
                       (cm.sectionMarks || []).forEach((sm: any) => { sectionMarkMap[sm.sectionId] = sm; });
                       return (
                         <tr key={cm.courseId} style={{ borderBottom: '1px solid #f1f5f9', background: '#fff' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13, color: '#5156be' }}>{cm.courseCode}</td>
+                          <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13, color: 'var(--brand-text)' }}>{cm.courseCode}</td>
                           <td style={{ padding: '12px 16px', fontSize: 13, color: '#1e293b', fontWeight: 500 }}>{cm.courseTitle}</td>
                           {sections.map((sec: any) => {
                             const sm = sectionMarkMap[sec.id];

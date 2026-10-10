@@ -4,9 +4,9 @@ import { saGetDepartments, saGetPrograms, saGetAllHods, saGetAllStudents } from 
 import { Building2, BookMarked, UserCog, GraduationCap, ChevronRight, TrendingUp, ShieldCheck } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
-const card = (accent = '#7c3aed') => ({
+const card = (accent = 'var(--accent)') => ({
   background: 'rgba(255,255,255,0.03)',
-  border: `1px solid rgba(139,92,246,0.15)`,
+  border: `1px solid rgba(var(--accent-rgb), 0.15)`,
   borderRadius: 16,
   padding: '24px',
   backdropFilter: 'blur(12px)',
@@ -34,14 +34,14 @@ export default function SuperAdminWelcome() {
   }, []);
 
   const statCards = [
-    { label: 'Departments', value: stats.departments, icon: <Building2 size={22} color="#fff" />, gradient: 'linear-gradient(135deg,#7c3aed,#4f46e5)', to: '/super-admin/departments' },
+    { label: 'Departments', value: stats.departments, icon: <Building2 size={22} color="#fff" />, gradient: 'linear-gradient(135deg,var(--accent),var(--brand))', to: '/super-admin/departments' },
     { label: tx('Programs'), value: stats.programs, icon: <BookMarked size={22} color="#fff" />, gradient: 'linear-gradient(135deg,#0ea5e9,#2563eb)', to: '/super-admin/programs' },
     { label: tx('HOD Accounts'), value: stats.hods, icon: <UserCog size={22} color="#fff" />, gradient: 'linear-gradient(135deg,#10b981,#059669)', to: '/super-admin/hods' },
     { label: tx('Students'), value: stats.students, icon: <GraduationCap size={22} color="#fff" />, gradient: 'linear-gradient(135deg,#f59e0b,#d97706)', to: '/super-admin/student-semester' },
   ];
 
   const quickActions = [
-    { label: 'Create Department', sub: 'Add a new faculty or school', icon: <Building2 size={18} />, to: '/super-admin/departments', color: '#7c3aed' },
+    { label: 'Create Department', sub: 'Add a new faculty or school', icon: <Building2 size={18} />, to: '/super-admin/departments', color: 'var(--accent-light)' },
     { label: tx('Add Program'), sub: tx('Configure levels & duration'), icon: <BookMarked size={18} />, to: '/super-admin/programs', color: '#0ea5e9' },
     { label: tx('Register HOD'), sub: tx('Create Head of Department account'), icon: <UserCog size={18} />, to: '/super-admin/hods', color: '#10b981' },
     { label: tx('Set Semester'), sub: tx('Update student level & semester'), icon: <GraduationCap size={18} />, to: '/super-admin/student-semester', color: '#f59e0b' },
@@ -52,7 +52,7 @@ export default function SuperAdminWelcome() {
       {/* Welcome header */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#7c3aed,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(124,58,237,0.4)' }}>
+          <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg,var(--accent),var(--brand))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 30px rgba(var(--accent-rgb), 0.4)' }}>
             <ShieldCheck size={24} color="#fff" />
           </div>
           <div>
@@ -69,7 +69,7 @@ export default function SuperAdminWelcome() {
         {statCards.map(sc => (
           <div key={sc.label} onClick={() => navigate(sc.to)}
             style={{ ...card(), cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 30px rgba(124,58,237,0.2)'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 30px rgba(var(--accent-rgb), 0.2)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'none'; (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -92,10 +92,10 @@ export default function SuperAdminWelcome() {
         {quickActions.map(qa => (
           <div key={qa.label} onClick={() => navigate(qa.to)}
             style={{ ...card(), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = `rgba(${qa.color === '#7c3aed' ? '124,58,237' : qa.color === '#0ea5e9' ? '14,165,233' : qa.color === '#10b981' ? '16,185,129' : '245,158,11'},0.08)`; (e.currentTarget as HTMLDivElement).style.borderColor = `${qa.color}44`; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(139,92,246,0.15)'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = `color-mix(in srgb, ${qa.color} 8%, transparent)`; (e.currentTarget as HTMLDivElement).style.borderColor = `color-mix(in srgb, ${qa.color} 26.7%, transparent)`; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(var(--accent-rgb), 0.15)'; }}
           >
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${qa.color}22`, border: `1px solid ${qa.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: qa.color, flexShrink: 0 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: `color-mix(in srgb, ${qa.color} 13.3%, transparent)`, border: `1px solid color-mix(in srgb, ${qa.color} 26.7%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: qa.color, flexShrink: 0 }}>
               {qa.icon}
             </div>
             <div style={{ flex: 1 }}>
@@ -107,7 +107,7 @@ export default function SuperAdminWelcome() {
         ))}
       </div>
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-.sa-title{font-size:26px;margin:0;font-weight:800;background:linear-gradient(135deg,#a78bfa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sa-title{font-size:26px;margin:0;font-weight:800;background:linear-gradient(135deg,var(--accent-light),var(--brand-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .sa-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
 .sa-action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 @media(max-width:480px){.sa-title{font-size:20px}.sa-stat-grid{grid-template-columns:repeat(2,1fr)}.sa-action-grid{grid-template-columns:1fr}}`}</style>

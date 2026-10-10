@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { useInstitution } from '../../hooks/useInstitution';
+import InstitutionMark from '../../components/common/InstitutionMark';
 
 export default function Welcome() {
   const [scrolled, setScrolled] = useState(false);
+  const { institution } = useInstitution();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -17,8 +20,8 @@ export default function Welcome() {
       <nav className={`welcome-navbar ${scrolled ? 'scrolled' : ''}`}>
         <div className="welcome-nav-container">
           <Link to="/" className="welcome-nav-brand">
-            <div className="welcome-nav-logo">EP</div>
-            <span className="welcome-nav-title">ExamPortal</span>
+            <InstitutionMark size={36} radius={10} />
+            <span className="welcome-nav-title">{institution.shortName}</span>
           </Link>
 
           <div className="welcome-nav-actions">
@@ -33,8 +36,8 @@ export default function Welcome() {
       </nav>
 
       <div className="sleet-content">
-        <div className="sleet-logo">EP</div>
-        <h1 className="sleet-title">ExamPortal</h1>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}><InstitutionMark size={64} radius={20} /></div>
+        <h1 className="sleet-title">{institution.name}</h1>
         <p className="sleet-subtitle">
           Secure, intelligent, and seamless academic assessment.
         </p>

@@ -66,7 +66,7 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
   };
 
   const c = dark
-    ? { icon: '#a78bfa', btnBg: 'rgba(139,92,246,0.08)', btnBorder: 'rgba(139,92,246,0.2)' }
+    ? { icon: 'var(--accent-light)', btnBg: 'rgba(var(--accent-rgb), 0.08)', btnBorder: 'rgba(var(--accent-rgb), 0.2)' }
     : { icon: '#555b6d', btnBg: 'transparent', btnBorder: 'transparent' };
 
   return (
@@ -95,19 +95,19 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid #eef0f4' }}>
             <span style={{ fontWeight: 800, fontSize: 14, color: '#1e293b' }}>Notifications</span>
             {unread > 0 && (
-              <button onClick={readAll} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: '#5156be', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={readAll} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: 'var(--brand-text)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                 <CheckCheck size={14} /> Mark all read
               </button>
             )}
           </div>
           <div style={{ maxHeight: 400, overflowY: 'auto' }}>
             {isLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Loader2 size={20} className="notif-spin" color="#5156be" /></div>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Loader2 size={20} className="notif-spin" color="var(--brand-text)" /></div>
             ) : items.length === 0 ? (
               <div style={{ padding: '28px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>You're all caught up.</div>
             ) : items.map(n => (
               <button key={n.id} onClick={() => openItem(n)} className="notif-item" style={{ background: n.read ? '#fff' : '#f5f6ff' }}>
-                {!n.read && <span aria-label="Unread" style={{ position: 'absolute', left: 6, top: 18, width: 7, height: 7, borderRadius: '50%', background: '#5156be' }} />}
+                {!n.read && <span aria-label="Unread" style={{ position: 'absolute', left: 6, top: 18, width: 7, height: 7, borderRadius: '50%', background: 'var(--brand)' }} />}
                 <div style={{ fontSize: 13, fontWeight: n.read ? 600 : 800, color: '#1e293b' }}>{n.title}</div>
                 {n.message && <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, lineHeight: 1.4 }}>{n.message}</div>}
                 <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{timeAgo(n.createdAt)}</div>
@@ -127,7 +127,7 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
           position: relative; display: block; width: 100%; text-align: left; padding: 11px 14px 11px 20px;
           border: none; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-family: inherit;
         }
-        .notif-item:hover { background: #eef0ff !important; }
+        .notif-item:hover { background: var(--brand-soft) !important; }
         .notif-spin { animation: notif-spin 1s linear infinite; }
         @keyframes notif-spin { to { transform: rotate(360deg); } }
         @media (max-width: 480px) { .notif-panel { position: fixed; left: 16px; right: 16px; top: 64px; width: auto; } }

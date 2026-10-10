@@ -129,7 +129,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
           <div className="fe-empty"><h3>Couldn't load payments</h3><p><button className="fe-link" onClick={() => refetch()}>Try again</button></p></div>
         ) : rows.length === 0 ? (
           <div className="fe-empty">
-            <Receipt size={34} style={{ color: 'rgba(139,92,246,0.45)' }} />
+            <Receipt size={34} style={{ color: 'rgba(var(--accent-rgb), 0.45)' }} />
             <h3>{search || status || programId ? 'No payments match these filters' : 'No payments yet'}</h3>
             <p>{search || status || programId ? 'Try a different search or clear the filters.'
               : `Online payments appear here as soon as students pay. Cash and bank payments you record show up here too.`}</p>
@@ -316,7 +316,7 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
                 ) : matches.map(s => (
                   <button type="button" key={s.id} className="fe-result" role="option" aria-selected={false} onClick={() => pick(s)}>
                     <span style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
-                      <UserRound size={16} style={{ color: '#a78bfa', flexShrink: 0 }} />
+                      <UserRound size={16} style={{ color: 'var(--accent-light)', flexShrink: 0 }} />
                       <span style={{ minWidth: 0 }}>
                         <span className="fe-strong" style={{ display: 'block' }}>{s.name}</span>
                         <span className="fe-muted fe-small">{s.studentId}{s.programName ? ` · ${s.programName}` : ''}{s.level != null ? ` · ${levelName(s.level)}` : ''}</span>

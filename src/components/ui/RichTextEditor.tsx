@@ -107,18 +107,18 @@ export default function RichTextEditor({
         .rte-wrapper .ql-toolbar.ql-snow button:hover,
         .rte-wrapper .ql-toolbar.ql-snow button.ql-active,
         .rte-wrapper .ql-toolbar.ql-snow .ql-picker-label:hover {
-          background: #eef2ff;
-          color: #5156be !important;
+          background: var(--brand-soft);
+          color: var(--brand-text) !important;
         }
 
         .rte-wrapper .ql-toolbar.ql-snow button.ql-active .ql-stroke,
         .rte-wrapper .ql-toolbar.ql-snow button:hover .ql-stroke {
-          stroke: #5156be !important;
+          stroke: var(--brand) !important;
         }
 
         .rte-wrapper .ql-toolbar.ql-snow button.ql-active .ql-fill,
         .rte-wrapper .ql-toolbar.ql-snow button:hover .ql-fill {
-          fill: #5156be !important;
+          fill: var(--brand) !important;
         }
 
         /* Picker (header dropdown) */
@@ -142,8 +142,8 @@ export default function RichTextEditor({
         }
 
         .rte-wrapper .ql-toolbar.ql-snow .ql-picker-item:hover {
-          background: #eef2ff;
-          color: #5156be;
+          background: var(--brand-soft);
+          color: var(--brand-text);
           border-radius: 5px;
         }
 
@@ -162,13 +162,13 @@ export default function RichTextEditor({
         }
 
         .rte-wrapper:hover {
-          border-color: #c7d2fe;
+          border-color: var(--brand-border);
         }
 
         .rte-wrapper:focus-within {
-          border-color: #5156be;
+          border-color: var(--brand);
           background: #fff;
-          box-shadow: 0 0 0 4px rgba(81,86,190,0.1);
+          box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.1);
         }
 
         /* ── Read-only mode ─────────────────────────────────────────────── */
@@ -183,11 +183,11 @@ export default function RichTextEditor({
         .rte-wrapper .ql-editor h2 { font-size: 1.2em; font-weight: 700; color: #1e293b; }
         .rte-wrapper .ql-editor h3 { font-size: 1.05em; font-weight: 700; color: #334155; }
         .rte-wrapper .ql-editor blockquote {
-          border-left: 3px solid #5156be;
+          border-left: 3px solid var(--brand);
           padding-left: 12px;
           color: #475569;
           margin: 8px 0;
-          background: #eef2ff;
+          background: var(--brand-soft);
           border-radius: 0 6px 6px 0;
           font-style: italic;
         }

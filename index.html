@@ -3,7 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ExamPortal – OTC</title>
+    <title>Exam Portal</title>
+    <meta name="theme-color" content="#5156be" />
+    <!-- Institution colours, title and icon from the last visit, applied before the app loads so a
+         refresh never flashes the defaults (utils/theme.ts and BrandingSync keep these up to date). -->
+    <script>
+      (function () {
+        try {
+          var t = JSON.parse(localStorage.getItem('institution_theme') || 'null');
+          if (t && t.vars) {
+            var s = document.documentElement.style;
+            for (var k in t.vars) if (/^--[a-z-]+$/.test(k)) s.setProperty(k, String(t.vars[k]));
+            if (t.vars['--brand']) document.querySelector('meta[name="theme-color"]').setAttribute('content', t.vars['--brand']);
+          }
+          var b = JSON.parse(localStorage.getItem('institution_brand') || 'null');
+          if (b && b.title) document.title = b.title;
+          if (b && b.icon) {
+            var l = document.createElement('link');
+            l.rel = 'icon'; l.href = b.icon; l.setAttribute('data-institution', '');
+            document.head.appendChild(l);
+          }
+        } catch (e) { /* storage blocked: defaults apply */ }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />

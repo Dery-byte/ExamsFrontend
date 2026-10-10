@@ -11,10 +11,10 @@ interface Program { id: number; name: string; code: string; durationYears: numbe
 interface Department { id: number; name: string; code: string; }
 interface FormState { name: string; code: string; durationYears: number; departmentId: number | ''; semestersPerLevel: Record<number, number>; }
 
-const levelColors = ['#7c3aed','#4f46e5','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#06b6d4','#84cc16'];
+const levelColors = ['var(--accent)','var(--brand)','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','var(--accent)','#06b6d4','#84cc16'];
 const levelChipStyle = (i: number): React.CSSProperties => {
   const c = levelColors[i % levelColors.length];
-  return { background: `${c}22`, border: `1px solid ${c}44`, color: c };
+  return { background: `color-mix(in srgb, ${c} 13.3%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 26.7%, transparent)`, color: c };
 };
 
 export default function Programs() {
@@ -137,7 +137,7 @@ export default function Programs() {
           { label: 'Enabled', count: programs.filter(p => p.enabled).length, color: '#10b981' },
           { label: 'Disabled', count: programs.filter(p => !p.enabled).length, color: '#f87171' },
         ].map(s => (
-          <div key={s.label} className="pg-stat" style={{ borderColor: `${s.color}30` }}>
+          <div key={s.label} className="pg-stat" style={{ borderColor: `color-mix(in srgb, ${s.color} 18.8%, transparent)` }}>
             <span className="pg-stat-n" style={{ color: s.color }}>{s.count}</span>
             <span className="pg-stat-l">{s.label}</span>
           </div>
@@ -168,7 +168,7 @@ export default function Programs() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="pg-empty">
-          <BookMarked size={48} style={{ color: 'rgba(139,92,246,0.3)', marginBottom: 16 }} />
+          <BookMarked size={48} style={{ color: 'rgba(var(--accent-rgb), 0.3)', marginBottom: 16 }} />
           <h3>{tx("No programs found")}</h3>
           {programs.length === 0
             ? <button type="button" className="pg-btn" onClick={openCreate}><Plus size={16} /> {tx("Add Program")}</button>
@@ -342,7 +342,7 @@ const PROGRAMS_CSS = `
 .pg-stat-l { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 500; }
 
 .pg-filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-.pg-input { width: 100%; height: 42px; padding: 0 14px; border-radius: 9px; background: rgba(255,255,255,0.05); border: 1px solid rgba(139,92,246,0.25); color: #fff; font: inherit; font-size: 14px; outline: none; box-sizing: border-box; transition: border-color .15s, box-shadow .15s; }
+.pg-input { width: 100%; height: 42px; padding: 0 14px; border-radius: 9px; background: rgba(255,255,255,0.05); border: 1px solid rgba(var(--accent-rgb), 0.25); color: #fff; font: inherit; font-size: 14px; outline: none; box-sizing: border-box; transition: border-color .15s, box-shadow .15s; }
 .pg-input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.2); }
 .pg-input::placeholder { color: rgba(255,255,255,0.3); }
 .pg-input option { background: #1a1a35; color: #fff; }
@@ -356,7 +356,7 @@ const PROGRAMS_CSS = `
 
 .pg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 16px; }
 .pg-skel { height: 180px; border-radius: 14px; background: rgba(255,255,255,0.04); animation: pg-pulse 1.5s infinite; }
-.pg-empty { text-align: center; padding: 64px 20px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px dashed rgba(139,92,246,0.2); }
+.pg-empty { text-align: center; padding: 64px 20px; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px dashed rgba(var(--accent-rgb), 0.2); }
 .pg-empty h3 { margin: 0 0 10px; color: rgba(255,255,255,0.5); font-weight: 500; }
 .pg-empty p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.4); }
 
@@ -371,12 +371,12 @@ const PROGRAMS_CSS = `
 .pg-badge.off { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.35); color: #f87171; }
 .pg-meta { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
 .pg-code { background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; color: #38bdf8; }
-.pg-dept-tag { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.2); border-radius: 6px; padding: 2px 8px; font-size: 11px; color: #a78bfa; display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; }
+.pg-dept-tag { background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.2); border-radius: 6px; padding: 2px 8px; font-size: 11px; color: var(--accent-light); display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; }
 .pg-dept-tag > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pg-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .pg-icon { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); color: #fff; transition: background .2s, opacity .2s; }
 .pg-icon:disabled { opacity: .5; cursor: not-allowed; }
-.pg-icon.edit { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.25); color: #818cf8; }
+.pg-icon.edit { background: rgba(var(--brand-rgb), 0.15); border-color: rgba(var(--brand-rgb), 0.25); color: var(--brand-light); }
 .pg-icon.danger { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.28); color: #f87171; }
 .pg-icon.ok { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #34d399; }
 .pg-icon:hover:not(:disabled) { filter: brightness(1.25); }

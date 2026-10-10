@@ -81,7 +81,7 @@ export default function FeatureControls() {
       </p>
 
       {isLoading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="#5156be" className="fc-spin" /></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={26} color="var(--brand-text)" className="fc-spin" /></div>
       ) : isError ? (
         <div className="fc-empty">{(error as any)?.response?.data?.message ?? 'Could not load the settings.'}</div>
       ) : groups.map(([audience, list]) => (
@@ -169,7 +169,7 @@ export default function FeatureControls() {
         .fc-row { display: flex; gap: 14px; align-items: flex-start; }
         .fc-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 800; font-size: 14.5px; color: #1e293b; }
         .fc-scope { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
-        .fc-scope.sys { background: #eef2ff; color: #4338ca; }
+        .fc-scope.sys { background: var(--brand-soft); color: var(--brand-hover); }
         .fc-scope.dep { background: #ecfeff; color: #0e7490; }
         .fc-desc { margin: 4px 0 0; font-size: 12.5px; color: #64748b; line-height: 1.5; }
         .fc-note { margin: 6px 0 0; font-size: 12px; color: #475569; }
@@ -181,7 +181,7 @@ export default function FeatureControls() {
         .fc-knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         .fc-switch.is-on .fc-knob { left: 23px; }
         .fc-switch .fc-spin { color: #fff; }
-        .fc-expand { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; border: none; background: none; color: #5156be; font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 0; }
+        .fc-expand { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; border: none; background: none; color: var(--brand-text); font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 0; }
         .fc-depts { margin-top: 8px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
         .fc-dept { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; flex-wrap: wrap; }
         .fc-dept-name { font-size: 13px; color: #1e293b; font-weight: 600; }
@@ -189,7 +189,7 @@ export default function FeatureControls() {
         .fc-seg { display: inline-flex; border: 1.5px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
         .fc-seg button { border: none; background: #fff; padding: 5px 10px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; border-right: 1px solid #e2e8f0; }
         .fc-seg button:last-child { border-right: none; }
-        .fc-seg button.is-on { background: #5156be; color: #fff; }
+        .fc-seg button.is-on { background: var(--brand); color: var(--brand-contrast); }
         .fc-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 40px; color: #94a3b8; background: #fff; border: 1.5px dashed #e2e8f0; border-radius: 12px; }
         .fc-spin { animation: spin 1s linear infinite; }
       `}</style>

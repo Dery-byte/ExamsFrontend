@@ -21,6 +21,7 @@ import {
   Wallet
 } from 'lucide-react';
 import { isSchoolMode, tx } from '../../utils/terms';
+import InstitutionMark from '../common/InstitutionMark';
 
 const SIDEBAR_W = 260;
 
@@ -70,7 +71,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
     >
       {/* Brand */}
       <div className="user-sidebar-brand">
-        <div className="user-sidebar-logo">{institution.shortName.charAt(0)}</div>
+        <InstitutionMark size={32} radius={8} />
         <span className="user-sidebar-name" title={institution.name}>{institution.shortName}</span>
         {/* Close button — visible on mobile only */}
         <button className="user-sidebar-close mobile-show" onClick={onClose} aria-label="Close menu">
@@ -114,6 +115,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 }
 
 export default function UserLayout() {
+  const { institution } = useInstitution();
   const { user, timeDisplay } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -150,8 +152,8 @@ export default function UserLayout() {
 
             {/* Page brand visible on mobile when sidebar is closed */}
             <span className="user-topbar-brand mobile-show">
-              <span className="user-sidebar-logo sm">O</span>
-              <span style={{ fontWeight: 800, fontSize: 16, color: '#2a3142', marginLeft: 8 }}>OTC</span>
+              <InstitutionMark size={28} radius={6} />
+              <span style={{ fontWeight: 800, fontSize: 16, color: '#2a3142', marginLeft: 8 }}>{institution.shortName}</span>
             </span>
           </div>
 
@@ -185,7 +187,7 @@ export default function UserLayout() {
 
         {/* ── Footer ── */}
         <footer className="user-footer">
-          <span>2026 © OTC.</span>
+          <span>{new Date().getFullYear()} © {institution.name}.</span>
           <span className="desktop-show">Crafted with <span style={{ color: 'var(--danger)' }}>♥</span> by OTC</span>
         </footer>
       </div>
@@ -206,8 +208,8 @@ export default function UserLayout() {
           position: fixed;
           left: 0; top: 0;
           z-index: 200;
-          background: #2a3142;
-          color: #8699ad;
+          background: var(--sidebar-bg);
+          color: rgba(var(--sidebar-fg-rgb), 0.62);
           display: flex;
           flex-direction: column;
           transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
@@ -219,8 +221,8 @@ export default function UserLayout() {
           display: flex;
           align-items: center;
           padding: 0 20px;
-          background: #2e3548;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
+          background: var(--sidebar-raised);
+          border-bottom: 1px solid rgba(var(--sidebar-fg-rgb), 0.05);
           flex-shrink: 0;
           gap: 10px;
         }
@@ -230,7 +232,7 @@ export default function UserLayout() {
           background: var(--primary);
           border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
-          color: #fff; font-weight: 900; font-size: 18px;
+          color: var(--brand-contrast); font-weight: 900; font-size: 18px;
         }
         .user-sidebar-logo.sm {
           width: 28px; height: 28px; font-size: 15px; border-radius: 6px;
@@ -238,18 +240,18 @@ export default function UserLayout() {
 
         .user-sidebar-name {
           font-size: 20px; font-weight: 800;
-          color: #fff; letter-spacing: 1px;
+          color: var(--sidebar-fg); letter-spacing: 1px;
           flex: 1;
         }
 
         .user-sidebar-close {
           background: none; border: none;
-          color: #8699ad; cursor: pointer;
+          color: rgba(var(--sidebar-fg-rgb), 0.62); cursor: pointer;
           padding: 6px; border-radius: 6px;
           margin-left: auto;
           transition: color 0.2s;
         }
-        .user-sidebar-close:hover { color: #fff; }
+        .user-sidebar-close:hover { color: var(--sidebar-fg); }
 
         .user-sidebar-scroll {
           flex: 1;
@@ -257,7 +259,7 @@ export default function UserLayout() {
           padding: 20px 0;
         }
         .user-sidebar-scroll::-webkit-scrollbar { width: 4px; }
-        .user-sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 4px; }
+        .user-sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(var(--sidebar-fg-rgb), 0.06); border-radius: 4px; }
 
         .user-sidebar-group { margin-bottom: 20px; }
 
@@ -265,7 +267,7 @@ export default function UserLayout() {
           padding: 0 24px 10px;
           font-size: 10px; font-weight: 800;
           text-transform: uppercase; letter-spacing: 0.1em;
-          color: #4d5a6a;
+          color: rgba(var(--sidebar-fg-rgb), 0.4);
         }
 
         .user-sidebar-link {
@@ -274,26 +276,26 @@ export default function UserLayout() {
           gap: 14px;
           padding: 12px 24px;
           font-size: 14px;
-          color: #8699ad;
+          color: rgba(var(--sidebar-fg-rgb), 0.62);
           text-decoration: none;
           font-weight: 500;
           border-left: 3px solid transparent;
           transition: all 0.2s;
         }
         .user-sidebar-link:hover {
-          color: #fff;
-          background: rgba(255,255,255,0.04);
+          color: var(--sidebar-fg);
+          background: rgba(var(--sidebar-fg-rgb), 0.04);
         }
         .user-sidebar-link.active {
-          color: #fff;
-          background: rgba(255,255,255,0.04);
+          color: var(--sidebar-fg);
+          background: rgba(var(--sidebar-fg-rgb), 0.04);
           border-left-color: var(--primary);
           font-weight: 700;
         }
 
         .user-sidebar-footer {
           padding: 16px 20px;
-          border-top: 1px solid rgba(255,255,255,0.05);
+          border-top: 1px solid rgba(var(--sidebar-fg-rgb), 0.05);
           background: rgba(0,0,0,0.08);
           flex-shrink: 0;
         }
@@ -357,9 +359,9 @@ export default function UserLayout() {
           display: flex; align-items: center; gap: 8px;
           padding: 7px 16px;
           border-radius: 8px;
-          background: rgba(122,111,190,0.08);
-          border: 1px solid rgba(122,111,190,0.15);
-          color: var(--primary);
+          background: rgba(var(--brand-rgb), 0.08);
+          border: 1px solid rgba(var(--brand-rgb), 0.15);
+          color: var(--brand-text);
           font-size: 13px; font-weight: 700;
           white-space: nowrap;
         }
@@ -391,9 +393,9 @@ export default function UserLayout() {
 
         .user-avatar {
           width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-          background: linear-gradient(135deg, var(--primary), #8e84cc);
+          background: linear-gradient(135deg, var(--primary), var(--brand-light));
           display: flex; align-items: center; justify-content: center;
-          font-size: 15px; font-weight: 900; color: #fff;
+          font-size: 15px; font-weight: 900; color: var(--brand-contrast);
         }
 
         /* ─── Page content ───────────────────────────────────── */

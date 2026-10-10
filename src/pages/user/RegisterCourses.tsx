@@ -102,7 +102,7 @@ export default function RegisterCourses() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <Loader2 className="spin-ico" size={40} style={{ color: 'var(--primary)', marginBottom: 16 }} />
+        <Loader2 className="spin-ico" size={40} style={{ color: 'var(--brand-text)', marginBottom: 16 }} />
         <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 600 }}>Syncing academic catalog...</p>
       </div>
     );
@@ -118,13 +118,13 @@ export default function RegisterCourses() {
         <div style={{
           margin: '0 0 16px',
           padding: '12px 20px',
-          background: 'linear-gradient(135deg,rgba(124,58,237,0.08),rgba(79,70,229,0.05))',
-          border: '1px solid rgba(124,58,237,0.2)',
+          background: 'linear-gradient(135deg,rgba(var(--accent-rgb), 0.08),rgba(var(--brand-rgb), 0.05))',
+          border: '1px solid rgba(var(--accent-rgb), 0.2)',
           borderRadius: 12,
           display: 'flex', alignItems: 'center', gap: 10,
         }}>
-          <GraduationCap size={18} style={{ color: '#7c3aed', flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#5b21b6' }}>
+          <GraduationCap size={18} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-hover)' }}>
             Showing courses for&nbsp;
             <strong>{tx("Level ")}{(user as any).currentLevel}</strong>
             {(user as any).currentSemester && (
@@ -146,7 +146,7 @@ export default function RegisterCourses() {
                 onClick={() => setSelectedLevel(l)}
                 style={{
                   background: 'transparent',
-                  color: selectedLevel === l ? 'var(--primary)' : '#adb5bd',
+                  color: selectedLevel === l ? 'var(--brand-text)' : '#adb5bd',
                   borderBottom: selectedLevel === l ? '3px solid var(--primary)' : '3px solid transparent',
                   padding: '18px 25px',
                   fontSize: 13,
@@ -166,7 +166,7 @@ export default function RegisterCourses() {
         
         <div className="lexa-card-body" style={{ background: '#fcfdfe', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(122, 111, 190, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(var(--brand-rgb), 0.1)', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Filter size={14} />
             </div>
             <div>
@@ -235,7 +235,7 @@ export default function RegisterCourses() {
 
               <div style={{ padding: '16px 24px', background: '#fcfdfe', borderTop: '1px solid #f1f5f7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 6, background: '#fff', border: '1px solid #e1e9f1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7a6fbe' }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 6, background: '#fff', border: '1px solid #e1e9f1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-text)' }}>
                     <GraduationCap size={16} />
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 700, color: '#495057' }}>Enrol Now</span>
@@ -287,7 +287,7 @@ export default function RegisterCourses() {
         }
         .search-input-lexa:focus {
           border-color: var(--primary) !important;
-          box-shadow: 0 0 0 4px rgba(122, 111, 190, 0.1) !important;
+          box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.1) !important;
         }
         .btn-lexa-outline {
           background: transparent;

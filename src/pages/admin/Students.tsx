@@ -20,12 +20,12 @@ import {
 import { defaultLevels, periodsPerLevel, tx } from '../../utils/terms';
 
 const LEVEL_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-  "100": { bg: "rgba(81,86,190,0.07)",  border: "#5156be", text: "#3730a3", badge: "#5156be" },
+  "100": { bg: "rgba(var(--brand-rgb), 0.07)",  border: "var(--brand)", text: "var(--brand-hover)", badge: "var(--brand)" },
   "200": { bg: "rgba(42,181,125,0.07)", border: "#2ab57d", text: "#065f46", badge: "#2ab57d" },
   "300": { bg: "rgba(245,158,11,0.07)", border: "#f59e0b", text: "#92400e", badge: "#f59e0b" },
   "400": { bg: "rgba(253,98,94,0.07)",  border: "#fd625e", text: "#991b1b", badge: "#fd625e" },
   "500": { bg: "rgba(14,165,233,0.07)", border: "#0ea5e9", text: "#0c4a6e", badge: "#0ea5e9" },
-  "600": { bg: "rgba(139,92,246,0.07)", border: "#8b5cf6", text: "#4c1d95", badge: "#8b5cf6" },
+  "600": { bg: "rgba(var(--accent-rgb), 0.07)", border: "var(--accent)", text: "var(--accent-deep)", badge: "var(--accent)" },
 };
 const colorFor = (level: string | number) =>
   LEVEL_COLORS[String(level)] ?? LEVEL_COLORS["100"];
@@ -118,7 +118,7 @@ export default function Students() {
       icon: fwd ? "question" : "warning",
       showCancelButton: true,
       confirmButtonText: fwd ? "Promote" : "Demote",
-      confirmButtonColor: fwd ? "#5156be" : "#f59e0b",
+      confirmButtonColor: fwd ? "var(--brand)" : "#f59e0b",
       cancelButtonColor: "#adb5bd",
     });
     if (!conf.isConfirmed) return;
@@ -166,7 +166,7 @@ export default function Students() {
       html: tx(`Promote all <b>${count}</b> Level ${level} students in the selected program to <b>Level ${target}</b>?`),
       icon: "question", showCancelButton: true,
       confirmButtonText: tx(`Promote Level (${count})`),
-      confirmButtonColor: "#5156be", cancelButtonColor: "#adb5bd",
+      confirmButtonColor: "var(--brand)", cancelButtonColor: "#adb5bd",
     });
     if (!conf.isConfirmed) return;
     setPromotingLv(level);
@@ -319,7 +319,7 @@ export default function Students() {
           {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <button type="button" className="st-icon-btn" onClick={load} disabled={loading} title="Refresh" aria-label="Refresh">
-          <RefreshCw size={15} color="#5156be" className={loading ? "st-spin" : undefined} />
+          <RefreshCw size={15} color="var(--brand-text)" className={loading ? "st-spin" : undefined} />
         </button>
         <button type="button" className="st-btn" onClick={() => setAddModal(true)}>
           <UserPlus size={15} /> {tx("Add Student")}</button>
@@ -327,7 +327,7 @@ export default function Students() {
       </div>
 
       {loading && students.length === 0 ? (
-        <div className="st-loading"><Loader2 size={36} color="#5156be" className="st-spin" /></div>
+        <div className="st-loading"><Loader2 size={36} color="var(--brand-text)" className="st-spin" /></div>
       ) : sortedLevels.length === 0 ? (
         <div className="st-empty">
           <Users size={40} style={{ marginBottom: 12 }} />
@@ -343,7 +343,7 @@ export default function Students() {
         return (
           <section key={level} className="st-group" aria-label={`${tx("Level ")}${level}`}>
             {/* Level header */}
-            <div className="st-group-head" style={{ background: col.bg, borderBottomColor: `${col.badge}30` }}>
+            <div className="st-group-head" style={{ background: col.bg, borderBottomColor: `color-mix(in srgb, ${col.badge} 18.8%, transparent)` }}>
               <div className="st-group-title">
                 <span className="st-level" style={{ background: col.badge }}>{tx("Level ")}{level}</span>
                 <span style={{ color: col.text }}>{grp.length} {tx("student")}{grp.length !== 1 ? "s" : ""}</span>
@@ -387,7 +387,7 @@ export default function Students() {
 
               return (
                 <div key={s.id} className="st-row">
-                  <div className="st-avatar" style={{ background: `linear-gradient(135deg,${col.badge},${col.badge}99)` }} aria-hidden>
+                  <div className="st-avatar" style={{ background: `linear-gradient(135deg,${col.badge},color-mix(in srgb, ${col.badge} 60%, transparent))` }} aria-hidden>
                     {name.charAt(0).toUpperCase()}
                   </div>
 
@@ -422,7 +422,7 @@ export default function Students() {
                     <span className="st-actions-spacer" />
                     <button type="button" className="st-icon" onClick={() => openEdit(s.id)} title="Edit" aria-label={`Edit ${name}`}
                       style={{ borderColor: "#e2e8f0", background: "#f8fafc" }}>
-                      <Edit size={13} color="#5156be" />
+                      <Edit size={13} color="var(--brand-text)" />
                     </button>
                     <button type="button" className="st-icon" onClick={() => toggleAccount(s, name, load)} title={s.enabled === false ? "Reactivate account" : "Deactivate account"}
                       aria-label={s.enabled === false ? `Reactivate ${name}` : `Deactivate ${name}`}
@@ -538,7 +538,7 @@ const STUDENTS_CSS = `
 .st { container: st / inline-size; }
 .st-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 22px; flex-wrap: wrap; }
 .st-input { width: 100%; height: 40px; padding: 0 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font: inherit; font-size: 14px; color: #1e293b; background: #fff; outline: none; box-sizing: border-box; transition: border-color .15s, box-shadow .15s; }
-.st-input:focus { border-color: #5156be; box-shadow: 0 0 0 3px rgba(81,86,190,0.15); }
+.st-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.15); }
 select.st-input { cursor: pointer; }
 .st-search { position: relative; flex: 1 1 240px; min-width: 0; max-width: 440px; }
 .st-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #adb5bd; pointer-events: none; }
@@ -547,13 +547,13 @@ select.st-input { cursor: pointer; }
 .st-icon-btn { height: 40px; width: 40px; flex-shrink: 0; border: 1.5px solid #e2e8f0; background: #fff; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .st-icon-btn:disabled { opacity: .6; cursor: default; }
 .st-btn, .st-ghost { height: 40px; padding: 0 16px; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: inherit; font-weight: 700; font-size: 13px; white-space: nowrap; transition: filter .15s, background .15s; }
-.st-btn { border: none; background: #5156be; color: #fff; }
+.st-btn { border: none; background: var(--brand); color: var(--brand-contrast); }
 .st-btn:hover:not(:disabled) { filter: brightness(1.08); }
 .st-ghost { border: 1.5px solid #e2e8f0; background: #f8fafc; color: #1e293b; }
 .st-ghost:hover:not(:disabled) { background: #f1f5f9; }
 .st-btn:disabled, .st-ghost:disabled { opacity: .65; cursor: not-allowed; }
 .st-count { font-size: 13px; color: #94a3b8; font-weight: 600; margin-left: auto; white-space: nowrap; }
-.st-link { background: none; border: none; padding: 0; margin-top: 8px; color: #7a6fbe; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.st-link { background: none; border: none; padding: 0; margin-top: 8px; color: var(--brand-text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .st-loading { display: flex; justify-content: center; padding: 60px 0; }
 .st-empty { text-align: center; padding: 60px 20px; color: #adb5bd; }
 .st-spin { animation: st-spin 1s linear infinite; }
@@ -582,7 +582,7 @@ select.st-input { cursor: pointer; }
 .st-move { height: 30px; padding: 0 10px; border-radius: 7px; border: 1.5px solid; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }
 .st-icon { width: 30px; height: 30px; border-radius: 7px; border: 1.5px solid; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .st-move:disabled, .st-icon:disabled { opacity: .6; cursor: not-allowed; }
-.st-icon-btn:focus-visible, .st-btn:focus-visible, .st-ghost:focus-visible, .st-bulk-btn:focus-visible, .st-move:focus-visible, .st-icon:focus-visible, .st-close:focus-visible { outline: 2px solid #5156be; outline-offset: 2px; }
+.st-icon-btn:focus-visible, .st-btn:focus-visible, .st-ghost:focus-visible, .st-bulk-btn:focus-visible, .st-move:focus-visible, .st-icon:focus-visible, .st-close:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 .st-overlay { position: fixed; inset: 0; height: 100vh; height: 100dvh; box-sizing: border-box; overscroll-behavior: contain; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: st-fade .15s ease-out; }
 .st-modal { width: 100%; max-width: 560px; max-height: 100%; display: flex; flex-direction: column; background: #fff; border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); color: #1e293b; animation: st-pop .18s ease-out; }

@@ -10,10 +10,13 @@ import * as XLSX from 'xlsx';
 import PageHeader from '../../components/PageHeader';
 import { Book, Clipboard, Users, GraduationCap, Download, BarChart2, Filter, Loader2, Search, ArrowUpRight, TrendingUp, Info, Award, Calendar, Activity, ChevronRight, Zap, Target, ShieldCheck as ShieldIcon, Database, LineChart as LineChartIcon } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import { useThemeColors, hexAlpha } from '../../utils/theme';
 
 type AdminChartType = 'bar' | 'line' | 'area' | 'radar';
 
 export default function AdminWelcome() {
+  // Charts draw SVG attributes, which need real colours rather than CSS variables
+  const tc = useThemeColors();
   const [selCatId, setSelCatId] = useState<number | null>(null);
   const [selQuizId, setSelQuizId] = useState<number | null>(null);
   const [assocQuizzes, setAssocQuizzes] = useState<any[]>([]);
@@ -82,7 +85,7 @@ export default function AdminWelcome() {
     { key: 'radar', label: 'Radar', icon: <Target size={15} /> },
   ];
 
-  const ACCENT = '#6366f1';
+  const ACCENT = tc.brand;
   const BLUE   = '#0ea5e9';
 
   const commonChartProps = {
@@ -92,7 +95,7 @@ export default function AdminWelcome() {
   const sharedGrid  = <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />;
   const sharedXAxis = <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} dy={15} />;
   const sharedYAxis = <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 700 }} />;
-  const sharedTip   = <Tooltip cursor={{ fill: 'rgba(99,102,241,0.04)' }} contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.12)', padding: '20px' }} />;
+  const sharedTip   = <Tooltip cursor={{ fill: hexAlpha(tc.brand, 0.04) }} contentStyle={{ borderRadius: 16, border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.12)', padding: '20px' }} />;
   const sharedLeg   = <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px', fontWeight: 700 }} />;
 
   const renderAdminChart = () => {
@@ -115,9 +118,9 @@ export default function AdminWelcome() {
     if (chartType === 'area') return (
       <AreaChart {...commonChartProps}>
         {sharedGrid}{sharedXAxis}{sharedYAxis}{sharedTip}{sharedLeg}
-        {showOBJ    && <Area type="monotone" dataKey="objScore" name="Objective" stroke={ACCENT} fill="rgba(99,102,241,0.12)" strokeWidth={2.5} dot={{ r: 4 }} />}
+        {showOBJ    && <Area type="monotone" dataKey="objScore" name="Objective" stroke={ACCENT} fill={hexAlpha(tc.brand, 0.12)} strokeWidth={2.5} dot={{ r: 4 }} />}
         {showTheory && <Area type="monotone" dataKey="thScore"  name="Theory"   stroke={BLUE}   fill="rgba(14,165,233,0.1)"   strokeWidth={2.5} dot={{ r: 4 }} />}
-        {!showOBJ && !showTheory && <Area type="monotone" dataKey="score" name="Total" stroke={ACCENT} fill="rgba(99,102,241,0.12)" strokeWidth={2.5} dot={{ r: 4 }} />}
+        {!showOBJ && !showTheory && <Area type="monotone" dataKey="score" name="Total" stroke={ACCENT} fill={hexAlpha(tc.brand, 0.12)} strokeWidth={2.5} dot={{ r: 4 }} />}
       </AreaChart>
     );
     if (chartType === 'radar') return (
@@ -141,7 +144,7 @@ export default function AdminWelcome() {
       {/* Stats Row */}
       <div className="stats-grid-compact">
         {[
-          { label: 'Modules', value: dashStats?.modules ?? '0', icon: <Book size={26} />, bg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
+          { label: 'Modules', value: dashStats?.modules ?? '0', icon: <Book size={26} />, bg: 'linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%)' },
           { label: 'Assessments', value: dashStats?.assessments ?? '0', icon: <Zap size={26} />, bg: 'linear-gradient(135deg, #0ea5e9 0%, #2dd4bf 100%)' },
           { label: 'Candidates', value: dashStats?.candidates ?? '0', icon: <GraduationCap size={26} />, bg: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)' },
           { label: 'Personnel', value: dashStats?.personnel ?? '0', icon: <Users size={26} />, bg: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' },
@@ -381,9 +384,9 @@ export default function AdminWelcome() {
         .h-identity { display: flex; align-items: center; gap: 24px; }
         .h-icon-glow {
           width: 56px; height: 56px; border-radius: 18px; 
-          background: rgba(99, 102, 241, 0.1); color: var(--accent-primary);
+          background: rgba(var(--brand-rgb), 0.1); color: var(--accent-primary);
           display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15);
+          box-shadow: 0 8px 16px rgba(var(--brand-rgb), 0.15);
         }
         .h-icon-glow.secondary { background: rgba(14, 165, 233, 0.1); color: var(--accent-secondary); box-shadow: 0 8px 16px rgba(14, 165, 233, 0.15); }
 
@@ -396,7 +399,7 @@ export default function AdminWelcome() {
           font-size: 13px; font-weight: 700; color: var(--text-main); background: #fff;
           transition: 0.3s; cursor: pointer; min-width: 220px;
         }
-        .premium-select:focus { border-color: var(--accent-primary); outline: none; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08); }
+        .premium-select:focus { border-color: var(--accent-primary); outline: none; box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.08); }
 
         .standout-body { padding: 50px; }
 
@@ -430,7 +433,7 @@ export default function AdminWelcome() {
           font-family: 'Outfit', 'Inter', sans-serif;
         }
         .admin-toggle-btn:hover  { background: #fff; color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-        .admin-toggle-btn.active { background: var(--accent-primary); color: #fff; box-shadow: 0 6px 16px rgba(99,102,241,0.3); }
+        .admin-toggle-btn.active { background: var(--accent-primary); color: #fff; box-shadow: 0 6px 16px rgba(var(--brand-rgb), 0.3); }
 
         .chart-container-premium { height: 450px; }
 
@@ -451,9 +454,9 @@ export default function AdminWelcome() {
 
         .user-profile-stack { display: flex; align-items: center; gap: 20px; }
         .u-avatar {
-          width: 48px; height: 48px; border-radius: 15px; background: rgba(99, 102, 241, 0.1);
+          width: 48px; height: 48px; border-radius: 15px; background: rgba(var(--brand-rgb), 0.1);
           color: var(--accent-primary); display: flex; align-items: center; justify-content: center;
-          font-weight: 900; font-size: 18px; border: 1px solid rgba(99, 102, 241, 0.1);
+          font-weight: 900; font-size: 18px; border: 1px solid rgba(var(--brand-rgb), 0.1);
         }
         .u-name { display: block; font-size: 16px; font-weight: 800; color: var(--text-main); }
         .u-id { font-size: 13px; color: var(--text-muted); font-weight: 600; }

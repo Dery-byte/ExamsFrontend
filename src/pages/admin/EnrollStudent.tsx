@@ -164,7 +164,7 @@ export default function EnrollStudent() {
           {/* Header */}
           <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid #f1f5f7" }}>
             <div className="enroll-stu-header">
-              <Users size={16} color="#5156be" />
+              <Users size={16} color="var(--brand-text)" />
               <span style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>{tx("Select Student")}</span>
               <span className="enroll-stu-count">
                 {students.length} total
@@ -189,7 +189,7 @@ export default function EnrollStudent() {
           <div style={{ maxHeight: 520, overflowY: "auto" }}>
             {loadingStu ? (
               <div style={{ display: "flex", justifyContent: "center", padding: 28 }}>
-                <Loader2 size={26} color="#5156be" style={{ animation: "spin 1s linear infinite" }} />
+                <Loader2 size={26} color="var(--brand-text)" style={{ animation: "spin 1s linear infinite" }} />
               </div>
             ) : filteredStudents.length === 0 ? (
               <div style={{ textAlign: "center", padding: "32px 16px", color: "#94a3b8", fontSize: 13 }}>
@@ -207,19 +207,19 @@ export default function EnrollStudent() {
                     display: "flex", alignItems: "center", gap: 10,
                     padding: "10px 14px", cursor: "pointer",
                     borderBottom: "1px solid #f8fafc",
-                    background: isSel ? "rgba(81,86,190,0.08)" : "transparent",
+                    background: isSel ? "rgba(var(--brand-rgb), 0.08)" : "transparent",
                     transition: "background 0.15s",
                   }}
                 >
                   <div style={{
                     width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-                    background: isSel ? "#5156be" : "#e2e8f0",
+                    background: isSel ? "var(--brand)" : "#e2e8f0",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: isSel ? "#fff" : "#64748b", fontWeight: 800, fontSize: 14,
+                    color: isSel ? "var(--brand-contrast)" : "#64748b", fontWeight: 800, fontSize: 14,
                   }}>{initials}</div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: isSel ? "#3730a3" : "#1e293b",
+                    <div style={{ fontSize: 13, fontWeight: 700, color: isSel ? "var(--brand-hover)" : "#1e293b",
                       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
                     <div style={{ fontSize: 11, color: "#94a3b8", display: "flex", gap: 5, flexWrap: "wrap" }}>
                       <span>{s.program || tx("No program")}</span>
@@ -227,7 +227,7 @@ export default function EnrollStudent() {
                     </div>
                   </div>
 
-                  {isSel && <CheckCircle2 size={16} color="#5156be" />}
+                  {isSel && <CheckCircle2 size={16} color="var(--brand-text)" />}
                 </div>
               );
             })}
@@ -241,13 +241,13 @@ export default function EnrollStudent() {
             <div style={{
               display: "flex", alignItems: "center", gap: 12,
               padding: "12px 18px", marginBottom: 14,
-              background: "rgba(81,86,190,0.07)",
-              border: "1.5px solid rgba(81,86,190,0.2)", borderRadius: 10,
+              background: "rgba(var(--brand-rgb), 0.07)",
+              border: "1.5px solid rgba(var(--brand-rgb), 0.2)", borderRadius: 10,
             }}>
-              <GraduationCap size={18} color="#5156be" />
+              <GraduationCap size={18} color="var(--brand-text)" />
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#3730a3" }}>{stuName(selected)}</div>
-                <div style={{ fontSize: 12, color: "#6366f1" }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "var(--brand-hover)" }}>{stuName(selected)}</div>
+                <div style={{ fontSize: 12, color: "var(--brand-text)" }}>
                   {selected.program || tx("No program assigned")}
                   {selected.currentLevel > 0 && tx(` · Level ${selected.currentLevel}`)}
                   {selected.currentSemester > 0 && ` · Sem ${selected.currentSemester}`}
@@ -305,7 +305,7 @@ export default function EnrollStudent() {
               <div style={{ maxHeight: 500, overflowY: "auto" }}>
                 {loadingCrs ? (
                   <div style={{ display: "flex", justifyContent: "center", padding: 32 }}>
-                    <Loader2 size={28} color="#5156be" style={{ animation: "spin 1s linear infinite" }} />
+                    <Loader2 size={28} color="var(--brand-text)" style={{ animation: "spin 1s linear infinite" }} />
                   </div>
                 ) : !selected.programId ? (
                   <div style={{ textAlign: "center", padding: "40px 20px", color: "#94a3b8" }}>
@@ -336,7 +336,7 @@ export default function EnrollStudent() {
                         width: 42, height: 42, borderRadius: 10, flexShrink: 0,
                         background: isGlobal
                           ? "linear-gradient(135deg,#10b981,#059669)"
-                          : "linear-gradient(135deg,#5156be,#4f46e5)",
+                          : "linear-gradient(135deg,var(--brand),var(--brand))",
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}>
                         <BookMarked size={18} color="#fff" />
@@ -352,7 +352,7 @@ export default function EnrollStudent() {
                             </span>
                           )}
                           {lvl && (
-                            <span style={{ fontSize: 11, color: "#5156be", fontWeight: 700 }}>
+                            <span style={{ fontSize: 11, color: "var(--brand-text)", fontWeight: 700 }}>
                               {tx("Level ")}{lvl}
                             </span>
                           )}
@@ -364,7 +364,7 @@ export default function EnrollStudent() {
                               🌐 Global
                             </span>
                           ) : coursePrograms.map((p: any) => (
-                            <span key={p.id} style={{ fontSize: 11, background: "#eef2ff", color: "#4338ca", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
+                            <span key={p.id} style={{ fontSize: 11, background: "var(--brand-soft)", color: "var(--brand-hover)", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>
                               🎓 {p.name}
                             </span>
                           ))}
@@ -377,7 +377,7 @@ export default function EnrollStudent() {
                         disabled={isEnrolling}
                         style={{
                           flexShrink: 0, padding: "7px 18px", borderRadius: 8,
-                          border: "none", background: isAlreadyEnrolled ? "#ef4444" : "#5156be", color: "#fff",
+                          border: "none", background: isAlreadyEnrolled ? "#ef4444" : "var(--brand)", color: "var(--brand-contrast)",
                           fontSize: 13, fontWeight: 700, cursor: "pointer",
                           opacity: isEnrolling ? 0.7 : 1,
                           display: "flex", alignItems: "center", gap: 6,
