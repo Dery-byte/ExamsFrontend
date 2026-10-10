@@ -472,7 +472,7 @@ export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
 export type FeatureKey =
   | 'STUDENT_SELF_SIGNUP' | 'HOD_ANALYTICS' | 'HOD_DATA_TOOLS' | 'HOD_PROMOTION' | 'HOD_ANNOUNCEMENTS'
   | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'STUDENT_REPORT_CARD' | 'QUESTION_BANK'
-  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION';
+  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION' | 'HOD_REPORTS' | 'LECTURER_REPORTS';
 
 export interface FeatureFlags {
   marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean;
@@ -536,6 +536,64 @@ export interface AuditPage { items: AuditEntry[]; page: number; size: number; to
 export const saGetAuditLogs = (params: AuditQuery): Promise<AuditPage> =>
   saClient.get('/audit-logs', { params }).then(r => r.data);
 export const saGetAuditActions = (): Promise<string[]> => saClient.get('/audit-logs/actions').then(r => r.data);
+
+// ── Reports (Super Admin: whole institution; HOD: own department) ─────────
+export type ReportFilterKey = 'session' | 'department' | 'program' | 'level' | 'semester' | 'from' | 'to' | 'course' | 'quiz' | 'status';
+export interface ReportFilterDef {
+  key: ReportFilterKey; label: string; options: { value: string; label: string }[] | null;
+  /** The report shows nothing until this is chosen (e.g. the broadsheet's programme, level and semester). */
+  required: boolean;
+}
+export interface ReportDefinition {
+  key: string; title: string; group: string; description: string; icon: string; filters: ReportFilterDef[];
+}
+export type ReportColumnType = 'text' | 'int' | 'number' | 'decimal' | 'percent' | 'money' | 'date' | 'datetime';
+export interface ReportColumn { key: string; label: string; type: ReportColumnType }
+export interface ReportTable {
+  id: string; title: string; subtitle: string | null; columns: ReportColumn[]; rows: Record<string, unknown>[];
+  drill: { param: string; key: string; hint: string } | null;
+  chart: { label: string; value: string } | null;
+  emptyText: string;
+}
+export interface ReportResult {
+  key: string; title: string; description: string; scope: string[];
+  summary: { label: string; value: unknown; hint: string | null; tone: 'good' | 'warn' | 'bad' | null }[];
+  tables: ReportTable[]; notes: string[]; generatedAt: string; generatedBy: string | null;
+}
+/** Query parameters a report accepts; unset ones are left out. courseId / quizId are drill-downs. */
+export interface ReportParams {
+  sessionId?: number; departmentId?: number; programId?: number; level?: number; semester?: number;
+  from?: string; to?: string; courseId?: number; quizId?: number; status?: string;
+}
+/** List, run and print reports; the Super Admin and HODs each have their own (same shape). */
+export interface ReportsApi {
+  catalog: () => Promise<ReportDefinition[]>;
+  run: (key: string, params: ReportParams) => Promise<ReportResult>;
+  pdf: (key: string, params: ReportParams, fileName: string) => Promise<void>;
+}
+const cleanParams = (p: ReportParams) => Object.fromEntries(Object.entries(p).filter(([, v]) => v !== '' && v != null));
+
+const saveBlob = (blob: Blob, fileName: string) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fileName; a.click();
+  URL.revokeObjectURL(url);
+};
+
+const reportsApi = (get: (path: string, config?: object) => Promise<any>): ReportsApi => ({
+  catalog: () => get('').then(r => r.data),
+  run: (key, params) => get(`/${key}`, { params: cleanParams(params) }).then(r => r.data),
+  pdf: async (key, params, fileName) => {
+    const res = await get(`/${key}/pdf`, { params: cleanParams(params), responseType: 'blob' });
+    saveBlob(res.data, fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`);
+  },
+});
+
+export const saReportsApi = reportsApi((path, config) => saClient.get(`/reports${path}`, config));
+/** Always the HOD's own department (the server locks it). */
+export const hodReportsApi = reportsApi((path, config) => client.get(`${apiRoot()}/hod/reports${path}`, config));
+/** Always the lecturer's own courses and quizzes (the server locks it). */
+export const lecturerReportsApi = reportsApi((path, config) => client.get(`${apiRoot()}/lecturer/reports${path}`, config));
 
 // ── Exam operations (Phase 2) ─────────────────────────────────────────────
 export const getTimetable = (params: { from?: string; to?: string; departmentId?: number | ''; programId?: number | ''; level?: string }) =>

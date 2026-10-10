@@ -10,7 +10,7 @@ import {
   Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
   Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library,
   Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight,
-  Landmark, ClipboardPen, ClipboardList, FilePlus, Eye, Wallet
+  Landmark, ClipboardPen, ClipboardList, FilePlus, Eye, Wallet, FileBarChart
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -99,6 +99,7 @@ export default function SuperAdminLayout() {
         ...(isSchoolMode() ? [{ to: '/super-admin/term-remarks', icon: <ClipboardPen size={20} />, label: 'Report Remarks' }] : []),
         ...(!isSchoolMode() ? [{ to: '/super-admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' }] : []),
         { to: '/super-admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
+        { to: '/super-admin/reports', icon: <FileBarChart size={20} />, label: 'Reports' },
         ...(auditLogSuperAdmin !== false ? [{ to: '/super-admin/audit-log', icon: <ScrollText size={20} />, label: 'Audit Log' }] : []),
       ]
     },

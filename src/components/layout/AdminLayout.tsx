@@ -30,7 +30,8 @@ import {
   FileText,
   DatabaseZap,
   ToggleRight,
-  ClipboardPen
+  ClipboardPen,
+  FileBarChart
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -93,6 +94,7 @@ export default function AdminLayout() {
       items: [
         { to: '/admin/quiz-review', icon: <Eye size={20} />, label: 'Quiz Review Panel' },
         { to: '/admin/remarks', icon: <MessageSquareWarning size={20} />, label: 'Re-mark Requests' },
+        ...(on('HOD_REPORTS') ? [{ to: '/admin/reports', icon: <FileBarChart size={20} />, label: 'Reports' }] : []),
       ]
     }
   ];

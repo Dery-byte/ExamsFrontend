@@ -40,6 +40,8 @@ import FeatureGate from './components/FeatureGate';
 import Announcements from './pages/shared/Announcements';
 import Analytics from './pages/shared/Analytics';
 import AuditLog from './pages/superadmin/AuditLog';
+import ReportsHub from './pages/shared/reports/ReportsHub';
+import ReportView from './pages/shared/reports/ReportView';
 import Timetable from './pages/shared/Timetable';
 import QuestionBank from './pages/shared/QuestionBank';
 import ProctoringReport from './pages/shared/ProctoringReport';
@@ -154,6 +156,8 @@ export default function App() {
           <Route path="announcements" element={<Announcements />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="audit-log" element={<FeatureGate flag="auditLogSuperAdmin" redirectTo="/super-admin"><AuditLog /></FeatureGate>} />
+          <Route path="reports" element={<ReportsHub />} />
+          <Route path="reports/:key" element={<ReportView />} />
           <Route path="timetable" element={<Timetable />} />
           <Route path="question-bank" element={<QuestionBank />} />
           <Route path="remarks" element={<RemarkRequests />} />
@@ -189,6 +193,8 @@ export default function App() {
           <Route path="data-tools" element={<FeatureGate feature="HOD_DATA_TOOLS" redirectTo="/admin"><DataTools /></FeatureGate>} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="analytics" element={<FeatureGate feature="HOD_ANALYTICS" redirectTo="/admin"><Analytics /></FeatureGate>} />
+          <Route path="reports" element={<FeatureGate feature="HOD_REPORTS" redirectTo="/admin"><ReportsHub /></FeatureGate>} />
+          <Route path="reports/:key" element={<FeatureGate feature="HOD_REPORTS" redirectTo="/admin"><ReportView /></FeatureGate>} />
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCategories />} />
           <Route path="add-course" element={<AddCategory />} />
@@ -209,6 +215,8 @@ export default function App() {
           <Route index element={<LectWelcome />} />
           <Route path="timetable" element={<Timetable />} />
           <Route path="question-bank" element={<FeatureGate feature="QUESTION_BANK" redirectTo="/lect"><QuestionBank /></FeatureGate>} />
+          <Route path="reports" element={<FeatureGate feature="LECTURER_REPORTS" redirectTo="/lect"><ReportsHub /></FeatureGate>} />
+          <Route path="reports/:key" element={<FeatureGate feature="LECTURER_REPORTS" redirectTo="/lect"><ReportView /></FeatureGate>} />
           <Route path="proctoring/:qId" element={<ProctoringReport />} />
           <Route path="remarks" element={<RemarkRequests />} />
           <Route path="announcements" element={<Announcements />} />
