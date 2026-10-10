@@ -37,6 +37,8 @@ export interface QuizProtectionConfig {
   username: string;
    _savedViolationCount?: number;
   _pendingViolationDelay?: number;
+  /** Super Admin switch (Feature Controls): violation tone and countdown beeps. Off = silent; default on. */
+  soundEnabled?: boolean;
   /** Super Admin setting: the lock-out stops while the student is away and runs on when they return. */
   _delayPausesWhileAway?: boolean;
   onAutoSubmit: () => void;
@@ -644,6 +646,9 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
   const cfgRef   = useRef(cfg);   // always-fresh config reference
   cfgRef.current = cfg;
 
+  // Every violation tone and countdown beep goes through here, so the Super Admin's switch silences them all
+  const play = (freq: number, dur: number, vol?: number) => { if (cfgRef.current.soundEnabled !== false) beep(freq, dur, vol); };
+
   // ── helpers that read cfgRef (always fresh) ──────────────────────────────
   const calcDelay = () => {
     const c = cfgRef.current;
@@ -700,7 +705,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
 
     showDelayOv(type, dur, st.current.totalViolations, c.maxViolations,
       willAutoNext, c.violationAction, st.current.totalDelayServed);
-    beep(440, 0.5);
+    play(440, 0.5);
 
     // The server stores when the lock-out ends, so it carries over to a reload or another device
     saveDelayLeft(dur);
@@ -711,7 +716,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
       st.current.delayRemaining = t;
       tickDelayOv(t, dur);
       delayTicked(t);
-      if (t <= 5 && t > 0) beep(880, 0.2, 0.2);
+      if (t <= 5 && t > 0) play(880, 0.2, 0.2);
       if (t <= 0) endDelay();
     }, 1000);
   }, [endDelay]);
@@ -726,12 +731,12 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     const max = c.autoSubmitCountdownSeconds;
     let cd = max;
     showAutoSubmitOv(cd, st.current.totalViolations, c.maxViolations, st.current.totalDelayServed, type);
-    beep(440, 0.5);
+    play(440, 0.5);
 
     asIv.current = setInterval(() => {
       cd--;
       tickAutoSubmitOv(cd, max);
-      if (cd <= 3 && cd > 0) beep(880, 0.2, 0.2);
+      if (cd <= 3 && cd > 0) play(880, 0.2, 0.2);
       if (cd <= 0) {
         if (asIv.current) { clearInterval(asIv.current); asIv.current = null; }
         cfgRef.current.onAutoSubmit();
@@ -817,7 +822,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
 
       showDelayOv('locked', pendingDelayVal, s.totalViolations,
         cfg.maxViolations, false, cfg.violationAction, s.totalDelayServed);
-      beep(440, 0.5);
+      play(440, 0.5);
 
       // Restarts the server's end time from now, which matters when the lock-out is paused while
       // the student is away
@@ -830,7 +835,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
         s.delayRemaining = t;
         tickDelayOv(t, pendingDelayVal);
         delayTicked(t);
-        if (t <= 5 && t > 0) beep(880, 0.2, 0.2);
+        if (t <= 5 && t > 0) play(880, 0.2, 0.2);
         if (t <= 0) {
           endDelay();
         }

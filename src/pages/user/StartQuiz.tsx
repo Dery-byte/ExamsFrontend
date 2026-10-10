@@ -15,6 +15,7 @@ import {
 import { decodeParam } from '../../utils/quizLink';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuizProtection } from '../../hooks/useQuizProtection';
+import { useFeature } from '../../hooks/useFeatureFlags';
 import QuestionImage from '../../components/ui/QuestionImage';
 import { theoryGroupKey, compareTheoryGroups } from '../../utils/theoryGroups';
 import Swal from 'sweetalert2';
@@ -168,6 +169,8 @@ export default function StartQuiz() {
   const timerVal = useRef(0);
   const totalSecRef = useRef(1);
   const mainRef = useRef<HTMLElement>(null);
+  // Super Admin switch (Feature Controls): violation tone and countdown beeps
+  const examSounds = useFeature('EXAM_SOUNDS');
 
   useQuizProtection(quizConfig ? {
     quizId: realId,
@@ -185,6 +188,7 @@ export default function StartQuiz() {
     _pendingViolationDelay: quizConfig._pendingViolationDelay ?? 0,
     _savedViolationCount: quizConfig._savedViolationCount ?? 0,
     _delayPausesWhileAway: quizConfig._delayPausesWhileAway ?? true,
+    soundEnabled: examSounds,
   } : {
     quizId: realId, violationAction: 'NONE' as const,
     maxViolations: 0, delaySeconds: 0, delayMultiplier: 3,
@@ -228,9 +232,16 @@ export default function StartQuiz() {
     const signal = () => {
       ch.postMessage({ type: 'EXAM_ENDED' });
     };
+    // Phones often skip beforeunload when a tab is closed; pagehide still fires
+    const onPageHide = (e: PageTransitionEvent) => { if (!e.persisted) signal(); };
     window.addEventListener('beforeunload', signal);
+    window.addEventListener('pagehide', onPageHide);
+    // Tell the Instructions page this window is (again) open, e.g. after the student reloaded it.
+    // Only for a window opened from that page (a quiz opened directly reloads itself after submitting).
+    if (window.opener) ch.postMessage({ type: 'ALIVE' });
     return () => {
       window.removeEventListener('beforeunload', signal);
+      window.removeEventListener('pagehide', onPageHide);
       ch.close();
     };
   }, []);

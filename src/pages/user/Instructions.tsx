@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus, unlockQuiz } from '../../api/endpoints';
@@ -63,68 +63,109 @@ export default function Instructions() {
       sessionStorage.getItem(EXAM_SESSION_KEY) === '1'
   );
 
-  // On every mount:
-  //  1. Wipe module var if the window closed while navigating.
-  //  2. Re-sync quizOpen from both the module var and sessionStorage.
-  //  3. Open a BroadcastChannel: when the quiz window broadcasts EXAM_ENDED
-  //     (on submit or close), clear the sessionStorage flag and hide the banner
-  //     — this works even if this page was refreshed and lost the Window ref.
-  useEffect(() => {
-    if (_activeQuizWindow?.closed) {
-      _activeQuizWindow = null;
+  const channel   = useRef<BroadcastChannel | null>(null);
+  const pingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Re-read the attempt position, so a closed window shows "Resume attempt n" (or the result).
+  const refreshAttempts = useCallback(() => {
+    if (realId) getMyAttemptStatus(realId).then((s: any) => setAttempts(s)).catch(() => {});
+  }, [realId]);
+
+  // The quiz window is gone: forget it and offer Resume.
+  const markClosed = useCallback(() => {
+    if (pingTimer.current) { clearTimeout(pingTimer.current); pingTimer.current = null; }
+    _activeQuizWindow = null;
+    sessionStorage.removeItem(EXAM_SESSION_KEY);
+    setQuizOpen(false);
+    refreshAttempts();
+  }, [refreshAttempts]);
+
+  // A quiz window answered (or just opened / reloaded): it is running.
+  const markOpen = useCallback(() => {
+    if (pingTimer.current) { clearTimeout(pingTimer.current); pingTimer.current = null; }
+    sessionStorage.setItem(EXAM_SESSION_KEY, '1');
+    setQuizOpen(true);
+  }, []);
+
+  /**
+   * Is the quiz window still open? With the Window handle we can tell directly. Without it (this
+   * page was refreshed, or the browser dropped it) ask the window over the channel: no answer
+   * within 2.5 s means it was closed.
+   */
+  const verifyOpen = useCallback((onClosed?: () => void) => {
+    if (_activeQuizWindow) {
+      if (_activeQuizWindow.closed) { markClosed(); onClosed?.(); }
+      return;
     }
+    if (!channel.current) return;
+    if (pingTimer.current) clearTimeout(pingTimer.current);
+    channel.current.postMessage({ type: 'PING' });
+    pingTimer.current = setTimeout(() => {
+      pingTimer.current = null;
+      markClosed();
+      onClosed?.();
+    }, 2500);
+  }, [markClosed]);
+
+  // On every mount: re-sync from the Window handle and the stored flag, and listen to the quiz
+  // window: EXAM_ENDED (closed or submitted), PONG (answer to a ping), ALIVE (it opened or reloaded).
+  useEffect(() => {
+    if (_activeQuizWindow?.closed) _activeQuizWindow = null;
     const live   = !!_activeQuizWindow && !_activeQuizWindow.closed;
     const stored = sessionStorage.getItem(EXAM_SESSION_KEY) === '1';
     setQuizOpen(live || stored);
 
     const ch = new BroadcastChannel(EXAM_CHANNEL);
-    let pingTimer: ReturnType<typeof setTimeout> | null = null;
-
+    channel.current = ch;
     ch.onmessage = (e) => {
-      if (e.data?.type === 'EXAM_ENDED') {
-        // Quiz window closed or submitted — clear everything.
-        if (pingTimer) clearTimeout(pingTimer);
-        sessionStorage.removeItem(EXAM_SESSION_KEY);
-        _activeQuizWindow = null;
-        setQuizOpen(false);
+      const type = e.data?.type;
+      if (type === 'EXAM_ENDED') {
+        // Unload fired but the window is still open (the student stayed): ignore it.
+        if (_activeQuizWindow && !_activeQuizWindow.closed) return;
+        markClosed();
       }
-      if (e.data?.type === 'PONG') {
-        // Quiz window is alive — cancel the "assume dead" timeout.
-        if (pingTimer) clearTimeout(pingTimer);
-      }
+      if (type === 'PONG' || type === 'ALIVE') markOpen();
     };
-
-    // When we only have a sessionStorage flag (page was refreshed, or stale
-    // mobile session), ping the quiz window to verify it is still running.
-    // If no PONG arrives within 3 s we assume the window is gone and clear.
-    if (!live && stored) {
-      ch.postMessage({ type: 'PING' });
-      pingTimer = setTimeout(() => {
-        sessionStorage.removeItem(EXAM_SESSION_KEY);
-        _activeQuizWindow = null;
-        setQuizOpen(false);
-      }, 3000);
-    }
+    if (!live && stored) verifyOpen();
 
     return () => {
-      if (pingTimer) clearTimeout(pingTimer);
+      if (pingTimer.current) { clearTimeout(pingTimer.current); pingTimer.current = null; }
       ch.close();
+      channel.current = null;
     };
   }, []);   // once per mount
 
-  // Poll every second while the exam window is open.
-  // Detects when the student manually closes the window.
+  // While the quiz is open, keep checking that its window still exists: every second through the
+  // Window handle; otherwise by asking it when the student comes back to this page and every 15 s.
   useEffect(() => {
     if (!quizOpen) return;
-    const id = setInterval(() => {
-      if (_activeQuizWindow?.closed) {
-        _activeQuizWindow = null;
-        sessionStorage.removeItem(EXAM_SESSION_KEY);
-        setQuizOpen(false);
-      }
-    }, 1000);
-    return () => clearInterval(id);
-  }, [quizOpen]);
+    const fast = setInterval(() => { if (_activeQuizWindow?.closed) markClosed(); }, 1000);
+    const slow = setInterval(() => {
+      if (!_activeQuizWindow && document.visibilityState === 'visible') verifyOpen();
+    }, 15000);
+    const onReturn = () => { if (document.visibilityState === 'visible') verifyOpen(); };
+    document.addEventListener('visibilitychange', onReturn);
+    window.addEventListener('focus', onReturn);
+    return () => {
+      clearInterval(fast);
+      clearInterval(slow);
+      document.removeEventListener('visibilitychange', onReturn);
+      window.removeEventListener('focus', onReturn);
+    };
+  }, [quizOpen, markClosed, verifyOpen]);
+
+  // Tapping "Quiz in progress": bring the quiz window forward, or, if it was closed, switch to Resume.
+  const switchToQuiz = () => {
+    const closedNotice = () => Swal.fire({
+      toast: true, position: 'top', icon: 'info', timer: 3500, showConfirmButton: false,
+      title: 'The quiz window was closed. Tap Resume to continue.',
+    });
+    if (_activeQuizWindow && !_activeQuizWindow.closed) { _activeQuizWindow.focus(); return; }
+    if (_activeQuizWindow?.closed) { markClosed(); closedNotice(); return; }
+    // No handle (this page was refreshed): ask the window to come forward and check it answers.
+    channel.current?.postMessage({ type: 'FOCUS_EXAM' });
+    verifyOpen(closedNotice);
+  };
 
   useEffect(() => {
     if (!realId) return;
@@ -452,23 +493,10 @@ export default function Instructions() {
                   {quizOpen ? (
                     /* ── Any exam window is open — focus it; no second window allowed ── */
                     <div
-                      onClick={() => {
-                        if (_activeQuizWindow && !_activeQuizWindow.closed) {
-                          // Live ref — focus directly.
-                          _activeQuizWindow.focus();
-                        } else {
-                          // Post-refresh: Window ref is gone.
-                          // FOCUS_EXAM asks the quiz window to self-focus.
-                          // PING verifies it is still alive; if PONG arrives the
-                          // mount-effect channel cancels any pending dead-timer.
-                          try {
-                            const ch = new BroadcastChannel(EXAM_CHANNEL);
-                            ch.postMessage({ type: 'FOCUS_EXAM' });
-                            ch.postMessage({ type: 'PING' });
-                            ch.close();
-                          } catch (_) {}
-                        }
-                      }}
+                      role="button"
+                      tabIndex={0}
+                      onClick={switchToQuiz}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchToQuiz(); } }}
                       style={{
                         width: '100%', padding: '14px', borderRadius: 4, cursor: 'pointer',
                         background: 'rgba(40, 187, 100, 0.12)', border: '1.5px solid rgba(40, 187, 100, 0.35)',
@@ -476,7 +504,7 @@ export default function Instructions() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                         userSelect: 'none',
                       }}
-                      title="Click to switch to the exam window"
+                      title="Switch to the quiz window"
                     >
                       <span style={{
                         width: 10, height: 10, borderRadius: '50%',
@@ -484,7 +512,7 @@ export default function Instructions() {
                         boxShadow: '0 0 0 0 rgba(40,187,100,0.5)',
                         animation: 'examPulse 1.4s ease-in-out infinite',
                       }} />
-                      EXAM IN PROGRESS — TAP TO SWITCH
+                      QUIZ IN PROGRESS — TAP TO SWITCH
                     </div>
                   ) : (
                     /* ── No exam window open — show the start button ── */

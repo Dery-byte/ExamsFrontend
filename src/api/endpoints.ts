@@ -472,7 +472,7 @@ export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
 export type FeatureKey =
   | 'STUDENT_SELF_SIGNUP' | 'HOD_ANALYTICS' | 'HOD_DATA_TOOLS' | 'HOD_PROMOTION' | 'HOD_ANNOUNCEMENTS'
   | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'STUDENT_REPORT_CARD' | 'QUESTION_BANK'
-  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION' | 'HOD_REPORTS' | 'LECTURER_REPORTS';
+  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION' | 'HOD_REPORTS' | 'LECTURER_REPORTS' | 'EXAM_SOUNDS';
 
 export interface FeatureFlags {
   marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean;
