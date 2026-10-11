@@ -22,6 +22,7 @@ import Welcome from './pages/auth/Welcome';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import MaintenanceGate from './components/common/MaintenanceGate';
+import Unavailable from './pages/auth/Unavailable';
 import ResetPassword from './pages/auth/ResetPassword';
 import ChangePassword from './pages/auth/ChangePassword';
 import Profile from './pages/auth/Profile';
@@ -140,6 +141,7 @@ export default function App() {
         <Route path="/login" element={<MaintenanceGate page="signin"><Login /></MaintenanceGate>} />
         <Route path="/signup" element={<MaintenanceGate page="signup"><Signup /></MaintenanceGate>} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/unavailable" element={<Unavailable />} />
         <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
         <Route path="/verify" element={<VerifyDocument />} />
         <Route path="/verify/:code" element={<VerifyDocument />} />

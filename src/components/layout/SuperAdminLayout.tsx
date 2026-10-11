@@ -13,6 +13,7 @@ import {
   Landmark, ClipboardPen, ClipboardList, FilePlus, Eye, Wallet, FileBarChart
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import SubscriptionNotice from '../common/SubscriptionNotice';
 
 const DESKTOP_QUERY = '(min-width: 1024px)';
 
@@ -238,6 +239,7 @@ export default function SuperAdminLayout() {
         <div className="sa-content" style={{ padding: isDesktop ? 24 : '16px 16px 24px' }}>
           {/* The shared page header is styled for light shells; keep it readable on this dark one */}
           <style>{`.sa-content .ph-title { color: #fff; } .sa-content .ph-crumbs { color: rgba(255,255,255,0.5); } .sa-content .ph-current { color: var(--accent-light); }`}</style>
+          <SubscriptionNotice dark />
           <Outlet />
         </div>
       </main>

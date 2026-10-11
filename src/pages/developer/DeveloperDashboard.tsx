@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { TerminalSquare, LogOut, SlidersHorizontal, Activity, Bug, ScrollText, Users, ListChecks, Palette, Wrench, type LucideIcon } from 'lucide-react';
+import { TerminalSquare, LogOut, SlidersHorizontal, Activity, Bug, ScrollText, Users, ListChecks, Palette, Wrench, CreditCard, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getSystemHealth, getMaintenance } from '../../api/endpoints';
+import { getSystemHealth, getMaintenance, getSubscription } from '../../api/endpoints';
 import ModePanel from './console/ModePanel';
 import HealthPanel from './console/HealthPanel';
 import ErrorsPanel from './console/ErrorsPanel';
@@ -12,16 +12,18 @@ import DevelopersPanel from './console/DevelopersPanel';
 import SetupPanel from './console/SetupPanel';
 import BrandingPanel from './console/BrandingPanel';
 import MaintenancePanel from './console/MaintenancePanel';
+import SubscriptionPanel from './console/SubscriptionPanel';
 import { toneOf, type Tone } from './console/ui';
 import { CSS } from './console/styles';
 
-type Tab = 'setup' | 'mode' | 'branding' | 'maintenance' | 'health' | 'errors' | 'audit' | 'developers';
+type Tab = 'setup' | 'mode' | 'branding' | 'maintenance' | 'subscription' | 'health' | 'errors' | 'audit' | 'developers';
 
 const NAV: { key: Tab; label: string; short: string; icon: LucideIcon }[] = [
   { key: 'setup', label: 'Setup', short: 'Setup', icon: ListChecks },
   { key: 'mode', label: 'System mode', short: 'Mode', icon: SlidersHorizontal },
   { key: 'branding', label: 'Branding', short: 'Brand', icon: Palette },
   { key: 'maintenance', label: 'Maintenance', short: 'Maint.', icon: Wrench },
+  { key: 'subscription', label: 'Subscription', short: 'Billing', icon: CreditCard },
   { key: 'health', label: 'Health', short: 'Health', icon: Activity },
   { key: 'errors', label: 'Errors', short: 'Errors', icon: Bug },
   { key: 'audit', label: 'Audit log', short: 'Audit', icon: ScrollText },
@@ -42,6 +44,9 @@ export default function DeveloperDashboard() {
   const openErrors: number = health.data?.errors?.open ?? 0;
   const maintenance = useQuery({ queryKey: ['dev-maintenance'], queryFn: getMaintenance });
   const maintenanceOn = !!maintenance.data?.enabled;
+  const subscription = useQuery({ queryKey: ['dev-subscription'], queryFn: getSubscription });
+  const subState = subscription.data?.state;
+  const subTone: Tone | null = !subState || subState === 'ACTIVE' ? null : subState === 'GRACE' ? 'warn' : 'bad';
 
   const go = (t: Tab) => {
     setParams(t === 'setup' ? {} : { tab: t }, { replace: true });
@@ -64,6 +69,9 @@ export default function DeveloperDashboard() {
       )}
       {key === 'maintenance' && maintenanceOn && (
         <span className="dd-nav-ind"><span className="dd-dot dd-tone-warn" aria-label="On" /></span>
+      )}
+      {key === 'subscription' && subTone && (
+        <span className="dd-nav-ind"><span className={`dd-dot dd-tone-${subTone}`} aria-label={subState === 'GRACE' ? 'Grace period' : subState === 'RESTRICTED' ? 'Read-only' : 'Suspended'} /></span>
       )}
       {key === 'errors' && openErrors > 0 && (
         <span className="dd-nav-ind"><span className="dd-count-badge" aria-label={`${openErrors} open`}>{openErrors > 99 ? '99+' : openErrors}</span></span>
@@ -110,6 +118,7 @@ export default function DeveloperDashboard() {
           {tab === 'mode' && <ModePanel />}
           {tab === 'branding' && <BrandingPanel />}
           {tab === 'maintenance' && <MaintenancePanel />}
+          {tab === 'subscription' && <SubscriptionPanel />}
           {tab === 'health' && <HealthPanel onShowErrors={() => go('errors')} />}
           {tab === 'errors' && <ErrorsPanel />}
           {tab === 'audit' && <AuditPanel />}

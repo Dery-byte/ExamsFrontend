@@ -9,7 +9,7 @@ import {
 } from '../../../api/endpoints';
 import { PanelHeader, PanelLoading, PanelError, Meter, apiMessage, CopyButton } from './ui';
 
-export type SetupTab = 'mode' | 'branding' | 'maintenance';
+export type SetupTab = 'mode' | 'branding' | 'maintenance' | 'subscription';
 
 interface Item { key: string; label: string; owner: 'developer' | 'superAdmin'; where: string | null; done: boolean; detail: string }
 
@@ -26,7 +26,7 @@ export default function SetupPanel({ onOpen }: { onOpen: (tab: SetupTab) => void
     if (i.owner !== 'developer') return <span className="ds-where">Super Admin → {i.where}</span>;
     if (i.key === 'email') return <button className="dd-btn dd-btn-sm" onClick={() => emailRef.current?.scrollIntoView({ behavior: 'smooth' })}>Send one <ArrowRight size={13} /></button>;
     if (i.key === 'superAdmin') return <button className="dd-btn dd-btn-sm" onClick={() => adminRef.current?.scrollIntoView({ behavior: 'smooth' })}>Create <ArrowRight size={13} /></button>;
-    if (i.where === 'mode' || i.where === 'branding' || i.where === 'maintenance')
+    if (i.where === 'mode' || i.where === 'branding' || i.where === 'maintenance' || i.where === 'subscription')
       return <button className="dd-btn dd-btn-sm" onClick={() => onOpen(i.where as SetupTab)}>Open <ArrowRight size={13} /></button>;
     return null;
   };

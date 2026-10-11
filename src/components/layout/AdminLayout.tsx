@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
+import SubscriptionNotice from '../common/SubscriptionNotice';
 
 export default function AdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
@@ -185,6 +186,7 @@ export default function AdminLayout() {
         {/* Dynamic Page Content */}
         <main className="lexa-content-wrapper">
           <div className="lexa-page-container">
+            <SubscriptionNotice />
             <Outlet />
           </div>
         </main>

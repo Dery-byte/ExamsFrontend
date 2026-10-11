@@ -33,6 +33,12 @@ client.interceptors.response.use(
       } catch { /* ignore */ }
       if (window.location.pathname !== '/change-password') window.location.href = '/change-password';
     }
+    // Subscription suspended: show the blocked page, but never pull a student out of an exam
+    // (the server lets exam calls through; SUBSCRIPTION_READ_ONLY only refuses the one change)
+    if (err.response?.status === 402 && (err.response.data as any)?.code === 'SUBSCRIPTION_SUSPENDED') {
+      const p = window.location.pathname;
+      if (p !== '/unavailable' && !p.startsWith('/start/') && !p.startsWith('/developer')) window.location.href = '/unavailable';
+    }
     if (err.response?.status === 401) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');

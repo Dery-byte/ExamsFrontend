@@ -782,6 +782,59 @@ export const getAuditLogAccess = (): Promise<{ superAdminVisible: boolean }> =>
 export const setAuditLogAccess = (superAdminVisible: boolean): Promise<{ superAdminVisible: boolean }> =>
   client.put(`${developerRootUrl()}/audit-log/access`, { superAdminVisible }).then(r => r.data);
 
+// ── Subscription ─────────────────────────────────────────────────────────
+export type SubscriptionStateName = 'ACTIVE' | 'GRACE' | 'RESTRICTED' | 'SUSPENDED';
+export type SubscriptionAccess = 'FULL' | 'READ_ONLY' | 'BLOCKED';
+/** What the signed-in person sees; details only when the developer included their role in the audience. */
+/** An invoice from the vendor portal, payable online through its pay link. */
+export interface SubscriptionInvoice { number: string; amount: string; currency: string; dueDate: string; coversUntil: string; payUrl: string }
+export interface SubscriptionNotice {
+  access: SubscriptionAccess; show: boolean;
+  state?: SubscriptionStateName; unlicensed?: boolean; manual?: boolean; paidUntil?: string;
+  nextChange?: string | null; nextState?: SubscriptionStateName | null; daysLeft?: number | null; contact?: string | null;
+  invoice?: SubscriptionInvoice | null; canCheckPayment?: boolean; checked?: boolean;
+}
+export const getSubscriptionNotice = (): Promise<SubscriptionNotice> => client.get('/subscription/notice').then(r => r.data);
+/** "I've paid, check now": checks in with the vendor portal at once and returns the updated notice. */
+export const checkSubscriptionPayment = (): Promise<SubscriptionNotice> => client.post('/subscription/check-payment').then(r => r.data);
+
+export interface SubscriptionKeyInfo {
+  id: string; institutionId: string; institutionName: string; plan: string; issued: string; paidUntil: string;
+  graceDays: number; restrictedDays: number; seq?: number; suspended?: boolean; note?: string | null; warnings?: string[];
+}
+export interface SubscriptionEventRow {
+  id: number; at: string; type: string; fromState: string | null; toState: string | null; details: string | null; actor: string | null;
+}
+export interface SubscriptionDetails {
+  state: SubscriptionStateName; source: 'KEY' | 'NO_KEY' | 'INVALID_KEY' | 'WRONG_INSTITUTION'; keyProblem: string | null;
+  key: SubscriptionKeyInfo | null; today: string; paidUntil: string; graceEnd: string; restrictedEnd: string;
+  extendedUntil: string | null; extensionReason: string | null; suspendedReason: string | null; suspendedAt: string | null;
+  nextChange: string | null; nextState: SubscriptionStateName | null; daysLeft: number | null;
+  audience: 'SUPER_ADMIN' | 'ADMINS'; contact: string; billingEmails: string; firstSeen: string | null;
+  boundInstitution: string | null; maxExtensionUntil: string; events: SubscriptionEventRow[];
+  providerSuspended: boolean; vendor: VendorLink; syncResult?: string; invoice: SubscriptionInvoice | null;
+}
+/** The link to the vendor portal, which renews keys automatically. */
+export interface VendorLink {
+  url: string | null; tokenSet: boolean; tokenHint: string | null; fromEnvironment: boolean;
+  lastAttempt: string | null; lastSuccess: string | null; lastResult: string | null; lastOk: boolean | null;
+}
+const subUrl = () => `${developerRootUrl()}/subscription`;
+export const getSubscription = (): Promise<SubscriptionDetails> => client.get(subUrl()).then(r => r.data);
+export const checkSubscriptionKey = (key: string): Promise<SubscriptionKeyInfo> => client.post(`${subUrl()}/key/check`, { key }).then(r => r.data);
+export const installSubscriptionKey = (key: string): Promise<SubscriptionDetails> => client.post(`${subUrl()}/key`, { key }).then(r => r.data);
+export const suspendPortal = (reason: string): Promise<SubscriptionDetails> => client.post(`${subUrl()}/suspend`, { reason }).then(r => r.data);
+export const resumePortal = (): Promise<SubscriptionDetails> => client.post(`${subUrl()}/resume`).then(r => r.data);
+export const extendSubscription = (until: string, reason: string): Promise<SubscriptionDetails> =>
+  client.put(`${subUrl()}/extension`, { until, reason }).then(r => r.data);
+export const clearSubscriptionExtension = (): Promise<SubscriptionDetails> => client.delete(`${subUrl()}/extension`).then(r => r.data);
+export const linkVendorPortal = (url: string, token: string): Promise<SubscriptionDetails> =>
+  client.put(`${subUrl()}/vendor`, { url, token }).then(r => r.data);
+export const unlinkVendorPortal = (): Promise<SubscriptionDetails> => client.delete(`${subUrl()}/vendor`).then(r => r.data);
+export const syncSubscriptionNow = (): Promise<SubscriptionDetails> => client.post(`${subUrl()}/sync`).then(r => r.data);
+export const saveSubscriptionSettings = (data: { audience?: string; contact?: string; billingEmails?: string }): Promise<SubscriptionDetails> =>
+  client.put(`${subUrl()}/settings`, data).then(r => r.data);
+
 // ── Fees & payments ───────────────────────────────────────────────────────
 export type FeeStatus = 'PAID' | 'PART_PAID' | 'UNPAID' | 'NO_FEE' | 'NO_CLASS';
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'ABANDONED' | 'VOIDED';
