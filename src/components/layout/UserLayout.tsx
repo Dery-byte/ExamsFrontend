@@ -18,7 +18,8 @@ import {
   Megaphone,
   CalendarDays,
   FileText,
-  Wallet
+  Wallet,
+  UserCheck
 } from 'lucide-react';
 import { isSchoolMode, tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
@@ -38,6 +39,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         { to: '/user-dashboard/user-dashboard', label: 'Dashboard',       icon: LayoutDashboard },
         ...(on('STUDENT_COURSE_REGISTRATION') ? [{ to: '/user-dashboard/register', label: tx('Register Course'), icon: GraduationCap }] : []),
         { to: '/user-dashboard/courses',         label: tx('My Courses'),   icon: BookOpen         },
+        ...(on('ATTENDANCE') ? [{ to: '/user-dashboard/attendance', label: 'Attendance', icon: UserCheck }] : []),
         ...(feesStudent === true ? [{ to: '/user-dashboard/fees', label: 'School Fees', icon: Wallet }] : []),
         { to: '/user-dashboard/announcements',   label: 'Announcements', icon: Megaphone       },
       ]

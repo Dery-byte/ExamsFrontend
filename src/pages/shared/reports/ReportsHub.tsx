@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Activity, AlertTriangle, BarChart3, Bot, Briefcase, Building2, ChevronRight, ClipboardCheck, FileCheck2,
   Eye, FileSearch, FileText, GraduationCap, KeyRound, LayoutGrid, ListChecks, Loader2, Lock, MessageSquareWarning, Receipt, Scale, ScrollText, Search,
-  Send, ShieldAlert, Table2, TrendingUp, Trophy, Users, UserX, Wallet,
+  Send, ShieldAlert, Table2, TrendingUp, Trophy, Users, UserX, Wallet, UserCheck, CalendarCheck,
 } from 'lucide-react';
 import PageHeader from '../../../components/PageHeader';
 import type { ReportDefinition } from '../../../api/endpoints';
@@ -20,12 +20,13 @@ export const REPORT_ICONS: Record<string, ReactNode> = {
   table: <Table2 size={20} />, list: <ListChecks size={20} />, userx: <UserX size={20} />, lock: <Lock size={20} />,
   search: <FileSearch size={20} />, trend: <TrendingUp size={20} />, message: <MessageSquareWarning size={20} />,
   grid: <LayoutGrid size={20} />, paper: <FileText size={20} />, key: <KeyRound size={20} />,
+  usercheck: <UserCheck size={20} />, calendarcheck: <CalendarCheck size={20} />,
 };
 
 /** A card that opens an existing page instead of a report. */
 interface PageLink { title: string; description: string; to: string; icon: ReactNode; group: string }
 
-const GROUP_ORDER = ['Institution', 'Department', 'Teaching', 'Students', 'Results', 'Exams', 'Staff', 'Finance', 'Oversight'];
+const GROUP_ORDER = ['Institution', 'Department', 'Teaching', 'Attendance', 'Students', 'Results', 'Exams', 'Staff', 'Finance', 'Oversight'];
 const LEADING_GROUPS = ['Institution', 'Department'];
 
 export default function ReportsHub() {

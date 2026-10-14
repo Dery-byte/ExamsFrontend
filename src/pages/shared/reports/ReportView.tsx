@@ -740,6 +740,8 @@ const STYLES = `
   .rv-table th.r button { justify-content: flex-end; text-align: right; }
   .rv-table td { padding: 8px 14px; border-bottom: 1px solid #f4f5f8; color: #334155; vertical-align: top; max-width: 340px; overflow-wrap: anywhere; background: #fff; }
   .rv-table .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* The wide layout scrolls sideways, so keep words whole (no "Mens-ah" when many columns crowd a name) */
+  .rv-table.sticky td { overflow-wrap: break-word; }
   .rv-dash { color: #cbd5e1; }
   .rv-table tbody tr:hover td { background: #fafbff; }
   .rv-table tbody tr:last-child td { border-bottom: none; }

@@ -467,6 +467,20 @@ export default function Instructions() {
                     <Lock size={18} /> ASSESSMENT CLOSED
                   </div>
                 </div>
+              ) : attempts?.attendanceBlock ? (
+                /* Class attendance below the minimum the Super Admin / HOD set */
+                <div role="alert" style={{ textAlign: 'left' }}>
+                  <div style={{ width: '100%', padding: '14px', borderRadius: 4, background: '#fdeeee', color: '#9f1f1f', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                    <Lock size={18} /> ATTENDANCE TOO LOW
+                  </div>
+                  <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: '#495057' }}>{tx(attempts.attendanceBlock)}</p>
+                  <button
+                    onClick={() => navigate('/user-dashboard/attendance')}
+                    style={{ background: 'none', border: 'none', color: 'var(--brand-text)', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, margin: '12px auto 0' }}
+                  >
+                    See my attendance <ChevronRight size={14} />
+                  </button>
+                </div>
               ) : (attempts && !attempts.canStart) ? (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ width: '100%', padding: '14px', borderRadius: 4, background: 'rgba(40, 187, 227, 0.1)', color: 'var(--success)', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>

@@ -21,6 +21,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PageHeader from '../../components/PageHeader';
 import FeesSummaryCard from './fees/FeesSummaryCard';
+import CheckInPanel from './attendance/CheckInPanel';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { tx } from '../../utils/terms';
 import { useThemeColors } from '../../utils/theme';
@@ -71,7 +72,7 @@ export default function UserDashboard() {
   const tc = useThemeColors();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { feesStudent } = useFeatureFlags();
+  const { feesStudent, features } = useFeatureFlags();
   const [stats, setStats] = useState({ courses: 0, quizzes: 0, points: 0, rank: 'N/A' });
   const [reports, setReports] = useState<any[]>([]);
   const [activeQuizzes, setActiveQuizzes] = useState<any[]>([]);
@@ -152,6 +153,9 @@ export default function UserDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Only while a class is taking attendance */}
+      {features?.ATTENDANCE === true && <CheckInPanel compact />}
 
       {feesStudent === true && <FeesSummaryCard />}
 

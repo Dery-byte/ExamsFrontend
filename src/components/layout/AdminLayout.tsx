@@ -31,7 +31,8 @@ import {
   DatabaseZap,
   ToggleRight,
   ClipboardPen,
-  FileBarChart
+  FileBarChart,
+  UserCheck
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
@@ -76,6 +77,7 @@ export default function AdminLayout() {
         { to: '/admin/quizzes', icon: <ClipboardList size={20} />, label: 'Quizzes' },
         { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
         ...(on('QUESTION_BANK') ? [{ to: '/admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' }] : []),
+        ...(on('ATTENDANCE') ? [{ to: '/admin/attendance', icon: <UserCheck size={20} />, label: 'Class Attendance' }] : []),
         { to: '/admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
         ...(marksSheetAdmin ? [{ to: '/admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' }] : []),
         ...(marksSheetAdmin && isSchoolMode() ? [{ to: '/admin/term-remarks', icon: <ClipboardPen size={20} />, label: 'Report Remarks' }] : []),

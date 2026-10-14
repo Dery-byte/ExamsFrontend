@@ -25,6 +25,8 @@
   border-radius: 14px;
   overflow: hidden;
   outline: none;
+  /* Rendered into <body>, outside the layouts that set the app font */
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   box-shadow: 0 24px 64px rgba(18, 38, 63, 0.22);
   animation: amPop .22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }

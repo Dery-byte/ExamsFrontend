@@ -57,6 +57,10 @@ import AcademicRecords from './pages/shared/AcademicRecords';
 import Transcript from './pages/user/Transcript';
 import DataTools from './pages/shared/DataTools';
 import FeatureControls from './pages/shared/FeatureControls';
+import AttendanceHome from './pages/shared/attendance/AttendanceHome';
+import AttendanceSessionPage from './pages/shared/attendance/SessionPage';
+import ProjectorScreen from './pages/shared/attendance/ProjectorScreen';
+import StudentAttendance from './pages/user/attendance/StudentAttendance';
 
 // Super Admin
 import SuperAdminWelcome from './pages/superadmin/SuperAdminWelcome';
@@ -165,6 +169,8 @@ export default function App() {
           <Route path="reports" element={<ReportsHub />} />
           <Route path="reports/:key" element={<ReportView />} />
           <Route path="timetable" element={<Timetable />} />
+          <Route path="attendance" element={<AttendanceHome />} />
+          <Route path="attendance/session/:id" element={<AttendanceSessionPage />} />
           <Route path="question-bank" element={<QuestionBank />} />
           <Route path="remarks" element={<RemarkRequests />} />
           <Route path="profile" element={<Profile />} />
@@ -192,6 +198,9 @@ export default function App() {
           <Route index element={<AdminWelcome />} />
           <Route path="department-settings" element={<FeatureControls />} />
           <Route path="timetable" element={<Timetable />} />
+          {/* Not gated: the HOD sets the rules (and the department switch) from here */}
+          <Route path="attendance" element={<AttendanceHome />} />
+          <Route path="attendance/session/:id" element={<AttendanceSessionPage />} />
           <Route path="question-bank" element={<FeatureGate feature="QUESTION_BANK" redirectTo="/admin"><QuestionBank /></FeatureGate>} />
           <Route path="proctoring/:qId" element={<ProctoringReport />} />
           <Route path="remarks" element={<RemarkRequests />} />
@@ -220,6 +229,8 @@ export default function App() {
         <Route path="/lect" element={<ProtectedRoute role="LECTURER"><LecturerLayout /></ProtectedRoute>}>
           <Route index element={<LectWelcome />} />
           <Route path="timetable" element={<Timetable />} />
+          <Route path="attendance" element={<FeatureGate feature="ATTENDANCE" redirectTo="/lect"><AttendanceHome /></FeatureGate>} />
+          <Route path="attendance/session/:id" element={<FeatureGate feature="ATTENDANCE" redirectTo="/lect"><AttendanceSessionPage /></FeatureGate>} />
           <Route path="question-bank" element={<FeatureGate feature="QUESTION_BANK" redirectTo="/lect"><QuestionBank /></FeatureGate>} />
           <Route path="reports" element={<FeatureGate feature="LECTURER_REPORTS" redirectTo="/lect"><ReportsHub /></FeatureGate>} />
           <Route path="reports/:key" element={<FeatureGate feature="LECTURER_REPORTS" redirectTo="/lect"><ReportView /></FeatureGate>} />
@@ -249,6 +260,7 @@ export default function App() {
           <Route path="fees" element={<Fees />} />
           <Route path="register" element={<FeatureGate feature="STUDENT_COURSE_REGISTRATION" redirectTo="/user-dashboard"><RegisterCourses /></FeatureGate>} />
           <Route path="courses" element={<CoursesRegistered />} />
+          <Route path="attendance" element={<FeatureGate feature="ATTENDANCE" redirectTo="/user-dashboard"><StudentAttendance /></FeatureGate>} />
           <Route path="quizzes" element={<AvailableQuizzes />} />
           <Route path="history" element={<LoadQuiz />} />
           <Route path="report-cards" element={<FeatureGate flag="marksSheetStudent" feature="STUDENT_REPORT_CARD" redirectTo="/user-dashboard"><SemesterReportCard /></FeatureGate>} />
@@ -259,6 +271,8 @@ export default function App() {
         {/* Standalone exam pages */}
         <Route path="/start/:qid" element={<ProtectedRoute role="NORMAL"><StartQuiz /></ProtectedRoute>} />
         <Route path="/print_quiz/:qid" element={<ProtectedRoute role="NORMAL"><PrintQuiz /></ProtectedRoute>} />
+        {/* Full-screen attendance code for the projector */}
+        <Route path="/attendance-screen/:id" element={<ProtectedRoute role={['LECTURER', 'ADMIN', 'SUPER_ADMIN']}><ProjectorScreen /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
