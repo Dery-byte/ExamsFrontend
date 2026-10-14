@@ -60,6 +60,7 @@ import FeatureControls from './pages/shared/FeatureControls';
 import AttendanceHome from './pages/shared/attendance/AttendanceHome';
 import AttendanceSessionPage from './pages/shared/attendance/SessionPage';
 import ProjectorScreen from './pages/shared/attendance/ProjectorScreen';
+import { HelperScannerPage, StaffScannerPage } from './pages/shared/attendance/ScannerPages';
 import StudentAttendance from './pages/user/attendance/StudentAttendance';
 
 // Super Admin
@@ -273,6 +274,9 @@ export default function App() {
         <Route path="/print_quiz/:qid" element={<ProtectedRoute role="NORMAL"><PrintQuiz /></ProtectedRoute>} />
         {/* Full-screen attendance code for the projector */}
         <Route path="/attendance-screen/:id" element={<ProtectedRoute role={['LECTURER', 'ADMIN', 'SUPER_ADMIN']}><ProjectorScreen /></ProtectedRoute>} />
+        {/* Scanning students' attendance QR codes: staff from their account, helpers (TAs) from the link they were given */}
+        <Route path="/attendance-scanner/:id" element={<ProtectedRoute role={['LECTURER', 'ADMIN', 'SUPER_ADMIN']}><StaffScannerPage /></ProtectedRoute>} />
+        <Route path="/attendance-scan/:token" element={<HelperScannerPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

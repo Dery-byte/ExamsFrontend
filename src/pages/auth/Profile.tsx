@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateMyProfile, changeMyPassword } from '../../api/endpoints';
+import { removeProfilePhoto, uploadProfilePhoto } from '../../api/profilePhoto';
+import { IMAGE_ACCEPT, validateImageFile } from '../../utils/questionImage';
+import AvatarPhoto from '../../components/common/AvatarPhoto';
 import {
   User, Mail, Phone, Shield, ShieldCheck, Key, Lock,
   Edit, RefreshCw, AlertCircle, BadgeCheck, Camera,
@@ -10,6 +14,7 @@ import {
 import { tx } from '../../utils/terms';
 
 const ROLE_META: Record<string, { label: string; color: string; bg: string; grad: string; icon: React.ReactNode }> = {
+  SUPER_ADMIN: { label: 'Super Administrator', color: 'var(--accent-text)', bg: 'var(--accent-soft)', grad: 'linear-gradient(135deg,var(--accent),var(--brand))', icon: <ShieldCheck size={18}/> },
   ADMIN:    { label: 'Administrator',   color: 'var(--brand-text)', bg: 'var(--brand-soft)', grad: 'linear-gradient(135deg,var(--brand),var(--accent))', icon: <Shield size={18}/> },
   LECTURER: { label: tx('Academic Faculty'), color: '#0891b2', bg: '#ecfeff', grad: 'linear-gradient(135deg,#0891b2,#06b6d4)', icon: <Briefcase size={18}/> },
   NORMAL:   { label: tx('Student'),          color: '#059669', bg: '#ecfdf5', grad: 'linear-gradient(135deg,#059669,#10b981)', icon: <User size={18}/> },
@@ -136,7 +141,44 @@ export default function Profile() {
   const [pwError,   setPwError]   = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
 
+  /* profile photo */
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [photoBusy, setPhotoBusy] = useState<'' | 'uploading' | 'removing'>('');
+
   if (!user) return null;
+
+  /* ── choose, check and upload a photo (compressed on the server like question images) ── */
+  const pickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const problem = validateImageFile(file);
+    if (problem) { toast.error(problem); return; }
+    setPhotoBusy('uploading');
+    try {
+      const r = await uploadProfilePhoto(file);
+      updateUser({ profilePicture: r.profilePicture ?? undefined });
+      toast.success('Profile photo updated');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not upload the photo. Please try again.');
+    } finally {
+      setPhotoBusy('');
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!window.confirm('Remove your profile photo?')) return;
+    setPhotoBusy('removing');
+    try {
+      await removeProfilePhoto();
+      updateUser({ profilePicture: undefined });
+      toast.success('Profile photo removed');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not remove the photo.');
+    } finally {
+      setPhotoBusy('');
+    }
+  };
 
   const initials     = `${user.firstname?.[0]??''}${user.lastname?.[0]??''}`.toUpperCase() || user.username[0].toUpperCase();
   const rawRole      = user.authorities?.[0]?.authority?.replace('ROLE_','') ?? user.role ?? 'NORMAL';
@@ -256,10 +298,22 @@ export default function Profile() {
             <div className="pf-profile-body">
               <div className="pf-avatar-wrap">
                 <div className="pf-avatar" style={{ background: meta.bg, color: meta.color }}>
-                  {initials}
+                  <AvatarPhoto src={user.profilePicture} alt={`${displayName}'s profile photo`}>{initials}</AvatarPhoto>
+                  {photoBusy && <div className="pf-avatar-busy"><Loader2 size={22} className="pf-spin" /></div>}
                 </div>
-                <button className="pf-avatar-btn"><Camera size={14}/></button>
+                <input ref={photoInput} type="file" accept={IMAGE_ACCEPT} onChange={pickPhoto} hidden />
+                <button type="button" className="pf-avatar-btn" onClick={() => photoInput.current?.click()} disabled={!!photoBusy}
+                  aria-label={user.profilePicture ? 'Change profile photo' : 'Add a profile photo'} title={user.profilePicture ? 'Change photo' : 'Add a photo'}>
+                  <Camera size={14}/>
+                </button>
               </div>
+              {user.profilePicture ? (
+                <button type="button" className="pf-photo-link" onClick={removePhoto} disabled={!!photoBusy}>Remove photo</button>
+              ) : (
+                <button type="button" className="pf-photo-link" onClick={() => photoInput.current?.click()} disabled={!!photoBusy}>
+                  Add a photo <span>(PNG or JPG, up to 5 MB)</span>
+                </button>
+              )}
               <h3 className="pf-name">{displayName}</h3>
               <p className="pf-username">@{user.username}</p>
               <div className="pf-role-badge" style={{ background: meta.bg, color: meta.color }}>
@@ -541,6 +595,14 @@ export default function Profile() {
         .pf-avatar { width:88px; height:88px; border-radius:22px; display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:900; border:4px solid #fff; box-shadow:0 8px 24px -4px rgba(0,0,0,0.12); }
         .pf-avatar-btn { position:absolute; bottom:-4px; right:-4px; width:28px; height:28px; border-radius:8px; background:#fff; border:1px solid #e2e8f0; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.2s; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
         .pf-avatar-btn:hover { background:var(--brand); color:var(--brand-contrast); border-color:var(--brand); }
+        .pf-avatar-btn:disabled { opacity:.6; cursor:wait; }
+        .pf-avatar { position:relative; overflow:hidden; }
+        .pf-avatar-busy { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.7); color:var(--brand-text); }
+        .pf-spin { animation: pf-spin 1s linear infinite; }
+        @keyframes pf-spin { to { transform: rotate(360deg); } }
+        .pf-photo-link { display:block; margin:-6px auto 10px; border:none; background:none; color:var(--brand-text); font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; }
+        .pf-photo-link span { color:#94a3b8; font-weight:500; }
+        .pf-photo-link:disabled { opacity:.6; cursor:wait; }
         .pf-name { font-size:20px; font-weight:800; color:#1e293b; margin:0 0 4px; }
         .pf-username { font-size:13px; color:#94a3b8; font-weight:600; margin:0 0 14px; }
         .pf-role-badge { display:inline-flex; align-items:center; gap:7px; padding:7px 16px; border-radius:10px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; margin-bottom:16px; }

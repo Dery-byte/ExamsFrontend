@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { isSchoolMode, tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
+import AvatarPhoto from '../common/AvatarPhoto';
 
 const SIDEBAR_W = 260;
 
@@ -176,7 +177,7 @@ export default function UserLayout() {
                 {/* <div className="user-topbar-role">Verified Student</div> */}
               </div>
               <div className="user-avatar" aria-label="User avatar">
-                {(user?.username?.[0] ?? user?.firstname?.[0] ?? 'U').toUpperCase()}
+                <AvatarPhoto src={user?.profilePicture}>{(user?.username?.[0] ?? user?.firstname?.[0] ?? 'U').toUpperCase()}</AvatarPhoto>
               </div>
             </div>
           </div>

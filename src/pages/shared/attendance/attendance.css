@@ -186,6 +186,47 @@
 .at-screen-stats b { display: block; font-size: clamp(22px, 4vw, 52px); font-weight: 900; font-variant-numeric: tabular-nums; }
 .at-screen-stats span { font-size: clamp(11px, 1.3vw, 16px); opacity: 0.8; font-weight: 700; }
 
+/* ── Student's QR code ──────────────────────────────────────────────── */
+.at-qr { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; }
+.at-qr-who { text-align: center; }
+.at-qr-who b { display: block; font-size: 15px; color: #0f172a; }
+.at-qr-who span { font-size: 12.5px; color: #64748b; font-variant-numeric: tabular-nums; }
+.at-qr-canvas { width: min(280px, 72vw) !important; height: auto !important; aspect-ratio: 1; border-radius: 12px; background: #fff; box-shadow: 0 2px 14px rgba(15, 23, 42, 0.08); image-rendering: pixelated; }
+
+/* ── Scanner pages (staff and helper) ───────────────────────────────── */
+.at-scan-page { min-height: 100vh; min-height: 100dvh; background: #0f172a; color: #e2e8f0; display: flex; flex-direction: column; gap: 12px;
+  padding: max(12px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)); font-family: Inter, system-ui, sans-serif; box-sizing: border-box; }
+.at-scan-page * { box-sizing: border-box; }
+.at-scan-head { display: flex; align-items: center; gap: 10px; max-width: 640px; width: 100%; margin: 0 auto; }
+.at-scan-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: #fff; overflow-wrap: anywhere; }
+.at-scan-sub { font-size: 12.5px; color: #94a3b8; margin-top: 2px; overflow-wrap: anywhere; }
+.at-scanner { display: flex; flex-direction: column; gap: 12px; max-width: 640px; width: 100%; margin: 0 auto; }
+.at-scanner-view { position: relative; width: 100%; aspect-ratio: 1; max-height: 62vh; border-radius: 18px; overflow: hidden; background: #020617; }
+.at-scanner-view video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.at-scanner-frame { position: absolute; inset: 14%; border-radius: 20px; box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.45); border: 3px solid rgba(255, 255, 255, 0.85); pointer-events: none; }
+.at-scanner-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; color: #cbd5e1; font-size: 14px; line-height: 1.45; }
+.at-scanner-sending { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(15, 23, 42, 0.85); font-size: 13px; font-weight: 700; color: #fff; }
+.at-scan-result { display: flex; align-items: center; gap: 12px; min-height: 84px; padding: 12px 14px; border-radius: 16px; background: #1e293b; border: 2px solid #334155; }
+.at-scan-result.is-ok { background: #052e1c; border-color: #16a34a; }
+.at-scan-result.is-info { background: #0c1f3f; border-color: #3b82f6; }
+.at-scan-result.is-bad { background: #3b0d0d; border-color: #dc2626; }
+.at-scan-photo { flex-shrink: 0; width: 60px; height: 60px; border-radius: 50%; background: #334155; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; overflow: hidden; }
+.at-scan-photo img { width: 100%; height: 100%; object-fit: cover; }
+.at-scan-name { font-size: 17px; font-weight: 800; color: #fff; overflow-wrap: anywhere; }
+.at-scan-index { font-size: 12.5px; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+.at-scan-msg { font-size: 13.5px; color: #e2e8f0; margin-top: 3px; line-height: 1.4; }
+.at-scan-hint { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #94a3b8; line-height: 1.45; }
+.at-scan-hint svg { flex-shrink: 0; margin-top: 2px; }
+.at-scan-counts { display: flex; flex-wrap: wrap; gap: 10px; max-width: 640px; width: 100%; margin: 0 auto; }
+.at-scan-counts div { flex: 1 1 120px; padding: 10px 12px; border-radius: 12px; background: #1e293b; }
+.at-scan-counts b { display: block; font-size: 22px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+.at-scan-counts span { font-size: 11.5px; color: #94a3b8; font-weight: 700; }
+.at-scan-problem { max-width: 520px; margin: 40px auto; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: #fca5a5; }
+.at-scan-problem p { margin: 0; color: #e2e8f0; font-size: 15px; line-height: 1.5; }
+.at-loc-bar { display: flex; align-items: center; gap: 6px; max-width: 640px; width: 100%; margin: 0 auto; padding: 8px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 700; background: #1e293b; color: #cbd5e1; }
+.at-loc-bar.is-ok { background: #052e1c; color: #86efac; }
+.at-loc-bar.is-bad { background: #3b0d0d; color: #fca5a5; }
+
 /* ── Location test ──────────────────────────────────────────────────── */
 .at-measure { border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 12px; background: #f8fafc; }
 .at-measure-num { font-size: 22px; font-weight: 900; color: #1e293b; font-variant-numeric: tabular-nums; }

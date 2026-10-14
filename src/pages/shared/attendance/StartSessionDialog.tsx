@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Loader2, MapPin, Play, XCircle } from 'lucide-react';
 import AppModal from '../../../components/ui/AppModal';
 import {
-  startAttendanceSession, type AttendanceMode, type AttendanceOptions, type ClassScheduleItem, type Classroom, type CodeDisplay,
+  startAttendanceSession, type AttendanceMethod, type AttendanceMode, type AttendanceOptions, type ClassScheduleItem, type Classroom, type CodeDisplay,
 } from '../../../api/attendance';
 import { readLocation, LocationError, GUESSED_LOCATION_METERS } from '../../../utils/attendanceDevice';
 import { classTitle, errMsg, fmtTime } from './shared';
@@ -28,6 +28,7 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
   const [minutes, setMinutes] = useState(120);
   const [topic, setTopic] = useState('');
   const [secondCheck, setSecondCheck] = useState(policy.secondCheck);
+  const [method, setMethod] = useState<AttendanceMethod>('STUDENT_CODE');
   const [busy, setBusy] = useState<'' | 'locating' | 'starting'>('');
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
           ? { scope, courseId: Number(courseId) }
           : { scope, programId: Number(programId), level: level === '' ? null : Number(level) }),
         ...(place === 'ROOM' ? { classroomId: Number(classroomId) } : { latitude: loc!.latitude, longitude: loc!.longitude, accuracy: loc!.accuracy }),
+        method,
         codeDisplay: display,
         ...(schedule ? {} : { durationMinutes: minutes }),
         topic: topic.trim() || undefined,
@@ -133,6 +135,18 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
           </>
         )}
 
+        <h4 className="at-section-title">How students are marked</h4>
+        <div className="at-choices">
+          <label className={`at-choice ${method === 'STUDENT_CODE' ? 'is-on' : ''}`}>
+            <input type="radio" name="at-method" checked={method === 'STUDENT_CODE'} onChange={() => setMethod('STUDENT_CODE')} />
+            <span><b>Students type a code</b><small>{tx('You show a changing code; students check themselves in on their phones, from inside the room. Quick for large classes.')}</small></span>
+          </label>
+          <label className={`at-choice ${method === 'STAFF_SCAN' ? 'is-on' : ''}`}>
+            <input type="radio" name="at-method" checked={method === 'STAFF_SCAN'} onChange={() => setMethod('STAFF_SCAN')} />
+            <span><b>I scan their QR codes</b><small>{tx('Each student shows a personal QR code on their phone; you (or a helper you add) scan it. Nobody is marked present without being seen.')}</small></span>
+          </label>
+        </div>
+
         <h4 className="at-section-title">Where</h4>
         <div className="at-choices">
           <label className={`at-choice ${place === 'ROOM' ? 'is-on' : ''}`}>
@@ -153,6 +167,7 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
           </label>
         )}
 
+        {method === 'STUDENT_CODE' && <>
         <h4 className="at-section-title">How you show the code</h4>
         <div className="at-choices">
           <label className={`at-choice ${display === 'PROJECTOR' ? 'is-on' : ''}`}>
@@ -164,6 +179,7 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
             <span><b>Read aloud (no screen)</b><small>A new code every {Math.round(policy.readAloudCodeSeconds / 6) / 10} min. Every check-in waits for you to approve it.</small></span>
           </label>
         </div>
+        </>}
 
         <div className="at-form-grid" style={{ marginTop: 12 }}>
           {schedule ? (
@@ -180,13 +196,19 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
           </label>
         </div>
 
-        <label className="at-switch" style={{ marginTop: 14 }}>
-          <input type="checkbox" checked={secondCheck} onChange={e => setSecondCheck(e.target.checked)} />
-          <span className="at-switch-track" />
-          <span>Second check at a random time during class</span>
-        </label>
-        <p className="at-help">A new code appears unannounced (it stays open {policy.secondCheckMinutes} min). Students need both checks to be marked present, which also catches anyone who leaves early.</p>
-        <p className="at-help">Check-in stays open {policy.checkInMinutes} minutes; after {policy.lateAfterMinutes} minutes students are marked late. Started at {fmtTime(new Date().toISOString())}.</p>
+        {method === 'STUDENT_CODE' ? <>
+          <label className="at-switch" style={{ marginTop: 14 }}>
+            <input type="checkbox" checked={secondCheck} onChange={e => setSecondCheck(e.target.checked)} />
+            <span className="at-switch-track" />
+            <span>Second check at a random time during class</span>
+          </label>
+          <p className="at-help">A new code appears unannounced (it stays open {policy.secondCheckMinutes} min). Students need both checks to be marked present, which also catches anyone who leaves early.</p>
+          <p className="at-help">Check-in stays open {policy.checkInMinutes} minutes; after {policy.lateAfterMinutes} minutes students are marked late. Started at {fmtTime(new Date().toISOString())}.</p>
+        </> : (
+          <p className="at-help" style={{ marginTop: 12 }}>
+            {tx(`Scanning stays open at least ${Math.max(policy.checkInMinutes, 30)} minutes. Students are not marked late (you choose the scanning order), and there is no second check: the scan itself shows they were in the room. Students' phones must still be in the room to show their code.`)}
+          </p>
+        )}
 
         {place === 'HERE' && busy !== 'locating' && !error && (
           <div className="at-alert is-info" style={{ marginTop: 12, marginBottom: 0 }}>

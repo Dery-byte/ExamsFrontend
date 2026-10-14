@@ -1,3 +1,4 @@
+import axios from 'axios';
 import client from './client';
 
 /** Class attendance (/api/attendance). */
@@ -7,6 +8,8 @@ export type AttendanceStatus = 'PRESENT' | 'LATE' | 'PENDING' | 'REJECTED' | 'EX
 export type AttendanceMode = 'COURSE' | 'PROGRAMME';
 export type CodeDisplay = 'PROJECTOR' | 'READ_ALOUD';
 export type SessionPhase = 'CHECK_IN' | 'SECOND_CHECK' | 'IN_CLASS' | 'ENDED';
+/** STUDENT_CODE: students type the code shown. STAFF_SCAN: staff scan each student's QR code. */
+export type AttendanceMethod = 'STUDENT_CODE' | 'STAFF_SCAN';
 
 // ── Student ────────────────────────────────────────────────────────────────
 
@@ -16,6 +19,9 @@ export interface OpenClass {
   status: AttendanceStatus | null; manual: boolean; firstChecked: boolean; secondChecked: boolean;
   /** 1 or 2 when a code should be typed now, else 0. */
   needsCheck: 0 | 1 | 2; attemptsLeft: number; locked: boolean; maxAccuracyMeters: number;
+  method: AttendanceMethod;
+  /** Scanned class: the student should show their QR code now. */
+  needsScan: boolean;
 }
 export interface CheckInResult { ok: boolean; status: AttendanceStatus | null; message: string; reason: string; attemptsLeft: number | null }
 export interface StudentAttendanceSummary {
@@ -29,6 +35,13 @@ export const getMyOpenClasses = (): Promise<{ enabled: boolean; sessions: OpenCl
   client.get(`${root()}/student/open`).then(r => r.data);
 export const checkInToClass = (data: { sessionId: number; code: string; latitude: number; longitude: number; accuracy: number; deviceId: string }): Promise<CheckInResult> =>
   client.post(`${root()}/student/check-in`, data).then(r => r.data);
+export interface QrKeyResult {
+  ok: boolean; message: string; reason: string; key: string | null; sessionId: number | null; studentId: number | null;
+  stepSeconds: number | null; serverTime: number | null; name: string | null; indexNo: string | null;
+}
+/** Scanned classes: after the phone and location checks, the key the phone draws its changing QR code from. */
+export const getMyQrKey = (data: { sessionId: number; latitude: number; longitude: number; accuracy: number; deviceId: string }): Promise<QrKeyResult> =>
+  client.post(`${root()}/student/qr-key`, data).then(r => r.data);
 export const getMyAttendance = (): Promise<StudentAttendanceSummary> =>
   client.get(`${root()}/student/summary`).then(r => r.data);
 
@@ -54,6 +67,9 @@ export interface SessionSummary {
   codeDisplay: CodeDisplay; codeSeconds: number; placeName: string | null; radiusMeters: number; maxAccuracyMeters: number;
   maxFailedAttempts: number; headcount: number | null; secondCheckPlanned: boolean; secondCheckRunning: boolean;
   secondCheckDone: boolean; secondCheckMinutes: number; counts?: Partial<Record<AttendanceStatus, number>>;
+  method: AttendanceMethod;
+  /** Seconds until the open check (or scanning) closes; null when none is open. */
+  phaseSecondsLeft: number | null;
 }
 export interface SessionStudent {
   studentId: number; name: string; indexNo: string; status: AttendanceStatus | null; method: string | null;
@@ -63,10 +79,17 @@ export interface SessionStudent {
 }
 export interface SessionDetail extends SessionSummary {
   students: SessionStudent[]; counts: Record<string, number>; rosterSize: number;
+  /** Scanned classes: helpers' scanner links. */
+  helpers?: AttendanceHelper[];
+}
+export interface AttendanceHelper {
+  id: number; label: string; createdBy: string | null; createdAt: string; lastUsedAt: string | null; scans: number; active: boolean;
+  /** Only when just created: the secret part of the link. */
+  token?: string;
 }
 export interface CodeView {
   sessionId: number; title: string; meetingNumber: number; placeName: string | null; codeDisplay: CodeDisplay;
-  phase: SessionPhase; check: 0 | 1 | 2; code?: string; codeSeconds?: number; secondsLeft?: number; phaseSecondsLeft?: number;
+  phase: SessionPhase; method: AttendanceMethod; check: 0 | 1 | 2; code?: string; codeSeconds?: number; secondsLeft?: number; phaseSecondsLeft?: number;
   checkedIn: number; pending: number; secondChecked: number; rosterSize: number; headcount: number | null;
 }
 export interface Classroom {
@@ -82,7 +105,7 @@ export interface AttendanceOptions {
 export interface OpenSessionInput {
   scope?: AttendanceMode; courseId?: number; programId?: number; level?: number | null; classroomId?: number | null;
   latitude?: number; longitude?: number; accuracy?: number; codeDisplay?: CodeDisplay; durationMinutes?: number;
-  topic?: string; scheduleId?: number; secondCheck?: boolean;
+  topic?: string; scheduleId?: number; secondCheck?: boolean; method?: AttendanceMethod;
 }
 
 const m = () => `${root()}/manage`;
@@ -107,6 +130,29 @@ export const resetAttendancePhone = (id: number, studentId: number): Promise<Ses
   client.post(`${m()}/sessions/${id}/students/${studentId}/reset-phone`).then(r => r.data);
 export const endAttendanceSession = (id: number): Promise<SessionDetail> => client.post(`${m()}/sessions/${id}/end`).then(r => r.data);
 export const deleteAttendanceSession = (id: number) => client.delete(`${m()}/sessions/${id}`).then(r => r.data);
+
+/** What a scanner shows after a scan; the name and photo come back whenever the code is genuine. */
+export interface ScanResult {
+  ok: boolean; outcome: 'RECORDED' | 'ALREADY' | 'EXPIRED' | 'NOT_LISTED' | 'REFUSED'; message: string;
+  studentId: number | null; name: string | null; indexNo: string | null; photo: string | null; status: AttendanceStatus | null;
+}
+export const scanStudentCode = (id: number, code: string): Promise<ScanResult> =>
+  client.post(`${m()}/sessions/${id}/scan`, { code }).then(r => r.data);
+export const addAttendanceHelper = (id: number, label: string): Promise<AttendanceHelper> =>
+  client.post(`${m()}/sessions/${id}/helpers`, { label }).then(r => r.data);
+export const cancelAttendanceHelper = (id: number, helperId: number): Promise<SessionDetail> =>
+  client.delete(`${m()}/sessions/${id}/helpers/${helperId}`).then(r => r.data);
+
+// ── Helper scanner link (no account: a plain request, so no sign-in token or sign-out on 401) ──
+
+export interface HelperView {
+  helper: string; title: string; meetingNumber: number; placeName: string | null; phase: SessionPhase;
+  phaseSecondsLeft: number | null; maxAccuracyMeters: number; myScans: number; checkedIn: number; rosterSize: number;
+}
+export const getHelperView = (token: string): Promise<HelperView> =>
+  axios.get(`${root()}/scan/${encodeURIComponent(token)}`).then(r => r.data);
+export const helperScan = (token: string, data: { code: string; latitude?: number; longitude?: number; accuracy?: number }): Promise<ScanResult> =>
+  axios.post(`${root()}/scan/${encodeURIComponent(token)}`, data).then(r => r.data);
 
 export const getClassrooms = (): Promise<Classroom[]> => client.get(`${m()}/classrooms`).then(r => r.data);
 export type ClassroomInput = { name: string; building?: string; departmentId?: number | null; latitude: number; longitude: number; radiusMeters: number; accuracyMeters?: number };

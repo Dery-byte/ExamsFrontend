@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
+import AvatarPhoto from '../common/AvatarPhoto';
 import SubscriptionNotice from '../common/SubscriptionNotice';
 
 export default function AdminLayout() {
@@ -143,7 +144,7 @@ export default function AdminLayout() {
         <div className="lexa-sidebar-footer">
           <div className="lexa-user-brief">
             <div className="lexa-avatar">
-              {(user?.username?.[0] ?? user?.firstname?.[0] ?? 'A').toUpperCase()}
+              <AvatarPhoto src={user?.profilePicture}>{(user?.username?.[0] ?? user?.firstname?.[0] ?? 'A').toUpperCase()}</AvatarPhoto>
             </div>
             <div className="lexa-user-info">
               <span className="name">{user?.username || user?.firstname || 'Admin'}</span>

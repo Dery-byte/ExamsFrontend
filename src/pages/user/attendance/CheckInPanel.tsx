@@ -5,6 +5,7 @@ import { checkInToClass, getMyOpenClasses, type CheckInResult, type OpenClass } 
 import { getDeviceId, readLocation, LocationError } from '../../../utils/attendanceDevice';
 import { StatusPill, classTitle, errMsg, fmtClock } from '../../shared/attendance/shared';
 import { tx } from '../../../utils/terms';
+import StudentQr from './StudentQr';
 import '../../shared/attendance/attendance.css';
 
 /**
@@ -107,13 +108,13 @@ function ClassCard({ s }: { s: OpenClass }) {
   };
 
   const phaseBadge = s.phase === 'CHECK_IN'
-    ? <span className="at-phase"><Timer size={13} /> Check-in open{left != null ? ` · ${fmtClock(left)}` : ''}</span>
+    ? <span className="at-phase"><Timer size={13} /> {s.method === 'STAFF_SCAN' ? 'Scanning open' : 'Check-in open'}{left != null ? ` · ${fmtClock(left)}` : ''}</span>
     : s.phase === 'SECOND_CHECK'
       ? <span className="at-phase is-second"><ShieldAlert size={13} /> Second check{left != null ? ` · ${fmtClock(left)}` : ''}</span>
       : <span className="at-phase is-quiet">Class in progress</span>;
 
   return (
-    <article className={`at-class ${needs ? 'is-active' : ''}`} aria-live="polite">
+    <article className={`at-class ${needs || s.needsScan ? 'is-active' : ''}`} aria-live="polite">
       <div className="at-card-head" style={{ marginBottom: 4 }}>
         <div style={{ minWidth: 0 }}>
           <div className="at-item-title">{classTitle(s.title)}</div>
@@ -135,7 +136,9 @@ function ClassCard({ s }: { s: OpenClass }) {
         </div>
       )}
 
-      {s.locked && needs !== 0 ? (
+      {s.method === 'STAFF_SCAN' ? (
+        s.needsScan ? <StudentQr s={s} /> : null
+      ) : s.locked && needs !== 0 ? (
         <div className="at-alert is-error" style={{ marginTop: 12, marginBottom: 0 }}>
           <Lock size={16} />
           <span>{tx("You've used all your attempts for this class. If you are in class, ask your lecturer to unlock you.")}</span>

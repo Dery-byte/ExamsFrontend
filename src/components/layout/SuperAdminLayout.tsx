@@ -5,6 +5,7 @@ import { useInstitution } from '../../hooks/useInstitution';
 import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
+import AvatarPhoto from '../common/AvatarPhoto';
 import {
   LayoutDashboard, UserCircle, Building2, BookMarked,
   Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
@@ -187,7 +188,7 @@ export default function SuperAdminLayout() {
               width: 34, height: 34, borderRadius: '50%',
               background: 'linear-gradient(135deg,var(--accent),var(--brand))',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--brand-contrast)'
-            }}>{user?.firstname?.[0]?.toUpperCase() || 'S'}</div>
+            }}><AvatarPhoto src={user?.profilePicture}>{user?.firstname?.[0]?.toUpperCase() || 'S'}</AvatarPhoto></div>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--sidebar-fg)' }}>{user?.firstname} {user?.lastname}</div>
               <div style={{ fontSize: 10, color: 'rgba(var(--sidebar-fg-rgb), 0.55)' }}>Super Administrator</div>

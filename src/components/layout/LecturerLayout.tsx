@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
+import AvatarPhoto from '../common/AvatarPhoto';
 
 export default function LecturerLayout() {
   const { user, logout } = useAuth();
@@ -100,7 +101,7 @@ export default function LecturerLayout() {
             {/* <button className="header-icon"><Settings size={20} /></button> */}
             <div className="user-profile">
               <div className="avatar">
-                {(user?.username?.[0] ?? user?.firstname?.[0] ?? 'L').toUpperCase()}
+                <AvatarPhoto src={user?.profilePicture}>{(user?.username?.[0] ?? user?.firstname?.[0] ?? 'L').toUpperCase()}</AvatarPhoto>
               </div>
               <span className="name">{user?.username || user?.firstname || tx('Lecturer')}</span>
             </div>

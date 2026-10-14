@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Maximize2, Minimize2, QrCode } from 'lucide-react';
 import { getAttendanceCode } from '../../../api/attendance';
 import { classTitle, errMsg, fmtClock } from './shared';
 import { tx } from '../../../utils/terms';
@@ -53,7 +53,7 @@ export default function ProjectorScreen() {
   };
 
   const second = data?.phase === 'SECOND_CHECK';
-  const showing = !!data?.code;
+  const showing = !!data?.code || (data?.method === 'STAFF_SCAN' && data?.phase === 'CHECK_IN');
   const pct = data?.codeSeconds && left != null ? (left / data.codeSeconds) * 100 : 0;
 
   return (
@@ -74,6 +74,12 @@ export default function ProjectorScreen() {
           <div className="at-screen-label">{errMsg(error, 'The code could not be loaded.')}</div>
         ) : !data ? (
           <div className="at-screen-label">Loading…</div>
+        ) : data.method === 'STAFF_SCAN' && data.phase === 'CHECK_IN' ? (
+          <>
+            <QrCode size={96} aria-hidden="true" style={{ opacity: 0.9 }} />
+            <div className="at-screen-label">{tx('Open Attendance on your phone and tap “Show my attendance QR code”')}</div>
+            <div className="at-screen-hint">Location must be on. Hold your code up when your lecturer comes to scan it. Photos of codes do not work.</div>
+          </>
         ) : showing ? (
           <>
             <div className="at-screen-label">{second ? 'Second check: type this new code' : tx('Open Attendance on your phone and type')}</div>

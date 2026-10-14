@@ -3,14 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
-  AlertTriangle, ArrowLeft, CheckCheck, Clock, DoorClosed, DoorOpen, Loader2, Lock, MapPin, Maximize2, Search,
-  ShieldAlert, Smartphone, Square, Trash2, Users, XCircle,
+  AlertTriangle, ArrowLeft, CheckCheck, Clock, Copy, DoorClosed, DoorOpen, Link2, Loader2, Lock, MapPin, Maximize2, Plus, ScanLine, Search,
+  Share2, ShieldAlert, Smartphone, Square, Trash2, UserPlus, Users, XCircle,
 } from 'lucide-react';
+import QRCode from 'qrcode';
+import AppModal from '../../../components/ui/AppModal';
 import PageHeader from '../../../components/PageHeader';
 import {
   approvePendingAttendance, cancelSecondCheck, closeAttendanceCheckIn, deleteAttendanceSession, endAttendanceSession,
   extendAttendanceCheckIn, getAttendanceCode, getAttendanceSession, markAttendance, resetAttendancePhone,
-  setAttendanceHeadcount, startSecondCheck, unlockAttendanceStudent,
+  setAttendanceHeadcount, startSecondCheck, unlockAttendanceStudent, addAttendanceHelper, cancelAttendanceHelper,
   type AttendanceStatus, type SessionDetail, type SessionStudent,
 } from '../../../api/attendance';
 import { FLAG_LABELS, StatusPill, classTitle, errMsg, fmtClock, fmtDate, fmtTime, useAttendanceBase } from './shared';
@@ -72,7 +74,7 @@ export default function SessionPage() {
 
       <div className="at-session-grid">
         <div className="at-session-side">
-          {s.live ? <CodePanel s={s} /> : (
+          {s.live ? (s.method === 'STAFF_SCAN' ? <ScanPanel s={s} run={run} /> : <CodePanel s={s} />) : (
             <div className="at-card">
               <div className="at-sub" style={{ marginTop: 0 }}>{fmtDate(s.openedAt)} · {fmtTime(s.openedAt)}–{fmtTime(s.closedAt)}</div>
               {s.topic && <div className="at-item-title" style={{ marginTop: 6 }}>{s.topic}</div>}
@@ -92,7 +94,7 @@ export default function SessionPage() {
                 <button className="at-btn-ghost" disabled={!!busy} onClick={() => run('extend', () => extendAttendanceCheckIn(s.id, 5), 'Check-in reopened for 5 minutes')}>
                   <DoorOpen size={16} /> Reopen check-in (5 min)</button>
               )}
-              {s.live && s.phase === 'IN_CLASS' && !s.secondCheckDone && (
+              {s.live && s.method !== 'STAFF_SCAN' && s.phase === 'IN_CLASS' && !s.secondCheckDone && (
                 <button className="at-btn-ghost" disabled={!!busy} onClick={() => run('second', () => startSecondCheck(s.id), 'Second check started')}>
                   <ShieldAlert size={16} /> Start second check now</button>
               )}
@@ -169,6 +171,128 @@ function CodePanel({ s }: { s: SessionDetail }) {
           <Maximize2 size={14} /> Open projector screen</a>
       </div>
     </div>
+  );
+}
+
+/** Scanned classes: open the camera scanner, and give helpers (e.g. a TA) their own scanner link. */
+function ScanPanel({ s, run }: { s: SessionDetail; run: (k: string, fn: () => Promise<any>, ok?: string) => Promise<boolean> }) {
+  const base = useAttendanceBase();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  // Counts down from the server's figure (re-synced every refresh), not from a clock time
+  const [left, setLeft] = useState(s.phaseSecondsLeft ?? 0);
+  useEffect(() => {
+    setLeft(s.phaseSecondsLeft ?? 0);
+    const t = setInterval(() => setLeft(v => Math.max(0, v - 1)), 1000);
+    return () => clearInterval(t);
+  }, [s.phaseSecondsLeft]);
+  const open = s.phase === 'CHECK_IN';
+  const helpers = (s.helpers ?? []).filter(h => h.active);
+
+  return (
+    <>
+      <div className={`at-codebox ${open ? '' : 'is-quiet'}`} style={{ marginBottom: 14 }}>
+        <div className="at-codebox-label">{open ? 'Scanning open' : 'Scanning closed'}</div>
+        <div style={{ fontSize: 14, fontWeight: 600, margin: '8px 0 12px' }}>
+          {open ? <>Students show their QR codes; closes in {fmtClock(left)}</> : 'Reopen check-in below to scan more students.'}
+        </div>
+        {open && (
+          <button className="at-btn at-btn-big at-btn-block" style={{ background: '#fff', color: 'var(--brand-text)' }}
+            onClick={() => navigate(`/attendance-scanner/${s.id}?back=${encodeURIComponent(`${base}/attendance/session/${s.id}`)}`)}>
+            <ScanLine size={18} /> Scan students
+          </button>
+        )}
+      </div>
+
+      <div className="at-card">
+        <div className="at-card-head" style={{ marginBottom: 6 }}>
+          <h3 className="at-card-title"><UserPlus size={17} /> Helpers</h3>
+          {open && <button className="at-btn-ghost at-btn-sm" onClick={() => setAdding(true)}><Plus size={14} /> Add a helper</button>}
+        </div>
+        {helpers.length === 0 ? (
+          <p className="at-help" style={{ margin: 0 }}>{tx('A teaching assistant can scan too: add them here and they open the link on their own phone. No account needed.')}</p>
+        ) : (
+          <div className="at-list">
+            {helpers.map(h => (
+              <div key={h.id} className="at-item" style={{ padding: '8px 12px' }}>
+                <div className="at-item-main">
+                  <div className="at-item-title" style={{ fontSize: 13.5 }}>{h.label}</div>
+                  <div className="at-meta"><span>{h.scans} scanned</span>{h.lastUsedAt && <span>last at {fmtTime(h.lastUsedAt)}</span>}</div>
+                </div>
+                <button className="at-btn-ghost at-btn-sm" onClick={() => {
+                  if (window.confirm(`Cancel ${h.label}'s scanner link? It stops working at once.`))
+                    run(`h${h.id}`, () => cancelAttendanceHelper(s.id, h.id), 'Link cancelled');
+                }}>Cancel link</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {adding && <AddHelperDialog sessionId={s.id} onClose={() => { setAdding(false); qc.invalidateQueries({ queryKey: ['attendance', 'session', s.id] }); }} />}
+    </>
+  );
+}
+
+function AddHelperDialog({ sessionId, onClose }: { sessionId: number; onClose: () => void }) {
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [link, setLink] = useState<string | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const create = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const h = await addAttendanceHelper(sessionId, name.trim());
+      const url = `${window.location.origin}/attendance-scan/${h.token}`;
+      setLink(url);
+      setQr(await QRCode.toDataURL(url, { errorCorrectionLevel: 'M', margin: 2, width: 260 }));
+    } catch (e) {
+      setError(errMsg(e, 'Could not add the helper.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(link!); toast.success('Link copied'); }
+    catch { toast.error('Copy the link by hand'); }
+  };
+  const share = () => (navigator as any).share?.({ title: 'Attendance scanner', url: link }).catch(() => {});
+
+  return (
+    <AppModal title={link ? `Scanner link for ${name.trim()}` : 'Add a helper'} onClose={onClose}
+      subtitle={link ? 'They scan this with their phone camera (or open the link) and start scanning students.' : 'For example a teaching assistant. They use their own phone; no account needed.'}
+      footer={link
+        ? <div className="at-row" style={{ width: '100%', justifyContent: 'flex-end' }}><button className="at-btn" onClick={onClose}>Done</button></div>
+        : <div className="at-row" style={{ width: '100%', justifyContent: 'flex-end' }}>
+            <button className="at-btn-ghost" onClick={onClose}>Cancel</button>
+            <button className="at-btn" onClick={create} disabled={busy || !name.trim()}>{busy ? <Loader2 size={16} className="at-spin" /> : <Link2 size={16} />} Create link</button>
+          </div>}>
+      <div className="at-page" style={{ paddingBottom: 0 }}>
+        {!link ? (
+          <label className="at-field"><span>Helper's name</span>
+            <input className="at-input" value={name} maxLength={80} autoFocus onChange={e => setName(e.target.value)} placeholder="e.g. Kojo Mensah (TA)"
+              onKeyDown={e => { if (e.key === 'Enter' && name.trim() && !busy) create(); }} /></label>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            {qr && <img src={qr} alt="Scanner link QR code" width={220} height={220} style={{ borderRadius: 12, border: '1.5px solid #e2e8f0' }} />}
+            <div className="at-row" style={{ justifyContent: 'center' }}>
+              <button className="at-btn-ghost at-btn-sm" onClick={copy}><Copy size={14} /> Copy link</button>
+              {typeof (navigator as any).share === 'function' && <button className="at-btn-ghost at-btn-sm" onClick={share}><Share2 size={14} /> Share</button>}
+            </div>
+            <div className="at-alert is-warn" style={{ marginBottom: 0 }}>
+              <AlertTriangle size={16} />
+              <span>{tx('Anyone with this link can scan for this class while it runs, so give it only to your helper. Their phone must be in the room. It stops working when the class ends, or when you cancel it.')}</span>
+            </div>
+          </div>
+        )}
+        {error && <div className="at-alert is-error" role="alert" style={{ marginTop: 12, marginBottom: 0 }}><XCircle size={16} /><span>{error}</span></div>}
+      </div>
+    </AppModal>
   );
 }
 
@@ -274,6 +398,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
               {st.firstDistance != null && <span><MapPin size={12} style={{ verticalAlign: '-2px' }} /> {st.firstDistance} m ±{st.firstAccuracy}</span>}
               {st.secondCheckAt && <span>2nd check {fmtTime(st.secondCheckAt)}</span>}
               {st.method === 'MANUAL' && st.reviewedBy && <span>marked by {st.reviewedBy}</span>}
+              {st.method === 'SCAN' && st.reviewedBy && <span>scanned by {st.reviewedBy}</span>}
               {st.flags.filter(f => !(f === 'LATE' && st.status === 'LATE')).map(f => <span key={f} className={`at-chip ${f === 'MISSED_SECOND_CHECK' ? 'is-bad' : 'is-warn'}`}>{FLAG_LABELS[f] ?? f}</span>)}
               {st.locked && <span className="at-chip is-bad"><Lock size={11} /> Locked out</span>}
               {!st.locked && st.failures > 0 && <span className="at-chip">{st.failures} wrong code{st.failures === 1 ? '' : 's'}</span>}
