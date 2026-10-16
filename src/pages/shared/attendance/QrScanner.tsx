@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
 import { CameraOff, CheckCircle2, Info, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import type { ScanResult } from '../../../api/attendance';
-import { questionImageUrl } from '../../../utils/questionImage';
+import AvatarPhoto from '../../../components/common/AvatarPhoto';
 
 /**
  * Camera QR scanner for attendance. Uses the browser's BarcodeDetector where there is one (fast,
@@ -129,8 +129,10 @@ export default function QrScanner({ onCode, paused = false }: {
         {result ? (
           <>
             <div className="at-scan-photo" aria-hidden="true">
-              {result.photo ? <img src={questionImageUrl(result.photo) ?? undefined} alt="" referrerPolicy="no-referrer" />
-                : result.name ? initials(result.name) : result.outcome === 'RECORDED' ? <CheckCircle2 size={26} /> : <XCircle size={26} />}
+              {/* The student's photo, so the scanner can check it is them; initials if there is none (or it won't load) */}
+              <AvatarPhoto src={result.photo}>
+                {result.name ? initials(result.name) : result.outcome === 'RECORDED' ? <CheckCircle2 size={26} /> : <XCircle size={26} />}
+              </AvatarPhoto>
             </div>
             <div style={{ minWidth: 0 }}>
               {result.name && <div className="at-scan-name">{result.name}</div>}

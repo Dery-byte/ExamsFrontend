@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, MapPin, ScanLine, XCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, ScanLine, XCircle } from 'lucide-react';
 import QrScanner from './QrScanner';
 import { getAttendanceCode, getHelperView, helperScan, scanStudentCode } from '../../../api/attendance';
 import { classTitle, errMsg, fmtClock } from './shared';
-import { GUESSED_LOCATION_METERS, type Reading } from '../../../utils/attendanceDevice';
 import { tx } from '../../../utils/terms';
 import './attendance.css';
 
@@ -54,33 +53,10 @@ export function HelperScannerPage() {
     retry: false,
   });
 
-  // The helper's phone must be in the room: keep the latest reading and send it with each scan
-  const [loc, setLoc] = useState<Reading | null>(null);
-  const [locError, setLocError] = useState<string | null>(null);
-  const locRef = useRef<Reading | null>(null);
-  useEffect(() => {
-    if (!window.isSecureContext || !navigator.geolocation) { setLocError('Location only works on a secure (https) page.'); return; }
-    const w = navigator.geolocation.watchPosition(
-      p => {
-        const r = { latitude: p.coords.latitude, longitude: p.coords.longitude, accuracy: p.coords.accuracy };
-        locRef.current = r;
-        setLoc(r);
-        setLocError(null);
-      },
-      e => setLocError(e.code === e.PERMISSION_DENIED
-        ? 'Location is blocked. Allow location for this site: helpers must scan from inside the classroom.'
-        : 'Your location could not be found. Turn on location (GPS).'),
-      { enableHighAccuracy: true, maximumAge: 5000 },
-    );
-    return () => navigator.geolocation.clearWatch(w);
-  }, []);
+  // The classroom is the one the lecturer set; the helper's own location isn't needed
+  // (each student's code can only be shown from a phone inside that room)
+  const onCode = useCallback((code: string) => helperScan(token, { code }), [token]);
 
-  const onCode = useCallback((code: string) => {
-    const r = locRef.current;
-    return helperScan(token, { code, latitude: r?.latitude, longitude: r?.longitude, accuracy: r?.accuracy });
-  }, [token]);
-
-  const acc = loc ? Math.round(loc.accuracy) : null;
   return (
     <div className="at-scan-page">
       <ScanHeader title={data ? classTitle(data.title) : 'Attendance scanner'}
@@ -90,14 +66,6 @@ export function HelperScannerPage() {
         : data && data.phase !== 'CHECK_IN' ? <Problem text="Check-in for this class is closed. Ask the lecturer to reopen it if more students need scanning." />
         : (
           <>
-            <div className={`at-loc-bar ${locError || (acc != null && acc > (data?.maxAccuracyMeters ?? 30)) ? 'is-bad' : acc != null ? 'is-ok' : ''}`}>
-              <MapPin size={14} />
-              {locError ? locError
-                : acc == null ? 'Finding your location…'
-                : acc > GUESSED_LOCATION_METERS ? 'This device is only guessing its location. Use a phone with location (GPS) on.'
-                : acc > (data?.maxAccuracyMeters ?? 30) ? `Location ±${acc} m: not precise enough yet. Wait a moment, or move away from walls.`
-                : `Location ±${acc} m`}
-            </div>
             <QrScanner onCode={onCode} />
             {data && <Counts scanned={data.checkedIn} roster={data.rosterSize} closesIn={data.phaseSecondsLeft} mine={data.myScans} />}
           </>

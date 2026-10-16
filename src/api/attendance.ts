@@ -151,7 +151,7 @@ export interface HelperView {
 }
 export const getHelperView = (token: string): Promise<HelperView> =>
   axios.get(`${root()}/scan/${encodeURIComponent(token)}`).then(r => r.data);
-export const helperScan = (token: string, data: { code: string; latitude?: number; longitude?: number; accuracy?: number }): Promise<ScanResult> =>
+export const helperScan = (token: string, data: { code: string }): Promise<ScanResult> =>
   axios.post(`${root()}/scan/${encodeURIComponent(token)}`, data).then(r => r.data);
 
 export const getClassrooms = (): Promise<Classroom[]> => client.get(`${m()}/classrooms`).then(r => r.data);

@@ -286,7 +286,7 @@ function AddHelperDialog({ sessionId, onClose }: { sessionId: number; onClose: (
             </div>
             <div className="at-alert is-warn" style={{ marginBottom: 0 }}>
               <AlertTriangle size={16} />
-              <span>{tx('Anyone with this link can scan for this class while it runs, so give it only to your helper. Their phone must be in the room. It stops working when the class ends, or when you cancel it.')}</span>
+              <span>{tx('Anyone with this link can scan for this class while it runs, so give it only to your helper. It uses your classroom: students can only show their codes from inside it. The link stops working when the class ends, or when you cancel it.')}</span>
             </div>
           </div>
         )}
