@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import ReportEmailToggle from '../../components/ui/ReportEmailToggle';
+import { useAssessments } from '../../hooks/useFeatureFlags';
 import ResultsHoldSettings from './fees/ResultsHoldSettings';
 import { isSchoolMode, tx } from '../../utils/terms';
 
@@ -62,6 +63,7 @@ function SectionHead({ title, sub, aside }: { title: ReactNode; sub?: ReactNode;
 }
 
 export default function SuperAdminConfiguration() {
+  const quizzesOn = useAssessments();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [settingsState, setSettingsState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [settingsLoading, setSettingsLoading] = useState(false);
@@ -236,6 +238,8 @@ export default function SuperAdminConfiguration() {
         </SettingRow>
       </section>}
 
+      {/* ── Exams and Result Slips (the Assessments module) ── */}
+      {quizzesOn && <>
       {/* ── Exams ───────────────────────────────────────────────────────── */}
       <section className="sc-sec">
         <SectionHead title="Exams" />
@@ -256,6 +260,7 @@ export default function SuperAdminConfiguration() {
         <SectionHead title="Result Slips" />
         <ReportEmailToggle dark />
       </section>
+      </>}
 
       {/* ── Sign-in Page ────────────────────────────────────────────────── */}
       <section className="sc-sec">

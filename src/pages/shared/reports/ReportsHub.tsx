@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '../../../components/PageHeader';
 import type { ReportDefinition } from '../../../api/endpoints';
-import { useFeatureFlags } from '../../../hooks/useFeatureFlags';
+import { useAssessments, useFeatureFlags } from '../../../hooks/useFeatureFlags';
 import { catalogQuery, useReports } from './useReports';
 
 export const REPORT_ICONS: Record<string, ReactNode> = {
@@ -31,22 +31,24 @@ const LEADING_GROUPS = ['Institution', 'Department'];
 
 export default function ReportsHub() {
   const { auditLogSuperAdmin, features } = useFeatureFlags();
+  const quizzesOn = useAssessments();
   const { api, isSuper, role, base, staffBase, crumb } = useReports();
   const [q, setQ] = useState('');
   const { data, isLoading, isError, refetch } = useQuery(catalogQuery(role, api));
 
+  // Analytics and quiz review belong to the Assessments module (the developer's switch)
   const links: PageLink[] = useMemo(() => isSuper ? [
-    { title: 'Analytics dashboard', description: 'Live charts: totals, pass rates, trends and at-risk students for one department or all.',
-      to: `${staffBase}/analytics`, icon: <BarChart3 size={20} />, group: 'Institution' },
+    ...(quizzesOn ? [{ title: 'Analytics dashboard', description: 'Live charts: totals, pass rates, trends and at-risk students for one department or all.',
+      to: `${staffBase}/analytics`, icon: <BarChart3 size={20} />, group: 'Institution' }] : []),
     ...(auditLogSuperAdmin !== false ? [{ title: 'Audit log', description: 'Every recorded change by staff, searchable by person, action and date.',
       to: `${staffBase}/audit-log`, icon: <ScrollText size={20} />, group: 'Oversight' }] : []),
   ] : role === 'lecturer' ? [
-    { title: 'Quiz review', description: 'Mark and review scripts; each quiz there links to its result sheet and question analysis.',
-      to: `${staffBase}/quiz-review`, icon: <Eye size={20} />, group: 'Teaching' },
+    ...(quizzesOn ? [{ title: 'Quiz review', description: 'Mark and review scripts; each quiz there links to its result sheet and question analysis.',
+      to: `${staffBase}/quiz-review`, icon: <Eye size={20} />, group: 'Teaching' }] : []),
   ] : [
-    ...(features?.HOD_ANALYTICS !== false ? [{ title: 'Department analytics', description: 'Live charts for your department: pass rates, trends and at-risk students.',
+    ...(quizzesOn && features?.HOD_ANALYTICS !== false ? [{ title: 'Department analytics', description: 'Live charts for your department: pass rates, trends and at-risk students.',
       to: `${staffBase}/analytics`, icon: <BarChart3 size={20} />, group: 'Department' }] : []),
-  ], [isSuper, role, staffBase, auditLogSuperAdmin, features]);
+  ], [isSuper, role, staffBase, auditLogSuperAdmin, features, quizzesOn]);
 
   const groups = useMemo(() => {
     const needle = q.trim().toLowerCase();

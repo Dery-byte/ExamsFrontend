@@ -4,7 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
-import { useFeatureFlags } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments } from '../../hooks/useFeatureFlags';
+import { hideQuizItems } from '../../utils/assessmentsNav';
 import { 
   Home, 
   Grid, 
@@ -31,6 +32,7 @@ export default function LecturerLayout() {
   const { term } = useInstitution();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { marksSheetLecturer, features } = useFeatureFlags();
+  const quizzesOn = useAssessments();   // the developer's Assessments switch
 
   const navItems = [
     { to: '/lect', exact: true, icon: <Home size={20} />, title: 'Dashboard' },
@@ -62,7 +64,7 @@ export default function LecturerLayout() {
           <InstitutionMark size={34} radius={9} />
         </div>
         <nav className="sidebar-menu">
-          {navItems.map((item, i) => (
+          {hideQuizItems(navItems, quizzesOn).map((item, i) => (
             <NavLink 
               key={i} 
               to={item.to} 

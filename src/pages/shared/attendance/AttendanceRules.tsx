@@ -9,6 +9,7 @@ import {
 } from '../../../api/attendance';
 import { getFeatures, setFeatureForDepartment, setFeatureSystemWide } from '../../../api/endpoints';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useAssessments } from '../../../hooks/useFeatureFlags';
 import { errMsg } from './shared';
 import { tx } from '../../../utils/terms';
 
@@ -134,6 +135,7 @@ export default function AttendanceRules() {
 }
 
 function PolicySummary({ p }: { p: AttendancePolicy }) {
+  const quizzesOn = useAssessments();
   const rows: [string, string][] = [
     ['Attendance taken', p.mode === 'PROGRAMME' ? tx('By programme (HOD starts sessions)') : tx('By course (lecturer starts sessions)')],
     ['Projector code', `New every ${p.codeSeconds} s (+${p.graceSeconds} s to finish typing)`],
@@ -142,9 +144,9 @@ function PolicySummary({ p }: { p: AttendancePolicy }) {
     ['Location', `Within ${p.radiusMeters} m (when no saved room), accuracy ±${p.maxAccuracyMeters} m or better`],
     ['Wrong codes allowed', `${p.maxFailedAttempts} per class, then locked out`],
     ['Second check', p.secondCheck ? `On, open ${p.secondCheckMinutes} min at a random time` : 'Off'],
-    ['Minimum for quizzes', p.minimumRequired
+    ...(!quizzesOn ? [] : [['Minimum for quizzes', p.minimumRequired
       ? `${p.minimumPercent}%: below it, ${p.mode === 'PROGRAMME' ? 'no quiz at all' : tx("none of the course's quizzes")} can be started`
-      : 'Off'],
+      : 'Off']] as [string, string][]),
   ];
   return (
     <div className="at-rules-grid">
@@ -158,6 +160,7 @@ function PolicySummary({ p }: { p: AttendancePolicy }) {
 function PolicyDialog({ title, initial, onClose, onSave }: {
   title: string; initial: AttendancePolicy; onClose: () => void; onSave: (p: Partial<AttendancePolicy>) => Promise<void>;
 }) {
+  const quizzesOn = useAssessments();
   const [p, setP] = useState<AttendancePolicy>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -239,6 +242,7 @@ function PolicyDialog({ title, initial, onClose, onSave }: {
           {num('secondCheckMinutes', 'Second check stays open', 'minutes', 1, 10)}
         </div>
 
+        {quizzesOn && <>
         <h4 className="at-section-title">Minimum attendance for quizzes</h4>
         <label className="at-switch">
           <input type="checkbox" checked={p.minimumRequired} onChange={e => set('minimumRequired', e.target.checked)} />
@@ -254,6 +258,7 @@ function PolicyDialog({ title, initial, onClose, onSave }: {
             : tx("By course: a student below the minimum for a course can't start that course's quizzes.")}
           {' '}{tx('Only finished classes this academic year count; excused absences are left out, so excusing raises the percentage. A quiz already started can always be finished.')}
         </p>
+        </>}
         {error && <div className="at-alert is-error" role="alert" style={{ marginTop: 12, marginBottom: 0 }}><AlertTriangle size={16} /><span>{error}</span></div>}
       </div>
     </AppModal>

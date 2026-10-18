@@ -4,7 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
-import { useFeatureFlags } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments } from '../../hooks/useFeatureFlags';
+import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { 
   LayoutDashboard, 
   UserCircle, 
@@ -47,6 +48,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { marksSheetAdmin, features } = useFeatureFlags();
+  const quizzesOn = useAssessments();   // the developer's Assessments switch
   const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
   useEffect(() => {
@@ -121,7 +123,7 @@ export default function AdminLayout() {
           </button>
         </div>
         <nav className="lexa-sidebar-nav">
-          {navItems.map((section, idx) => (
+          {hideQuizGroups(navItems, quizzesOn).map((section, idx) => (
             <div key={idx} className="lexa-nav-section">
               <h6 className="lexa-nav-label">{term(section.label)}</h6>
               <div className="lexa-nav-group">

@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { TerminalSquare, LogOut, SlidersHorizontal, Activity, Bug, ScrollText, Users, ListChecks, Palette, Wrench, CreditCard, type LucideIcon } from 'lucide-react';
+import { TerminalSquare, LogOut, SlidersHorizontal, Activity, Bug, ScrollText, Users, ListChecks, Palette, Wrench, CreditCard, Blocks, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSystemHealth, getMaintenance, getSubscription } from '../../api/endpoints';
 import ModePanel from './console/ModePanel';
+import ModulesPanel from './console/ModulesPanel';
 import HealthPanel from './console/HealthPanel';
 import ErrorsPanel from './console/ErrorsPanel';
 import AuditPanel from './console/AuditPanel';
@@ -16,11 +17,12 @@ import SubscriptionPanel from './console/SubscriptionPanel';
 import { toneOf, type Tone } from './console/ui';
 import { CSS } from './console/styles';
 
-type Tab = 'setup' | 'mode' | 'branding' | 'maintenance' | 'subscription' | 'health' | 'errors' | 'audit' | 'developers';
+type Tab = 'setup' | 'mode' | 'modules' | 'branding' | 'maintenance' | 'subscription' | 'health' | 'errors' | 'audit' | 'developers';
 
 const NAV: { key: Tab; label: string; short: string; icon: LucideIcon }[] = [
   { key: 'setup', label: 'Setup', short: 'Setup', icon: ListChecks },
   { key: 'mode', label: 'System mode', short: 'Mode', icon: SlidersHorizontal },
+  { key: 'modules', label: 'Modules', short: 'Modules', icon: Blocks },
   { key: 'branding', label: 'Branding', short: 'Brand', icon: Palette },
   { key: 'maintenance', label: 'Maintenance', short: 'Maint.', icon: Wrench },
   { key: 'subscription', label: 'Subscription', short: 'Billing', icon: CreditCard },
@@ -116,6 +118,7 @@ export default function DeveloperDashboard() {
         <main className="dd-main">
           {tab === 'setup' && <SetupPanel onOpen={go} />}
           {tab === 'mode' && <ModePanel />}
+          {tab === 'modules' && <ModulesPanel />}
           {tab === 'branding' && <BrandingPanel />}
           {tab === 'maintenance' && <MaintenancePanel />}
           {tab === 'subscription' && <SubscriptionPanel />}

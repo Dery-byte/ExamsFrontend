@@ -10,6 +10,7 @@ import * as XLSX from 'xlsx';
 import PageHeader from '../../components/PageHeader';
 import { Book, Clipboard, Users, GraduationCap, Download, BarChart2, Filter, Loader2, Search, ArrowUpRight, TrendingUp, Info, Award, Calendar, Activity, ChevronRight, Zap, Target, ShieldCheck as ShieldIcon, Database, LineChart as LineChartIcon } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import { useAssessments } from '../../hooks/useFeatureFlags';
 import { useThemeColors, hexAlpha } from '../../utils/theme';
 
 type AdminChartType = 'bar' | 'line' | 'area' | 'radar';
@@ -28,7 +29,8 @@ export default function AdminWelcome() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartType, setChartType] = useState<AdminChartType>('bar');
 
-  const { data: cateGory = [] } = useQuery({ queryKey: ['adminDeptCatReport'], queryFn: getAdminDepartmentCategoriesAndQuizzes });
+  const quizzesOn = useAssessments();   // the developer's Assessments switch
+  const { data: cateGory = [] } = useQuery({ queryKey: ['adminDeptCatReport'], queryFn: getAdminDepartmentCategoriesAndQuizzes, enabled: quizzesOn });
   const { data: dashStatsData } = useQuery({ queryKey: ['adminDashboardStats'], queryFn: getAdminDashboardStats });
   const dashStats: any = dashStatsData;
 
@@ -148,7 +150,7 @@ export default function AdminWelcome() {
           { label: 'Assessments', value: dashStats?.assessments ?? '0', icon: <Zap size={26} />, bg: 'linear-gradient(135deg, #0ea5e9 0%, #2dd4bf 100%)' },
           { label: 'Candidates', value: dashStats?.candidates ?? '0', icon: <GraduationCap size={26} />, bg: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 100%)' },
           { label: 'Personnel', value: dashStats?.personnel ?? '0', icon: <Users size={26} />, bg: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' },
-        ].map((stat, i) => (
+        ].filter(stat => quizzesOn || stat.label !== 'Assessments').map((stat, i) => (
           <div key={i} className="stat-card-premium" style={{ background: stat.bg }}>
             <div className="s-icon-circle">{stat.icon}</div>
             <div className="s-info">
@@ -160,6 +162,7 @@ export default function AdminWelcome() {
         ))}
       </div>
 
+      {quizzesOn && <>
       {/* Performance Analytics Center - Visual Standout */}
       <div className="standout-container analytics-center-card">
         <div className="standout-header">
@@ -245,6 +248,7 @@ export default function AdminWelcome() {
           )}
         </div>
       </div>
+      </>}
 
       {/* Candidate Registry Ledger - Visual Standout */}
       {reports.length > 0 && (

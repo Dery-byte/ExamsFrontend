@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Loader2, Save, ClipboardPen } from 'lucide-react';
+import { Loader2, Save, ClipboardPen, UserCheck } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
-import { getAllMarkSheets, getMyMarkSheets, getTermRemarks, saveTermRemarks } from '../../api/endpoints';
+import { getAllMarkSheets, getMyMarkSheets, getTermAttendance, getTermRemarks, saveTermRemarks } from '../../api/endpoints';
 import { tx } from '../../utils/terms';
 
 type Row = {
@@ -55,6 +55,36 @@ export default function TermRemarks() {
     setDirty(true);
   };
   const num = (v: string) => (v.trim() === '' ? null : Math.max(0, Math.floor(Number(v))) || 0);
+
+  /**
+   * Fills "Present" (and "Opened" where it is empty or smaller) from class attendance in this term.
+   * Students with no attendance taken are left as they are. Nothing is saved until Save.
+   */
+  const [filling, setFilling] = useState(false);
+  const fillFromAttendance = async () => {
+    if (rows.some(r => r.daysPresent != null) && !window.confirm('Replace the days present already entered with the figures from class attendance?')) return;
+    setFilling(true);
+    try {
+      const a = await getTermAttendance(sheetId!);
+      if (a.meetings === 0) {
+        toast(tx('No class attendance has been taken for this term yet.'), { icon: 'ℹ️' });
+        return;
+      }
+      const byStudent = new Map(a.rows.map(x => [x.studentId, x]));
+      setRows(rs => rs.map(r => {
+        const x = byStudent.get(r.studentId);
+        if (!x) return r;
+        const daysOpen = r.daysOpen == null || r.daysOpen < x.daysPresent ? x.daysOpen : r.daysOpen;
+        return { ...r, daysPresent: x.daysPresent, daysOpen };
+      }));
+      setDirty(true);
+      toast.success(`Filled days present for ${byStudent.size} ${byStudent.size === 1 ? 'student' : 'students'} from attendance on ${a.classDays} ${a.classDays === 1 ? 'day' : 'days'}. Check, then Save.`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not read the attendance.');
+    } finally {
+      setFilling(false);
+    }
+  };
 
   const applyDaysOpen = () => {
     const n = num(daysOpenAll);
@@ -115,6 +145,10 @@ export default function TermRemarks() {
                   <input inputMode="numeric" value={daysOpenAll} onChange={e => setDaysOpenAll(e.target.value)} placeholder="e.g. 62" />
                 </label>
                 <button type="button" className="tr-ghost" onClick={applyDaysOpen} disabled={!daysOpenAll.trim()}>Apply</button>
+                <button type="button" className="tr-ghost" onClick={fillFromAttendance} disabled={filling}
+                  title={tx('Days present from class attendance taken this term')}>
+                  {filling ? <Loader2 size={14} className="tr-spin" /> : <UserCheck size={14} />} Fill present from attendance
+                </button>
                 <span style={{ flex: 1 }} />
                 <button type="button" className="tr-btn" onClick={save} disabled={saving || !dirty}>
                   {saving ? <Loader2 size={15} className="tr-spin" /> : <Save size={15} />} Save
@@ -165,7 +199,7 @@ export default function TermRemarks() {
         .tr-inline input { width: 120px; height: 36px; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 0 9px; }
         .tr-btn { height: 36px; padding: 0 16px; border: none; border-radius: 8px; background: var(--brand); color: var(--brand-contrast); font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
         .tr-btn:disabled { opacity: 0.5; cursor: default; }
-        .tr-ghost { height: 36px; padding: 0 14px; border-radius: 8px; border: 1.5px solid var(--brand-border); background: #fff; color: var(--brand-text); font-weight: 700; font-size: 13px; cursor: pointer; }
+        .tr-ghost { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; border: 1.5px solid var(--brand-border); background: #fff; color: var(--brand-text); font-weight: 700; font-size: 13px; cursor: pointer; }
         .tr-ghost:disabled { opacity: 0.5; cursor: default; }
         .tr-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
         .tr-table th { text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b; padding: 8px 6px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }

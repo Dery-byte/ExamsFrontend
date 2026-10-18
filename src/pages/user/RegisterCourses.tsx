@@ -206,7 +206,7 @@ export default function RegisterCourses() {
             <button onClick={() => setSearchQuery('')} className="btn-lexa btn-lexa-outline">
               Clear Search
             </button>
-            <button onClick={() => window.location.href = '/user-dashboard/history'} className="btn-lexa btn-lexa-primary">
+            <button onClick={() => window.location.href = '/user-dashboard/courses'} className="btn-lexa btn-lexa-primary">
               {tx("View Registered Courses")}</button>
           </div>
         </div>
@@ -267,7 +267,7 @@ export default function RegisterCourses() {
             </div>
           </div>
           <button 
-            onClick={() => window.location.href = '/user-dashboard/history'} 
+            onClick={() => window.location.href = '/user-dashboard/courses'} 
             className="btn-lexa btn-lexa-outline"
             style={{ borderRadius: 8, padding: '10px 20px' }}
           >

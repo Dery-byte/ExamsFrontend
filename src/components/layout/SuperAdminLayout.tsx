@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
-import { useFeatureFlags } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments } from '../../hooks/useFeatureFlags';
+import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
 import AvatarPhoto from '../common/AvatarPhoto';
@@ -22,6 +23,7 @@ export default function SuperAdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
   const { term, institution } = useInstitution();
   const { auditLogSuperAdmin } = useFeatureFlags();
+  const quizzesOn = useAssessments();   // the developer's Assessments switch
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
@@ -139,7 +141,7 @@ export default function SuperAdminLayout() {
 
         {/* Nav */}
         <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 12px' }}>
-          {navItems.map((group) => (
+          {hideQuizGroups(navItems, quizzesOn).map((group) => (
             <div key={group.label} style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(var(--sidebar-fg-rgb), 0.45)', textTransform: 'uppercase', letterSpacing: 1.2, padding: '0 8px 8px' }}>
                 {term(group.label)}

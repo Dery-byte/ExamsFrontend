@@ -3,7 +3,8 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import NotificationBell from '../NotificationBell';
-import { useFeatureFlags } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments } from '../../hooks/useFeatureFlags';
+import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { 
   LayoutDashboard, 
   GraduationCap, 
@@ -31,6 +32,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
   const { logout } = useAuth();
   const { term, institution } = useInstitution();
   const { marksSheetStudent, feesStudent, features } = useFeatureFlags();
+  const quizzesOn = useAssessments();   // the developer's Assessments switch
   const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
   const menuGroups = [
@@ -84,7 +86,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
 
       {/* Nav */}
       <div className="user-sidebar-scroll">
-        {menuGroups.map((group, gIdx) => (
+        {hideQuizGroups(menuGroups, quizzesOn).map((group, gIdx) => (
           <div key={gIdx} className="user-sidebar-group">
             <div className="user-sidebar-group-label">{term(group.title)}</div>
             <nav>

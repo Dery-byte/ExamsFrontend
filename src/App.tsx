@@ -40,6 +40,7 @@ import Lecturers from './pages/admin/Lecturers';
 import QuizReview from './pages/admin/QuizReview';
 import EnrollStudent from './pages/admin/EnrollStudent';
 import FeatureGate from './components/FeatureGate';
+import AssessmentsGate from './components/common/AssessmentsGate';
 import Announcements from './pages/shared/Announcements';
 import Analytics from './pages/shared/Analytics';
 import AuditLog from './pages/superadmin/AuditLog';
@@ -150,9 +151,9 @@ export default function App() {
         <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
         <Route path="/verify" element={<VerifyDocument />} />
         <Route path="/verify/:code" element={<VerifyDocument />} />
-        <Route path="/quiz/:qid" element={<QuizLink />} />
+        <Route path="/quiz/:qid" element={<AssessmentsGate><QuizLink /></AssessmentsGate>} />
         {/* The readable part is decorative; the quiz is found by :qid */}
-        <Route path="/quiz/:qid/:slug" element={<QuizLink />} />
+        <Route path="/quiz/:qid/:slug" element={<AssessmentsGate><QuizLink /></AssessmentsGate>} />
 
         {/* Super Admin */}
         <Route path="/super-admin" element={<ProtectedRoute role="SUPER_ADMIN"><SuperAdminLayout /></ProtectedRoute>}>
@@ -165,15 +166,15 @@ export default function App() {
           <Route path="academic-records" element={<ModeGate only="university" redirectTo=".."><AcademicRecords /></ModeGate>} />
           <Route path="data-tools" element={<DataTools />} />
           <Route path="announcements" element={<Announcements />} />
-          <Route path="analytics" element={<Analytics />} />
+          <Route path="analytics" element={<AssessmentsGate><Analytics /></AssessmentsGate>} />
           <Route path="audit-log" element={<FeatureGate flag="auditLogSuperAdmin" redirectTo="/super-admin"><AuditLog /></FeatureGate>} />
           <Route path="reports" element={<ReportsHub />} />
           <Route path="reports/:key" element={<ReportView />} />
-          <Route path="timetable" element={<Timetable />} />
+          <Route path="timetable" element={<AssessmentsGate><Timetable /></AssessmentsGate>} />
           <Route path="attendance" element={<AttendanceHome />} />
           <Route path="attendance/session/:id" element={<AttendanceSessionPage />} />
-          <Route path="question-bank" element={<QuestionBank />} />
-          <Route path="remarks" element={<RemarkRequests />} />
+          <Route path="question-bank" element={<AssessmentsGate><QuestionBank /></AssessmentsGate>} />
+          <Route path="remarks" element={<AssessmentsGate><RemarkRequests /></AssessmentsGate>} />
           <Route path="profile" element={<Profile />} />
           <Route path="departments" element={<Departments />} />
           <Route path="programs" element={<Programs />} />
@@ -183,12 +184,12 @@ export default function App() {
           <Route path="enroll-student" element={<EnrollStudent />} />
           <Route path="courses" element={<ViewCategories />} />
           <Route path="add-course" element={<AddCategory />} />
-          <Route path="quizzes" element={<ViewQuizzes />} />
-          <Route path="add-quiz" element={<AddQuiz />} />
-          <Route path="view-questions/:qId/:qTitle" element={<ViewQuizQuestions />} />
-          <Route path="add-question/:qId/:title" element={<AddQuestion />} />
-          <Route path="quiz-review" element={<QuizReview />} />
-          <Route path="proctoring/:qId" element={<ProctoringReport />} />
+          <Route path="quizzes" element={<AssessmentsGate><ViewQuizzes /></AssessmentsGate>} />
+          <Route path="add-quiz" element={<AssessmentsGate><AddQuiz /></AssessmentsGate>} />
+          <Route path="view-questions/:qId/:qTitle" element={<AssessmentsGate><ViewQuizQuestions /></AssessmentsGate>} />
+          <Route path="add-question/:qId/:title" element={<AssessmentsGate><AddQuestion /></AssessmentsGate>} />
+          <Route path="quiz-review" element={<AssessmentsGate><QuizReview /></AssessmentsGate>} />
+          <Route path="proctoring/:qId" element={<AssessmentsGate><ProctoringReport /></AssessmentsGate>} />
           <Route path="marks-sheets" element={<MarksSheetManager />} />
           <Route path="term-remarks" element={<ModeGate only="school" redirectTo="/super-admin"><TermRemarks /></ModeGate>} />
           <Route path="lecturers" element={<Lecturers />} />
@@ -198,29 +199,29 @@ export default function App() {
         <Route path="/admin" element={<ProtectedRoute role={['ADMIN','SUPER_ADMIN']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminWelcome />} />
           <Route path="department-settings" element={<FeatureControls />} />
-          <Route path="timetable" element={<Timetable />} />
+          <Route path="timetable" element={<AssessmentsGate><Timetable /></AssessmentsGate>} />
           {/* Not gated: the HOD sets the rules (and the department switch) from here */}
           <Route path="attendance" element={<AttendanceHome />} />
           <Route path="attendance/session/:id" element={<AttendanceSessionPage />} />
-          <Route path="question-bank" element={<FeatureGate feature="QUESTION_BANK" redirectTo="/admin"><QuestionBank /></FeatureGate>} />
-          <Route path="proctoring/:qId" element={<ProctoringReport />} />
-          <Route path="remarks" element={<RemarkRequests />} />
+          <Route path="question-bank" element={<AssessmentsGate><FeatureGate feature="QUESTION_BANK" redirectTo="/admin"><QuestionBank /></FeatureGate></AssessmentsGate>} />
+          <Route path="proctoring/:qId" element={<AssessmentsGate><ProctoringReport /></AssessmentsGate>} />
+          <Route path="remarks" element={<AssessmentsGate><RemarkRequests /></AssessmentsGate>} />
           <Route path="academic-records" element={<ModeGate only="university" redirectTo=".."><AcademicRecords /></ModeGate>} />
           <Route path="data-tools" element={<FeatureGate feature="HOD_DATA_TOOLS" redirectTo="/admin"><DataTools /></FeatureGate>} />
           <Route path="announcements" element={<Announcements />} />
-          <Route path="analytics" element={<FeatureGate feature="HOD_ANALYTICS" redirectTo="/admin"><Analytics /></FeatureGate>} />
+          <Route path="analytics" element={<AssessmentsGate><FeatureGate feature="HOD_ANALYTICS" redirectTo="/admin"><Analytics /></FeatureGate></AssessmentsGate>} />
           <Route path="reports" element={<FeatureGate feature="HOD_REPORTS" redirectTo="/admin"><ReportsHub /></FeatureGate>} />
           <Route path="reports/:key" element={<FeatureGate feature="HOD_REPORTS" redirectTo="/admin"><ReportView /></FeatureGate>} />
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCategories />} />
           <Route path="add-course" element={<AddCategory />} />
-          <Route path="quizzes" element={<ViewQuizzes />} />
-          <Route path="add-quiz" element={<AddQuiz />} />
-          <Route path="view-questions/:qId/:qTitle" element={<ViewQuizQuestions />} />
-          <Route path="add-question/:qId/:title" element={<AddQuestion />} />
+          <Route path="quizzes" element={<AssessmentsGate><ViewQuizzes /></AssessmentsGate>} />
+          <Route path="add-quiz" element={<AssessmentsGate><AddQuiz /></AssessmentsGate>} />
+          <Route path="view-questions/:qId/:qTitle" element={<AssessmentsGate><ViewQuizQuestions /></AssessmentsGate>} />
+          <Route path="add-question/:qId/:title" element={<AssessmentsGate><AddQuestion /></AssessmentsGate>} />
           <Route path="students" element={<Students />} />
           <Route path="lecturers" element={<Lecturers />} />
-          <Route path="quiz-review" element={<QuizReview />} />
+          <Route path="quiz-review" element={<AssessmentsGate><QuizReview /></AssessmentsGate>} />
           <Route path="enroll-student" element={<EnrollStudent />} />
           <Route path="marks-sheets" element={<FeatureGate flag="marksSheetAdmin" redirectTo="/admin"><MarksSheetManager /></FeatureGate>} />
           <Route path="term-remarks" element={<ModeGate only="school" redirectTo="/admin"><FeatureGate flag="marksSheetAdmin" redirectTo="/admin"><TermRemarks /></FeatureGate></ModeGate>} />
@@ -229,22 +230,22 @@ export default function App() {
         {/* Lecturer */}
         <Route path="/lect" element={<ProtectedRoute role="LECTURER"><LecturerLayout /></ProtectedRoute>}>
           <Route index element={<LectWelcome />} />
-          <Route path="timetable" element={<Timetable />} />
+          <Route path="timetable" element={<AssessmentsGate><Timetable /></AssessmentsGate>} />
           <Route path="attendance" element={<FeatureGate feature="ATTENDANCE" redirectTo="/lect"><AttendanceHome /></FeatureGate>} />
           <Route path="attendance/session/:id" element={<FeatureGate feature="ATTENDANCE" redirectTo="/lect"><AttendanceSessionPage /></FeatureGate>} />
-          <Route path="question-bank" element={<FeatureGate feature="QUESTION_BANK" redirectTo="/lect"><QuestionBank /></FeatureGate>} />
+          <Route path="question-bank" element={<AssessmentsGate><FeatureGate feature="QUESTION_BANK" redirectTo="/lect"><QuestionBank /></FeatureGate></AssessmentsGate>} />
           <Route path="reports" element={<FeatureGate feature="LECTURER_REPORTS" redirectTo="/lect"><ReportsHub /></FeatureGate>} />
           <Route path="reports/:key" element={<FeatureGate feature="LECTURER_REPORTS" redirectTo="/lect"><ReportView /></FeatureGate>} />
-          <Route path="proctoring/:qId" element={<ProctoringReport />} />
-          <Route path="remarks" element={<RemarkRequests />} />
+          <Route path="proctoring/:qId" element={<AssessmentsGate><ProctoringReport /></AssessmentsGate>} />
+          <Route path="remarks" element={<AssessmentsGate><RemarkRequests /></AssessmentsGate>} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCourse />} />
-          <Route path="quizes" element={<LectViewQuizzes />} />
-          <Route path="add-quizes" element={<LectAddQuiz />} />
-          <Route path="view-quetions/:qId/:qTitle" element={<LectViewQuizQuestions />} />
-          <Route path="add-question/:qId/:title" element={<LectAddQuestion />} />
-          <Route path="quiz-review" element={<LectQuizReview />} />
+          <Route path="quizes" element={<AssessmentsGate><LectViewQuizzes /></AssessmentsGate>} />
+          <Route path="add-quizes" element={<AssessmentsGate><LectAddQuiz /></AssessmentsGate>} />
+          <Route path="view-quetions/:qId/:qTitle" element={<AssessmentsGate><LectViewQuizQuestions /></AssessmentsGate>} />
+          <Route path="add-question/:qId/:title" element={<AssessmentsGate><LectAddQuestion /></AssessmentsGate>} />
+          <Route path="quiz-review" element={<AssessmentsGate><LectQuizReview /></AssessmentsGate>} />
           <Route path="manual-marks" element={<FeatureGate flag="marksSheetLecturer" redirectTo="/lect"><ManualMarksEntry /></FeatureGate>} />
           <Route path="term-remarks" element={<ModeGate only="school" redirectTo="/lect"><FeatureGate flag="marksSheetLecturer" redirectTo="/lect"><TermRemarks /></FeatureGate></ModeGate>} />
         </Route>
@@ -253,7 +254,7 @@ export default function App() {
         <Route path="/user-dashboard" element={<ProtectedRoute role="NORMAL"><UserLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to="user-dashboard" replace />} />
           <Route path="user-dashboard" element={<UserDashboard />} />
-          <Route path="timetable" element={<FeatureGate feature="STUDENT_TIMETABLE" redirectTo="/user-dashboard"><Timetable /></FeatureGate>} />
+          <Route path="timetable" element={<AssessmentsGate><FeatureGate feature="STUDENT_TIMETABLE" redirectTo="/user-dashboard"><Timetable /></FeatureGate></AssessmentsGate>} />
           <Route path="announcements" element={<Announcements />} />
           <Route path="transcript" element={<ModeGate only="university" redirectTo="/user-dashboard"><FeatureGate flag="marksSheetStudent" feature="STUDENT_TRANSCRIPT" redirectTo="/user-dashboard"><Transcript /></FeatureGate></ModeGate>} />
           <Route path="profile" element={<Profile />} />
@@ -262,16 +263,16 @@ export default function App() {
           <Route path="register" element={<FeatureGate feature="STUDENT_COURSE_REGISTRATION" redirectTo="/user-dashboard"><RegisterCourses /></FeatureGate>} />
           <Route path="courses" element={<CoursesRegistered />} />
           <Route path="attendance" element={<FeatureGate feature="ATTENDANCE" redirectTo="/user-dashboard"><StudentAttendance /></FeatureGate>} />
-          <Route path="quizzes" element={<AvailableQuizzes />} />
-          <Route path="history" element={<LoadQuiz />} />
+          <Route path="quizzes" element={<AssessmentsGate><AvailableQuizzes /></AssessmentsGate>} />
+          <Route path="history" element={<AssessmentsGate><LoadQuiz /></AssessmentsGate>} />
           <Route path="report-cards" element={<FeatureGate flag="marksSheetStudent" feature="STUDENT_REPORT_CARD" redirectTo="/user-dashboard"><SemesterReportCard /></FeatureGate>} />
 
-          <Route path="instructions/:qid" element={<Instructions />} />
+          <Route path="instructions/:qid" element={<AssessmentsGate><Instructions /></AssessmentsGate>} />
         </Route>
 
         {/* Standalone exam pages */}
-        <Route path="/start/:qid" element={<ProtectedRoute role="NORMAL"><StartQuiz /></ProtectedRoute>} />
-        <Route path="/print_quiz/:qid" element={<ProtectedRoute role="NORMAL"><PrintQuiz /></ProtectedRoute>} />
+        <Route path="/start/:qid" element={<AssessmentsGate><ProtectedRoute role="NORMAL"><StartQuiz /></ProtectedRoute></AssessmentsGate>} />
+        <Route path="/print_quiz/:qid" element={<AssessmentsGate><ProtectedRoute role="NORMAL"><PrintQuiz /></ProtectedRoute></AssessmentsGate>} />
         {/* Full-screen attendance code for the projector */}
         <Route path="/attendance-screen/:id" element={<ProtectedRoute role={['LECTURER', 'ADMIN', 'SUPER_ADMIN']}><ProjectorScreen /></ProtectedRoute>} />
         {/* Scanning students' attendance QR codes: staff from their account, helpers (TAs) from the link they were given */}

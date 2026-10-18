@@ -12,6 +12,7 @@ import {
   Download, Activity, Target, LineChart as LineChartIcon,
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import { useAssessments } from '../../hooks/useFeatureFlags';
 import { useThemeColors, hexAlpha } from '../../utils/theme';
 
 type ChartType = 'bar' | 'line' | 'area' | 'radar';
@@ -30,9 +31,10 @@ export default function LectWelcome() {
   const [loadingReport, setLoadingReport] = useState(false);
   const [chartType, setChartType]       = useState<ChartType>('bar');
 
-  const { data: cateGory = [] }  = useQuery({ queryKey: ['lectCatReport'], queryFn: getUniqueCategoriesForLecturer });
+  const quizzesOn = useAssessments();   // the developer's Assessments switch
+  const { data: cateGory = [] }  = useQuery({ queryKey: ['lectCatReport'], queryFn: getUniqueCategoriesForLecturer, enabled: quizzesOn });
   const { data: myCourses = [] } = useQuery({ queryKey: ['lectCats'],      queryFn: getCategoriesForUser });
-  const { data: myQuizzes = [] } = useQuery({ queryKey: ['myQuizzes'],     queryFn: loadQuizzesForUser });
+  const { data: myQuizzes = [] } = useQuery({ queryKey: ['myQuizzes'],     queryFn: loadQuizzesForUser, enabled: quizzesOn });
 
   const selectCategory = (cid: number | null) => {
     setSelCatId(cid);
@@ -93,10 +95,10 @@ export default function LectWelcome() {
   );
 
   const topCards = [
-    { label: tx('Total Courses'),  val: (myCourses as any[]).length, badge: '+12%', badgeOk: true,  spark: <SparklineUp /> },
-    { label: 'Active Quizzes', val: (myQuizzes as any[]).length, badge: '+8%',  badgeOk: true,  spark: <SparklineUp /> },
-    { label: 'Average Score',  val: avgScore.toFixed(1) + '%',  badge: '-2.5%', badgeOk: false, spark: <SparklineDown /> },
-    { label: 'Submissions',    val: reports.length,             badge: '+15%', badgeOk: true,  spark: <SparklineUp /> },
+    { label: tx('Total Courses'), quiz: false,  val: (myCourses as any[]).length, badge: '+12%', badgeOk: true,  spark: <SparklineUp /> },
+    { label: 'Active Quizzes', quiz: true, val: (myQuizzes as any[]).length, badge: '+8%',  badgeOk: true,  spark: <SparklineUp /> },
+    { label: 'Average Score', quiz: true,  val: avgScore.toFixed(1) + '%',  badge: '-2.5%', badgeOk: false, spark: <SparklineDown /> },
+    { label: 'Submissions', quiz: true,    val: reports.length,             badge: '+15%', badgeOk: true,  spark: <SparklineUp /> },
   ];
 
   const chartTypeOptions: { key: ChartType; label: string; icon: JSX.Element }[] = [
@@ -173,7 +175,7 @@ export default function LectWelcome() {
 
       {/* ── Metric Cards ── */}
       <div className="lect-metric-grid">
-        {topCards.map((card, i) => (
+        {topCards.filter(card => quizzesOn || !card.quiz).map((card, i) => (
           <div key={i} className="lect-mcard">
             <div className="lect-mcard-top">
               <div>
@@ -188,6 +190,7 @@ export default function LectWelcome() {
         ))}
       </div>
 
+      {quizzesOn && <>
       {/* ── Quiz Overview (Performance Analytics) ── */}
       <div className="lect-standout-container">
         {/* Header */}
@@ -286,6 +289,7 @@ export default function LectWelcome() {
           )}
         </div>
       </div>
+      </>}
 
       {/* ── Student Registry Ledger ── */}
       {reports.length > 0 && (

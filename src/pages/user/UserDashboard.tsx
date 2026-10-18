@@ -22,7 +22,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import PageHeader from '../../components/PageHeader';
 import FeesSummaryCard from './fees/FeesSummaryCard';
 import CheckInPanel from './attendance/CheckInPanel';
-import { useFeatureFlags } from '../../hooks/useFeatureFlags';
+import { useAssessments, useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { tx } from '../../utils/terms';
 import { useThemeColors } from '../../utils/theme';
 
@@ -73,6 +73,7 @@ export default function UserDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { feesStudent, features } = useFeatureFlags();
+  const quizzesOn = useAssessments();
   const [stats, setStats] = useState({ courses: 0, quizzes: 0, points: 0, rank: 'N/A' });
   const [reports, setReports] = useState<any[]>([]);
   const [activeQuizzes, setActiveQuizzes] = useState<any[]>([]);
@@ -84,8 +85,8 @@ export default function UserDashboard() {
       try {
         const [reg, rpts, active] = await Promise.all([
           getRegCourses().catch(() => []),
-          getReportsByUser(user.id).catch(() => []),
-          getActiveQuizzes().catch(() => [])
+          quizzesOn ? getReportsByUser(user.id).catch(() => []) : Promise.resolve([]),
+          quizzesOn ? getActiveQuizzes().catch(() => []) : Promise.resolve([])
         ]);
 
         const mine = (reg as any[]).filter(r => r.user?.id === user.id);
@@ -112,7 +113,7 @@ export default function UserDashboard() {
       }
     };
     loadData();
-  }, [user]);
+  }, [user, quizzesOn]);
 
   const chartData = reports
     .filter(r => r.isReviewed)
@@ -135,14 +136,16 @@ export default function UserDashboard() {
             <div style={{ flex: '1 1 300px', minWidth: 0 }}>
               <h2 style={{ margin: 0, color: 'var(--brand-contrast)', fontSize: 24, fontWeight: 800 }}>Welcome back, {user?.firstname}!</h2>
               <p style={{ margin: '4px 0 0', color: 'var(--brand-contrast)', opacity: 0.85, fontSize: 14, maxWidth: 500, lineHeight: 1.4 }}>
-                You have <strong>{activeQuizzes.length} active assessments</strong> scheduled for your enrolled modules today.
+                {quizzesOn
+                  ? <>You have <strong>{activeQuizzes.length} active assessments</strong> scheduled for your enrolled modules today.</>
+                  : <>You are enrolled in <strong>{stats.courses} {tx('courses')}</strong> this term.</>}
               </p>
               <button
-                onClick={() => navigate('/user-dashboard/quizzes')}
+                onClick={() => navigate(quizzesOn ? '/user-dashboard/quizzes' : '/user-dashboard/courses')}
                 style={{ marginTop: 15, background: '#fff', color: 'var(--brand-text)', border: 'none', padding: '8px 20px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s' }}
                 className="welcome-btn-hover"
               >
-                View Assignments <ArrowRight size={18} />
+                {quizzesOn ? 'View Assignments' : tx('View My Courses')} <ArrowRight size={18} />
               </button>
             </div>
             <div className="d-none d-md-block" style={{ textAlign: 'right' }}>
@@ -162,11 +165,13 @@ export default function UserDashboard() {
       {/* Stats Row */}
       <div className="dashboard-stats-grid">
         <MiniStat title="Enrolled Modules" value={isLoading ? '...' : stats.courses} icon={BookOpen} color="122, 111, 190" trend="up" trendValue="12.5%" />
-        <MiniStat title="Tests Completed" value={isLoading ? '...' : stats.quizzes} icon={ClipboardCheck} color="40, 187, 227" trend="up" trendValue="8.2%" />
-        <MiniStat title="Total Credits" value={isLoading ? '...' : stats.points} icon={Trophy} color="241, 180, 76" trend="up" trendValue="15.0%" />
-        <MiniStat title="Academic Merit" value={isLoading ? '...' : stats.rank} icon={Award} color="56, 164, 248" />
+        {quizzesOn && <MiniStat title="Tests Completed" value={isLoading ? '...' : stats.quizzes} icon={ClipboardCheck} color="40, 187, 227" trend="up" trendValue="8.2%" />}
+        {quizzesOn && <MiniStat title="Total Credits" value={isLoading ? '...' : stats.points} icon={Trophy} color="241, 180, 76" trend="up" trendValue="15.0%" />}
+        {quizzesOn && <MiniStat title="Academic Merit" value={isLoading ? '...' : stats.rank} icon={Award} color="56, 164, 248" />}
       </div>
 
+      {/* Quiz charts, upcoming assessments and results: the Assessments module */}
+      {quizzesOn && <>
       <div className="dashboard-charts-grid">
 
         {/* Left Column: Chart */}
@@ -330,6 +335,7 @@ export default function UserDashboard() {
           </div>
         </div>
       </div>
+      </>}
 
       <style>{`
         .stat-card-hover { transition: border-color 0.2s ease; }

@@ -480,6 +480,8 @@ export interface FeatureFlags {
   feesStudent?: boolean;
   /** Developer switch: the Super Admin sees the Audit Log (nav entry and page). */
   auditLogSuperAdmin?: boolean;
+  /** Developer switch: the whole Assessments (quiz) module; false hides it from every user. */
+  assessments?: boolean;
   /** Each feature's state for the signed-in user (system switch + their department's choice). */
   features?: Partial<Record<FeatureKey, boolean>>;
 }
@@ -730,6 +732,9 @@ export const getTermRemarks = (sheetId: number) =>
   client.get(`${apiRoot()}/marks/sheet/${sheetId}/term-remarks`).then(r => r.data);
 export const saveTermRemarks = (sheetId: number, rows: object[]) =>
   client.put(`${apiRoot()}/marks/sheet/${sheetId}/term-remarks`, { rows }).then(r => r.data);
+/** Days present / opened per student from class attendance in the sheet's term (not saved until the page saves). */
+export const getTermAttendance = (sheetId: number): Promise<{ rows: { studentId: number; daysPresent: number; daysOpen: number }[]; classDays: number; meetings: number }> =>
+  client.get(`${apiRoot()}/marks/sheet/${sheetId}/term-remarks/attendance`).then(r => r.data);
 export const getAllMarkSheets = () => client.get(`${apiRoot()}/marks/sheet/all`).then(r => r.data);
 export const getMyMarkSheets = () => client.get(`${apiRoot()}/marks/sheet/my-sheets`).then(r => r.data);
 
@@ -781,6 +786,11 @@ export const getAuditLogAccess = (): Promise<{ superAdminVisible: boolean }> =>
   client.get(`${developerRootUrl()}/audit-log/access`).then(r => r.data);
 export const setAuditLogAccess = (superAdminVisible: boolean): Promise<{ superAdminVisible: boolean }> =>
   client.put(`${developerRootUrl()}/audit-log/access`, { superAdminVisible }).then(r => r.data);
+/** Developer: which modules this institution uses (Assessments = the whole quiz module). */
+export const getModules = (): Promise<{ assessments: boolean }> =>
+  client.get(`${developerRootUrl()}/modules`).then(r => r.data);
+export const setModules = (data: { assessments: boolean }): Promise<{ assessments: boolean }> =>
+  client.put(`${developerRootUrl()}/modules`, data).then(r => r.data);
 
 // ── Subscription ─────────────────────────────────────────────────────────
 export type SubscriptionStateName = 'ACTIVE' | 'GRACE' | 'RESTRICTED' | 'SUSPENDED';
