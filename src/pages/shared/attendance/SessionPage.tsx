@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle, ArrowLeft, CheckCheck, Clock, Copy, DoorClosed, DoorOpen, Link2, Loader2, Lock, MapPin, Maximize2, Plus, ScanLine, Search,
-  Share2, ShieldAlert, Smartphone, Square, Trash2, UserPlus, Users, XCircle,
+  QrCode, Share2, ShieldAlert, Smartphone, Square, Trash2, UserPlus, Users, XCircle,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import ClassQr from './ClassQr';
@@ -238,7 +238,7 @@ function HelpersCard({ s, run }: { s: SessionDetail; run: (k: string, fn: () => 
               <div key={h.id} className="at-item" style={{ padding: '8px 12px' }}>
                 <div className="at-item-main">
                   <div className="at-item-title" style={{ fontSize: 13.5 }}>{h.label}</div>
-                  <div className="at-meta">{!showing && <span>{h.scans} scanned</span>}{h.lastUsedAt && <span>last at {fmtTime(h.lastUsedAt)}</span>}</div>
+                  <div className="at-meta"><span>{showing ? `${h.scans} scanned their code` : `${h.scans} scanned`}</span>{h.lastUsedAt && <span>last at {fmtTime(h.lastUsedAt)}</span>}</div>
                 </div>
                 <button className="at-btn-ghost at-btn-sm" onClick={() => {
                   if (window.confirm(`Cancel ${h.label}'s helper link? It stops working at once.`))
@@ -319,6 +319,11 @@ function AddHelperDialog({ sessionId, showing, onClose }: { sessionId: number; s
       </div>
     </AppModal>
   );
+}
+
+/** "Kojo Mensah (TA) (helper)" → "Kojo Mensah (TA) · helper"; the lecturer's name as it is. */
+function shownBy(who: string) {
+  return who.endsWith(' (helper)') ? `${who.slice(0, -' (helper)'.length)} · helper` : who;
 }
 
 function Counts({ s, onHeadcount }: { s: SessionDetail; onHeadcount: (n: number | null) => void }) {
@@ -426,7 +431,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
               {st.firstDistance != null && <span><MapPin size={12} style={{ verticalAlign: '-2px' }} /> {st.firstDistance} m ±{st.firstAccuracy}</span>}
               {st.secondCheckAt && <span>2nd check {fmtTime(st.secondCheckAt)}</span>}
               {st.method === 'MANUAL' && st.reviewedBy && <span>marked by {st.reviewedBy}</span>}
-              {st.method === 'SCAN' && st.reviewedBy && <span>scanned by {st.reviewedBy}</span>}
+              {st.method === 'SCAN' && st.reviewedBy && <span className="at-chip is-src"><ScanLine size={11} /> Scanned by {st.reviewedBy}</span>}
               {st.flags.filter(f => !(f === 'LATE' && st.status === 'LATE')).map(f => <span key={f} className={`at-chip ${f === 'MISSED_SECOND_CHECK' ? 'is-bad' : 'is-warn'}`}>{FLAG_LABELS[f] ?? f}</span>)}
               {st.locked && <span className="at-chip is-bad"><Lock size={11} /> Locked out</span>}
               {st.phoneLinked
@@ -434,6 +439,12 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
                     <Smartphone size={11} /> Phone linked</span>
                 : <span className="at-chip"><Smartphone size={11} /> No phone linked</span>}
               {!st.locked && st.failures > 0 && <span className="at-chip">{st.failures} wrong code{st.failures === 1 ? '' : 's'}</span>}
+              {(st.qrSource || st.secondQrSource) && (
+                <span className="at-roster-src">
+                  {st.qrSource && <span className="at-chip is-src"><QrCode size={11} /> QR shown by {shownBy(st.qrSource)}</span>}
+                  {st.secondQrSource && st.secondQrSource !== st.qrSource && <span className="at-chip is-src"><QrCode size={11} /> 2nd check: QR shown by {shownBy(st.secondQrSource)}</span>}
+                </span>
+              )}
               {st.note && <span>Note: {st.note}</span>}
             </div>
             <div className="at-roster-actions">

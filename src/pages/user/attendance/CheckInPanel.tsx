@@ -106,7 +106,7 @@ function ClassCard({ s }: { s: OpenClass }) {
     let loc;
     try { loc = await locate(); }
     catch (err) { return refuse(err instanceof LocationError ? err.message : 'Your location could not be found. Turn on location and try again.'); }
-    const r = await checkInToClass({ sessionId: s.sessionId, code: qr.code, latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, deviceId });
+    const r = await checkInToClass({ sessionId: s.sessionId, code: qr.code, latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, deviceId, source: qr.source });
     const message = tx(r.message);
     if (r.ok) {
       setScanning(false);

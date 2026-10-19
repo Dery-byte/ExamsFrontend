@@ -20,9 +20,13 @@ export default function ClassQr({ text, className = 'at-class-qr', label = 'Clas
   return src ? <img className={className} src={src} alt={label} /> : <div className={className} aria-busy="true" />;
 }
 
-/** Reads a class QR code: AQ1.<session>.<check>.<code>. Null when the text isn't one. */
-export function parseClassQr(text: string): { sessionId: number; check: number; code: string } | null {
+/**
+ * Reads a class QR code: AQ1.<session>.<check>.<code>.<source>, source being whose screen it is on
+ * (L the lecturer's, H<id> a helper's). Null when the text isn't one.
+ */
+export function parseClassQr(text: string): { sessionId: number; check: number; code: string; source?: string } | null {
   const p = text.trim().split('.');
-  if (p.length !== 4 || p[0] !== 'AQ1' || !/^\d+$/.test(p[1]) || !/^[12]$/.test(p[2]) || !/^\d{5}$/.test(p[3])) return null;
-  return { sessionId: Number(p[1]), check: Number(p[2]), code: p[3] };
+  if (p.length < 4 || p.length > 5 || p[0] !== 'AQ1' || !/^\d+$/.test(p[1]) || !/^[12]$/.test(p[2]) || !/^\d{5}$/.test(p[3])) return null;
+  const source = p[4] && /^(L|H\d{1,18})$/.test(p[4]) ? p[4] : undefined;
+  return { sessionId: Number(p[1]), check: Number(p[2]), code: p[3], source };
 }

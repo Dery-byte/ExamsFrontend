@@ -36,7 +36,8 @@ export interface StudentAttendanceSummary {
 
 export const getMyOpenClasses = (): Promise<{ enabled: boolean; sessions: OpenClass[] }> =>
   client.get(`${root()}/student/open`).then(r => r.data);
-export const checkInToClass = (data: { sessionId: number; code: string; latitude: number; longitude: number; accuracy: number; deviceId: string }): Promise<CheckInResult> =>
+/** {@code source}: from a scanned class QR, whose screen it was on (L or H<helper id>). */
+export const checkInToClass = (data: { sessionId: number; code: string; latitude: number; longitude: number; accuracy: number; deviceId: string; source?: string }): Promise<CheckInResult> =>
   client.post(`${root()}/student/check-in`, data).then(r => r.data);
 export interface QrKeyResult {
   ok: boolean; message: string; reason: string; key: string | null; sessionId: number | null; studentId: number | null;
@@ -81,6 +82,8 @@ export interface SessionStudent {
   flags: string[]; reviewedBy: string | null; note: string | null; failures: number; locked: boolean;
   /** A phone is linked to this student's account (reset it if they changed phones). */
   phoneLinked: boolean; phoneLinkedAt: string | null; phoneLastUsedAt: string | null;
+  /** Students scan the class QR: whose QR they scanned (lecturer or helper), at check-in and at the second check. */
+  qrSource: string | null; secondQrSource: string | null;
 }
 export interface SessionDetail extends SessionSummary {
   students: SessionStudent[]; counts: Record<string, number>; rosterSize: number;
