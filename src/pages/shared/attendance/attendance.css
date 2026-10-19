@@ -194,12 +194,10 @@
 .at-screen-qrwrap { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 4vw, 64px); width: 100%; }
 .at-screen-qrside { display: flex; flex-direction: column; align-items: center; gap: 1.5vh; min-width: 0; max-width: 560px; }
 .at-screen-qrside .at-screen-bar { width: min(40vw, 480px); }
-.at-screen-digits { font-size: clamp(30px, 6vw, 96px); line-height: 1; }
 @media (max-aspect-ratio: 1/1) {
   .at-screen-qrwrap { flex-direction: column; gap: 2vh; }
   .at-screen-qr { width: min(50vh, 84vw); }
   .at-screen-qrside .at-screen-bar { width: min(80vw, 600px); }
-  .at-screen-digits { font-size: clamp(26px, 9vw, 72px); }
 }
 .at-helper-qr { display: block; width: min(100%, 58vh, 520px); aspect-ratio: 1; margin: 0 auto; border-radius: 16px; background: #fff; padding: 8px; image-rendering: pixelated; }
 .at-qr-digits { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; letter-spacing: 0.18em; font-variant-numeric: tabular-nums; }
@@ -252,8 +250,6 @@
 .at-helper-card.is-second { background: linear-gradient(160deg, #92400e, #d97706); color: #fff; }
 .at-helper-card .at-codebar { width: 100%; max-width: 520px; }
 .at-helper-label { font-size: clamp(15px, 4vw, 20px); font-weight: 800; }
-.at-helper-digits { font-size: 14px; font-weight: 600; opacity: 0.95; }
-.at-helper-digits .at-qr-digits { font-size: 20px; margin-left: 4px; }
 .at-helper-hint { font-size: 12.5px; opacity: 0.85; font-weight: 600; }
 .at-scan-problem { max-width: 520px; margin: 40px auto; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: #fca5a5; }
 .at-scan-problem p { margin: 0; color: #e2e8f0; font-size: 15px; line-height: 1.5; }

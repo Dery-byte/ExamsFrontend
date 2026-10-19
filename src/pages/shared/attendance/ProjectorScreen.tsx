@@ -86,8 +86,6 @@ export default function ProjectorScreen() {
             <ClassQr text={data.qr} className="at-screen-qr" />
             <div className="at-screen-qrside">
               <div className="at-screen-label">{second ? 'Second check: scan this new code' : tx('Open Attendance on your phone and scan this code')}</div>
-              <div className="at-screen-hint">{tx('Can’t scan? Type')}</div>
-              <div className="at-qr-digits at-screen-digits">{data.code}</div>
               <div className="at-screen-bar" aria-hidden="true"><span style={{ width: `${pct}%` }} /></div>
               <div className="at-screen-hint">
                 New code in {left ?? '…'} s · {second ? 'second check' : 'check-in'} closes in {fmtClock(data.phaseSecondsLeft ?? 0)} · location must be on

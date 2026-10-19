@@ -115,7 +115,6 @@ function HelperClassQr({ data }: { data: HelperView }) {
       <div className={`at-helper-card ${second ? 'is-second' : ''}`} aria-live="polite">
         <div className="at-helper-label">{second ? 'Second check: students scan this new code' : tx('Students scan this code')}</div>
         <ClassQr text={data.qr} className="at-helper-qr" />
-        <div className="at-helper-digits">Can't scan? Type <span className="at-qr-digits">{data.code}</span></div>
         <div className="at-codebar"><span style={{ width: `${pct}%` }} /></div>
         <div className="at-helper-hint">New code in {left ?? '…'} s · hold the phone up, screen brightness up</div>
       </div>

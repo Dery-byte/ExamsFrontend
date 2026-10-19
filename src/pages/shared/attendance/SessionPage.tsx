@@ -163,10 +163,7 @@ function CodePanel({ s }: { s: SessionDetail }) {
       ) : (
         <>
           <div className="at-codebox-label">{second ? 'Second check' : data!.qr ? 'Students scan this code' : s.codeDisplay === 'READ_ALOUD' ? 'Read this code out' : 'Check-in code'}</div>
-          {data!.qr ? <>
-            <ClassQr text={data!.qr} />
-            <div style={{ fontSize: 13, margin: '2px 0 8px' }}>Can't scan? Type <span className="at-qr-digits" aria-live="polite" style={{ fontSize: 16 }}>{data!.code}</span></div>
-          </> : <div className="at-code" aria-live="polite">{data!.code}</div>}
+          {data!.qr ? <ClassQr text={data!.qr} /> : <div className="at-code" aria-live="polite">{data!.code}</div>}
           <div className="at-codebar"><span style={{ width: `${pct}%` }} /></div>
           <small>New code in {left ?? '…'} s · closes in {fmtClock(data!.phaseSecondsLeft ?? 0)}</small>
         </>

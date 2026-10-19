@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Keyboard, Loader2, Lock, MapPin, ScanLine, ShieldAlert, Timer, UserCheck, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, Lock, MapPin, ScanLine, ShieldAlert, Timer, UserCheck, X, XCircle } from 'lucide-react';
 import { checkInToClass, getMyOpenClasses, type CheckInResult, type OpenClass, type ScanResult } from '../../../api/attendance';
 import { getDeviceId, readLocation, LocationError } from '../../../utils/attendanceDevice';
 import QrScanner from '../../shared/attendance/QrScanner';
@@ -75,7 +75,6 @@ function ClassCard({ s }: { s: OpenClass }) {
 
   const scanClass = s.method === 'STUDENT_SCAN';
   const [scanning, setScanning] = useState(false);
-  const [typing, setTyping] = useState(false);
 
   // A new check (the second one) starts with a clean box
   useEffect(() => { setCode(''); setResult(null); setError(null); setScanning(false); }, [s.needsCheck]);
@@ -193,11 +192,10 @@ function ClassCard({ s }: { s: OpenClass }) {
             {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
           </div>
           <div className="at-checkin-alt">
-            <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => { setScanning(false); setTyping(true); }}><Keyboard size={14} /> Type the code instead</button>
             <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => setScanning(false)}><X size={14} /> Close camera</button>
           </div>
         </div>
-      ) : needs !== 0 && scanClass && !typing ? (
+      ) : needs !== 0 && scanClass ? (
         <div className="at-checkin-form">
           <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>
             {needs === 2 ? 'Second check: scan the new class QR code' : tx('Scan the QR code your lecturer is showing')}
@@ -205,9 +203,6 @@ function ClassCard({ s }: { s: OpenClass }) {
           <button type="button" className="at-btn at-btn-big at-btn-block" onClick={() => { setResult(null); setError(null); setScanning(true); }}>
             <ScanLine size={18} /> {needs === 2 ? 'Scan for the second check' : 'Scan the class QR code'}
           </button>
-          <div className="at-checkin-alt">
-            <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => setTyping(true)}><Keyboard size={14} /> Can't scan? Type the code</button>
-          </div>
           <p className="at-help" style={{ margin: 0 }}>
             <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {tx('Location and camera must be allowed. The code changes every few seconds, so scan it live in class.')}
             {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
@@ -241,11 +236,6 @@ function ClassCard({ s }: { s: OpenClass }) {
             <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {tx('Location must be on. Codes change every few seconds, so type the one showing now.')}
             {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
           </p>
-          {scanClass && (
-            <div className="at-checkin-alt">
-              <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => { setTyping(false); setResult(null); setError(null); setScanning(true); }}><ScanLine size={14} /> Scan the QR code instead</button>
-            </div>
-          )}
         </form>
       ) : null}
 

@@ -184,7 +184,7 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
           </label>
         </div>
         </>}
-        {method === 'STUDENT_SCAN' && <p className="at-help" style={{ marginTop: 10 }}>{tx(`Open the projector screen from the session page, or show the code on your phone. It changes every ${policy.codeSeconds} seconds, so a photo sent outside is dead. Students can still type the digits under it if their camera won't scan.`)}</p>}
+        {method === 'STUDENT_SCAN' && <p className="at-help" style={{ marginTop: 10 }}>{tx(`Open the projector screen from the session page, or show the code on your phone. It changes every ${policy.codeSeconds} seconds, so a photo sent outside is dead. Students check in only by scanning it: no code is shown to type.`)}</p>}
 
         <div className="at-form-grid" style={{ marginTop: 12 }}>
           {schedule ? (
