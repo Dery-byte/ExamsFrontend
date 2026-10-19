@@ -187,6 +187,23 @@
 .at-screen-stats b { display: block; font-size: clamp(22px, 4vw, 52px); font-weight: 900; font-variant-numeric: tabular-nums; }
 .at-screen-stats span { font-size: clamp(11px, 1.3vw, 16px); opacity: 0.8; font-weight: 700; }
 
+/* ── Class QR code (students scan it) ───────────────────────────────── */
+.at-class-qr { display: block; width: min(240px, 70vw); aspect-ratio: 1; margin: 6px auto; border-radius: 14px; background: #fff; padding: 6px; image-rendering: pixelated; }
+.at-screen-qr { display: block; width: min(60vh, 46vw); aspect-ratio: 1; border-radius: 18px; background: #fff; padding: 10px; image-rendering: pixelated; box-shadow: 0 20px 60px rgba(0,0,0,0.3); flex-shrink: 0; }
+/* Projector, students scan: the QR beside its label and digits on wide screens, stacked on tall ones */
+.at-screen-qrwrap { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 4vw, 64px); width: 100%; }
+.at-screen-qrside { display: flex; flex-direction: column; align-items: center; gap: 1.5vh; min-width: 0; max-width: 560px; }
+.at-screen-qrside .at-screen-bar { width: min(40vw, 480px); }
+.at-screen-digits { font-size: clamp(30px, 6vw, 96px); line-height: 1; }
+@media (max-aspect-ratio: 1/1) {
+  .at-screen-qrwrap { flex-direction: column; gap: 2vh; }
+  .at-screen-qr { width: min(50vh, 84vw); }
+  .at-screen-qrside .at-screen-bar { width: min(80vw, 600px); }
+  .at-screen-digits { font-size: clamp(26px, 9vw, 72px); }
+}
+.at-helper-qr { display: block; width: min(100%, 58vh, 520px); aspect-ratio: 1; margin: 0 auto; border-radius: 16px; background: #fff; padding: 8px; image-rendering: pixelated; }
+.at-qr-digits { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; letter-spacing: 0.18em; font-variant-numeric: tabular-nums; }
+
 /* ── Student's QR code ──────────────────────────────────────────────── */
 .at-qr { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 14px; background: #f8fafc; border: 1.5px solid #e2e8f0; }
 .at-qr-who { text-align: center; }
@@ -195,6 +212,13 @@
 .at-qr-canvas { width: min(280px, 72vw) !important; height: auto !important; aspect-ratio: 1; border-radius: 12px; background: #fff; box-shadow: 0 2px 14px rgba(15, 23, 42, 0.08); image-rendering: pixelated; }
 
 /* ── Scanner pages (staff and helper) ───────────────────────────────── */
+/* Student scanning the class QR code inside their check-in card */
+.at-checkin-scan { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.at-checkin-scan .at-scanner { max-width: 420px; }
+.at-checkin-scan .at-scanner-view { max-height: 50vh; }
+.at-checkin-scan .at-scan-result { min-height: 64px; }
+.at-checkin-scan .at-scan-photo { width: 48px; height: 48px; }
+.at-checkin-alt { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .at-scan-page { min-height: 100vh; min-height: 100dvh; background: #0f172a; color: #e2e8f0; display: flex; flex-direction: column; gap: 12px;
   padding: max(12px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)); font-family: Inter, system-ui, sans-serif; box-sizing: border-box; }
 .at-scan-page * { box-sizing: border-box; }
@@ -222,6 +246,15 @@
 .at-scan-counts div { flex: 1 1 120px; padding: 10px 12px; border-radius: 12px; background: #1e293b; }
 .at-scan-counts b { display: block; font-size: 22px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
 .at-scan-counts span { font-size: 11.5px; color: #94a3b8; font-weight: 700; }
+/* Helper's phone showing the class QR code (students scan) */
+.at-helper-card { max-width: 640px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px; border-radius: 18px;
+  background: linear-gradient(160deg, var(--brand-deep, #1e1b4b), var(--brand, #4f46e5)); color: var(--brand-contrast, #fff); text-align: center; }
+.at-helper-card.is-second { background: linear-gradient(160deg, #92400e, #d97706); color: #fff; }
+.at-helper-card .at-codebar { width: 100%; max-width: 520px; }
+.at-helper-label { font-size: clamp(15px, 4vw, 20px); font-weight: 800; }
+.at-helper-digits { font-size: 14px; font-weight: 600; opacity: 0.95; }
+.at-helper-digits .at-qr-digits { font-size: 20px; margin-left: 4px; }
+.at-helper-hint { font-size: 12.5px; opacity: 0.85; font-weight: 600; }
 .at-scan-problem { max-width: 520px; margin: 40px auto; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: #fca5a5; }
 .at-scan-problem p { margin: 0; color: #e2e8f0; font-size: 15px; line-height: 1.5; }
 .at-loc-bar { display: flex; align-items: center; gap: 6px; max-width: 640px; width: 100%; margin: 0 auto; padding: 8px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 700; background: #1e293b; color: #cbd5e1; }
@@ -243,6 +276,7 @@
   .at-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .at-form-grid .at-span-2 { grid-column: span 2; }
   .at-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .at-choices.at-choices-stack { grid-template-columns: 1fr; }
   .at-stats { grid-template-columns: repeat(4, 1fr); }
   .at-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .at-roster-row { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.4fr) auto; align-items: center; }

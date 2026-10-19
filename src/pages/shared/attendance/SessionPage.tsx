@@ -7,6 +7,7 @@ import {
   Share2, ShieldAlert, Smartphone, Square, Trash2, UserPlus, Users, XCircle,
 } from 'lucide-react';
 import QRCode from 'qrcode';
+import ClassQr from './ClassQr';
 import AppModal from '../../../components/ui/AppModal';
 import PageHeader from '../../../components/PageHeader';
 import {
@@ -74,7 +75,8 @@ export default function SessionPage() {
 
       <div className="at-session-grid">
         <div className="at-session-side">
-          {s.live ? (s.method === 'STAFF_SCAN' ? <ScanPanel s={s} run={run} /> : <CodePanel s={s} />) : (
+          {s.live ? (s.method === 'STAFF_SCAN' ? <ScanPanel s={s} run={run} />
+            : <><CodePanel s={s} />{s.method === 'STUDENT_SCAN' && <HelpersCard s={s} run={run} />}</>) : (
             <div className="at-card">
               <div className="at-sub" style={{ marginTop: 0 }}>{fmtDate(s.openedAt)} · {fmtTime(s.openedAt)}–{fmtTime(s.closedAt)}</div>
               {s.topic && <div className="at-item-title" style={{ marginTop: 6 }}>{s.topic}</div>}
@@ -160,8 +162,11 @@ function CodePanel({ s }: { s: SessionDetail }) {
         </>
       ) : (
         <>
-          <div className="at-codebox-label">{second ? 'Second check' : s.codeDisplay === 'READ_ALOUD' ? 'Read this code out' : 'Check-in code'}</div>
-          <div className="at-code" aria-live="polite">{data!.code}</div>
+          <div className="at-codebox-label">{second ? 'Second check' : data!.qr ? 'Students scan this code' : s.codeDisplay === 'READ_ALOUD' ? 'Read this code out' : 'Check-in code'}</div>
+          {data!.qr ? <>
+            <ClassQr text={data!.qr} />
+            <div style={{ fontSize: 13, margin: '2px 0 8px' }}>Can't scan? Type <span className="at-qr-digits" aria-live="polite" style={{ fontSize: 16 }}>{data!.code}</span></div>
+          </> : <div className="at-code" aria-live="polite">{data!.code}</div>}
           <div className="at-codebar"><span style={{ width: `${pct}%` }} /></div>
           <small>New code in {left ?? '…'} s · closes in {fmtClock(data!.phaseSecondsLeft ?? 0)}</small>
         </>
@@ -178,8 +183,6 @@ function CodePanel({ s }: { s: SessionDetail }) {
 function ScanPanel({ s, run }: { s: SessionDetail; run: (k: string, fn: () => Promise<any>, ok?: string) => Promise<boolean> }) {
   const base = useAttendanceBase();
   const navigate = useNavigate();
-  const qc = useQueryClient();
-  const [adding, setAdding] = useState(false);
   // Counts down from the server's figure (re-synced every refresh), not from a clock time
   const [left, setLeft] = useState(s.phaseSecondsLeft ?? 0);
   useEffect(() => {
@@ -188,7 +191,6 @@ function ScanPanel({ s, run }: { s: SessionDetail; run: (k: string, fn: () => Pr
     return () => clearInterval(t);
   }, [s.phaseSecondsLeft]);
   const open = s.phase === 'CHECK_IN';
-  const helpers = (s.helpers ?? []).filter(h => h.active);
 
   return (
     <>
@@ -205,23 +207,44 @@ function ScanPanel({ s, run }: { s: SessionDetail; run: (k: string, fn: () => Pr
         )}
       </div>
 
+      <HelpersCard s={s} run={run} />
+    </>
+  );
+}
+
+/**
+ * QR classes: helpers (e.g. a TA) get a link for their own phone. With STAFF_SCAN they scan students'
+ * codes; with STUDENT_SCAN they hold up the class QR code, e.g. in a big hall far from the projector.
+ */
+function HelpersCard({ s, run }: { s: SessionDetail; run: (k: string, fn: () => Promise<any>, ok?: string) => Promise<boolean> }) {
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const showing = s.method === 'STUDENT_SCAN';
+  // Showing helpers can be set up any time in class (ready for a second check); scanning ones while check-in is open
+  const open = showing || s.phase === 'CHECK_IN';
+  const helpers = (s.helpers ?? []).filter(h => h.active);
+
+  return (
+    <>
       <div className="at-card">
         <div className="at-card-head" style={{ marginBottom: 6 }}>
           <h3 className="at-card-title"><UserPlus size={17} /> Helpers</h3>
           {open && <button className="at-btn-ghost at-btn-sm" onClick={() => setAdding(true)}><Plus size={14} /> Add a helper</button>}
         </div>
         {helpers.length === 0 ? (
-          <p className="at-help" style={{ margin: 0 }}>{tx('A teaching assistant can scan too: add them here and they open the link on their own phone. No account needed.')}</p>
+          <p className="at-help" style={{ margin: 0 }}>{showing
+            ? tx('A teaching assistant can show the class QR code on their own phone, e.g. at the back of a big hall: add them here. No account needed.')
+            : tx('A teaching assistant can scan too: add them here and they open the link on their own phone. No account needed.')}</p>
         ) : (
           <div className="at-list">
             {helpers.map(h => (
               <div key={h.id} className="at-item" style={{ padding: '8px 12px' }}>
                 <div className="at-item-main">
                   <div className="at-item-title" style={{ fontSize: 13.5 }}>{h.label}</div>
-                  <div className="at-meta"><span>{h.scans} scanned</span>{h.lastUsedAt && <span>last at {fmtTime(h.lastUsedAt)}</span>}</div>
+                  <div className="at-meta">{!showing && <span>{h.scans} scanned</span>}{h.lastUsedAt && <span>last at {fmtTime(h.lastUsedAt)}</span>}</div>
                 </div>
                 <button className="at-btn-ghost at-btn-sm" onClick={() => {
-                  if (window.confirm(`Cancel ${h.label}'s scanner link? It stops working at once.`))
+                  if (window.confirm(`Cancel ${h.label}'s helper link? It stops working at once.`))
                     run(`h${h.id}`, () => cancelAttendanceHelper(s.id, h.id), 'Link cancelled');
                 }}>Cancel link</button>
               </div>
@@ -230,12 +253,12 @@ function ScanPanel({ s, run }: { s: SessionDetail; run: (k: string, fn: () => Pr
         )}
       </div>
 
-      {adding && <AddHelperDialog sessionId={s.id} onClose={() => { setAdding(false); qc.invalidateQueries({ queryKey: ['attendance', 'session', s.id] }); }} />}
+      {adding && <AddHelperDialog sessionId={s.id} showing={showing} onClose={() => { setAdding(false); qc.invalidateQueries({ queryKey: ['attendance', 'session', s.id] }); }} />}
     </>
   );
 }
 
-function AddHelperDialog({ sessionId, onClose }: { sessionId: number; onClose: () => void }) {
+function AddHelperDialog({ sessionId, showing, onClose }: { sessionId: number; showing: boolean; onClose: () => void }) {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState<string | null>(null);
@@ -261,11 +284,14 @@ function AddHelperDialog({ sessionId, onClose }: { sessionId: number; onClose: (
     try { await navigator.clipboard.writeText(link!); toast.success('Link copied'); }
     catch { toast.error('Copy the link by hand'); }
   };
-  const share = () => (navigator as any).share?.({ title: 'Attendance scanner', url: link }).catch(() => {});
+  const share = () => (navigator as any).share?.({ title: showing ? 'Class attendance QR code' : 'Attendance scanner', url: link }).catch(() => {});
 
   return (
-    <AppModal title={link ? `Scanner link for ${name.trim()}` : 'Add a helper'} onClose={onClose}
-      subtitle={link ? 'They scan this with their phone camera (or open the link) and start scanning students.' : 'For example a teaching assistant. They use their own phone; no account needed.'}
+    <AppModal title={link ? `${showing ? 'Helper' : 'Scanner'} link for ${name.trim()}` : 'Add a helper'} onClose={onClose}
+      subtitle={link
+        ? (showing ? 'They scan this with their phone camera (or open the link) and their phone shows the class QR code for students to scan.'
+          : 'They scan this with their phone camera (or open the link) and start scanning students.')
+        : 'For example a teaching assistant. They use their own phone; no account needed.'}
       footer={link
         ? <div className="at-row" style={{ width: '100%', justifyContent: 'flex-end' }}><button className="at-btn" onClick={onClose}>Done</button></div>
         : <div className="at-row" style={{ width: '100%', justifyContent: 'flex-end' }}>
@@ -279,14 +305,16 @@ function AddHelperDialog({ sessionId, onClose }: { sessionId: number; onClose: (
               onKeyDown={e => { if (e.key === 'Enter' && name.trim() && !busy) create(); }} /></label>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            {qr && <img src={qr} alt="Scanner link QR code" width={220} height={220} style={{ borderRadius: 12, border: '1.5px solid #e2e8f0' }} />}
+            {qr && <img src={qr} alt="Helper link QR code" width={220} height={220} style={{ borderRadius: 12, border: '1.5px solid #e2e8f0' }} />}
             <div className="at-row" style={{ justifyContent: 'center' }}>
               <button className="at-btn-ghost at-btn-sm" onClick={copy}><Copy size={14} /> Copy link</button>
               {typeof (navigator as any).share === 'function' && <button className="at-btn-ghost at-btn-sm" onClick={share}><Share2 size={14} /> Share</button>}
             </div>
             <div className="at-alert is-warn" style={{ marginBottom: 0 }}>
               <AlertTriangle size={16} />
-              <span>{tx('Anyone with this link can scan for this class while it runs, so give it only to your helper. It uses your classroom: students can only show their codes from inside it. The link stops working when the class ends, or when you cancel it.')}</span>
+              <span>{showing
+                ? tx('Anyone with this link can show the class QR code while the class runs, so give it only to your helper. Students still need to be inside your classroom to check in. The link stops working when the class ends, or when you cancel it.')
+                : tx('Anyone with this link can scan for this class while it runs, so give it only to your helper. It uses your classroom: students can only show their codes from inside it. The link stops working when the class ends, or when you cancel it.')}</span>
             </div>
           </div>
         )}

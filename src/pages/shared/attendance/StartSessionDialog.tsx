@@ -136,7 +136,7 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
         )}
 
         <h4 className="at-section-title">How students are marked</h4>
-        <div className="at-choices">
+        <div className="at-choices at-choices-stack">
           <label className={`at-choice ${method === 'STUDENT_CODE' ? 'is-on' : ''}`}>
             <input type="radio" name="at-method" checked={method === 'STUDENT_CODE'} onChange={() => setMethod('STUDENT_CODE')} />
             <span><b>Students type a code</b><small>{tx('You show a changing code; students check themselves in on their phones, from inside the room. Quick for large classes.')}</small></span>
@@ -144,6 +144,10 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
           <label className={`at-choice ${method === 'STAFF_SCAN' ? 'is-on' : ''}`}>
             <input type="radio" name="at-method" checked={method === 'STAFF_SCAN'} onChange={() => setMethod('STAFF_SCAN')} />
             <span><b>I scan their QR codes</b><small>{tx('Each student shows a personal QR code on their phone; you (or a helper you add) scan it. Nobody is marked present without being seen.')}</small></span>
+          </label>
+          <label className={`at-choice ${method === 'STUDENT_SCAN' ? 'is-on' : ''}`}>
+            <input type="radio" name="at-method" checked={method === 'STUDENT_SCAN'} onChange={() => setMethod('STUDENT_SCAN')} />
+            <span><b>Students scan my QR code</b><small>{tx('You (or a helper) show a QR code that changes every few seconds; students scan it with their phones from inside the room. A photo of it sent outside stops working.')}</small></span>
           </label>
         </div>
 
@@ -180,6 +184,7 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
           </label>
         </div>
         </>}
+        {method === 'STUDENT_SCAN' && <p className="at-help" style={{ marginTop: 10 }}>{tx(`Open the projector screen from the session page, or show the code on your phone. It changes every ${policy.codeSeconds} seconds, so a photo sent outside is dead. Students can still type the digits under it if their camera won't scan.`)}</p>}
 
         <div className="at-form-grid" style={{ marginTop: 12 }}>
           {schedule ? (
@@ -196,7 +201,7 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
           </label>
         </div>
 
-        {method === 'STUDENT_CODE' ? <>
+        {method !== 'STAFF_SCAN' ? <>
           <label className="at-switch" style={{ marginTop: 14 }}>
             <input type="checkbox" checked={secondCheck} onChange={e => setSecondCheck(e.target.checked)} />
             <span className="at-switch-track" />

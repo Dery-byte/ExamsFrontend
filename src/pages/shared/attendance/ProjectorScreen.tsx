@@ -5,6 +5,7 @@ import { ArrowLeft, Maximize2, Minimize2, QrCode } from 'lucide-react';
 import { getAttendanceCode } from '../../../api/attendance';
 import { classTitle, errMsg, fmtClock } from './shared';
 import { tx } from '../../../utils/terms';
+import ClassQr from './ClassQr';
 import './attendance.css';
 
 /** Full-screen code for the projector. Large enough to read from the back of a hall; nothing else to distract. */
@@ -80,6 +81,19 @@ export default function ProjectorScreen() {
             <div className="at-screen-label">{tx('Open Attendance on your phone and tap “Show my attendance QR code”')}</div>
             <div className="at-screen-hint">Location must be on. Hold your code up when your lecturer comes to scan it. Photos of codes do not work.</div>
           </>
+        ) : showing && data.qr ? (
+          <div className="at-screen-qrwrap">
+            <ClassQr text={data.qr} className="at-screen-qr" />
+            <div className="at-screen-qrside">
+              <div className="at-screen-label">{second ? 'Second check: scan this new code' : tx('Open Attendance on your phone and scan this code')}</div>
+              <div className="at-screen-hint">{tx('Can’t scan? Type')}</div>
+              <div className="at-qr-digits at-screen-digits">{data.code}</div>
+              <div className="at-screen-bar" aria-hidden="true"><span style={{ width: `${pct}%` }} /></div>
+              <div className="at-screen-hint">
+                New code in {left ?? '…'} s · {second ? 'second check' : 'check-in'} closes in {fmtClock(data.phaseSecondsLeft ?? 0)} · location must be on
+              </div>
+            </div>
+          </div>
         ) : showing ? (
           <>
             <div className="at-screen-label">{second ? 'Second check: type this new code' : tx('Open Attendance on your phone and type')}</div>

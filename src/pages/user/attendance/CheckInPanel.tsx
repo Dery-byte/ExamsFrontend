@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Loader2, Lock, MapPin, ShieldAlert, Timer, UserCheck, XCircle } from 'lucide-react';
-import { checkInToClass, getMyOpenClasses, type CheckInResult, type OpenClass } from '../../../api/attendance';
+import { CheckCircle2, Keyboard, Loader2, Lock, MapPin, ScanLine, ShieldAlert, Timer, UserCheck, X, XCircle } from 'lucide-react';
+import { checkInToClass, getMyOpenClasses, type CheckInResult, type OpenClass, type ScanResult } from '../../../api/attendance';
 import { getDeviceId, readLocation, LocationError } from '../../../utils/attendanceDevice';
+import QrScanner from '../../shared/attendance/QrScanner';
+import { parseClassQr } from '../../shared/attendance/ClassQr';
 import { StatusPill, classTitle, errMsg, fmtClock } from '../../shared/attendance/shared';
 import { tx } from '../../../utils/terms';
 import StudentQr from './StudentQr';
@@ -71,11 +73,51 @@ function ClassCard({ s }: { s: OpenClass }) {
     return () => clearInterval(t);
   }, [left == null]);   // eslint-disable-line react-hooks/exhaustive-deps
 
+  const scanClass = s.method === 'STUDENT_SCAN';
+  const [scanning, setScanning] = useState(false);
+  const [typing, setTyping] = useState(false);
+
   // A new check (the second one) starts with a clean box
-  useEffect(() => { setCode(''); setResult(null); setError(null); }, [s.needsCheck]);
+  useEffect(() => { setCode(''); setResult(null); setError(null); setScanning(false); }, [s.needsCheck]);
 
   const busy = stage !== 'idle';
   const needs = s.needsCheck;
+
+  // While the camera is open, find the location in the background so a scan is sent at once
+  // (the code in the picture only lives a few seconds). Reused for a minute, then read again.
+  const fix = useRef<{ at: number; p: ReturnType<typeof readLocation> } | null>(null);
+  const locate = useCallback(() => {
+    if (!fix.current || Date.now() - fix.current.at > 60_000) {
+      const p = readLocation({ goodEnough: Math.min(15, s.maxAccuracyMeters / 2), maxWaitMs: 10000, onUpdate: r => setAccuracy(Math.round(r.accuracy)) });
+      fix.current = { at: Date.now(), p };
+      p.catch(() => { if (fix.current?.p === p) fix.current = null; });
+    }
+    return fix.current.p;
+  }, [s.maxAccuracyMeters]);
+  useEffect(() => { if (scanning) locate().catch(() => {}); }, [scanning, locate]);
+
+  const onScan = useCallback(async (text: string): Promise<ScanResult> => {
+    const refuse = (message: string): ScanResult =>
+      ({ ok: false, outcome: 'REFUSED', message, studentId: null, name: null, indexNo: null, photo: null, status: null });
+    const qr = parseClassQr(text);
+    if (!qr) return refuse(tx("That isn't a class attendance code. Scan the QR code your lecturer is showing."));
+    if (qr.sessionId !== s.sessionId) return refuse(tx('That code is for a different class.'));
+    const deviceId = getDeviceId();
+    if (!deviceId) return refuse('This browser is blocking storage (private browsing?). Use your normal browser to check in.');
+    let loc;
+    try { loc = await locate(); }
+    catch (err) { return refuse(err instanceof LocationError ? err.message : 'Your location could not be found. Turn on location and try again.'); }
+    const r = await checkInToClass({ sessionId: s.sessionId, code: qr.code, latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, deviceId });
+    const message = tx(r.message);
+    if (r.ok) {
+      setScanning(false);
+      setError(null);
+      setResult({ ...r, message });
+    }
+    qc.invalidateQueries({ queryKey: ['attendance'] });
+    return { ok: r.ok, outcome: r.ok ? 'RECORDED' : r.reason === 'EXPIRED_CODE' ? 'EXPIRED' : 'REFUSED', message,
+      studentId: null, name: null, indexNo: null, photo: null, status: r.status };
+  }, [s.sessionId, locate, qc]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,6 +185,34 @@ function ClassCard({ s }: { s: OpenClass }) {
           <Lock size={16} />
           <span>{tx("You've used all your attempts for this class. If you are in class, ask your lecturer to unlock you.")}</span>
         </div>
+      ) : needs !== 0 && scanClass && scanning ? (
+        <div className="at-checkin-scan">
+          <QrScanner onCode={onScan} hint={needs === 2 ? tx('Second check: point your camera at the new class QR code.') : tx('Point your camera at the class QR code your lecturer is showing.')} />
+          <div className="at-help" style={{ margin: 0, textAlign: 'center' }}>
+            <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {accuracy != null ? `Location found (±${accuracy} m).` : 'Finding your location…'}
+            {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
+          </div>
+          <div className="at-checkin-alt">
+            <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => { setScanning(false); setTyping(true); }}><Keyboard size={14} /> Type the code instead</button>
+            <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => setScanning(false)}><X size={14} /> Close camera</button>
+          </div>
+        </div>
+      ) : needs !== 0 && scanClass && !typing ? (
+        <div className="at-checkin-form">
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>
+            {needs === 2 ? 'Second check: scan the new class QR code' : tx('Scan the QR code your lecturer is showing')}
+          </span>
+          <button type="button" className="at-btn at-btn-big at-btn-block" onClick={() => { setResult(null); setError(null); setScanning(true); }}>
+            <ScanLine size={18} /> {needs === 2 ? 'Scan for the second check' : 'Scan the class QR code'}
+          </button>
+          <div className="at-checkin-alt">
+            <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => setTyping(true)}><Keyboard size={14} /> Can't scan? Type the code</button>
+          </div>
+          <p className="at-help" style={{ margin: 0 }}>
+            <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {tx('Location and camera must be allowed. The code changes every few seconds, so scan it live in class.')}
+            {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
+          </p>
+        </div>
       ) : needs !== 0 ? (
         <form className="at-checkin-form" onSubmit={submit} noValidate>
           <label htmlFor={`at-code-${s.sessionId}`} style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>
@@ -171,6 +241,11 @@ function ClassCard({ s }: { s: OpenClass }) {
             <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {tx('Location must be on. Codes change every few seconds, so type the one showing now.')}
             {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
           </p>
+          {scanClass && (
+            <div className="at-checkin-alt">
+              <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => { setTyping(false); setResult(null); setError(null); setScanning(true); }}><ScanLine size={14} /> Scan the QR code instead</button>
+            </div>
+          )}
         </form>
       ) : null}
 

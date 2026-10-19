@@ -9,9 +9,11 @@ import AvatarPhoto from '../../../components/common/AvatarPhoto';
  * Android Chrome) and jsQR otherwise (iPhone Safari, desktop). Each scan is sent once; the same code
  * isn't re-sent for a few seconds, and nothing is read while a scan is being recorded.
  */
-export default function QrScanner({ onCode, paused = false }: {
+export default function QrScanner({ onCode, paused = false, hint }: {
   onCode: (code: string) => Promise<ScanResult>;
   paused?: boolean;
+  /** What to point the camera at (shown until the first result). */
+  hint?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -141,7 +143,7 @@ export default function QrScanner({ onCode, paused = false }: {
             </div>
           </>
         ) : (
-          <div className="at-scan-hint"><Info size={16} /> Point the camera at a student's attendance code. Check the name (and photo) matches the person.</div>
+          <div className="at-scan-hint"><Info size={16} /> {hint ?? "Point the camera at a student's attendance code. Check the name (and photo) matches the person."}</div>
         )}
       </div>
     </div>

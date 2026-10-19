@@ -8,8 +8,11 @@ export type AttendanceStatus = 'PRESENT' | 'LATE' | 'PENDING' | 'REJECTED' | 'EX
 export type AttendanceMode = 'COURSE' | 'PROGRAMME';
 export type CodeDisplay = 'PROJECTOR' | 'READ_ALOUD';
 export type SessionPhase = 'CHECK_IN' | 'SECOND_CHECK' | 'IN_CLASS' | 'ENDED';
-/** STUDENT_CODE: students type the code shown. STAFF_SCAN: staff scan each student's QR code. */
-export type AttendanceMethod = 'STUDENT_CODE' | 'STAFF_SCAN';
+/**
+ * STUDENT_CODE: students type the code shown. STAFF_SCAN: staff scan each student's QR code.
+ * STUDENT_SCAN: staff show the class QR code (the same changing code) and students scan it.
+ */
+export type AttendanceMethod = 'STUDENT_CODE' | 'STAFF_SCAN' | 'STUDENT_SCAN';
 
 // ── Student ────────────────────────────────────────────────────────────────
 
@@ -91,7 +94,9 @@ export interface AttendanceHelper {
 }
 export interface CodeView {
   sessionId: number; title: string; meetingNumber: number; placeName: string | null; codeDisplay: CodeDisplay;
-  phase: SessionPhase; method: AttendanceMethod; check: 0 | 1 | 2; code?: string; codeSeconds?: number; secondsLeft?: number; phaseSecondsLeft?: number;
+  phase: SessionPhase; method: AttendanceMethod; check: 0 | 1 | 2; code?: string;
+  /** STUDENT_SCAN: the text of the class QR code (AQ1.<session>.<check>.<code>). */
+  qr?: string; codeSeconds?: number; secondsLeft?: number; phaseSecondsLeft?: number;
   checkedIn: number; pending: number; secondChecked: number; rosterSize: number; headcount: number | null;
 }
 export interface Classroom {
@@ -150,6 +155,9 @@ export const cancelAttendanceHelper = (id: number, helperId: number): Promise<Se
 export interface HelperView {
   helper: string; title: string; meetingNumber: number; placeName: string | null; phase: SessionPhase;
   phaseSecondsLeft: number | null; maxAccuracyMeters: number; myScans: number; checkedIn: number; rosterSize: number;
+  method: AttendanceMethod; check: 0 | 1 | 2;
+  /** STUDENT_SCAN: the class QR code the helper holds up, and its countdown. */
+  qr?: string; code?: string; codeSeconds?: number; secondsLeft?: number;
 }
 export const getHelperView = (token: string): Promise<HelperView> =>
   axios.get(`${root()}/scan/${encodeURIComponent(token)}`).then(r => r.data);
