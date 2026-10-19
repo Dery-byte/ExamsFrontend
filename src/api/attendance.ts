@@ -76,6 +76,8 @@ export interface SessionStudent {
   firstCheckAt: string | null; firstDistance: number | null; firstAccuracy: number | null;
   secondCheckAt: string | null; secondDistance: number | null; secondAccuracy: number | null;
   flags: string[]; reviewedBy: string | null; note: string | null; failures: number; locked: boolean;
+  /** A phone is linked to this student's account (reset it if they changed phones). */
+  phoneLinked: boolean; phoneLinkedAt: string | null; phoneLastUsedAt: string | null;
 }
 export interface SessionDetail extends SessionSummary {
   students: SessionStudent[]; counts: Record<string, number>; rosterSize: number;

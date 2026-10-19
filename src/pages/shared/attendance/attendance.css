@@ -82,6 +82,7 @@
 .at-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: #f1f5f9; color: #475569; white-space: nowrap; }
 .at-chip.is-warn { background: #fff4e0; color: #8a5a00; }
 .at-chip.is-bad { background: #fdeeee; color: #9f1f1f; }
+.at-chip.is-ok { background: #e8f7ef; color: #0b7a3e; }
 
 .at-alert { display: flex; gap: 10px; align-items: flex-start; padding: 11px 13px; border-radius: 12px; font-size: 13px; line-height: 1.45; margin-bottom: 12px; border: 1.5px solid transparent; overflow-wrap: anywhere; }
 .at-alert svg { flex-shrink: 0; margin-top: 1px; }

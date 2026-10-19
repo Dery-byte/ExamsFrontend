@@ -19,7 +19,7 @@ import { FLAG_LABELS, StatusPill, classTitle, errMsg, fmtClock, fmtDate, fmtTime
 import { tx } from '../../../utils/terms';
 import './attendance.css';
 
-type Filter = 'ALL' | 'IN' | 'PENDING' | 'NOT_YET' | 'ABSENT' | 'FLAGGED';
+type Filter = 'ALL' | 'IN' | 'PENDING' | 'NOT_YET' | 'ABSENT' | 'FLAGGED' | 'PHONE';
 
 /** A class meeting: the code, live counts, controls, and every student on the list. */
 export default function SessionPage() {
@@ -348,6 +348,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
     NOT_YET: s.students.filter(x => !x.status).length,
     ABSENT: s.students.filter(x => x.status === 'ABSENT' || x.status === 'REJECTED').length,
     FLAGGED: s.students.filter(flagged).length,
+    PHONE: s.students.filter(x => x.phoneLinked).length,
   }), [s.students]);
 
   const list = s.students.filter(x => {
@@ -356,6 +357,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
     if (filter === 'NOT_YET' && x.status) return false;
     if (filter === 'ABSENT' && !(x.status === 'ABSENT' || x.status === 'REJECTED')) return false;
     if (filter === 'FLAGGED' && !flagged(x)) return false;
+    if (filter === 'PHONE' && !x.phoneLinked) return false;
     const t = q.trim().toLowerCase();
     return !t || x.name.toLowerCase().includes(t) || (x.indexNo ?? '').toLowerCase().includes(t);
   });
@@ -363,6 +365,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
   const filters: { key: Filter; label: string }[] = [
     { key: 'ALL', label: 'All' }, { key: 'PENDING', label: 'Waiting' }, { key: 'IN', label: 'Checked in' },
     { key: 'NOT_YET', label: 'Not yet' }, { key: 'ABSENT', label: 'Absent' }, { key: 'FLAGGED', label: 'Flagged' },
+    { key: 'PHONE', label: 'Phone linked' },
   ];
 
   return (
@@ -401,6 +404,10 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
               {st.method === 'SCAN' && st.reviewedBy && <span>scanned by {st.reviewedBy}</span>}
               {st.flags.filter(f => !(f === 'LATE' && st.status === 'LATE')).map(f => <span key={f} className={`at-chip ${f === 'MISSED_SECOND_CHECK' ? 'is-bad' : 'is-warn'}`}>{FLAG_LABELS[f] ?? f}</span>)}
               {st.locked && <span className="at-chip is-bad"><Lock size={11} /> Locked out</span>}
+              {st.phoneLinked
+                ? <span className="at-chip is-ok" title={`Linked ${fmtDate(st.phoneLinkedAt)}${st.phoneLastUsedAt ? `, last used ${fmtDate(st.phoneLastUsedAt)} ${fmtTime(st.phoneLastUsedAt)}` : ''}`}>
+                    <Smartphone size={11} /> Phone linked</span>
+                : <span className="at-chip"><Smartphone size={11} /> No phone linked</span>}
               {!st.locked && st.failures > 0 && <span className="at-chip">{st.failures} wrong code{st.failures === 1 ? '' : 's'}</span>}
               {st.note && <span>Note: {st.note}</span>}
             </div>
@@ -426,7 +433,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
                 }}>
                 <option value="">Mark as…</option>
                 {MARK_OPTIONS.filter(o => o.value !== st.status).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                <option value="RESET_PHONE">Reset phone link</option>
+                {st.phoneLinked && <option value="RESET_PHONE">Reset phone link</option>}
               </select>
             </div>
           </div>
