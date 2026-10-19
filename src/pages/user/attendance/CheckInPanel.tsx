@@ -186,7 +186,7 @@ function ClassCard({ s }: { s: OpenClass }) {
         </div>
       ) : needs !== 0 && scanClass && scanning ? (
         <div className="at-checkin-scan">
-          <QrScanner onCode={onScan} hint={needs === 2 ? tx('Second check: point your camera at the new class QR code.') : tx('Point your camera at the class QR code your lecturer is showing.')} />
+          <QrScanner onCode={onScan} concurrent={false} hint={needs === 2 ? tx('Second check: point your camera at the new class QR code.') : tx('Point your camera at the class QR code your lecturer is showing.')} />
           <div className="at-help" style={{ margin: 0, textAlign: 'center' }}>
             <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {accuracy != null ? `Location found (±${accuracy} m).` : 'Finding your location…'}
             {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}

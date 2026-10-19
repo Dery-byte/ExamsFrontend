@@ -207,7 +207,7 @@
 .at-qr-who { text-align: center; }
 .at-qr-who b { display: block; font-size: 15px; color: #0f172a; }
 .at-qr-who span { font-size: 12.5px; color: #64748b; font-variant-numeric: tabular-nums; }
-.at-qr-canvas { width: min(280px, 72vw) !important; height: auto !important; aspect-ratio: 1; border-radius: 12px; background: #fff; box-shadow: 0 2px 14px rgba(15, 23, 42, 0.08); image-rendering: pixelated; }
+.at-qr-canvas { width: min(320px, 80vw) !important; height: auto !important; aspect-ratio: 1; border-radius: 12px; background: #fff; box-shadow: 0 2px 14px rgba(15, 23, 42, 0.08); image-rendering: pixelated; }
 
 /* ── Scanner pages (staff and helper) ───────────────────────────────── */
 /* Student scanning the class QR code inside their check-in card */
@@ -227,6 +227,10 @@
 .at-scanner-view { position: relative; width: 100%; aspect-ratio: 1; max-height: 62vh; border-radius: 18px; overflow: hidden; background: #020617; }
 .at-scanner-view video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .at-scanner-frame { position: absolute; inset: 14%; border-radius: 20px; box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.45); border: 3px solid rgba(255, 255, 255, 0.85); pointer-events: none; }
+.at-scanner-frame { transition: border-color 0.15s, box-shadow 0.15s; }
+.at-scanner-frame.is-read { border-color: #4ade80; box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.45), inset 0 0 0 3px rgba(74, 222, 128, 0.6); }
+.at-scanner-torch { position: absolute; top: 10px; right: 10px; width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.4); background: rgba(15, 23, 42, 0.6); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.at-scanner-torch[aria-pressed="true"] { background: #facc15; color: #0f172a; border-color: #facc15; }
 .at-scanner-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; color: #cbd5e1; font-size: 14px; line-height: 1.45; }
 .at-scanner-sending { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(15, 23, 42, 0.85); font-size: 13px; font-weight: 700; color: #fff; }
 .at-scan-result { display: flex; align-items: center; gap: 12px; min-height: 84px; padding: 12px 14px; border-radius: 16px; background: #1e293b; border: 2px solid #334155; }

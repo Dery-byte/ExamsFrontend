@@ -77,7 +77,7 @@ function LiveCode({ k, onDone }: { k: QrKey; onDone: () => void }) {
         if (step !== lastStep && canvasRef.current) {
           lastStep = step;
           const text = await coder.code(step);
-          await QRCode.toCanvas(canvasRef.current, text, { errorCorrectionLevel: 'M', margin: 2, width: 280, color: { dark: '#0f172a', light: '#ffffff' } });
+          await QRCode.toCanvas(canvasRef.current, text, { errorCorrectionLevel: 'M', margin: 2, width: 320, color: { dark: '#0f172a', light: '#ffffff' } });
         }
       } catch (e: any) {
         setProblem(e?.message ?? 'Could not draw the code.');
@@ -109,7 +109,7 @@ function LiveCode({ k, onDone }: { k: QrKey; onDone: () => void }) {
         {k.indexNo && <span>{k.indexNo}</span>}
       </div>
       <canvas ref={canvasRef} className="at-qr-canvas" aria-label="Your attendance QR code" role="img" />
-      <div className="at-bar" style={{ width: '100%', maxWidth: 280 }}><span style={{ width: `${(left / k.stepSeconds) * 100}%`, transition: 'width 0.5s linear' }} /></div>
+      <div className="at-bar" style={{ width: '100%', maxWidth: 320 }}><span style={{ width: `${(left / k.stepSeconds) * 100}%`, transition: 'width 0.5s linear' }} /></div>
       <p className="at-help" style={{ textAlign: 'center', margin: 0 }}>
         <Sun size={12} style={{ verticalAlign: '-2px' }} /> {tx('Turn your screen brightness up and hold the phone still for your lecturer to scan. The code changes every few seconds, so photos of it do not work.')}
       </p>

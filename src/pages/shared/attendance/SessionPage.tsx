@@ -450,7 +450,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
                 onChange={e => {
                   const v = e.target.value;
                   if (v === 'RESET_PHONE') {
-                    if (window.confirm(`Unlink ${st.name}'s phone? Their next check-in links the phone they use then. Only do this with the student in front of you.`))
+                    if (window.confirm(`Unlink ${st.name}'s phone? Their next check-in links the phone they use then, and that phone can now be used by another student in this class. Their attendance is kept. Only do this with the student in front of you.`))
                       run(`p${st.studentId}`, () => resetAttendancePhone(s.id, st.studentId), 'Phone unlinked');
                   } else if (v) {
                     run(`m${st.studentId}`, () => markAttendance(s.id, st.studentId, v as AttendanceStatus), `${st.name}: ${MARK_OPTIONS.find(o => o.value === v)?.label}`);
