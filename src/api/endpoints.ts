@@ -803,6 +803,8 @@ export interface SubscriptionNotice {
   state?: SubscriptionStateName; unlicensed?: boolean; manual?: boolean; paidUntil?: string;
   nextChange?: string | null; nextState?: SubscriptionStateName | null; daysLeft?: number | null; contact?: string | null;
   invoice?: SubscriptionInvoice | null; canCheckPayment?: boolean; checked?: boolean;
+  /** Set when "check now" couldn't reach the vendor portal (why). */
+  checkProblem?: string;
 }
 export const getSubscriptionNotice = (): Promise<SubscriptionNotice> => client.get('/subscription/notice').then(r => r.data);
 /** "I've paid, check now": checks in with the vendor portal at once and returns the updated notice. */

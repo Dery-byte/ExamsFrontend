@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { CalendarClock, AlertTriangle, Lock, X, CreditCard, RefreshCw, Loader2 } from 'lucide-react';
@@ -38,6 +38,15 @@ const money = (currency: string, amount: string) => {
   return `${currency} ${isNaN(n) ? amount : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+/** When "Pay online" was last pressed in this browser (0 = not recently), for the check on coming back. */
+const PAY_CLICK_KEY = 'subscription_pay_clicked_at';
+const payClickedAt = () => {
+  try { return Number(localStorage.getItem(PAY_CLICK_KEY)) || 0; } catch { return 0; }
+};
+const rememberPayClick = (at: number) => {
+  try { if (at) localStorage.setItem(PAY_CLICK_KEY, String(at)); else localStorage.removeItem(PAY_CLICK_KEY); } catch { /* storage blocked */ }
+};
+
 /**
  * "Pay online" (the vendor's Paystack page, in a new tab) and "I've paid, check now", which asks the
  * vendor portal straight away instead of waiting for the next check-in.
@@ -46,7 +55,30 @@ export function PayActions({ notice, className = '' }: { notice: Notice; classNa
   const qc = useQueryClient();
   const [checking, setChecking] = useState(false);
   const inv = notice.invoice;
-  if (!inv && !notice.canCheckPayment) return null;
+  const hasInvoice = !!inv;
+  const canCheck = !!notice.canCheckPayment;
+
+  // Back from paying (this tab again, or a new one from the pay page's "Back to the portal"): check once
+  // by itself, so the renewal shows without pressing the button. Quiet unless the payment has arrived.
+  useEffect(() => {
+    if (!canCheck || !hasInvoice) return;
+    const auto = () => {
+      if (document.visibilityState !== 'visible' || Date.now() - payClickedAt() > 60 * 60_000) return;
+      checkSubscriptionPayment().then(next => {
+        if (!next.checked) return;
+        qc.setQueriesData({ queryKey: ['subscription-notice'] }, next);
+        if (!next.invoice) {
+          rememberPayClick(0);
+          toast.success('Payment received. The subscription is renewed.');
+        }
+      }).catch(() => { /* the button is still there */ });
+    };
+    auto();
+    document.addEventListener('visibilitychange', auto);
+    return () => document.removeEventListener('visibilitychange', auto);
+  }, [canCheck, hasInvoice, qc]);
+
+  if (!inv && !canCheck) return null;
 
   const check = async () => {
     setChecking(true);
@@ -54,6 +86,7 @@ export function PayActions({ notice, className = '' }: { notice: Notice; classNa
       const next = await checkSubscriptionPayment();
       qc.setQueriesData({ queryKey: ['subscription-notice'] }, next);
       if (!next.checked) toast('Checked a moment ago. Try again in half a minute.');
+      else if (next.checkProblem) toast.error(`Couldn't reach the billing service: ${next.checkProblem} Please try again in a minute.`);
       else if (next.state === 'ACTIVE' && !next.invoice) toast.success('Payment received. The subscription is renewed.');
       else if (inv && !next.invoice) toast.success('Payment received.');
       else toast('No payment yet. If you have just paid, it can take a minute to arrive.');
@@ -65,7 +98,7 @@ export function PayActions({ notice, className = '' }: { notice: Notice; classNa
   return (
     <div className={`sn-pay ${className}`}>
       {inv && (
-        <a className="sn-btn sn-btn-primary" href={inv.payUrl} target="_blank" rel="noopener noreferrer">
+        <a className="sn-btn sn-btn-primary" href={inv.payUrl} target="_blank" rel="noopener noreferrer" onClick={() => rememberPayClick(Date.now())}>
           <CreditCard size={15} aria-hidden /> Pay {money(inv.currency, inv.amount)} online
         </a>
       )}
