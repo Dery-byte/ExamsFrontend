@@ -1,5 +1,5 @@
-import { useState, useEffect, type ReactNode } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -17,7 +17,7 @@ import QuizReportLinks from '../../components/examops/QuizReportLinks';
 import {
   ChevronDown, ChevronRight, X, Loader2, FileText,
   MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye,
-  CheckSquare, AlertTriangle, RotateCcw, ListChecks, PenLine
+  CheckSquare, AlertTriangle, RotateCcw, ListChecks, PenLine, Search
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -75,6 +75,45 @@ const RESPONSIVE_CSS = `
 .qr-obj-pair-cap { display: none; }
 .qr-obj-pair-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 0 16px; }
 
+/* Filter bar — laid out from its own width (the sidebar changes how much room it has), one column by default */
+.qr-filters-wrap { container-type: inline-size; }
+.qr-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; align-items: end; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+@container (min-width: 440px) {
+  .qr-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 14px; }
+  .qr-filters .qr-search, .qr-filters .qr-clear { grid-column: 1 / -1; }
+}
+@container (min-width: 700px) {
+  /* search + Clear on the first row, the four dropdowns on the second */
+  .qr-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 16px; }
+  .qr-filters .qr-search { grid-column: 1 / span 3; grid-row: 1; }
+  .qr-filters .qr-clear { grid-column: 4; grid-row: 1; }
+}
+@container (min-width: 1040px) {
+  .qr-filters { grid-template-columns: minmax(200px, 2fr) repeat(4, minmax(140px, 1fr)) auto; }
+  .qr-filters .qr-search, .qr-filters .qr-clear { grid-column: auto; grid-row: auto; }
+}
+.qr-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.qr-field-label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+.qr-input { width: 100%; height: 40px; padding: 0 12px; border: 1.5px solid #e2e8f0; border-radius: 9px; background: #fff; font: inherit; font-size: 13px; color: #1e293b; outline: none; box-sizing: border-box; transition: border-color 0.15s; }
+.qr-input:focus { border-color: var(--brand); }
+select.qr-input { cursor: pointer; text-overflow: ellipsis; }
+.qr-search { position: relative; }
+.qr-search .qr-input { padding-left: 34px; padding-right: 34px; }
+.qr-search-icon { position: absolute; left: 11px; bottom: 12px; color: #94a3b8; pointer-events: none; }
+.qr-search-clear { position: absolute; right: 6px; bottom: 6px; width: 28px; height: 28px; border: none; border-radius: 6px; background: transparent; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.qr-search-clear:hover { background: #f1f5f9; color: #475569; }
+.qr-clear { height: 40px; padding: 0 16px; border: 1.5px solid #e2e8f0; border-radius: 9px; background: #fff; color: #64748b; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.qr-clear:disabled { opacity: 0.45; cursor: default; }
+.qr-clear:not(:disabled):hover { border-color: #fca5a5; color: #dc2626; background: #fef2f2; }
+.qr-filter-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin: 12px 4px 16px; font-size: 12px; color: #64748b; }
+.qr-filter-meta strong { color: #1e293b; }
+@media (max-width: 768px) {
+  .qr-input { font-size: 16px; height: 44px; }   /* 16px stops iOS zooming into the field */
+  .qr-search-icon { bottom: 14px; }
+  .qr-search-clear { bottom: 8px; }
+  .qr-clear { height: 44px; }
+}
+
 /* Quiz Row */
 .quiz-row-container { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: box-shadow 0.2s; }
 .quiz-row-header { padding: 18px 24px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: background 0.2s; }
@@ -115,10 +154,13 @@ const RESPONSIVE_CSS = `
   .qr-obj-pair-head { display: none; }
   .qr-obj-pair { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .qr-obj-pair-cap { display: inline; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-right: 6px; }
-
+}
+/* Quiz rows and their student tables stack by the list's own width (the sidebar eats into it on tablets/laptops) */
+.qr-list { container-type: inline-size; display: flex; flex-direction: column; gap: 16px; }
+@container (max-width: 760px) {
   .quiz-row-header { flex-direction: column; align-items: flex-start; padding: 16px; }
   .quiz-row-stats { width: 100%; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
-  
+
   .resp-table { min-width: 100%; }
   .resp-table thead { display: none; }
   .resp-table, .resp-table tbody, .resp-table tr, .resp-table td { display: block; width: 100%; box-sizing: border-box; }
@@ -707,9 +749,47 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
   });
   const taken = new Set((takenIds ?? []).map(Number));
 
-  const quizzes: any[] = [...(Array.isArray(rawQuizzes) ? rawQuizzes : (rawQuizzes as any)?.quizzes || [])]
+  const takenQuizzes: any[] = [...(Array.isArray(rawQuizzes) ? rawQuizzes : (rawQuizzes as any)?.quizzes || [])]
     .filter((q: any) => takenError || taken.has(Number(q.qId)))
     .sort((a: any, b: any) => b.qId - a.qId);
+
+  /* ── Filters ── */
+  const [search, setSearch] = useState('');
+  const [course, setCourse] = useState('');
+  const [type, setType] = useState('');
+  const [status, setStatus] = useState('');
+  const [review, setReview] = useState('');
+  const filtersOn = !!(search.trim() || course || type || status || review);
+  const clearFilters = () => { setSearch(''); setCourse(''); setType(''); setStatus(''); setReview(''); };
+
+  const courseOptions = useMemo(
+    () => [...new Set(takenQuizzes.map(q => q.category?.title).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b)),
+    [rawQuizzes, takenIds] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // Same queries (and cache) as each row's results table, so the review filter adds no extra requests.
+  const reportQueries = useQueries({
+    queries: takenQuizzes.map(q => ({ queryKey: ['quiz-reports', q.qId], queryFn: () => getReportByQuizId(q.qId) })),
+  });
+  const pendingOf = new Map<number, number | undefined>();
+  takenQuizzes.forEach((q, i) => {
+    const rows = reportQueries[i]?.data as any[] | undefined;
+    pendingOf.set(q.qId, rows ? rows.filter(r => !r.isReviewed).length : undefined);
+  });
+
+  const term = search.trim().toLowerCase();
+  const quizzes = takenQuizzes.filter(q => {
+    if (term && !String(q.title ?? '').toLowerCase().includes(term)) return false;
+    if (course && q.category?.title !== course) return false;
+    if (type && q.quizType !== type) return false;
+    if (status && q.status !== status) return false;
+    if (review) {
+      const pending = pendingOf.get(q.qId);
+      if (pending === undefined) return false;                       // still loading this quiz's results
+      if (review === 'pending' ? pending === 0 : pending > 0) return false;
+    }
+    return true;
+  });
 
   return (
     <div className="page-container">
@@ -730,19 +810,83 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
 
       {adminMode && <div style={{ marginBottom: 24 }}><ReportEmailToggle /></div>}
 
+      {/* Filters */}
+      {!(isLoading || loadingTaken) && takenQuizzes.length > 0 && (
+        <div className="qr-filters-wrap">
+          <div className="qr-filters" role="search">
+            <div className="qr-field qr-search">
+              <label className="qr-field-label" htmlFor="qr-f-search">{tx("Quiz name")}</label>
+              <Search size={15} className="qr-search-icon" aria-hidden="true" />
+              <input id="qr-f-search" className="qr-input" type="search" placeholder={tx("Search quiz name…")}
+                value={search} onChange={e => setSearch(e.target.value)} autoComplete="off" />
+              {search && (
+                <button type="button" className="qr-search-clear" onClick={() => setSearch('')} aria-label="Clear search"><X size={14} /></button>
+              )}
+            </div>
+            <div className="qr-field">
+              <label className="qr-field-label" htmlFor="qr-f-course">{tx("Course")}</label>
+              <select id="qr-f-course" className="qr-input" value={course} onChange={e => setCourse(e.target.value)}>
+                <option value="">{tx("All courses")}</option>
+                {courseOptions.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="qr-field">
+              <label className="qr-field-label" htmlFor="qr-f-type">Type</label>
+              <select id="qr-f-type" className="qr-input" value={type} onChange={e => setType(e.target.value)}>
+                <option value="">All types</option>
+                <option value="OBJ">Objective</option>
+                <option value="THEORY">Theory</option>
+                <option value="BOTH">Both</option>
+              </select>
+            </div>
+            <div className="qr-field">
+              <label className="qr-field-label" htmlFor="qr-f-status">Status</label>
+              <select id="qr-f-status" className="qr-input" value={status} onChange={e => setStatus(e.target.value)}>
+                <option value="">Open &amp; closed</option>
+                <option value="OPEN">Open</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+            </div>
+            <div className="qr-field">
+              <label className="qr-field-label" htmlFor="qr-f-review">Review</label>
+              <select id="qr-f-review" className="qr-input" value={review} onChange={e => setReview(e.target.value)}>
+                <option value="">Any review status</option>
+                <option value="pending">Pending review</option>
+                <option value="done">All reviewed</option>
+              </select>
+            </div>
+            <button type="button" className="qr-clear" onClick={clearFilters} disabled={!filtersOn}>
+              <X size={14} /> Clear
+            </button>
+          </div>
+          <div className="qr-filter-meta" aria-live="polite">
+            <span>Showing <strong>{quizzes.length}</strong> of <strong>{takenQuizzes.length}</strong> {tx(takenQuizzes.length === 1 ? 'quiz' : 'quizzes')}</span>
+            {filtersOn && <span>Filters applied</span>}
+          </div>
+        </div>
+      )}
+
       {/* Quiz List */}
       {(isLoading || loadingTaken) ? (
         <div style={{ textAlign: 'center', padding: 80 }}>
           <Loader2 size={40} style={{ animation: 'rSpin 1s linear infinite', color: 'var(--brand-text)' }} />
           <p style={{ color: '#64748b', marginTop: 16 }}>Loading quizzes...</p>
         </div>
-      ) : quizzes.length === 0 ? (
+      ) : takenQuizzes.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 80 }}>
           <BookOpen size={56} color="#cbd5e1" />
           <p style={{ color: '#94a3b8', marginTop: 16 }}>{tx("No quizzes have been taken by students yet.")}</p>
         </div>
+      ) : quizzes.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '56px 16px' }}>
+          <Search size={44} color="#cbd5e1" />
+          <p style={{ color: '#94a3b8', margin: '14px 0 16px' }}>{tx("No quizzes match these filters.")}</p>
+          <button type="button" className="qr-clear" onClick={clearFilters} style={{ margin: '0 auto' }}>
+            <X size={14} /> Clear filters
+          </button>
+        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="qr-list">
           {quizzes.map((quiz: any) => (
             <QuizRow
               key={quiz.qId}
