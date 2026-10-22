@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   loadQuizzes, getReportByQuizId, getTheoryQuestions,
-  addSectionBMarks, getMyCoursesWithQuizzes, getQuizAttempts
+  addSectionBMarks, getMyCoursesWithQuizzes, getQuizAttempts, getStudentResultsDetails
 } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
 import client from '../../api/client';
@@ -17,7 +17,7 @@ import QuizReportLinks from '../../components/examops/QuizReportLinks';
 import {
   ChevronDown, ChevronRight, X, Loader2, FileText,
   MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye,
-  CheckSquare, AlertTriangle, RotateCcw
+  CheckSquare, AlertTriangle, RotateCcw, ListChecks, PenLine
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -42,6 +42,38 @@ const RESPONSIVE_CSS = `
 .qr-modal-footer { padding: 16px 28px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 16px 16px; display: flex; justify-content: space-between; align-items: center; }
 .qr-modal-footer-left { display: flex; align-items: center; gap: 20px; }
 .qr-modal-footer-right { display: flex; gap: 12px; }
+
+/* Collapsible Objectives / Theory sections */
+.qr-sec { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.qr-sec-head { width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px 20px; border: none; background: #fff; cursor: pointer; text-align: left; font: inherit; color: inherit; transition: background 0.2s; }
+.qr-sec-head:hover { background: #f8fafc; }
+.qr-sec-head:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.qr-sec-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.qr-sec-text { flex: 1; min-width: 0; }
+.qr-sec-title { font-size: 15px; font-weight: 800; color: #1e293b; }
+.qr-sec-sub { font-size: 12px; color: #64748b; margin-top: 2px; overflow-wrap: anywhere; }
+.qr-sec-chevron { flex-shrink: 0; color: #64748b; transition: transform 0.2s; }
+.qr-sec.open .qr-sec-chevron { transform: rotate(180deg); }
+.qr-sec.open .qr-sec-head { border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+.qr-sec-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; background: #f8fafc; }
+
+/* Objective question cards */
+.qr-obj-card { border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; padding: 16px 20px; }
+.qr-obj-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.qr-obj-q { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: #1e293b; line-height: 1.6; overflow-wrap: anywhere; }
+.qr-obj-q img { max-width: 100%; height: auto; }
+.qr-obj-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.qr-obj-opt { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #fff; font-size: 13px; color: #475569; min-width: 0; }
+.qr-obj-opt-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.qr-obj-opt-text p { margin: 0; }
+.qr-obj-letter { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; }
+.qr-obj-tag { font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; white-space: nowrap; }
+.qr-obj-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.qr-obj-pairs { display: flex; flex-direction: column; gap: 8px; }
+.qr-obj-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; }
+.qr-obj-pair > div { min-width: 0; overflow-wrap: anywhere; }
+.qr-obj-pair-cap { display: none; }
+.qr-obj-pair-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 0 16px; }
 
 /* Quiz Row */
 .quiz-row-container { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: box-shadow 0.2s; }
@@ -75,7 +107,15 @@ const RESPONSIVE_CSS = `
   .qr-modal-footer { flex-wrap: wrap; gap: 12px; }
   .qr-modal-footer-left { flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
   .qr-modal-footer-right { margin-left: auto; gap: 8px; }
-  
+  .qr-sec-head { padding: 14px 16px; gap: 12px; }
+  .qr-sec-icon { width: 36px; height: 36px; }
+  .qr-sec-body { padding: 14px 12px; gap: 12px; }
+  .qr-obj-card { padding: 14px; }
+  .qr-obj-grid { grid-template-columns: minmax(0, 1fr); }
+  .qr-obj-pair-head { display: none; }
+  .qr-obj-pair { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .qr-obj-pair-cap { display: inline; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-right: 6px; }
+
   .quiz-row-header { flex-direction: column; align-items: flex-start; padding: 16px; }
   .quiz-row-stats { width: 100%; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
   
@@ -95,6 +135,13 @@ const RESPONSIVE_CSS = `
   .qr-modal-header-stat > :first-child { font-size: 18px !important; }
   .qr-modal-header-stat > :last-child { font-size: 9px !important; }
   .qr-modal-footer-right > button { padding: 9px 14px !important; }
+  .qr-sec-head { padding: 12px; gap: 10px; }
+  .qr-sec-icon { width: 32px; height: 32px; border-radius: 8px; }
+  .qr-sec-title { font-size: 14px; }
+  .qr-sec-body { padding: 12px 8px; }
+  .qr-obj-card { padding: 12px; }
+  .qr-obj-top { flex-direction: column-reverse; gap: 8px; }
+  .qr-obj-opt { padding: 9px 10px; }
 }
 `;
 
@@ -102,26 +149,164 @@ const RESPONSIVE_CSS = `
 const getStudentAnswers = (userId: number, quizId: number) =>
   client.get(`/answers/by-user-quiz/${userId}/${quizId}`).then(r => r.data).catch(() => []);
 
-const getObjAnswers = (userId: number, quizId: number) =>
-  client.get(`/getReportByUidAndQid/${userId}/${quizId}`).then(r => r.data).catch(() => []);
-
 const saveReviewedMarks = (payload: object) =>
   client.put('/save-review', payload).then(r => r.data);
+
+/* Strip tags for comparing option text with the answer key — never for display */
+const stripHtml = (s: string) => (s || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+
+const OBJ_STATUS: Record<string, { bg: string; color: string; label: string }> = {
+  CORRECT: { bg: '#ecfdf5', color: '#16a34a', label: 'Correct' },
+  WRONG:   { bg: '#fef2f2', color: '#dc2626', label: 'Incorrect' },
+  PARTIAL: { bg: '#fffbeb', color: '#d97706', label: 'Partial' },
+  SKIPPED: { bg: '#f1f5f9', color: '#64748b', label: 'Skipped' },
+};
+
+const TYPE_LABEL: Record<string, string> = {
+  MCQ: 'Multiple Choice', TRUE_FALSE: 'True / False', MATCHING: 'Matching', FILL_BLANK: 'Fill in the Blank', NUMERIC: 'Numeric',
+};
+
+/* ── Collapsible section (Objectives / Theory) ─────────────────────────── */
+function ReviewSection({ title, summary, icon, color, open, onToggle, children }: {
+  title: string; summary: string; icon: ReactNode; color: string;
+  open: boolean; onToggle: () => void; children: ReactNode;
+}) {
+  return (
+    <div className={`qr-sec${open ? ' open' : ''}`}>
+      <button type="button" className="qr-sec-head" onClick={onToggle} aria-expanded={open}>
+        <span className="qr-sec-icon" style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}>{icon}</span>
+        <span className="qr-sec-text">
+          <span className="qr-sec-title" style={{ display: 'block' }}>{title}</span>
+          <span className="qr-sec-sub" style={{ display: 'block' }}>{summary}</span>
+        </span>
+        <ChevronDown size={20} className="qr-sec-chevron" aria-hidden="true" />
+      </button>
+      {open && <div className="qr-sec-body">{children}</div>}
+    </div>
+  );
+}
+
+/* ── One objective question, read-only ─────────────────────────────────── */
+function ObjectiveQuestion({ q, index }: { q: any; index: number }) {
+  const status = OBJ_STATUS[(q.status || 'SKIPPED').toUpperCase()] ?? OBJ_STATUS.SKIPPED;
+  const selected: string[] = q.selectedAnswers || [];
+  const key: string[] = q.correct_answer || [];
+
+  let answer: ReactNode;
+  if (q.questionType === 'MATCHING') {
+    const pairs: any[] = q.matchingPairs || [];
+    answer = (
+      <div className="qr-obj-pairs">
+        <div className="qr-obj-pair-head qr-obj-label">
+          <span>Prompt</span><span>Student's match</span><span>Correct match</span>
+        </div>
+        {pairs.map((p, i) => (
+          <div key={i} className="qr-obj-pair" style={{ borderColor: p.correct ? '#bbf7d0' : '#fecaca', background: p.correct ? '#f0fdf4' : '#fef2f2' }}>
+            <div style={{ fontWeight: 600, color: '#1e293b' }}><span className="qr-obj-pair-cap">Prompt</span>{p.prompt}</div>
+            <div style={{ fontWeight: 700, color: p.correct ? '#16a34a' : '#dc2626' }}>
+              <span className="qr-obj-pair-cap">Student</span>{p.studentAnswer || <em style={{ fontWeight: 500 }}>(no match)</em>} {p.correct ? '✓' : '✗'}
+            </div>
+            <div style={{ fontWeight: 600, color: '#166534' }}><span className="qr-obj-pair-cap">Correct</span>{p.correctAnswer}</div>
+          </div>
+        ))}
+      </div>
+    );
+  } else if (q.questionType === 'FILL_BLANK' || q.questionType === 'NUMERIC') {
+    const right = q.status === 'CORRECT';
+    answer = (
+      <div className="qr-obj-grid">
+        <div className="qr-obj-opt" style={{ display: 'block', borderColor: right ? '#16a34a' : '#ef4444', background: right ? '#f0fdf4' : '#fef2f2' }}>
+          <div className="qr-obj-label">{tx("Student's answer")}</div>
+          <div style={{ fontWeight: 700, color: '#1e293b', overflowWrap: 'anywhere' }}>{selected[0] || <em style={{ fontWeight: 500, color: '#94a3b8' }}>(no answer)</em>}</div>
+        </div>
+        <div className="qr-obj-opt" style={{ display: 'block', borderColor: '#16a34a', background: '#f0fdf4' }}>
+          <div className="qr-obj-label">Accepted answer</div>
+          <div style={{ fontWeight: 700, color: '#1e293b', overflowWrap: 'anywhere' }}>
+            {key.join(' / ') || '—'}
+            {q.questionType === 'NUMERIC' && q.tolerance ? ` (± ${q.tolerance})` : ''}
+          </div>
+        </div>
+      </div>
+    );
+  } else {
+    const opts = ['option1', 'option2', 'option3', 'option4'].filter(k => q[k]);
+    answer = (
+      <div className="qr-obj-grid">
+        {opts.map((k, j) => {
+          const plain = stripHtml(q[k]);
+          const isCorrect = key.some(a => stripHtml(a) === plain);
+          const isSelected = selected.some(a => stripHtml(a) === plain);
+          const tone = isCorrect ? '#16a34a' : isSelected ? '#dc2626' : null;
+          return (
+            <div key={k} className="qr-obj-opt" style={{
+              borderColor: tone ?? '#e2e8f0',
+              background: isCorrect ? '#f0fdf4' : isSelected ? '#fef2f2' : '#fff',
+              color: tone ?? '#475569', fontWeight: tone ? 700 : 500,
+            }}>
+              <span className="qr-obj-letter" style={{ background: tone ?? '#f1f5f9', color: tone ? '#fff' : '#94a3b8' }}>{'ABCD'[j]}</span>
+              <span className="qr-obj-opt-text" dangerouslySetInnerHTML={{ __html: q[k] }} />
+              {isSelected && (
+                <span className="qr-obj-tag" style={{ color: tone!, background: isCorrect ? '#dcfce7' : '#fee2e2' }}>
+                  Picked {isCorrect ? '✓' : '✗'}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="qr-obj-card">
+      <div className="qr-obj-top">
+        <div className="qr-obj-q">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+            <span style={{ background: 'var(--brand)', color: 'var(--brand-contrast)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>Q{index + 1}</span>
+            <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>{TYPE_LABEL[q.questionType] ?? 'Objective'}</span>
+          </div>
+          <QuestionImage src={q.image} />
+          <div dangerouslySetInnerHTML={{ __html: q.content }} />
+        </div>
+        <span style={{ padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 800, background: status.bg, color: status.color, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, alignSelf: 'flex-start' }}>
+          {status.label}
+        </span>
+      </div>
+      {answer}
+    </div>
+  );
+}
 
 /* ── Review Modal ──────────────────────────────────────────────────────── */
 function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onClose: () => void }) {
   const qId = quiz.qId;
   const userId = student.user?.id;
+  // Sections follow the quiz type; an unknown type shows both.
+  const showObj = quiz.quizType !== 'THEORY';
+  const showTheory = quiz.quizType !== 'OBJ';
+  const [objOpen, setObjOpen] = useState(false);
+  const [theoryOpen, setTheoryOpen] = useState(false);
 
   const { data: theoryQs = [], isLoading: loadingTQ } = useQuery({
     queryKey: ['theoryQs', qId],
     queryFn: () => getTheoryQuestions(qId),
+    enabled: showTheory,
   });
+
+  const { data: objResult, isLoading: loadingObj, isError: objError } = useQuery({
+    queryKey: ['stuObjResult', userId, qId],
+    queryFn: () => getStudentResultsDetails(qId, userId),
+    enabled: showObj && !!userId,
+    retry: false,
+  });
+  // Only the questions this student was actually given (a random draw may leave some out)
+  const objQs: any[] = (objResult?.results ?? []).filter((q: any) => q.served !== false);
+  const objCorrect = objQs.filter(q => q.status === 'CORRECT').length;
 
   const { data: answers = [], isLoading: loadingAns } = useQuery({
     queryKey: ['stuAnswers', userId, qId],
     queryFn: () => getStudentAnswers(userId, qId),
-    enabled: !!userId,
+    enabled: showTheory && !!userId,
   });
 
   const [comments, setComments] = useState<Record<string, string>>({});
@@ -230,112 +415,153 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
 
         {/* Body */}
         <div className="qr-modal-body">
-          {(loadingTQ || loadingAns) ? (
-            <div style={{ textAlign: 'center', padding: 48 }}>
-              <Loader2 size={32} style={{ animation: 'rSpin 1s linear infinite', color: 'var(--brand-text)' }} />
-              <p style={{ color: '#64748b', marginTop: 12 }}>Loading questions & answers...</p>
-            </div>
-          ) : answeredTheoryQs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>
-              <BookOpen size={40} style={{ marginBottom: 12 }} />
-              <p>{tx("No theory questions answered by this student.")}</p>
-            </div>
-          ) : answeredTheoryQs.map((tq: any, idx: number) => {
-            const ans = getAnswer(tq.quesNo);
-            const key = tq.quesNo || `q${idx}`;
-            return (
-              <div key={tq.tqId || idx} style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                {/* Question header */}
-                <div className="qr-modal-q-header">
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <span style={{ background: 'var(--brand)', color: 'var(--brand-contrast)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{tq.quesNo}</span>
-                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Theory Question</span>
-                    </div>
-                    <QuestionImage src={tq.image} />
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: tq.question }} />
-                    {tq.evaluationCriteria && (
-                      <div style={{ marginTop: 8, padding: '8px 12px', background: '#ecfdf5', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#166534' }}>
-                        <strong>Rubric:</strong> {tq.evaluationCriteria}
+          {showObj && (
+            <ReviewSection
+              title="Objectives"
+              summary={loadingObj ? 'Loading answers…' : objError ? 'Could not load objective answers'
+                : `${objCorrect} of ${objQs.length} correct · Section A: ${student.marks ?? '—'} marks`}
+              icon={<ListChecks size={20} />}
+              color="var(--brand-text)"
+              open={objOpen}
+              onToggle={() => setObjOpen(o => !o)}
+            >
+              {loadingObj ? (
+                <div style={{ textAlign: 'center', padding: 32 }}>
+                  <Loader2 size={28} style={{ animation: 'rSpin 1s linear infinite', color: 'var(--brand-text)' }} />
+                  <p style={{ color: '#64748b', marginTop: 10, fontSize: 13 }}>Loading objective answers...</p>
+                </div>
+              ) : objError ? (
+                <div style={{ textAlign: 'center', padding: 32, color: '#dc2626', fontSize: 13 }}>
+                  <AlertTriangle size={28} style={{ marginBottom: 8 }} />
+                  <p style={{ margin: 0 }}>Could not load the objective answers. Please try again.</p>
+                </div>
+              ) : objQs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}>
+                  <ListChecks size={32} style={{ marginBottom: 8 }} />
+                  <p style={{ margin: 0, fontSize: 13 }}>{tx("No objective answers recorded for this student.")}</p>
+                </div>
+              ) : objQs.map((q, i) => <ObjectiveQuestion key={q.quesId ?? i} q={q} index={i} />)}
+            </ReviewSection>
+          )}
+
+          {showTheory && (
+            <ReviewSection
+              title="Theory"
+              summary={(loadingTQ || loadingAns) ? 'Loading answers…'
+                : `${answeredTheoryQs.length} answered · ${totalReviewed} reviewed marks`}
+              icon={<PenLine size={20} />}
+              color="#2ab57d"
+              open={theoryOpen}
+              onToggle={() => setTheoryOpen(o => !o)}
+            >
+              {(loadingTQ || loadingAns) ? (
+                <div style={{ textAlign: 'center', padding: 48 }}>
+                  <Loader2 size={32} style={{ animation: 'rSpin 1s linear infinite', color: 'var(--brand-text)' }} />
+                  <p style={{ color: '#64748b', marginTop: 12 }}>Loading questions & answers...</p>
+                </div>
+              ) : answeredTheoryQs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>
+                  <BookOpen size={40} style={{ marginBottom: 12 }} />
+                  <p>{tx("No theory questions answered by this student.")}</p>
+                </div>
+              ) : answeredTheoryQs.map((tq: any, idx: number) => {
+                const ans = getAnswer(tq.quesNo);
+                const key = tq.quesNo || `q${idx}`;
+                return (
+                  <div key={tq.tqId || idx} style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                    {/* Question header */}
+                    <div className="qr-modal-q-header">
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <span style={{ background: 'var(--brand)', color: 'var(--brand-contrast)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{tq.quesNo}</span>
+                          <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Theory Question</span>
+                        </div>
+                        <QuestionImage src={tq.image} />
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: tq.question }} />
+                        {tq.evaluationCriteria && (
+                          <div style={{ marginTop: 8, padding: '8px 12px', background: '#ecfdf5', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#166534' }}>
+                            <strong>Rubric:</strong> {tq.evaluationCriteria}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="qr-modal-q-marks-box">
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>{tq.marks}</div>
-                    <div style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Max Pts</div>
-                  </div>
-                </div>
-
-                {/* Student Answer */}
-                <div style={{ padding: '16px 20px', background: '#fff' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{tx("Student Response")}</div>
-                  <div style={{ padding: '12px 16px', background: ans ? '#fafafa' : '#fff7ed', border: `1px solid ${ans ? '#e2e8f0' : '#fed7aa'}`, borderRadius: 8, minHeight: 80, fontSize: 14, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', overflowX: 'auto' }}>
-                    {ans?.studentAnswer || <span style={{ color: '#f97316', fontStyle: 'italic', fontSize: 13 }}>No response submitted</span>}
-                  </div>
-                  {ans?.feedback && (
-                    <div style={{ marginTop: 8, padding: '6px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 12, color: '#1d4ed8' }}>
-                      <strong>AI Feedback:</strong> {ans.feedback}
+                      <div className="qr-modal-q-marks-box">
+                        <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>{tq.marks}</div>
+                        <div style={{ fontSize: 9, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Max Pts</div>
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Lecturer Comment Toggle */}
-                <div style={{ padding: '0 20px 16px', background: '#fff' }}>
-                  <button
-                    onClick={() => setShowComments(prev => ({ ...prev, [key]: !prev[key] }))}
-                    style={{ background: 'none', border: 'none', color: 'var(--accent-text)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0 }}
-                  >
-                    <MessageSquare size={14} />
-                    {showComments[key] ? 'Hide Comment Box' : (comments[key] ? 'Edit Comment' : 'Add Comment')}
-                  </button>
-                  {showComments[key] && (
-                    <div style={{ marginTop: 10 }}>
-                      <textarea
-                        value={comments[key] || ''}
-                        onChange={e => setComments(c => ({ ...c, [key]: e.target.value }))}
-                        placeholder="Add a comment for this response (optional)..."
-                        rows={3}
-                        style={{ width: '100%', padding: '10px 14px', border: '1.5px solid var(--accent-border)', borderRadius: 8, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', background: '#fdf8ff', color: 'var(--accent-deep)', outline: 'none', boxSizing: 'border-box' }}
-                      />
+                    {/* Student Answer */}
+                    <div style={{ padding: '16px 20px', background: '#fff' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{tx("Student Response")}</div>
+                      <div style={{ padding: '12px 16px', background: ans ? '#fafafa' : '#fff7ed', border: `1px solid ${ans ? '#e2e8f0' : '#fed7aa'}`, borderRadius: 8, minHeight: 80, fontSize: 14, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', overflowX: 'auto' }}>
+                        {ans?.studentAnswer || <span style={{ color: '#f97316', fontStyle: 'italic', fontSize: 13 }}>No response submitted</span>}
+                      </div>
+                      {ans?.feedback && (
+                        <div style={{ marginTop: 8, padding: '6px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 12, color: '#1d4ed8' }}>
+                          <strong>AI Feedback:</strong> {ans.feedback}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Reviewed Marks */}
-                <div style={{ padding: '0 20px 20px', background: '#fff' }}>
-                  <div className="qr-modal-reviewed-marks">
-                    <Star size={14} color="#f59e0b" />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e', textTransform: 'uppercase' }}>Reviewed Mark</span>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>(Original: {ans?.score ?? '—'} / {tq.marks})</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={parseFloat(String(tq.marks).replace(/[^0-9.]/g, '')) || 100}
-                      value={reviewed[key] ?? ''}
-                      onChange={e => {
-                        let val = Number(e.target.value);
-                        const maxMark = parseFloat(String(tq.marks).replace(/[^0-9.]/g, '')) || 100;
-                        if (val > maxMark) {
-                          setErrors(err => ({ ...err, [key]: `Exceeds max ${maxMark} points` }));
-                        } else {
-                          setErrors(err => { const newE = { ...err }; delete newE[key]; return newE; });
-                        }
-                        setReviewed(r => ({ ...r, [key]: val }));
-                      }}
-                      placeholder={String(ans?.score ?? 0)}
-                      style={{ width: 80, padding: '7px 12px', border: `2px solid ${errors[key] ? '#ef4444' : '#f59e0b'}`, borderRadius: 8, fontSize: 16, fontWeight: 800, textAlign: 'center', color: errors[key] ? '#ef4444' : '#92400e', outline: 'none', background: errors[key] ? '#fef2f2' : '#fffbeb', boxSizing: 'border-box' }}
-                    />
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>/ {tq.marks} pts</span>
+                    {/* Lecturer Comment Toggle */}
+                    <div style={{ padding: '0 20px 16px', background: '#fff' }}>
+                      <button
+                        onClick={() => setShowComments(prev => ({ ...prev, [key]: !prev[key] }))}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent-text)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0 }}
+                      >
+                        <MessageSquare size={14} />
+                        {showComments[key] ? 'Hide Comment Box' : (comments[key] ? 'Edit Comment' : 'Add Comment')}
+                      </button>
+                      {showComments[key] && (
+                        <div style={{ marginTop: 10 }}>
+                          <textarea
+                            value={comments[key] || ''}
+                            onChange={e => setComments(c => ({ ...c, [key]: e.target.value }))}
+                            placeholder="Add a comment for this response (optional)..."
+                            rows={3}
+                            style={{ width: '100%', padding: '10px 14px', border: '1.5px solid var(--accent-border)', borderRadius: 8, fontSize: 13, resize: 'vertical', fontFamily: 'inherit', background: '#fdf8ff', color: 'var(--accent-deep)', outline: 'none', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reviewed Marks */}
+                    <div style={{ padding: '0 20px 20px', background: '#fff' }}>
+                      <div className="qr-modal-reviewed-marks">
+                        <Star size={14} color="#f59e0b" />
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e', textTransform: 'uppercase' }}>Reviewed Mark</span>
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>(Original: {ans?.score ?? '—'} / {tq.marks})</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={parseFloat(String(tq.marks).replace(/[^0-9.]/g, '')) || 100}
+                          value={reviewed[key] ?? ''}
+                          onChange={e => {
+                            let val = Number(e.target.value);
+                            const maxMark = parseFloat(String(tq.marks).replace(/[^0-9.]/g, '')) || 100;
+                            if (val > maxMark) {
+                              setErrors(err => ({ ...err, [key]: `Exceeds max ${maxMark} points` }));
+                            } else {
+                              setErrors(err => { const newE = { ...err }; delete newE[key]; return newE; });
+                            }
+                            setReviewed(r => ({ ...r, [key]: val }));
+                          }}
+                          placeholder={String(ans?.score ?? 0)}
+                          style={{ width: 80, padding: '7px 12px', border: `2px solid ${errors[key] ? '#ef4444' : '#f59e0b'}`, borderRadius: 8, fontSize: 16, fontWeight: 800, textAlign: 'center', color: errors[key] ? '#ef4444' : '#92400e', outline: 'none', background: errors[key] ? '#fef2f2' : '#fffbeb', boxSizing: 'border-box' }}
+                        />
+                        <span style={{ fontSize: 12, color: '#94a3b8' }}>/ {tq.marks} pts</span>
+                      </div>
+                      {errors[key] && (
+                        <div style={{ marginTop: 8, fontSize: 12, color: '#ef4444', fontWeight: 600, display: 'flex', justifyContent: 'flex-end', paddingRight: 60 }}>
+                          {errors[key]}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {errors[key] && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: '#ef4444', fontWeight: 600, display: 'flex', justifyContent: 'flex-end', paddingRight: 60 }}>
-                      {errors[key]}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </ReviewSection>
+          )}
         </div>
 
         {/* Footer */}

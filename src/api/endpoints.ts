@@ -207,6 +207,9 @@ export const getTheoryDetails = (qid: number | string) =>
   client.get(`/quiz/${qid}`).then(r => r.data);
 export const getResultsDetails = (qid: number | string) =>
   client.get(`/quiz/result/${qid}`).then(r => r.data);
+/** Staff: one student's objective answers, question by question. */
+export const getStudentResultsDetails = (qid: number | string, userId: number | string) =>
+  client.get(`/quiz/result/${qid}/student/${userId}`).then(r => r.data);
 export const getCategoriesFromReport = () =>
   client.get('/my-students-reports').then(r => r.data);
 export const getStudentCount = () =>
