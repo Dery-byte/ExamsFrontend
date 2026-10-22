@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   loadQuizzes, getReportByQuizId, getTheoryQuestions,
-  addSectionBMarks, getMyCoursesWithQuizzes, getQuizAttempts, getStudentResultsDetails
+  addSectionBMarks, getMyCoursesWithQuizzes, getQuizAttempts, getStudentResultsDetails, getTakenQuizIds
 } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
 import client from '../../api/client';
@@ -699,7 +699,17 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
     },
   });
 
-  const quizzes: any[] = [...(Array.isArray(rawQuizzes) ? rawQuizzes : (rawQuizzes as any)?.quizzes || [])].sort((a: any, b: any) => b.qId - a.qId);
+  // Only quizzes students have taken are listed; if the list can't be loaded, fall back to showing every quiz.
+  const { data: takenIds, isLoading: loadingTaken, isError: takenError } = useQuery({
+    queryKey: ['taken-quiz-ids'],
+    queryFn: getTakenQuizIds,
+    retry: false,
+  });
+  const taken = new Set((takenIds ?? []).map(Number));
+
+  const quizzes: any[] = [...(Array.isArray(rawQuizzes) ? rawQuizzes : (rawQuizzes as any)?.quizzes || [])]
+    .filter((q: any) => takenError || taken.has(Number(q.qId)))
+    .sort((a: any, b: any) => b.qId - a.qId);
 
   return (
     <div className="page-container">
@@ -721,7 +731,7 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
       {adminMode && <div style={{ marginBottom: 24 }}><ReportEmailToggle /></div>}
 
       {/* Quiz List */}
-      {isLoading ? (
+      {(isLoading || loadingTaken) ? (
         <div style={{ textAlign: 'center', padding: 80 }}>
           <Loader2 size={40} style={{ animation: 'rSpin 1s linear infinite', color: 'var(--brand-text)' }} />
           <p style={{ color: '#64748b', marginTop: 16 }}>Loading quizzes...</p>
@@ -729,7 +739,7 @@ export default function QuizReview({ adminMode = true }: { adminMode?: boolean }
       ) : quizzes.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 80 }}>
           <BookOpen size={56} color="#cbd5e1" />
-          <p style={{ color: '#94a3b8', marginTop: 16 }}>No quizzes found.</p>
+          <p style={{ color: '#94a3b8', marginTop: 16 }}>{tx("No quizzes have been taken by students yet.")}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

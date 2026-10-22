@@ -199,6 +199,9 @@ export const getReportsByUser = (uid: number) =>
 export const loadReportSummary = () => client.get('/getReport').then(r => r.data);
 export const getReportByQuizId = (qid: number | string) =>
   client.get(`/getReports/${qid}`).then(r => r.data);
+/** Ids of quizzes at least one student has taken (submitted). */
+export const getTakenQuizIds = (): Promise<number[]> =>
+  client.get('/getReports/taken-quiz-ids').then(r => r.data);
 export const getReportsByMyQuiz = (qid: number | string) =>
   client.get(`/quiz-results/my-quiz/${qid}`).then(r => r.data);
 export const getTheoryReport = (qid: number | string) =>
