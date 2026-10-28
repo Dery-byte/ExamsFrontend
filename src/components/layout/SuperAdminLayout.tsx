@@ -7,7 +7,7 @@ import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
 import AvatarPhoto from '../common/AvatarPhoto';
-import { LayoutDashboard, UserCircle, Building2, BookMarked, Users, GraduationCap, LogOut, Menu, X, ShieldCheck, Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library, Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight, Landmark, ClipboardPen, ClipboardList, FilePlus, Eye, Wallet, FileBarChart, UserCheck, BedDouble, ShoppingBag, UserRound, Gift, CalendarRange, Package, BellRing } from 'lucide-react';
+import { LayoutDashboard, UserCircle, Building2, BookMarked, Users, GraduationCap, LogOut, Menu, X, ShieldCheck, Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library, Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight, Landmark, ClipboardPen, ClipboardList, FilePlus, Eye, Wallet, FileBarChart, UserCheck, BedDouble, ShoppingBag, UserRound, Gift, CalendarRange, Package, BellRing, PiggyBank } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import SubscriptionNotice from '../common/SubscriptionNotice';
 
@@ -71,6 +71,7 @@ export default function SuperAdminLayout() {
         { to: '/super-admin/stores', icon: <Package size={20} />, label: 'Stores' },
         { to: '/super-admin/reminders', icon: <BellRing size={20} />, label: 'Reminders' },
         { to: '/super-admin/concessions', icon: <Gift size={20} />, label: 'Concessions' },
+        { to: '/super-admin/wallets', icon: <PiggyBank size={20} />, label: 'Student wallets' },
         { to: '/super-admin/year-end', icon: <CalendarRange size={20} />, label: 'Year end' },
         { to: '/super-admin/finance-staff', icon: <Landmark size={20} />, label: 'Finance staff' },
       ]

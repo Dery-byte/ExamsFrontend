@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, CreditCard, FileText, History, Info, Landmark, Layers, Loader2,
-  Lock, Receipt, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Wallet, X, XCircle,
+  Lock, PiggyBank, Receipt, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Wallet, X, XCircle,
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import PageHeader from '../../../components/PageHeader';
 import {
-  confirmFeePayment, declineBill, getMyFees, startFeePayment, type FeeDue, type FeePaymentInfo, type MyFees, type StudentBillInfo,
+  confirmFeePayment, declineBill, getMyFees, getMyWallet, spendFromWallet, startFeePayment, type FeeDue, type FeePaymentInfo, type MyFees,
+  type MyWallet, type StudentBillInfo,
 } from '../../../api/endpoints';
 import { formatDate, formatMoney, moneyInput, parseMoney, paymentMethodLabel, roundMoney } from '../../../utils/money';
 import { levelName, tx, isSchoolMode } from '../../../utils/terms';
@@ -46,6 +47,9 @@ export default function Fees() {
 
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['my-fees'], queryFn: getMyFees, retry: false });
   const hidden = (error as any)?.response?.status === 403;
+  // The wallet shows here while it's on, or while the student still has money in it
+  const { data: walletData } = useQuery({ queryKey: ['my-wallet'], queryFn: getMyWallet, retry: false, enabled: !!data });
+  const wallet = walletData && typeof walletData.balance === 'number' && (walletData.enabled === true || walletData.balance > 0) ? walletData : undefined;
 
   useEffect(() => {
     if (returnRef || cancelledRef) setParams({}, { replace: true });
@@ -96,10 +100,12 @@ export default function Fees() {
       ) : (
         <FeesBody data={data} onPay={(due, items) => setPaying({ due, items })} onPayBill={bill => setPaying({ bill, items: [] })}
           onPayAll={() => setPaying({ items: [] })}
-          onDeclined={() => qc.invalidateQueries({ queryKey: ['my-fees'] })} onReceipt={setReceipt} />
+          onDeclined={() => qc.invalidateQueries({ queryKey: ['my-fees'] })} onReceipt={setReceipt}
+          onRecheck={ref => checkPayment(ref, () => true)} checking={banner?.kind === 'checking'} wallet={wallet} />
       )}
 
-      {paying && data && <PayModal data={data} due={paying.due} bill={paying.bill} initialItems={paying.items} onClose={() => setPaying(null)} />}
+      {paying && data && <PayModal data={data} due={paying.due} bill={paying.bill} initialItems={paying.items} wallet={wallet} onClose={() => setPaying(null)}
+        onPaidFromWallet={() => { setPaying(null); qc.invalidateQueries({ queryKey: ['my-fees'] }); qc.invalidateQueries({ queryKey: ['my-wallet'] }); }} />}
       {receipt && data && <ReceiptModal payment={receipt} onClose={() => setReceipt(null)}
         foot={data.totalBalance != null && receipt.sessionName === data.session.name
           ? <>Fees for {data.session.name} so far: {formatMoney(data.totalFees, data.currency)}, paid {formatMoney(data.totalPaid, data.currency)}, balance {formatMoney(data.totalBalance, data.currency)}.</>
@@ -108,9 +114,9 @@ export default function Fees() {
   );
 }
 
-function FeesBody({ data, onPay, onPayBill, onPayAll, onDeclined, onReceipt }: {
+function FeesBody({ data, onPay, onPayBill, onPayAll, onDeclined, onReceipt, onRecheck, checking, wallet }: {
   data: MyFees; onPay: (due: FeeDue, items: string[]) => void; onPayBill: (b: StudentBillInfo) => void; onPayAll: () => void;
-  onDeclined: () => void; onReceipt: (p: FeePaymentInfo) => void;
+  onDeclined: () => void; onReceipt: (p: FeePaymentInfo) => void; onRecheck: (reference: string) => void; checking: boolean; wallet?: MyWallet;
 }) {
   const { fee, currency, student, session } = data;
   // The fee shown on top: the oldest one with a balance (what the next payment goes to)
@@ -261,6 +267,7 @@ function FeesBody({ data, onPay, onPayBill, onPayAll, onDeclined, onReceipt }: {
       </div>
 
       <div className="sf-col">
+        {wallet && <WalletCard wallet={wallet} owed={(data.toPay ?? 0) > 0} />}
         {fee && data.status !== 'PAID' && (
           <section className="sf-card">
             <div className="sf-card-head"><h3><ShieldCheck size={17} color="#0f9d6e" /> Ways to pay</h3></div>
@@ -292,12 +299,32 @@ function FeesBody({ data, onPay, onPayBill, onPayAll, onDeclined, onReceipt }: {
             <div style={{ padding: '28px 20px', textAlign: 'center', color: '#74788d', fontSize: 13.5 }}>No payments yet.</div>
           ) : (
             <ul className="sf-history">
-              {data.payments.map(p => <HistoryRow key={p.id} p={p} onReceipt={onReceipt} />)}
+              {data.payments.map(p => <HistoryRow key={p.id} p={p} onReceipt={onReceipt} onRecheck={onRecheck} checking={checking} />)}
             </ul>
           )}
         </section>
       </div>
     </div>
+  );
+}
+
+/** The student's wallet in short: what's free to use, and the way to the wallet page. */
+function WalletCard({ wallet, owed }: { wallet: MyWallet; owed: boolean }) {
+  return (
+    <section className="sf-card">
+      <div className="sf-dash" style={{ padding: '16px 20px' }}>
+        <div className="sf-dash-ico" style={{ background: 'var(--brand-soft)', color: 'var(--brand-text)' }}><PiggyBank size={24} /></div>
+        <div className="sf-dash-main">
+          <small>My wallet · free to use</small>
+          <b>{formatMoney(wallet.available, wallet.currency)}</b>
+          <span style={{ display: 'block', fontSize: 12.5, color: '#74788d', marginTop: 2 }}>
+            {!wallet.enabled ? 'The wallet is switched off; you can still withdraw your balance.'
+              : wallet.available > 0 && owed ? 'Use it on any fee or bill.' : 'Pay in ahead and use it when fees are due.'}
+          </span>
+        </div>
+        <Link to="/user-dashboard/wallet" className="sf-btn-ghost" style={{ textDecoration: 'none', flex: '0 0 auto' }}>Open <ArrowRight size={15} /></Link>
+      </div>
+    </section>
   );
 }
 
@@ -405,7 +432,9 @@ function ItemList({ data, due, onPay }: { data: MyFees; due: FeeDue; onPay: (ite
   );
 }
 
-function HistoryRow({ p, onReceipt }: { p: FeePaymentInfo; onReceipt: (p: FeePaymentInfo) => void }) {
+function HistoryRow({ p, onReceipt, onRecheck, checking }: {
+  p: FeePaymentInfo; onReceipt: (p: FeePaymentInfo) => void; onRecheck: (reference: string) => void; checking: boolean;
+}) {
   const ok = p.status === 'SUCCESS';
   const tone = ok ? ['#eafaf3', '#0f9d6e'] : p.status === 'PENDING' ? ['#fff7e8', '#c47f0b'] : ['#f1f3f7', '#9aa1ae'];
   const Icon = p.method !== 'PAYSTACK' ? Landmark : p.channel === 'card' ? CreditCard : Smartphone;
@@ -422,6 +451,12 @@ function HistoryRow({ p, onReceipt }: { p: FeePaymentInfo; onReceipt: (p: FeePay
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
         <span className={`sf-status ${p.status}`}>{STATUS_LABEL[p.status] ?? p.status}</span>
         {ok && <button type="button" className="sf-link-btn" onClick={() => onReceipt(p)}><Receipt size={13} /> Receipt</button>}
+        {/* A checkout left before Paystack confirmed it: ask again instead of waiting for the background check */}
+        {p.status === 'PENDING' && p.method === 'PAYSTACK' && (
+          <button type="button" className="sf-link-btn" onClick={() => onRecheck(p.reference)} disabled={checking}>
+            <RefreshCw size={13} className={checking ? 'sf-spin' : undefined} /> Check status
+          </button>
+        )}
       </div>
     </li>
   );
@@ -459,7 +494,9 @@ function ResultBanner({ banner, currency, onClose, onRecheck, onReceipt }: {
 type PayMode = 'full' | 'items' | 'part';
 
 /** Pays one fee (term), one bill, or (neither) everything owed, oldest first. */
-function PayModal({ data, due, bill, initialItems, onClose }: { data: MyFees; due?: FeeDue; bill?: StudentBillInfo; initialItems: string[]; onClose: () => void }) {
+function PayModal({ data, due, bill, initialItems, wallet, onClose, onPaidFromWallet }: {
+  data: MyFees; due?: FeeDue; bill?: StudentBillInfo; initialItems: string[]; wallet?: MyWallet; onClose: () => void; onPaidFromWallet: () => void;
+}) {
   const { currency, partPayment, minimumPayment } = data;
   const balance = bill ? bill.balance : due ? due.balance : data.toPay ?? 0;
   const owedItems = due ? due.items.filter(i => i.balance > 0) : [];
@@ -492,6 +529,22 @@ function PayModal({ data, due, bill, initialItems, onClose }: { data: MyFees; du
   const choose = (m: PayMode) => {
     setMode(m);
     if (m === 'part') setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  // The wallet pays the fee or bill as a whole (not chosen items); the rest can still be paid online
+  const fromWallet = wallet?.enabled && mode !== 'items' && !problem && value > 0 ? roundMoney(Math.min(value, wallet.available)) : 0;
+  const walletOk = fromWallet > 0 && (fromWallet === roundMoney(value) || partPayment);
+  const payFromWallet = async () => {
+    if (!walletOk) return;
+    setBusy(true);
+    try {
+      await spendFromWallet({ ...(bill ? { billId: bill.id } : due ? { scheduleId: due.fee.id } : {}), amount: fromWallet });
+      toast.success(`Paid ${formatMoney(fromWallet, currency)} from your wallet`);
+      onPaidFromWallet();
+    } catch (e: any) {
+      toast.error(tx(e?.response?.data?.message ?? 'Could not pay from your wallet'));
+      setBusy(false);
+    }
   };
 
   const pay = async () => {
@@ -588,10 +641,20 @@ function PayModal({ data, due, bill, initialItems, onClose }: { data: MyFees; du
         </div>
       )}
 
-      <div className="sf-secure-line">
+      {walletOk && (
+        <div className="sf-callout info" style={{ marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+          <PiggyBank size={16} />
+          <span style={{ flex: '1 1 180px' }}>Your wallet has <b>{formatMoney(wallet!.available, currency)}</b> free.
+            {fromWallet < roundMoney(value) ? ` It can pay ${formatMoney(fromWallet, currency)} of this.` : ''}</span>
+          <button type="button" className="sf-btn-ghost" style={{ height: 38, flex: '1 0 auto' }} onClick={payFromWallet} disabled={busy}>
+            Pay {formatMoney(fromWallet, currency)} from wallet</button>
+        </div>
+      )}
+
+      {data.onlinePayment && <div className="sf-secure-line">
         <Lock size={13} />
         <span>Secured by Paystack · <b>Mobile Money</b> or <b>card</b>. Confirmation goes to {data.student.email}.</span>
-      </div>
+      </div>}
     </FeeDialog>
   );
 }

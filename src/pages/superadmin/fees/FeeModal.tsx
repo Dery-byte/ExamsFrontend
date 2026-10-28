@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
 /** Dialog shell for the Fees pages: closes on Esc or a click outside, unless a save is running. */
@@ -17,7 +18,8 @@ export default function FeeModal({ title, subtitle, onClose, busy, narrow, foote
 
   // Once per opening (parents pass inline handlers; re-running would steal focus while typing)
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busyRef.current) closeRef.current(); };
+    // Esc on a confirmation opened from this dialog closes only the confirmation
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !busyRef.current && !Swal.isVisible()) closeRef.current(); };
     document.addEventListener('keydown', onKey);
     // Focus the first field so keyboard users land inside the dialog
     ref.current?.querySelector<HTMLElement>('input, select, textarea, button:not(.fe-close)')?.focus();

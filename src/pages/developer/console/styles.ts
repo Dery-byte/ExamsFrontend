@@ -426,6 +426,10 @@ body:has(.dd-shell) { margin: 0; background: #f5f7fa; }
 
 /* ── Audit log ─────────────────────────────────────────── */
 .dd-access { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+/* Several switch rows in one card, divided */
+.dd-rows { padding-top: 4px; padding-bottom: 4px; }
+.dd-rows > .dd-access { margin: 0; padding: 14px 0; }
+.dd-rows > .dd-access + .dd-access { border-top: 1px solid var(--dd-border); }
 .dd-access > .dd-skeleton, .dd-access > .dd-callout { flex: 1; margin: 0; }
 .dd-access-icon { flex: none; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
   background: var(--dd-surface-2); color: var(--dd-muted); border: 1px solid var(--dd-border); }

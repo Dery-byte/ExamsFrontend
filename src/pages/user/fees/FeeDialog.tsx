@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useBodyScrollLock } from '../../../hooks/useBodyScrollLock';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -29,6 +30,7 @@ export default function FeeDialog({ title, subtitle, onClose, busy, wide, footer
     (first ?? dialog)?.focus();
 
     const onKey = (e: KeyboardEvent) => {
+      if (Swal.isVisible()) return;   // a confirmation on top handles its own Esc and Tab
       if (e.key === 'Escape' && !busyRef.current) { e.preventDefault(); closeRef.current(); return; }
       if (e.key !== 'Tab' || !dialog) return;
       const items = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(el => el.offsetParent !== null);

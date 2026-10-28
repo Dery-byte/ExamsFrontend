@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, ArrowRight, Banknote, CalendarDays, Gift, HandCoins, History, Landmark, Loader2, Receipt, TrendingUp, Users, Wallet } from 'lucide-react';
+import { AlertCircle, ArrowRight, Banknote, CalendarDays, Gift, HandCoins, History, Landmark, Loader2, PiggyBank, Receipt, TrendingUp, Users, Wallet } from 'lucide-react';
 import { getFinanceDashboard } from '../../api/endpoints';
 import { FEE_ADMIN_CSS } from '../superadmin/fees/feeStyles';
 import { formatDate, formatMoney } from '../../utils/money';
@@ -59,6 +59,8 @@ export default function AccountsDashboard() {
               <Kpi label="Concessions this session" value={formatMoney(d.session.discounts ?? 0, d.currency)} icon={<Gift size={18} />} color="var(--accent-light)"
                 foot={<Link to="/accounts/concessions" className="fe-link">Fees forgone · concessions</Link>} />
               <Kpi label="Credit held" value={formatMoney(d.session.credit ?? 0, d.currency)} icon={<Wallet size={18} />} color="#34d399" foot={tx('Paid ahead; used on the next bill or semester')} />
+              {d.wallets && d.wallets.held > 0 && <Kpi label="Held in student wallets" value={formatMoney(d.wallets.held, d.currency)} icon={<PiggyBank size={18} />} color="#34d399"
+                foot={<Link to="/accounts/wallets" className="fe-link">{d.wallets.students} {tx('students')} · used only when they choose</Link>} />}
             </div>
 
             <div className="fa-grid">

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
@@ -10,8 +11,21 @@ import { useAuth } from '../contexts/AuthContext';
 
 /** Home route per role — used to open announcements from the bell. */
 export const ROLE_BASE: Record<string, string> = {
-  SUPER_ADMIN: '/super-admin', ADMIN: '/admin', LECTURER: '/lect', NORMAL: '/user-dashboard',
+  SUPER_ADMIN: '/super-admin', ADMIN: '/admin', LECTURER: '/lect', NORMAL: '/user-dashboard', ACCOUNTANT: '/accounts',
 };
+
+const PANEL_WIDTH = 340;
+const GAP = 16;   // from the screen's edges
+
+/** Where the panel goes: under the bell, its right edge on the bell's, kept fully on screen. */
+function place(button: HTMLElement) {
+  const r = button.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth;
+  const width = Math.min(PANEL_WIDTH, vw - GAP * 2);
+  const left = Math.min(Math.max(GAP, r.right - width), vw - width - GAP);
+  const top = r.bottom + 8;
+  return { top, left, width, maxHeight: Math.max(160, window.innerHeight - top - GAP) };
+}
 
 function timeAgo(iso: string) {
   const secs = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -31,6 +45,9 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<ReturnType<typeof place> | null>(null);
 
   const { data: unread = 0 } = useQuery({
     queryKey: ['notifications', 'unread'],
@@ -43,14 +60,26 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
     enabled: open,
   });
 
+  // The panel lives on <body>: inside the header it was trapped under the sidebar (the sticky header's own layer)
+  const reposition = useCallback(() => { if (buttonRef.current) setPos(place(buttonRef.current)); }, []);
+  useLayoutEffect(() => { if (open) reposition(); }, [open, reposition]);
+
   useEffect(() => {
     if (!open) return;
-    const close = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const close = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!ref.current?.contains(t) && !panelRef.current?.contains(t)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); buttonRef.current?.focus(); } };
     document.addEventListener('mousedown', close);
     document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
-  }, [open]);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);   // any scrolling container moves the bell
+    return () => {
+      document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc);
+      window.removeEventListener('resize', reposition); window.removeEventListener('scroll', reposition, true);
+    };
+  }, [open, reposition]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['notifications'] });
 
@@ -72,6 +101,7 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
+        ref={buttonRef}
         onClick={() => setOpen(o => !o)}
         aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
         aria-expanded={open}
@@ -90,8 +120,9 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
         )}
       </button>
 
-      {open && (
-        <div role="dialog" aria-label="Notifications" className="notif-panel">
+      {open && pos && createPortal(
+        <div ref={panelRef} role="dialog" aria-label="Notifications" className="notif-panel"
+          style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxHeight }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid #eef0f4' }}>
             <span style={{ fontWeight: 800, fontSize: 14, color: '#1e293b' }}>Notifications</span>
             {unread > 0 && (
@@ -100,7 +131,7 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
               </button>
             )}
           </div>
-          <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+          <div className="notif-list" style={{ maxHeight: Math.min(400, pos.maxHeight - 50) }}>
             {isLoading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Loader2 size={20} className="notif-spin" color="var(--brand-text)" /></div>
             ) : items.length === 0 ? (
@@ -114,15 +145,21 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
               </button>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       <style>{`
+        /* Above the sidebars (1000) and their mobile backdrops, below dialogs (2000+) */
         .notif-panel {
-          position: absolute; right: 0; top: calc(100% + 8px); width: 340px; max-width: calc(100vw - 32px);
+          position: fixed; box-sizing: border-box; display: flex; flex-direction: column;
           background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(15,23,42,0.18);
-          z-index: 2000; overflow: hidden; text-align: left;
+          z-index: 1500; overflow: hidden; text-align: left; font-family: Inter, system-ui, sans-serif;
+          animation: notif-in .12s ease-out;
         }
+        .notif-list { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+        @keyframes notif-in { from { opacity: 0; transform: translateY(-4px); } }
+        @media (prefers-reduced-motion: reduce) { .notif-panel { animation: none; } }
         .notif-item {
           position: relative; display: block; width: 100%; text-align: left; padding: 11px 14px 11px 20px;
           border: none; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-family: inherit;
@@ -130,7 +167,6 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
         .notif-item:hover { background: var(--brand-soft) !important; }
         .notif-spin { animation: notif-spin 1s linear infinite; }
         @keyframes notif-spin { to { transform: rotate(360deg); } }
-        @media (max-width: 480px) { .notif-panel { position: fixed; left: 16px; right: 16px; top: 64px; width: auto; } }
       `}</style>
     </div>
   );

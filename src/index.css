@@ -253,6 +253,13 @@ body {
   padding: 20px;
 }
 
+/*
+ * Confirmations (SweetAlert) open on top of whatever dialog asked for them. Its default layer (1060) is
+ * below the app's dialogs (2000–10000), so a "Cancel this bill?" opened from a dialog showed behind it.
+ * Still below toasts and the exam-protection overlays.
+ */
+.swal2-container { z-index: 100001 !important; }
+
 .lexa-modal-content {
   background: #fff;
   border-radius: 4px;

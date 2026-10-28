@@ -482,7 +482,7 @@ export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
 export type FeatureKey =
   | 'STUDENT_SELF_SIGNUP' | 'HOD_ANALYTICS' | 'HOD_DATA_TOOLS' | 'HOD_PROMOTION' | 'HOD_ANNOUNCEMENTS'
   | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'STUDENT_REPORT_CARD' | 'QUESTION_BANK'
-  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION' | 'HOD_REPORTS' | 'LECTURER_REPORTS' | 'EXAM_SOUNDS' | 'ATTENDANCE';
+  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION' | 'HOD_REPORTS' | 'LECTURER_REPORTS' | 'EXAM_SOUNDS' | 'ATTENDANCE' | 'STUDENT_WALLET';
 
 export interface FeatureFlags {
   marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean;
@@ -825,7 +825,11 @@ export const setAuditLogAccess = (superAdminVisible: boolean): Promise<{ superAd
   client.put(`${developerRootUrl()}/audit-log/access`, { superAdminVisible }).then(r => r.data);
 /** Developer: which modules this institution uses (Assessments = the whole quiz module). */
 /** residency: DAY (day students only), BOARDING (boarding only) or BOTH. */
-export interface DeveloperModules { assessments: boolean; residency: 'DAY' | 'BOARDING' | 'BOTH' }
+export interface DeveloperModules {
+  assessments: boolean; residency: 'DAY' | 'BOARDING' | 'BOTH';
+  /** Whether the Super Admin / the bursar may pay students' fees and bills from their wallets (cashiers never may). */
+  walletSpendSuperAdmin: boolean; walletSpendBursar: boolean;
+}
 export const getModules = (): Promise<DeveloperModules> =>
   client.get(`${developerRootUrl()}/modules`).then(r => r.data);
 /** Send only what changes. */
@@ -921,8 +925,10 @@ export interface FeePaymentInfo {
   allocations?: FeeAllocationLine[]; billTitle?: string | null;
   /** Staff only: who recorded it, whether it is handed in (cash-up), when it was cancelled. */
   recordedById?: number | null; cashedUp?: boolean; voidedAt?: string | null;
+  /** Paid into the student's wallet rather than towards what they owe. */
+  walletDeposit?: boolean;
 }
-export interface FeeAllocationLine { kind: 'FEE' | 'BILL' | 'ARREARS' | 'REFUND' | 'CREDIT'; label: string; amount: number; scheduleId?: number; billId?: number; arrearsId?: number }
+export interface FeeAllocationLine { kind: 'FEE' | 'BILL' | 'ARREARS' | 'REFUND' | 'CREDIT' | 'WALLET'; label: string; amount: number; scheduleId?: number; billId?: number; arrearsId?: number }
 export type BillStatus = 'PAID' | 'PART_PAID' | 'UNPAID' | 'CANCELLED' | 'DECLINED';
 export interface BillLineInfo { name: string; quantity: number; unitPrice: number; amount: number; lineId?: number; stocked?: boolean; issued?: number }
 /** A student's bill (uniform, books, an excursion …). */
@@ -1092,6 +1098,8 @@ export interface FinanceDashboard {
   todayByMethod: { label: string; amount: number }[]; todayByCashier: { label: string; amount: number }[];
   session: { name: string; owed: number; outstanding: number; paid: number; students: number; debtors: number; residencyUnknown: number;
     discounts?: number; arrears?: number; withArrears?: number; credit?: number; closed?: boolean };
+  /** Money students paid into their wallets and haven't used or taken back. */
+  wallets?: { students: number; held: number };
   /** What the signed-in person has to hand in (cash-up). */
   handIn?: CashUpMine;
   recent: { id: number; receiptNo: string | null; reference: string; studentName: string; studentId: string; amount: number; method: PaymentMethod; paidAt: string; recordedBy: string | null }[];
@@ -1185,6 +1193,80 @@ export const restoreArrears = (id: number): Promise<ArrearsInfo> => client.post(
 export const refundStudent = (data: { studentId: number; amount: number; method: PaymentMethod; paidTo?: string; reason: string }): Promise<RefundInfo> =>
   client.post(`${feesAdminUrl()}/refunds`, data).then(r => r.data);
 export const voidRefund = (id: number, reason: string): Promise<RefundInfo> => client.post(`${feesAdminUrl()}/refunds/${id}/void`, { reason }).then(r => r.data);
+
+// ── Student wallet (paying in advance) ───────────────────────────────────
+export type WithdrawalStatus = 'REQUESTED' | 'REVIEWED' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED' | 'REVERSED';
+export type WalletPayout = 'CASH' | 'MOBILE_MONEY' | 'BANK';
+export interface WalletWithdrawalInfo {
+  id: number; number: string; amount: number; currency: string; reason: string; payout: WalletPayout; payoutDetails: string | null;
+  status: WithdrawalStatus; requestedAt: string;
+  reviewedBy: string | null; reviewedAt: string | null; reviewNote: string | null;
+  approvedBy: string | null; approvedAt: string | null; approvalNote: string | null;
+  paidBy: string | null; paidAt: string | null; voucher?: string; paidMethod?: string; paidTo?: string | null;
+  rejectedBy: string | null; rejectedAt: string | null; rejectReason: string | null; rejectedAtStep: WithdrawalStatus | null; cancelledAt: string | null;
+  /** Staff only. */
+  studentId?: number; studentName?: string; username?: string; programName?: string | null; level?: number | null;
+  reviewedById?: number | null; approvedById?: number | null; walletBalance?: number;
+}
+/** A line of wallet history: money in (with its receipt), money used on fees or bills, money paid out. */
+export interface WalletEntry {
+  type: 'DEPOSIT' | 'SPEND' | 'WITHDRAWAL'; at: string | null; amount: number; reference: string; label: string; status: string; payment?: FeePaymentInfo;
+  /** A payment the Super Admin or bursar made from the wallet: who, and why. */
+  by?: string; note?: string | null;
+}
+/** Something the wallet can pay: everything owed (oldest first), one fee (term) or one bill. */
+export interface WalletTarget { kind: 'ALL' | 'FEE' | 'BILL'; id: number | null; label: string; balance: number }
+export interface MyWallet {
+  /** The Super Admin's switch: off, nothing can go in or be spent, but a balance can still be withdrawn. */
+  enabled: boolean; currency: string;
+  /** In the wallet; held by a withdrawal request in progress; free to use (balance less held). */
+  balance: number; held: number; available: number;
+  maxBalance: number | null; minimum: number; onlineDeposit: boolean; partPayment: boolean; feesVisible: boolean;
+  student: { id: number; name: string; studentId: string; email: string };
+  targets: WalletTarget[]; history: WalletEntry[]; withdrawals: WalletWithdrawalInfo[];
+  /** Staff view only: whether the signed-in person may pay this student's fees and bills from the wallet. */
+  canSpend?: boolean;
+}
+export interface WalletOverview {
+  enabled: boolean; currency: string; maxBalance: number | null; students: number; held: number;
+  open: WalletWithdrawalInfo[]; closed: WalletWithdrawalInfo[];
+  can: { id: number; review: boolean; approve: boolean; payOut: boolean; settings: boolean; spend: boolean };
+  /** No bursar account: the Super Admin reviews and approves in one step. */
+  noBursar: boolean;
+}
+
+/** Student: their wallet (works while the wallet is off too, so a balance can still be withdrawn). */
+export const getMyWallet = (): Promise<MyWallet> => client.get(`${apiRoot()}/fees/wallet`).then(r => r.data);
+/** Student: opens a Paystack checkout that pays into the wallet; Paystack returns them to the wallet page. */
+export const startWalletDeposit = (amount: number): Promise<{ reference: string; authorizationUrl: string }> =>
+  client.post(`${apiRoot()}/fees/wallet/deposit`, { amount }).then(r => r.data);
+/** Student: pays a fee (scheduleId), a bill (billId) or everything owed (neither) from the wallet; amount omitted = as much as possible. */
+export const spendFromWallet = (data: { amount?: number; scheduleId?: number; billId?: number }): Promise<MyWallet> =>
+  client.post(`${apiRoot()}/fees/wallet/spend`, data).then(r => r.data);
+export const requestWalletWithdrawal = (data: { amount: number; reason: string; payout: WalletPayout; payoutDetails?: string }): Promise<MyWallet> =>
+  client.post(`${apiRoot()}/fees/wallet/withdrawals`, data).then(r => r.data);
+export const cancelWalletWithdrawal = (id: number): Promise<MyWallet> =>
+  client.post(`${apiRoot()}/fees/wallet/withdrawals/${id}/cancel`).then(r => r.data);
+
+const walletsAdminUrl = () => `${feesAdminUrl()}/wallets`;
+export const getWalletOverview = (): Promise<WalletOverview> => client.get(walletsAdminUrl()).then(r => r.data);
+/** Bursar: the most a wallet may hold (null or 0 = no limit). */
+export const saveWalletSettings = (maxBalance: number | null): Promise<WalletOverview> =>
+  client.put(`${walletsAdminUrl()}/settings`, { maxBalance }).then(r => r.data);
+export const getStudentWallet = (studentId: number): Promise<MyWallet> => client.get(`${walletsAdminUrl()}/students/${studentId}`).then(r => r.data);
+export const recordWalletDeposit = (studentId: number, data: { amount: number; method: PaymentMethod; paidOn?: string; note?: string }): Promise<FeePaymentInfo> =>
+  client.post(`${walletsAdminUrl()}/students/${studentId}/deposits`, data).then(r => r.data);
+/** Super Admin / bursar (when the developer allows it): pays a fee, a bill or everything owed from the student's wallet. */
+export const staffSpendFromWallet = (studentId: number, data: { amount?: number; scheduleId?: number; billId?: number; note: string }): Promise<MyWallet> =>
+  client.post(`${walletsAdminUrl()}/students/${studentId}/spend`, data).then(r => r.data);
+export const reviewWithdrawal = (id: number, note?: string): Promise<WalletWithdrawalInfo> =>
+  client.post(`${walletsAdminUrl()}/withdrawals/${id}/review`, { note }).then(r => r.data);
+export const approveWithdrawal = (id: number, note?: string): Promise<WalletWithdrawalInfo> =>
+  client.post(`${walletsAdminUrl()}/withdrawals/${id}/approve`, { note }).then(r => r.data);
+export const payOutWithdrawal = (id: number, data: { method: PaymentMethod; paidTo?: string }): Promise<WalletWithdrawalInfo> =>
+  client.post(`${walletsAdminUrl()}/withdrawals/${id}/pay`, data).then(r => r.data);
+export const rejectWithdrawal = (id: number, note: string): Promise<WalletWithdrawalInfo> =>
+  client.post(`${walletsAdminUrl()}/withdrawals/${id}/reject`, { note }).then(r => r.data);
 
 export interface CashUpMine { payments: number; refunds: number; expectedCash: number; nonCash: number; since: string | null }
 export interface CashUpInfo {

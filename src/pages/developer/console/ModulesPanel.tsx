@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { BedDouble, ClipboardCheck, Home, Loader2, Info, Users } from 'lucide-react';
+import { BedDouble, ClipboardCheck, Home, Landmark, Loader2, Info, ShieldCheck, Users } from 'lucide-react';
 import { getModules, setModules, type DeveloperModules } from '../../../api/endpoints';
 import { PanelHeader, PanelLoading, PanelError, apiMessage } from './ui';
 
@@ -27,15 +27,41 @@ const RESIDENCY: { value: Residency; label: string; icon: ReactNode; description
   },
 ];
 
+type WalletKey = 'walletSpendSuperAdmin' | 'walletSpendBursar';
+type Saving = 'assessments' | 'residency' | WalletKey;
+
+/** Who besides the student may use a student's wallet money on their fees and bills. */
+const WALLET_SPENDERS: { key: WalletKey; who: string; icon: ReactNode; on: string; off: string }[] = [
+  {
+    key: 'walletSpendSuperAdmin', who: 'Super Admin', icon: <ShieldCheck size={18} />,
+    on: 'On: the Super Admin can pay a student’s fees and bills from the student’s wallet, giving a reason each time.',
+    off: 'Off: the Super Admin can see wallets but not pay anything from them.',
+  },
+  {
+    key: 'walletSpendBursar', who: 'Bursar', icon: <Landmark size={18} />,
+    on: 'On: bursars can pay a student’s fees and bills from the student’s wallet, giving a reason each time.',
+    off: 'Off: bursars can see wallets but not pay anything from them.',
+  },
+];
+
 /** Which parts of the system this institution uses. Only the developer switches them. */
 export default function ModulesPanel() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['dev-modules'], queryFn: getModules });
-  const [saving, setSaving] = useState<'assessments' | 'residency' | null>(null);
+  const [saving, setSaving] = useState<Saving | null>(null);
   const on = q.data?.assessments ?? true;
   const residency: Residency = q.data?.residency ?? 'DAY';
+  // A server from before wallet payments sends neither switch, and would refuse to save them
+  const walletSupported = typeof q.data?.walletSpendSuperAdmin === 'boolean' && typeof q.data?.walletSpendBursar === 'boolean';
 
-  const save = async (what: 'assessments' | 'residency', data: Partial<DeveloperModules>, done: (r: DeveloperModules) => string) => {
+  const toggleSpender = (s: typeof WALLET_SPENDERS[number]) => {
+    const now = q.data?.[s.key] === true;
+    if (!now && !window.confirm(`Let the ${s.key === 'walletSpendBursar' ? 'bursar' : 'Super Admin'} pay students’ fees and bills from their wallets? `
+      + 'Each payment needs a reason, is recorded in the audit log, and the student is told.')) return;
+    save(s.key, { [s.key]: !now }, r => `${s.who}: ${r[s.key] ? 'can' : 'can no longer'} pay from student wallets`);
+  };
+
+  const save = async (what: Saving, data: Partial<DeveloperModules>, done: (r: DeveloperModules) => string) => {
     setSaving(what);
     try {
       const r = await setModules(data);
@@ -109,6 +135,32 @@ export default function ModulesPanel() {
               </div>
             </fieldset>
             <p className="dd-note"><Info size={14} /> The change applies at once and is recorded in the audit log. Switching never deletes hostels, rooms or room history.</p>
+
+            <h3 className="dd-section-title dd-section-gap" id="dd-mod-wallet">Student wallet: who else can pay from it</h3>
+            <p className="dd-section-sub">Students always choose what their own wallet pays. Switch on whoever else may use a student’s wallet money on that student’s fees and bills. Cashiers never can.</p>
+            {!walletSupported && (
+              <p className="dd-note" role="status" style={{ marginTop: 0, marginBottom: 12, color: 'var(--dd-warn, #b45309)' }}><Info size={14} />
+                The server this console is connected to doesn’t have wallet payments yet, so these switches can’t be changed. Deploy the latest backend, then reload this page.</p>
+            )}
+            <div className="dd-card dd-rows" role="group" aria-labelledby="dd-mod-wallet">
+              {WALLET_SPENDERS.map(s => {
+                const allowed = q.data?.[s.key] === true;
+                return (
+                  <div key={s.key} className="dd-access">
+                    <span className={`dd-access-icon${allowed ? ' is-on' : ''}`} aria-hidden>{s.icon}</span>
+                    <div className="dd-access-text">
+                      <strong id={`dd-mod-${s.key}`}>{s.who}</strong>
+                      <span>{allowed ? s.on : s.off}</span>
+                    </div>
+                    <button type="button" role="switch" aria-checked={allowed} aria-labelledby={`dd-mod-${s.key}`}
+                      className={`dd-switch${allowed ? ' is-on' : ''}`} onClick={() => toggleSpender(s)} disabled={saving !== null || !walletSupported}>
+                      <span className="dd-switch-knob">{saving === s.key && <Loader2 size={11} className="dd-spin" />}</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="dd-note"><Info size={14} /> Applies at once and is recorded in the audit log. The wallet itself must also be on under the Super Admin’s Feature Controls.</p>
           </>
         )}
     </section>

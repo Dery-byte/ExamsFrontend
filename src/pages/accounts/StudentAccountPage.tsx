@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Ban, Gift, Loader2, PackageCheck, Plus, Receipt, RotateCcw, Search, Undo2, UserRound, Wallet } from 'lucide-react';
+import { Ban, Gift, Info, Loader2, PackageCheck, PiggyBank, Plus, Receipt, RotateCcw, Search, Undo2, UserRound, Wallet } from 'lucide-react';
 import { FEE_ADMIN_CSS } from '../superadmin/fees/feeStyles';
 import FeeModal from '../superadmin/fees/FeeModal';
 import { RecordPaymentModal } from '../superadmin/fees/PaymentsPanel';
@@ -14,9 +14,11 @@ import { HandOverModal } from './StoresPage';
 import { BILL_CSS, useBursar } from './BillsPage';
 import { AccountsHead, askReason, errorText, Pill, Section } from './accountsUi';
 import {
-  cancelStudentBill, getStudentStatement, refundStudent, restoreArrears, revokeConcession, searchFeeStudents, setOpeningBalance,
-  takeBackItems, voidRefund, writeOffArrears, type FeePaymentInfo, type FeeStudentMatch, type PaymentMethod,
+  cancelStudentBill, getStudentStatement, getStudentWallet, recordWalletDeposit, refundStudent, restoreArrears, revokeConcession, searchFeeStudents,
+  setOpeningBalance, staffSpendFromWallet, takeBackItems, voidRefund, writeOffArrears, type FeePaymentInfo, type FeeStudentMatch, type MyWallet,
+  type PaymentMethod, type WalletTarget,
 } from '../../api/endpoints';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatDate, formatMoney, moneyInput, parseMoney, paymentMethodLabel } from '../../utils/money';
 import { levelName, periodsPerLevel, tx, levelSuffix } from '../../utils/terms';
 
@@ -32,7 +34,11 @@ export default function StudentAccountPage() {
   const id = Number(params.get('student')) || null;
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');
-  const [open, setOpen] = useState<'pay' | 'bill' | 'concession' | 'refund' | 'opening' | null>(null);
+  const [open, setOpen] = useState<'pay' | 'bill' | 'concession' | 'refund' | 'opening' | 'deposit' | null>(null);
+  /** Paying from the wallet: the fee or bill chosen from its row, or null for "choose in the dialog". */
+  const [walletPay, setWalletPay] = useState<{ target: WalletTarget | null } | null>(null);
+  const { user } = useAuth() as any;
+  const walletsPage = user?.role === 'ACCOUNTANT' ? '/accounts/wallets' : '/super-admin/wallets';
   const [receipt, setReceipt] = useState<FeePaymentInfo | null>(null);
   const [handing, setHanding] = useState<{ lineId: number; name: string; quantity: number; issued: number; studentName: string } | null>(null);
   useEffect(() => { const t = setTimeout(() => setTerm(q.trim()), 300); return () => clearTimeout(t); }, [q]);
@@ -41,7 +47,11 @@ export default function StudentAccountPage() {
     queryKey: ['fee-student-search', term], queryFn: () => searchFeeStudents(term), enabled: term.length >= 2,
   });
   const { data, isLoading } = useQuery({ queryKey: ['student-statement', id], queryFn: () => getStudentStatement(id!), enabled: id != null });
-  const refresh = () => { qc.invalidateQueries({ queryKey: ['student-statement', id] }); qc.invalidateQueries({ queryKey: ['fee-student-search'] }); };
+  const { data: wallet } = useQuery({ queryKey: ['student-wallet', id], queryFn: () => getStudentWallet(id!), enabled: id != null });
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['student-statement', id] }); qc.invalidateQueries({ queryKey: ['fee-student-search'] });
+    qc.invalidateQueries({ queryKey: ['student-wallet', id] }); qc.invalidateQueries({ queryKey: ['wallet-overview'] });
+  };
   const choose = (s: FeeStudentMatch) => { setParams({ student: String(s.id) }); setQ(''); };
   const currency = data?.currency ?? 'GHS';
   const act = async (work: () => Promise<unknown>, done: string) => {
@@ -53,6 +63,15 @@ export default function StudentAccountPage() {
   };
 
   const credit = data?.accountCredit ?? 0;
+  // The developer decides whether the Super Admin / bursar may pay from a student's wallet; the server says if this person may
+  const walletPays = !!wallet?.canSpend && wallet.enabled && wallet.available > 0 && wallet.targets.length > 0;
+  const walletTarget = (kind: 'FEE' | 'BILL', id: number) => walletPays ? wallet!.targets.find(t => t.kind === kind && t.id === id) : undefined;
+  // Why paying from the wallet isn't offered, for the Super Admin and bursars (cashiers never can, so nothing to explain)
+  const walletPayHint = !wallet || walletPays || wallet.balance <= 0 ? null
+    : !wallet.canSpend ? (bursar ? 'Currently you are not allowed to pay from students’ wallets.' : null)   // bursar: the Super Admin too
+    : !wallet.enabled ? 'Paying from the wallet needs the wallet switched on under Feature Controls.'
+    : wallet.available <= 0 ? 'All the wallet money is held for a withdrawal request.'
+    : wallet.targets.length === 0 ? 'Nothing is owed, so there is nothing to pay from the wallet.' : null;
   const owesSomething = !!data && ((data.dues?.length ?? 0) > 0 || (data.bills ?? []).some(b => b.status !== 'CANCELLED' && b.status !== 'DECLINED')
     || (data.arrears ?? []).some(a => a.status !== 'WRITTEN_OFF'));
   // The record-payment dialog's view of this student
@@ -74,6 +93,8 @@ export default function StudentAccountPage() {
           <button type="button" className="fe-ghost" onClick={() => setOpen('bill')}><Plus size={15} /> Bill</button>
           {bursar && <button type="button" className="fe-ghost" onClick={() => setOpen('concession')}><Gift size={15} /> Concession</button>}
           {bursar && credit > 0 && <button type="button" className="fe-ghost" onClick={() => setOpen('refund')}><Undo2 size={15} /> Refund</button>}
+          {wallet?.enabled && <button type="button" className="fe-ghost" onClick={() => setOpen('deposit')}><PiggyBank size={15} /> Wallet deposit</button>}
+          {walletPays && <button type="button" className="fe-ghost" onClick={() => setWalletPay({ target: null })}><PiggyBank size={15} /> Pay from wallet</button>}
           <button type="button" className="fe-btn" onClick={() => setOpen('pay')} disabled={match?.balance == null}><Wallet size={15} /> Record payment</button>
         </> : undefined} />
 
@@ -119,6 +140,9 @@ export default function StudentAccountPage() {
             </div>
           </div>
 
+          {wallet && (wallet.enabled || wallet.balance > 0 || wallet.history.length > 0) && <WalletSection wallet={wallet} walletsPage={walletsPage} onReceipt={setReceipt}
+            onPay={walletPays ? () => setWalletPay({ target: null }) : undefined} payHint={walletPayHint} />}
+
           {((data.arrears?.length ?? 0) > 0 || bursar) && (
             <Section title="Earlier years (arrears)" empty="No arrears." count={data.arrears?.length ?? 0}
               action={bursar ? <button type="button" className="fe-ghost sm" onClick={() => setOpen('opening')}><Plus size={13} /> Opening balance</button> : undefined}>
@@ -142,6 +166,7 @@ export default function StudentAccountPage() {
                   <div className="fe-muted fe-small">{formatMoney(d.fee.amount, currency)}{(d.discount ?? 0) > 0 ? ` (after ${formatMoney(d.discount, currency)} off: ${d.concessions?.join(', ')})` : ''}{d.paid > 0 ? ` · ${formatMoney(d.paid, currency)} paid` : ''}{d.fee.dueDate ? ` · due ${formatDate(d.fee.dueDate)}` : ''}</div></div>
                 <div className="bl-amt"><Pill status={d.status} />
                   {d.balance > 0 && <div className="fe-muted fe-small" style={{ marginTop: 4 }}>owes {formatMoney(d.balance, currency)}</div>}</div>
+                {walletTarget('FEE', d.fee.id) && <FromWallet onClick={() => setWalletPay({ target: walletTarget('FEE', d.fee.id)! })} label={tx(d.fee.periodName ?? 'Fee')} />}
               </li>
             ))}
             {(data.upcoming ?? []).map(u => (
@@ -180,6 +205,7 @@ export default function StudentAccountPage() {
                   ))}</div>
                 <div className="bl-amt"><Pill status={b.status} />
                   {b.balance > 0 && <div className="fe-muted fe-small" style={{ marginTop: 4 }}>owes {formatMoney(b.balance, currency)}</div>}</div>
+                {walletTarget('BILL', b.id) && <FromWallet onClick={() => setWalletPay({ target: walletTarget('BILL', b.id)! })} label={b.title} />}
                 {bursar && b.status !== 'CANCELLED' && b.status !== 'DECLINED' && (
                   <button type="button" className="fe-icon-btn danger" onClick={() => ask(`Cancel “${b.title}”?`, 'Anything already paid on it becomes credit for their other debts.', 'Cancel bill', r => cancelStudentBill(b.id, r), 'Bill cancelled')} aria-label={`Cancel ${b.title}`}><Ban size={14} /></button>
                 )}
@@ -222,9 +248,208 @@ export default function StudentAccountPage() {
         onClose={() => setOpen(null)} onDone={() => { setOpen(null); refresh(); }} />}
       {open === 'opening' && data && <OpeningModal studentId={data.student.id} currency={currency}
         onClose={() => setOpen(null)} onDone={() => { setOpen(null); refresh(); qc.invalidateQueries({ queryKey: ['year-end'] }); }} />}
+      {walletPay && wallet && <WalletPayModal wallet={wallet} initial={walletPay.target}
+        onClose={() => setWalletPay(null)} onDone={() => { setWalletPay(null); refresh(); }} />}
+      {open === 'deposit' && wallet && <WalletDepositModal wallet={wallet}
+        onClose={() => setOpen(null)} onDone={p => { setOpen(null); refresh(); setReceipt(p); }} />}
       {receipt && <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />}
       {handing && <HandOverModal line={handing} onClose={() => setHanding(null)} onDone={() => { setHanding(null); refresh(); qc.invalidateQueries({ queryKey: ['stores'] }); }} />}
     </div>
+  );
+}
+
+const WD_TEXT: Record<string, string> = {
+  REQUESTED: 'Waiting for the bursar', REVIEWED: 'Waiting for approval', APPROVED: 'Approved, to pay out', PAID: 'Paid out',
+  REJECTED: 'Rejected', CANCELLED: 'Cancelled', REVERSED: 'Voucher cancelled',
+};
+
+/** The student's wallet: what it holds, a withdrawal in progress, and the latest money in and out. */
+function WalletSection({ wallet, walletsPage, onReceipt, onPay, payHint }: {
+  wallet: MyWallet; walletsPage: string; onReceipt: (p: FeePaymentInfo) => void; onPay?: () => void; payHint?: string | null;
+}) {
+  const cur = wallet.currency;
+  const pending = wallet.withdrawals.find(w => ['REQUESTED', 'REVIEWED', 'APPROVED'].includes(w.status));
+  const recent = wallet.history.slice(0, 6);
+  return (
+    <Section title={`Wallet${wallet.enabled ? '' : ' (switched off)'}`} empty="Nothing paid into the wallet yet." count={recent.length + (pending ? 1 : 0) + (payHint ? 1 : 0)}
+      action={<span className="fe-small" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span><b style={{ color: '#34d399' }}>{formatMoney(wallet.balance, cur)}</b>
+          {wallet.held > 0 && <span className="fe-muted"> · {formatMoney(wallet.held, cur)} held</span>}</span>
+        {onPay && <button type="button" className="fe-ghost sm" onClick={onPay}><PiggyBank size={13} /> Pay from wallet</button>}</span>}>
+      {payHint && (
+        <li className="bl-row" role="note">
+          <div className="bl-main fe-muted fe-small" style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <Info size={14} style={{ flexShrink: 0, marginTop: 2 }} /><span>{payHint}</span></div>
+        </li>
+      )}
+      {pending && (
+        <li className="bl-row">
+          <div className="bl-main"><div className="fe-strong">Withdrawal {pending.number}</div>
+            <div className="fe-muted fe-small">{WD_TEXT[pending.status]} · asked {formatDate(pending.requestedAt)}</div></div>
+          <div className="bl-amt"><div className="fe-strong" style={{ color: '#fbbf24' }}>{formatMoney(pending.amount, cur)}</div>
+            <Link to={walletsPage} className="fe-link fe-small">Open requests</Link></div>
+        </li>
+      )}
+      {recent.map((e, i) => (
+        <li key={`${e.type}-${e.reference}-${i}`} className="bl-row" style={e.status === 'VOIDED' ? { opacity: 0.6 } : undefined}>
+          <div className="bl-main"><div className="fe-strong">{e.type === 'DEPOSIT' ? 'Deposit' : e.type === 'SPEND' ? 'Paid from wallet' : 'Withdrawn'}
+            <span className="fe-muted fe-small"> · {formatDate(e.at)}</span></div>
+            <div className="fe-muted fe-small" style={{ overflowWrap: 'anywhere' }}>{e.reference}{e.type === 'SPEND' ? ` · ${tx(e.label)}` : ''}
+              {e.by ? ` · paid by ${e.by}${e.note ? `: ${e.note}` : ''}` : ''}
+              {e.payment?.recordedBy ? ` · by ${e.payment.recordedBy}` : ''}{e.status === 'VOIDED' ? ' · cancelled' : e.status === 'REVERSED' ? ' · voucher cancelled' : ''}</div></div>
+          <div className="bl-amt"><div className="fe-strong" style={{ color: e.type === 'DEPOSIT' ? '#34d399' : undefined }}>{e.type === 'DEPOSIT' ? '+' : '−'}{formatMoney(e.amount, cur)}</div></div>
+          {e.payment && (e.status === 'SUCCESS' || e.status === 'VOIDED') && <button type="button" className="fe-ghost sm" onClick={() => onReceipt(e.payment!)}><Receipt size={13} /> Receipt</button>}
+        </li>
+      ))}
+    </Section>
+  );
+}
+
+/** Row button: pay this fee or bill from the student's wallet. */
+function FromWallet({ onClick, label }: { onClick: () => void; label: string }) {
+  return <button type="button" className="fe-ghost sm" onClick={onClick} aria-label={`Pay ${label} from the wallet`}><PiggyBank size={13} /> From wallet</button>;
+}
+
+/**
+ * The Super Admin or bursar pays a fee, a bill or everything owed from the student's wallet (when the
+ * developer allows it). Full balance or a part, and a reason, which the student sees.
+ */
+function WalletPayModal({ wallet, initial, onClose, onDone }: { wallet: MyWallet; initial: WalletTarget | null; onClose: () => void; onDone: () => void }) {
+  const cur = wallet.currency;
+  const [pick, setPick] = useState<WalletTarget>(initial ?? wallet.targets[0]);
+  const [mode, setMode] = useState<'max' | 'part'>('max');
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const most = Math.round(Math.min(pick.balance, wallet.available) * 100) / 100;
+  const covers = wallet.available >= pick.balance;
+  const v = mode === 'max' ? most : parseMoney(amount);
+  const problem = mode === 'max'
+    ? (!covers && !wallet.partPayment ? `Part payments are switched off, and the wallet's ${formatMoney(wallet.available, cur)} doesn't cover the ${formatMoney(pick.balance, cur)} owed.` : null)
+    : !amount ? null : !(v > 0) ? 'Enter a valid amount.'
+    : v > wallet.available ? `Only ${formatMoney(wallet.available, cur)} is free in the wallet.`
+    : v > pick.balance ? `That's more than the ${formatMoney(pick.balance, cur)} owed.` : null;
+  const ok = v > 0 && !problem && note.trim().length > 0;
+  const choose = (t: WalletTarget) => { setPick(t); setMode('max'); setAmount(''); };
+
+  const save = async () => {
+    if (!ok) return;
+    setBusy(true);
+    try {
+      await staffSpendFromWallet(wallet.student.id, {
+        ...(pick.kind === 'FEE' ? { scheduleId: pick.id! } : pick.kind === 'BILL' ? { billId: pick.id! } : {}),
+        amount: Math.round(v * 100) / 100, note: note.trim(),
+      });
+      toast.success(`Paid ${formatMoney(v, cur)} from ${wallet.student.name}'s wallet`);
+      onDone();
+    } catch (e) { toast.error(errorText(e, 'Could not pay from the wallet')); setBusy(false); }
+  };
+
+  return (
+    <FeeModal title={`Pay from ${wallet.student.name}'s wallet`} subtitle={`${formatMoney(wallet.available, cur)} free to use${wallet.held > 0 ? ` (${formatMoney(wallet.held, cur)} held for a withdrawal)` : ''}. The student is told.`}
+      onClose={onClose} busy={busy} narrow
+      footer={<>
+        <span />
+        <div className="fe-foot-actions">
+          <button type="button" className="fe-ghost" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="button" className="fe-btn" onClick={save} disabled={!ok || busy}>{busy && <Loader2 size={15} className="fe-spin" />} Pay {v > 0 ? formatMoney(v, cur) : ''}</button>
+        </div>
+      </>}>
+      <style>{WALLET_PAY_CSS}</style>
+      <div className="fe-field">
+        <span className="fe-label" id="wp-what">What to pay</span>
+        <div className="wp-targets" role="radiogroup" aria-labelledby="wp-what">
+          {wallet.targets.map(t => {
+            const on = t.kind === pick.kind && t.id === pick.id;
+            return (
+              <label key={`${t.kind}-${t.id}`} className={`fe-check wp-target${on ? ' on' : ''}`}>
+                <input type="radio" name="wp-target" checked={on} onChange={() => choose(t)} />
+                <span className="wp-target-name">{t.kind === 'ALL' ? 'Everything owed, oldest first' : tx(t.label)}
+                  <small className="fe-muted">{t.kind === 'ALL' ? 'Earlier years, then fees by term, then bills' : t.kind === 'BILL' ? 'Bill' : 'School fees'}</small></span>
+                <b className="wp-target-amt">{formatMoney(t.balance, cur)}</b>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+      {wallet.partPayment && (
+        <div className="fe-field">
+          <div className="fe-seg" role="radiogroup" aria-label="How much">
+            <button type="button" role="radio" aria-checked={mode === 'max'} className={mode === 'max' ? 'active' : ''} onClick={() => setMode('max')}>
+              {covers ? 'Full balance' : 'All the wallet can'}<small>{formatMoney(most, cur)}</small></button>
+            <button type="button" role="radio" aria-checked={mode === 'part'} className={mode === 'part' ? 'active' : ''} onClick={() => setMode('part')}>
+              Other amount<small>up to {formatMoney(most, cur)}</small></button>
+          </div>
+        </div>
+      )}
+      {mode === 'part' && (
+        <div className="fe-field">
+          <label className="fe-label" htmlFor="wp-amt">Amount</label>
+          <div className="fe-money"><span>{cur}</span><input id="wp-amt" className="fe-input" inputMode="decimal" placeholder="0.00" autoFocus value={amount} onChange={e => setAmount(moneyInput(e.target.value))} /></div>
+        </div>
+      )}
+      {problem && <div className="fe-hint" style={{ color: '#f87171', marginTop: -6, marginBottom: 12 }}>{problem}</div>}
+      {mode === 'max' && !problem && !covers && <div className="fe-hint" style={{ marginTop: -6, marginBottom: 12 }}>{formatMoney(Math.round((pick.balance - most) * 100) / 100, cur)} will still be owed.</div>}
+      <div className="fe-field" style={{ marginBottom: 0 }}>
+        <label className="fe-label" htmlFor="wp-note">Reason <span className="fe-muted" style={{ fontWeight: 500 }}>(the student sees it)</span></label>
+        <input id="wp-note" className="fe-input" style={{ width: '100%' }} maxLength={300} placeholder="e.g. Student asked at the counter to pay the uniform bill" value={note} onChange={e => setNote(e.target.value)} />
+      </div>
+    </FeeModal>
+  );
+}
+
+const WALLET_PAY_CSS = `
+.wp-targets { display: grid; gap: 6px; max-height: min(280px, 40vh); overflow-y: auto; overscroll-behavior: contain; }
+.wp-target { display: flex; width: 100%; box-sizing: border-box; gap: 10px; align-items: center; }
+.wp-target-name { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.wp-target-name small { font-size: 11.5px; }
+.wp-target-amt { white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (pointer: coarse) { .wp-target { min-height: 44px; } .wp-target input { width: 18px; height: 18px; } }
+`;
+
+function WalletDepositModal({ wallet, onClose, onDone }: { wallet: MyWallet; onClose: () => void; onDone: (p: FeePaymentInfo) => void }) {
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState<PaymentMethod>('CASH');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const cur = wallet.currency;
+  const v = parseMoney(amount);
+  const room = wallet.maxBalance ? Math.max(0, wallet.maxBalance - wallet.balance) : null;
+  const tooMuch = room != null && v > room;
+  const save = async () => {
+    if (!(v > 0) || tooMuch) return;
+    setBusy(true);
+    try { const p = await recordWalletDeposit(wallet.student.id, { amount: v, method, note: note.trim() || undefined }); toast.success(`Deposit ${p.receiptNo} recorded`); onDone(p); }
+    catch (e) { toast.error(errorText(e, 'Could not record the deposit')); setBusy(false); }
+  };
+  return (
+    <FeeModal title={`Wallet deposit · ${wallet.student.name}`} subtitle={`Money paid in ahead. It stays in their wallet (now ${formatMoney(wallet.balance, cur)}) until they use it.`}
+      onClose={onClose} busy={busy} narrow
+      footer={<>
+        <span />
+        <div className="fe-foot-actions">
+          <button type="button" className="fe-ghost" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="button" className="fe-btn" onClick={save} disabled={!(v > 0) || tooMuch || busy}>{busy && <Loader2 size={15} className="fe-spin" />} Record {v > 0 ? formatMoney(v, cur) : ''}</button>
+        </div>
+      </>}>
+      <div className="fe-grid2">
+        <div className="fe-field">
+          <label className="fe-label" htmlFor="wdp-amt">Amount</label>
+          <div className="fe-money"><span>{cur}</span><input id="wdp-amt" className="fe-input" inputMode="decimal" placeholder="0.00" value={amount} onChange={e => setAmount(moneyInput(e.target.value))} /></div>
+          {tooMuch && <div className="fe-hint" style={{ color: '#f87171' }}>The wallet limit allows {formatMoney(room!, cur)} more.</div>}
+        </div>
+        <div className="fe-field">
+          <label className="fe-label" htmlFor="wdp-method">Paid by</label>
+          <select id="wdp-method" className="fe-select" style={{ width: '100%' }} value={method} onChange={e => setMethod(e.target.value as PaymentMethod)}>
+            <option value="CASH">Cash</option><option value="BANK_TRANSFER">Bank transfer / deposit</option><option value="OTHER">Other (e.g. Mobile Money)</option>
+          </select>
+        </div>
+      </div>
+      <div className="fe-field" style={{ marginBottom: 0 }}>
+        <label className="fe-label" htmlFor="wdp-note">Note <span className="fe-muted" style={{ fontWeight: 500 }}>(optional)</span></label>
+        <input id="wdp-note" className="fe-input" style={{ width: '100%' }} maxLength={300} placeholder="e.g. Paid by Mr. Owusu (father)" value={note} onChange={e => setNote(e.target.value)} />
+      </div>
+    </FeeModal>
   );
 }
 

@@ -5,7 +5,7 @@ import { useInstitution } from '../../hooks/useInstitution';
 import NotificationBell from '../NotificationBell';
 import AvatarPhoto from '../common/AvatarPhoto';
 import SubscriptionNotice from '../common/SubscriptionNotice';
-import { BellRing, BookOpen, CalendarRange, Package, ChevronRight, Clock, FileBarChart, Gift, LayoutDashboard, Landmark, LogOut, Megaphone, Menu, ShoppingBag, SlidersHorizontal, UserCircle, UserRound, Wallet } from 'lucide-react';
+import { BellRing, BookOpen, CalendarRange, Package, ChevronRight, Clock, FileBarChart, Gift, LayoutDashboard, Landmark, LogOut, Megaphone, Menu, PiggyBank, ShoppingBag, SlidersHorizontal, UserCircle, UserRound, Wallet } from 'lucide-react';
 
 const DESKTOP_QUERY = '(min-width: 1024px)';
 
@@ -47,6 +47,7 @@ export default function AccountantLayout() {
         { to: '/accounts/stores', icon: <Package size={20} />, label: 'Stores' },
         { to: '/accounts/reminders', icon: <BellRing size={20} />, label: 'Reminders' },
         { to: '/accounts/concessions', icon: <Gift size={20} />, label: 'Concessions' },
+        { to: '/accounts/wallets', icon: <PiggyBank size={20} />, label: 'Student wallets' },
         { to: '/accounts/year-end', icon: <CalendarRange size={20} />, label: 'Year end' },
         { to: '/accounts/reports', icon: <FileBarChart size={20} />, label: 'Reports' },
         ...(bursar ? [{ to: '/accounts/settings', icon: <SlidersHorizontal size={20} />, label: 'Fee settings' }] : []),

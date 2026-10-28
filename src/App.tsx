@@ -86,6 +86,7 @@ import ConcessionsPage from './pages/accounts/ConcessionsPage';
 import YearEndPage from './pages/accounts/YearEndPage';
 import StoresPage from './pages/accounts/StoresPage';
 import RemindersPage from './pages/accounts/RemindersPage';
+import WalletsPage from './pages/accounts/WalletsPage';
 import BursarGate from './components/common/BursarGate';
 
 // Lecturer
@@ -110,6 +111,7 @@ import PrintQuiz from './pages/user/PrintQuiz';
 import SemesterReportCard from './pages/user/SemesterReportCard';
 import QuizLink from './pages/user/QuizLink';
 import Fees from './pages/user/fees/Fees';
+import Wallet from './pages/user/wallet/Wallet';
 
 // Shared
 import MarksSheetManager from './pages/admin/MarksSheetManager';
@@ -184,6 +186,7 @@ export default function App() {
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="cash-book" element={<CashBookPage />} />
           <Route path="concessions" element={<ConcessionsPage />} />
+          <Route path="wallets" element={<WalletsPage />} />
           <Route path="year-end" element={<YearEndPage />} />
           <Route path="finance-staff" element={<FinanceStaff />} />
           <Route path="academic-records" element={<ModeGate only="university" redirectTo=".."><AcademicRecords /></ModeGate>} />
@@ -295,6 +298,7 @@ export default function App() {
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="cash-book" element={<CashBookPage />} />
           <Route path="concessions" element={<ConcessionsPage />} />
+          <Route path="wallets" element={<WalletsPage />} />
           <Route path="year-end" element={<YearEndPage />} />
           <Route path="reports" element={<ReportsHub />} />
           <Route path="reports/:key" element={<ReportView />} />
@@ -313,6 +317,8 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
           {/* Not behind FeatureGate: Paystack returns students here and the gate would redirect before the flags load */}
           <Route path="fees" element={<Fees />} />
+          {/* Not gated either: Paystack returns here, and a student with a balance can withdraw it while the wallet is off */}
+          <Route path="wallet" element={<Wallet />} />
           <Route path="register" element={<FeatureGate feature="STUDENT_COURSE_REGISTRATION" redirectTo="/user-dashboard"><RegisterCourses /></FeatureGate>} />
           <Route path="courses" element={<CoursesRegistered />} />
           <Route path="attendance" element={<FeatureGate feature="ATTENDANCE" redirectTo="/user-dashboard"><StudentAttendance /></FeatureGate>} />

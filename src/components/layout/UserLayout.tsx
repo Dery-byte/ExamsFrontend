@@ -20,7 +20,8 @@ import {
   CalendarDays,
   FileText,
   Wallet,
-  UserCheck
+  UserCheck,
+  PiggyBank
 } from 'lucide-react';
 import { isSchoolMode, tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
@@ -44,6 +45,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         { to: '/user-dashboard/courses',         label: tx('My Courses'),   icon: BookOpen         },
         ...(on('ATTENDANCE') ? [{ to: '/user-dashboard/attendance', label: 'Attendance', icon: UserCheck }] : []),
         ...(feesStudent === true ? [{ to: '/user-dashboard/fees', label: 'School Fees', icon: Wallet }] : []),
+        // Off until the Super Admin switches it on, so only shown once the flags say so (no flash while loading)
+        ...(feesStudent === true && features?.STUDENT_WALLET === true ? [{ to: '/user-dashboard/wallet', label: 'My Wallet', icon: PiggyBank }] : []),
         { to: '/user-dashboard/announcements',   label: 'Announcements', icon: Megaphone       },
       ]
     },
