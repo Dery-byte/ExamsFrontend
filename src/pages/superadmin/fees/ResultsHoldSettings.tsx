@@ -67,7 +67,7 @@ export default function ResultsHoldSettings() {
       toast.success(`Hold lifted for ${p.name}`);
       refresh();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not lift the hold');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not lift the hold'));
     } finally {
       setLifting(null);
     }
@@ -220,7 +220,7 @@ function HoldEditor({ program, all, sessionName, onClose, onSaved }: {
       toast.success(also.length ? `Hold saved for ${also.length + 1} programmes` : `Hold saved for ${program.name}`);
       onSaved();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not save the hold');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not save the hold'));
     } finally {
       setSaving(false);
     }

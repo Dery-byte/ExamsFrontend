@@ -7,7 +7,7 @@ import { AlertTriangle, BarChart3, Loader2, Table2 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAnalyticsOverview, saGetDepartments } from '../../api/endpoints';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode } from '../../utils/terms';
 
 /* Chart tokens — single-series charts use categorical slot 1; text never wears the series color. */
 const SERIES = '#2a78d6';
@@ -137,8 +137,8 @@ export default function Analytics() {
           Showing <strong style={{ color: INK }}>{data.scope?.departmentName}</strong> · pass mark {passMark}%
         </span>
         {isSuper && (
-          <select aria-label="Department" className="an-select" value={deptId} onChange={e => setDeptId(e.target.value ? Number(e.target.value) : '')}>
-            <option value="">All departments</option>
+          <select aria-label={tx('Department')} className="an-select" value={deptId} onChange={e => setDeptId(e.target.value ? Number(e.target.value) : '')}>
+            <option value="">{tx('All departments')}</option>
             {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         )}
@@ -318,7 +318,7 @@ export default function Analytics() {
                     <tr key={s.studentId}>
                       <td className="t">
                         <div style={{ fontWeight: 600, color: INK }}>{s.name}</div>
-                        {s.level && <div style={{ fontSize: 11, color: MUTED }}>{tx("Level ")}{s.level}</div>}
+                        {s.level && !isSchoolMode() && <div style={{ fontSize: 11, color: MUTED }}>{tx("Level ")}{s.level}</div>}
                       </td>
                       <td className="full" data-label={tx('Program')} style={{ color: '#475569' }}>{s.program ?? '—'}</td>
                       <td className="full" data-label="Why flagged">

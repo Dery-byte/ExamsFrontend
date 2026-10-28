@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { Ban, ChevronLeft, ChevronRight, Info, Loader2, Plus, Receipt, RefreshCw, Search, UserRound } from 'lucide-react';
 import FeeModal from './FeeModal';
+import ReceiptModal from '../../user/fees/ReceiptModal';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
   getFeePayments, recheckFeePayment, recordFeePayment, searchFeeStudents, voidFeePayment,
-  type FeeOverview, type FeePaymentInfo, type FeeStudentMatch, type PaymentMethod,
+  type FeeDue, type FeeOverview, type FeePaymentInfo, type FeeStudentMatch, type PaymentMethod,
 } from '../../../api/endpoints';
 import { formatDate, formatMoney, moneyInput, parseMoney, paymentMethodLabel, roundMoney } from '../../../utils/money';
-import { levelName, tx } from '../../../utils/terms';
+import { levelName, tx, levelSuffix, showLevelPicker } from '../../../utils/terms';
 
 const PAGE_SIZE = 25;
 const STATUSES = [
@@ -28,9 +30,17 @@ function useDebounced<T>(value: T, ms = 350): T {
   return v;
 }
 
-/** Every payment in the session, with filters; record cash / bank payments; re-check pending ones. */
+/**
+ * Every payment in the session, with filters; record cash / bank payments (and print the receipt);
+ * re-check pending online ones. Only the bursar (or the Super Admin) cancels a payment.
+ */
 export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOverview; onChanged: () => void }) {
   const qc = useQueryClient();
+  const { user } = useAuth() as any;
+  const bursar = user?.role !== 'ACCOUNTANT' || user?.financeDuty === 'BURSAR';
+  // The bursar cancels any recorded payment; a cashier only their own until they hand it in
+  const canVoid = (p: FeePaymentInfo) => bursar || (p.recordedById === user?.id && !p.cashedUp);
+  const [receipt, setReceipt] = useState<FeePaymentInfo | null>(null);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [programId, setProgramId] = useState<number | ''>('');
@@ -71,7 +81,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
         : updated.status === 'PENDING' ? 'Still waiting on the payer' : `Paystack reports: ${STATUS_LABEL[updated.status].toLowerCase()}`);
       refresh();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not reach Paystack');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not reach Paystack'));
     } finally { setBusyId(null); }
   };
 
@@ -90,7 +100,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
       toast.success('Payment cancelled');
       refresh();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not cancel the payment');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not cancel the payment'));
     } finally { setBusyId(null); }
   };
 
@@ -108,7 +118,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
           <option value="">{tx('All programmes')}</option>
           {overview.programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        {program && (
+        {program && showLevelPicker(program.levels.length) && (
           <select className="fe-select" value={level} onChange={e => setLevel(e.target.value ? Number(e.target.value) : '')} aria-label={tx('Level')}>
             <option value="">{tx('All levels')}</option>
             {program.levels.map(l => <option key={l.level} value={l.level}>{levelName(l.level)}</option>)}
@@ -140,7 +150,7 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
               <table className="fe-table fe-stack pay">
                 <thead>
                   <tr>
-                    <th>Date</th><th>{tx('Student')}</th><th>{tx('Programme')}</th><th>Reference</th><th>Method</th>
+                    <th>Date</th><th>{tx('Student')}</th><th>{tx('Programme')}</th><th>Receipt</th><th>Method</th>
                     <th className="fe-num">Amount</th><th>Status</th><th />
                   </tr>
                 </thead>
@@ -157,19 +167,23 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
                       </td>
                       <td className="fe-c-prog" data-label={tx('Programme')}>
                         <div>{p.programName ?? '—'}</div>
-                        <div className="fe-muted fe-small">{p.level != null ? levelName(p.level) : ''}</div>
+                        <div className="fe-muted fe-small">{levelSuffix(p.level).replace(' · ', '')}</div>
                       </td>
-                      <td className="fe-c-ref" data-label="Reference"><span className="fe-mono">{p.reference}</span></td>
+                      <td className="fe-c-ref" data-label="Receipt">
+                        {p.receiptNo && <div className="fe-mono fe-strong" style={{ whiteSpace: 'nowrap' }}>{p.receiptNo}</div>}
+                        <div className="fe-mono fe-muted fe-small">{p.reference}</div>
+                        {p.periodName && p.periodName !== 'Whole year' && <div className="fe-muted fe-small">{tx(p.periodName)}</div>}
+                      </td>
                       <td className="fe-c-method" data-label="Method">
                         <div>{paymentMethodLabel(p)}</div>
                         {p.recordedBy && <div className="fe-muted fe-small">by {p.recordedBy}</div>}
                       </td>
                       <td className="fe-num fe-c-amount">
                         <div className="fe-strong">{formatMoney(p.amount, p.currency)}</div>
-                        {p.items.length > 0 && (
+                        {(p.items.length > 0 || paidFor(p).length > 0) && (
                           <div className="fe-muted fe-small" style={{ maxWidth: 200, marginLeft: 'auto', whiteSpace: 'normal' }}
-                            title={p.items.map(i => `${i.name}: ${formatMoney(i.amount, p.currency)}`).join('\n')}>
-                            {truncate(p.items.map(i => i.name).join(', '), 48)}
+                            title={(p.items.length ? p.items : paidFor(p)).map(i => `${'name' in i ? i.name : i.label}: ${formatMoney(i.amount, p.currency)}`).join('\n')}>
+                            {truncate(p.items.length ? p.items.map(i => i.name).join(', ') : paidFor(p).map(a => a.label).join(', '), 48)}
                           </div>
                         )}
                       </td>
@@ -189,7 +203,12 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
                               {busyId === p.id ? <Loader2 size={13} className="fe-spin" /> : <RefreshCw size={13} />} Check
                             </button>
                           )}
-                          {p.method !== 'PAYSTACK' && p.status === 'SUCCESS' && (
+                          {(p.status === 'SUCCESS' || p.status === 'VOIDED') && (
+                            <button type="button" className="fe-ghost sm" onClick={() => setReceipt(p)} title="View and print the receipt">
+                              <Receipt size={13} /> Receipt
+                            </button>
+                          )}
+                          {canVoid(p) && p.method !== 'PAYSTACK' && p.status === 'SUCCESS' && (
                             <button type="button" className="fe-icon-btn danger" onClick={() => cancel(p)} disabled={busyId === p.id} title="Cancel this payment" aria-label={`Cancel payment ${p.reference}`}>
                               <Ban size={14} />
                             </button>
@@ -213,20 +232,34 @@ export default function PaymentsPanel({ overview, onChanged }: { overview: FeeOv
         )}
       </div>
 
-      {recording && <RecordPaymentModal currency={currency} onClose={() => setRecording(false)} onSaved={() => { setRecording(false); refresh(); }} />}
+      {recording && <RecordPaymentModal currency={currency} onClose={() => setRecording(false)}
+        onSaved={p => { setRecording(false); refresh(); setReceipt(p); }} />}
+      {receipt && <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />}
     </>
   );
 }
 
-/** Cash or bank payment received at the accounts office, counted against the student's current fee. */
-function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; onClose: () => void; onSaved: () => void }) {
+/** Where a payment went, when that isn't simply one fee: bills, several terms, credit. */
+const paidFor = (p: FeePaymentInfo) => {
+  const a = p.allocations ?? [];
+  return a.length > 1 || a.some(x => x.kind !== 'FEE') ? a : [];
+};
+
+/**
+ * Cash or bank payment received at the accounts office: to everything owed, oldest first (fees, then
+ * bills), unless one fee or bill is chosen; anything beyond what is owed is kept as credit. The
+ * receipt opens once it's recorded. `initial`: open with this student already chosen.
+ */
+export function RecordPaymentModal({ currency, onClose, onSaved, initial }: { currency: string; onClose: () => void; onSaved: (p: FeePaymentInfo) => void; initial?: FeeStudentMatch }) {
   const [q, setQ] = useState('');
-  const [student, setStudent] = useState<FeeStudentMatch | null>(null);
-  const [amount, setAmount] = useState('');
+  const [student, setStudent] = useState<FeeStudentMatch | null>(initial ?? null);
+  const [amount, setAmount] = useState(initial?.balance ? String(initial.balance) : '');
   const [method, setMethod] = useState<PaymentMethod>('CASH');
   const [paidOn, setPaidOn] = useState(localToday());
   const [note, setNote] = useState('');
   const [items, setItems] = useState<string[]>([]);
+  /** '' = everything owed, oldest first; 'f12' = that fee; 'b7' = that bill. */
+  const [target, setTarget] = useState('');
   const [saving, setSaving] = useState(false);
   const term = useDebounced(q.trim(), 300);
 
@@ -236,13 +269,26 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
     enabled: !student && term.length >= 2,
   });
 
+  const dues = student?.dues ?? [];
+  const bills = student?.bills ?? [];
+  const due: FeeDue | null = useMemo(() => dues.find(d => `f${d.fee.id}` === target) ?? null, [dues, target]);
+  const bill = bills.find(b => `b${b.id}` === target) ?? null;
+
   const pick = (s: FeeStudentMatch) => {
     setStudent(s);
     setItems([]);
-    setAmount(s.balance && s.balance > 0 ? String(s.balance) : '');
+    setTarget('');
+    setAmount(s.balance ? String(s.balance) : '');
+  };
+  const choose = (t: string) => {
+    setTarget(t);
+    setItems([]);
+    const d = dues.find(x => `f${x.fee.id}` === t), b = bills.find(x => `b${x.id}` === t);
+    const bal = d ? d.balance : b ? b.balance : student?.balance ?? 0;
+    setAmount(bal > 0 ? String(bal) : '');
   };
 
-  const owedItems = (student?.items ?? []).filter(i => i.balance > 0);
+  const owedItems = (due?.items ?? []).filter(i => i.balance > 0);
   const byItem = items.length > 0;
   const toggleItem = (name: string) => {
     const next = items.includes(name) ? items.filter(n => n !== name) : [...items, name];
@@ -252,29 +298,31 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
   };
 
   const value = parseMoney(amount);
-  const noFee = student != null && student.fee == null;
-  const overBalance = student?.balance != null && value > student.balance;
-  const canSave = !!student && !noFee && value > 0 && !overBalance && !saving;
+  const noFee = student != null && student.balance == null;
+  const allOwed = student?.balance ?? 0;
+  /** Beyond everything owed: kept as credit. */
+  const extra = roundMoney(value - allOwed);
+  const canSave = !!student && !noFee && value > 0 && !saving;
 
   const save = async () => {
     if (!student || !canSave) return;
     setSaving(true);
     try {
       const p = await recordFeePayment({
-        studentId: student.id, method, paidOn, note: note.trim() || undefined,
+        studentId: student.id, method, paidOn, note: note.trim() || undefined, scheduleId: due?.fee.id, billId: bill?.id,
         ...(byItem ? { items } : { amount: value }),
       });
-      toast.success(`${formatMoney(p.amount, currency)} recorded for ${p.studentName}`);
-      onSaved();
+      toast.success(`${formatMoney(p.amount, currency)} recorded for ${p.studentName}${p.receiptNo ? ` · receipt ${p.receiptNo}` : ''}`);
+      onSaved(p);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not record the payment');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not record the payment'));
     } finally { setSaving(false); }
   };
 
   return (
     <FeeModal
       title="Record a payment"
-      subtitle="Money received at the accounts office. It counts towards the student's fee straight away."
+      subtitle="Money received at the accounts office. It counts towards what the student owes straight away."
       onClose={onClose} busy={saving} narrow
       footer={<>
         <span />
@@ -292,14 +340,15 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
           <div className="fe-picked">
             <div style={{ minWidth: 0 }}>
               <div className="fe-strong">{student.name}</div>
-              <div className="fe-muted fe-small">{student.studentId} · {student.programName ?? tx('No programme')}{student.level != null ? ` · ${levelName(student.level)}` : ''}</div>
+              <div className="fe-muted fe-small">{student.studentId} · {student.programName ?? tx('No programme')}{levelSuffix(student.level)}</div>
               <div className="fe-small" style={{ marginTop: 4 }}>
-                {student.fee == null
-                  ? <span style={{ color: '#fbbf24' }}>No fee set for this class in the current session</span>
-                  : <>Fee {formatMoney(student.fee, currency)} · <span style={{ color: student.balance ? '#fbbf24' : '#34d399', fontWeight: 700 }}>Balance {formatMoney(student.balance, currency)}</span></>}
+                {student.balance == null
+                  ? <span style={{ color: '#fbbf24' }}>No fee or bill for this student yet</span>
+                  : <>Owes <span style={{ color: student.balance ? '#fbbf24' : '#34d399', fontWeight: 700 }}>{formatMoney(student.balance, currency)}</span> in all
+                    {(student.credit ?? 0) > 0 && <> · {formatMoney(student.credit, currency)} in credit</>}</>}
               </div>
             </div>
-            <button type="button" className="fe-ghost sm" onClick={() => { setStudent(null); setAmount(''); setItems([]); }}>Change</button>
+            {!initial && <button type="button" className="fe-ghost sm" onClick={() => { setStudent(null); setAmount(''); setItems([]); setTarget(''); }}>Change</button>}
           </div>
         ) : (
           <>
@@ -319,7 +368,7 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
                       <UserRound size={16} style={{ color: 'var(--accent-light)', flexShrink: 0 }} />
                       <span style={{ minWidth: 0 }}>
                         <span className="fe-strong" style={{ display: 'block' }}>{s.name}</span>
-                        <span className="fe-muted fe-small">{s.studentId}{s.programName ? ` · ${s.programName}` : ''}{s.level != null ? ` · ${levelName(s.level)}` : ''}</span>
+                        <span className="fe-muted fe-small">{s.studentId}{s.programName ? ` · ${s.programName}` : ''}{levelSuffix(s.level)}</span>
                       </span>
                     </span>
                     <span className="fe-small" style={{ whiteSpace: 'nowrap', color: s.balance ? '#fbbf24' : 'rgba(255,255,255,0.45)' }}>
@@ -332,6 +381,22 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
           </>
         )}
       </div>
+
+      {student && !noFee && dues.length + bills.length > 1 && (
+        <div className="fe-field">
+          <label className="fe-label" htmlFor="fe-due-pick">Pay towards</label>
+          <select id="fe-due-pick" className="fe-select" style={{ width: '100%' }} value={target} onChange={e => choose(e.target.value)}>
+            <option value="">Everything owed, oldest first</option>
+            {dues.map(d => (
+              <option key={d.fee.id} value={`f${d.fee.id}`}>
+                {tx(d.fee.periodName ?? 'Fee')} fees · {d.balance > 0 ? `owes ${formatMoney(d.balance, currency)}` : 'paid'}
+              </option>
+            ))}
+            {bills.map(b => <option key={b.id} value={`b${b.id}`}>{b.title} · owes {formatMoney(b.balance, currency)}</option>)}
+          </select>
+          <div className="fe-hint">{target ? 'This first; anything more goes to the oldest of the rest.' : tx('School fees from the oldest semester, then bills from the oldest.')}</div>
+        </div>
+      )}
 
       {owedItems.length > 0 && (
         <div className="fe-field">
@@ -356,10 +421,10 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
           <div className="fe-money">
             <span>{currency}</span>
             <input id="fe-amt" className="fe-input" inputMode="decimal" placeholder="0.00" value={amount} onChange={e => setAmount(moneyInput(e.target.value))}
-              disabled={!student || noFee || byItem} style={overBalance ? { borderColor: '#f87171' } : undefined} />
+              disabled={!student || noFee || byItem} />
           </div>
           {byItem && <div className="fe-hint">Set by the items chosen above.</div>}
-          {overBalance && <div className="fe-hint" style={{ color: '#f87171' }}>More than the balance of {formatMoney(student?.balance, currency)}.</div>}
+          {!byItem && extra > 0 && <div className="fe-hint" style={{ color: '#fbbf24' }}>{formatMoney(extra, currency)} more than is owed: {tx('it is kept as credit for the next bill or semester.')}</div>}
         </div>
         <div className="fe-field">
           <label className="fe-label" htmlFor="fe-method">Paid by</label>
@@ -376,13 +441,13 @@ function RecordPaymentModal({ currency, onClose, onSaved }: { currency: string; 
           <input id="fe-date" type="date" className="fe-input" style={{ width: '100%' }} value={paidOn} max={localToday()} onChange={e => setPaidOn(e.target.value)} />
         </div>
         <div className="fe-field">
-          <label className="fe-label" htmlFor="fe-mnote">Receipt / bank ref. <span className="fe-muted" style={{ fontWeight: 500 }}>(optional)</span></label>
-          <input id="fe-mnote" className="fe-input" style={{ width: '100%' }} maxLength={300} placeholder="e.g. Receipt no. 0042" value={note} onChange={e => setNote(e.target.value)} />
+          <label className="fe-label" htmlFor="fe-mnote">Bank / teller ref. <span className="fe-muted" style={{ fontWeight: 500 }}>(optional)</span></label>
+          <input id="fe-mnote" className="fe-input" style={{ width: '100%' }} maxLength={300} placeholder="e.g. GCB deposit slip 004512" value={note} onChange={e => setNote(e.target.value)} />
         </div>
       </div>
       <div className="fe-note info" style={{ marginBottom: 0 }}>
         <Info size={15} />
-        <span>Online payments by card or Mobile Money are recorded automatically; only record money paid in person or into the school's account.</span>
+        <span>Online payments by card or Mobile Money are recorded automatically; only record money paid in person or into the school's account. A numbered receipt is made for every payment.</span>
       </div>
     </FeeModal>
   );

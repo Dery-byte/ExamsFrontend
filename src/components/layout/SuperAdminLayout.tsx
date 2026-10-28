@@ -2,18 +2,12 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
-import { useFeatureFlags, useAssessments } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments, useBoarding } from '../../hooks/useFeatureFlags';
 import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
 import AvatarPhoto from '../common/AvatarPhoto';
-import {
-  LayoutDashboard, UserCircle, Building2, BookMarked,
-  Users, GraduationCap, LogOut, Menu, X, ShieldCheck,
-  Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library,
-  Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight,
-  Landmark, ClipboardPen, ClipboardList, FilePlus, Eye, Wallet, FileBarChart, UserCheck
-} from 'lucide-react';
+import { LayoutDashboard, UserCircle, Building2, BookMarked, Users, GraduationCap, LogOut, Menu, X, ShieldCheck, Clock, ChevronRight, Settings, UserCog, BookOpen, PlusCircle, Library, Megaphone, BarChart3, ScrollText, CalendarDays, MessageSquareWarning, Scale, FileText, DatabaseZap, ToggleRight, Landmark, ClipboardPen, ClipboardList, FilePlus, Eye, Wallet, FileBarChart, UserCheck, BedDouble, ShoppingBag, UserRound, Gift, CalendarRange, Package, BellRing } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import SubscriptionNotice from '../common/SubscriptionNotice';
 
@@ -24,6 +18,7 @@ export default function SuperAdminLayout() {
   const { term, institution } = useInstitution();
   const { auditLogSuperAdmin } = useFeatureFlags();
   const quizzesOn = useAssessments();   // the developer's Assessments switch
+  const boarding = useBoarding();       // the developer's day / boarding setting
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
@@ -61,7 +56,7 @@ export default function SuperAdminLayout() {
     {
       label: tx('University Structure'),
       items: [
-        { to: '/super-admin/departments', icon: <Building2 size={20} />, label: 'Departments' },
+        { to: '/super-admin/departments', icon: <Building2 size={20} />, label: tx('Departments') },
         { to: '/super-admin/programs', icon: <BookMarked size={20} />, label: tx('Programs & Levels') },
         { to: '/super-admin/academic-settings', icon: <Scale size={20} />, label: 'Sessions & Grading' },
       ]
@@ -70,6 +65,14 @@ export default function SuperAdminLayout() {
       label: 'Finance',
       items: [
         { to: '/super-admin/fees', icon: <Wallet size={20} />, label: 'Fees & Payments' },
+        { to: '/super-admin/bills', icon: <ShoppingBag size={20} />, label: 'Bills' },
+        { to: '/super-admin/student-accounts', icon: <UserRound size={20} />, label: 'Student accounts' },
+        { to: '/super-admin/cash-book', icon: <BookOpen size={20} />, label: 'Cash book' },
+        { to: '/super-admin/stores', icon: <Package size={20} />, label: 'Stores' },
+        { to: '/super-admin/reminders', icon: <BellRing size={20} />, label: 'Reminders' },
+        { to: '/super-admin/concessions', icon: <Gift size={20} />, label: 'Concessions' },
+        { to: '/super-admin/year-end', icon: <CalendarRange size={20} />, label: 'Year end' },
+        { to: '/super-admin/finance-staff', icon: <Landmark size={20} />, label: 'Finance staff' },
       ]
     },
     {
@@ -95,6 +98,7 @@ export default function SuperAdminLayout() {
         { to: '/super-admin/enroll-student', icon: <BookOpen size={20} />, label: tx('Enroll Student') },
         { to: '/super-admin/lecturers', icon: <Users size={20} />, label: 'Enroll Staff' },
         { to: '/super-admin/data-tools', icon: <DatabaseZap size={20} />, label: 'Data Tools' },
+        ...(boarding.mode !== 'DAY' ? [{ to: '/super-admin/boarding', icon: <BedDouble size={20} />, label: 'Boarding' }] : []),
       ]
     },
     {

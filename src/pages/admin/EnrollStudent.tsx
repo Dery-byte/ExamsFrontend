@@ -9,7 +9,7 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import PageHeader from "../../components/PageHeader";
 import { BookMarked, BookOpen, CheckCircle2, GraduationCap, Loader2, Search, User, Users, X } from 'lucide-react';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode, levelSuffix, showLevelPicker } from '../../utils/terms';
 
 export default function EnrollStudent() {
   const auth    = useAuth() as any;
@@ -223,7 +223,7 @@ export default function EnrollStudent() {
                       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
                     <div style={{ fontSize: 11, color: "#94a3b8", display: "flex", gap: 5, flexWrap: "wrap" }}>
                       <span>{s.program || tx("No program")}</span>
-                      {s.currentLevel > 0 && <span>· L{s.currentLevel} S{s.currentSemester}</span>}
+                      {s.currentLevel > 0 && <span>{isSchoolMode() ? `· Term ${s.currentSemester}` : `· L${s.currentLevel} S${s.currentSemester}`}</span>}
                     </div>
                   </div>
 
@@ -249,7 +249,7 @@ export default function EnrollStudent() {
                 <div style={{ fontSize: 14, fontWeight: 800, color: "var(--brand-hover)" }}>{stuName(selected)}</div>
                 <div style={{ fontSize: 12, color: "var(--brand-text)" }}>
                   {selected.program || tx("No program assigned")}
-                  {selected.currentLevel > 0 && tx(` · Level ${selected.currentLevel}`)}
+                  {selected.currentLevel > 0 && levelSuffix(selected.currentLevel)}
                   {selected.currentSemester > 0 && ` · Sem ${selected.currentSemester}`}
                   {" "}{tx("— enroll in any course below")}</div>
               </div>
@@ -278,7 +278,7 @@ export default function EnrollStudent() {
                     style={{ width: "100%", paddingLeft: 30, height: 34, border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }}
                   />
                 </div>
-                {uniqueLevels.length > 0 && (
+                {uniqueLevels.length > 0 && showLevelPicker(uniqueLevels.length) && (
                   <select
                     value={lvFilter} onChange={e => setLvFilter(e.target.value)}
                     className="enroll-filter-select"
@@ -351,7 +351,7 @@ export default function EnrollStudent() {
                               {c.courseCode}
                             </span>
                           )}
-                          {lvl && (
+                          {lvl && !isSchoolMode() && (
                             <span style={{ fontSize: 11, color: "var(--brand-text)", fontWeight: 700 }}>
                               {tx("Level ")}{lvl}
                             </span>

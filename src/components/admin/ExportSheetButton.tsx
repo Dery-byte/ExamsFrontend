@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { FileDown, Loader2 } from 'lucide-react';
 import { getMarksSheetData } from '../../api/endpoints';
 import { downloadWorkbook, slug } from '../../utils/spreadsheet';
+import { tx, isSchoolMode } from '../../utils/terms';
 
 /**
  * Exports one marks sheet to Excel: one row per student and course, a column per section,
@@ -30,8 +31,9 @@ export default function ExportSheetButton({ sheetId, style }: { sheetId: number 
         }
       }
       const info: unknown[][] = [
-        ['Program', d.programName ?? ''], ['Session', d.sessionName ?? ''], ['Level', d.level ?? ''],
-        ['Semester', d.semester ?? ''], ['Course', d.courseName ?? ''], ['Status', d.status ?? ''],
+        [tx('Program'), d.programName ?? ''], ['Session', d.sessionName ?? ''],
+        ...(isSchoolMode() ? [] : [['Level', d.level ?? '']]),
+        [tx('Semester'), d.semester ?? ''], ['Course', d.courseName ?? ''], ['Status', d.status ?? ''],
         ['Exported', new Date().toLocaleString()],
       ];
       downloadWorkbook(`marks-${slug(d.courseName || 'sheet')}-L${d.level}-S${d.semester}${d.sessionName ? '-' + slug(d.sessionName) : ''}`,

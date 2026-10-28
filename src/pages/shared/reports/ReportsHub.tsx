@@ -4,12 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Activity, AlertTriangle, BarChart3, Bot, Briefcase, Building2, ChevronRight, ClipboardCheck, FileCheck2,
   Eye, FileSearch, FileText, GraduationCap, KeyRound, LayoutGrid, ListChecks, Loader2, Lock, MessageSquareWarning, Receipt, Scale, ScrollText, Search,
-  Send, ShieldAlert, Table2, TrendingUp, Trophy, Users, UserX, Wallet, UserCheck, CalendarCheck,
+  Send, ShieldAlert, Table2, TrendingUp, Trophy, Users, UserX, Wallet, UserCheck, CalendarCheck, BedDouble, Gift, History, Undo2, Package,
 } from 'lucide-react';
 import PageHeader from '../../../components/PageHeader';
 import type { ReportDefinition } from '../../../api/endpoints';
 import { useAssessments, useFeatureFlags } from '../../../hooks/useFeatureFlags';
 import { catalogQuery, useReports } from './useReports';
+import { tx } from '../../../utils/terms';
 
 export const REPORT_ICONS: Record<string, ReactNode> = {
   building: <Building2 size={20} />, users: <Users size={20} />, clipboard: <ClipboardCheck size={20} />,
@@ -20,13 +21,13 @@ export const REPORT_ICONS: Record<string, ReactNode> = {
   table: <Table2 size={20} />, list: <ListChecks size={20} />, userx: <UserX size={20} />, lock: <Lock size={20} />,
   search: <FileSearch size={20} />, trend: <TrendingUp size={20} />, message: <MessageSquareWarning size={20} />,
   grid: <LayoutGrid size={20} />, paper: <FileText size={20} />, key: <KeyRound size={20} />,
-  usercheck: <UserCheck size={20} />, calendarcheck: <CalendarCheck size={20} />,
+  usercheck: <UserCheck size={20} />, calendarcheck: <CalendarCheck size={20} />, bed: <BedDouble size={20} />, gift: <Gift size={20} />, history: <History size={20} />, undo: <Undo2 size={20} />, box: <Package size={20} />,
 };
 
 /** A card that opens an existing page instead of a report. */
 interface PageLink { title: string; description: string; to: string; icon: ReactNode; group: string }
 
-const GROUP_ORDER = ['Institution', 'Department', 'Teaching', 'Attendance', 'Students', 'Results', 'Exams', 'Staff', 'Finance', 'Oversight'];
+const GROUP_ORDER = ['Institution', 'Department', 'Teaching', 'Attendance', 'Boarding', 'Students', 'Results', 'Exams', 'Staff', 'Finance', 'Oversight'];
 const LEADING_GROUPS = ['Institution', 'Department'];
 
 export default function ReportsHub() {
@@ -42,7 +43,7 @@ export default function ReportsHub() {
       to: `${staffBase}/analytics`, icon: <BarChart3 size={20} />, group: 'Institution' }] : []),
     ...(auditLogSuperAdmin !== false ? [{ title: 'Audit log', description: 'Every recorded change by staff, searchable by person, action and date.',
       to: `${staffBase}/audit-log`, icon: <ScrollText size={20} />, group: 'Oversight' }] : []),
-  ] : role === 'lecturer' ? [
+  ] : role === 'boarding' || role === 'finance' ? [] : role === 'lecturer' ? [
     ...(quizzesOn ? [{ title: 'Quiz review', description: 'Mark and review scripts; each quiz there links to its result sheet and question analysis.',
       to: `${staffBase}/quiz-review`, icon: <Eye size={20} />, group: 'Teaching' }] : []),
   ] : [
@@ -67,7 +68,7 @@ export default function ReportsHub() {
 
       <div className="rh-bar">
         <p className="rh-intro">
-          {isSuper ? 'Choose a report.' : role === 'lecturer' ? 'Reports for your courses and quizzes.' : 'Reports for your department.'}{' '}
+          {isSuper ? 'Choose a report.' : role === 'boarding' ? 'Boarding reports for the houses you look after.' : role === 'finance' ? 'Fee reports: collections, debtors and results on hold.' : role === 'lecturer' ? 'Reports for your courses and quizzes.' : 'Reports for your department.'}{' '}
           Each one can be filtered and downloaded as Excel, CSV or PDF.
         </p>
         <label className="rh-search">
@@ -87,7 +88,7 @@ export default function ReportsHub() {
 
       {groups.map(([group, items]) => (
         <section key={group} className="rh-group">
-          <h2 className="rh-group-title">{group}</h2>
+          <h2 className="rh-group-title">{tx(group)}</h2>
           <div className="rh-grid">
             {items.map(item => {
               const isReport = 'key' in item;
@@ -97,8 +98,8 @@ export default function ReportsHub() {
                 <Link key={to} to={to} className="rh-card">
                   <span className="rh-icon">{icon}</span>
                   <span style={{ minWidth: 0, flex: 1 }}>
-                    <span className="rh-title">{item.title}{!isReport && <span className="rh-tag">Page</span>}</span>
-                    <span className="rh-desc">{item.description}</span>
+                    <span className="rh-title">{tx(item.title)}{!isReport && <span className="rh-tag">Page</span>}</span>
+                    <span className="rh-desc">{tx(item.description)}</span>
                   </span>
                   <ChevronRight size={16} color="#94a3b8" style={{ flexShrink: 0 }} />
                 </Link>

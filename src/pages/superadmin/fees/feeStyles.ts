@@ -123,6 +123,13 @@ export const FEE_ADMIN_CSS = `
 .fe-money.lg .fe-input { height: 48px; font-size: 20px; font-weight: 800; }
 
 .fe-items { display: flex; flex-direction: column; gap: 8px; }
+.fe-item-wrap { display: flex; flex-direction: column; gap: 5px; }
+.fe-for { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding-left: 36px; font-size: 11.5px; color: rgba(255,255,255,0.55); }
+.fe-for > span { font-weight: 700; margin-right: 2px; }
+@media (max-width: 640px) { .fe-actions .fe-select { flex: 1 1 120px; min-width: 0; } }
+.fe-for button { border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.75); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+.fe-for button.on { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.18); color: #fff; }
+@media (max-width: 640px) { .fe-for { padding-left: 0; } .fe-for button { padding: 6px 10px; } }
 .fe-item { display: grid; grid-template-columns: 28px minmax(0,1fr) 150px 32px; gap: 8px; align-items: center; }
 .fe-order { display: flex; flex-direction: column; }
 .fe-order button { background: none; border: none; color: rgba(255,255,255,0.35); cursor: pointer; padding: 0; height: 15px; display: flex; align-items: center; justify-content: center; }

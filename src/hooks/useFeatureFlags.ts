@@ -8,6 +8,13 @@ export function useAssessments(): boolean {
   return useFeatureFlags().assessments !== false;
 }
 
+const NO_BOARDING = { mode: 'DAY' as const, word: 'House', plural: 'Houses', staff: false, head: false };
+
+/** The developer's day / boarding setting plus the signed-in user's boarding duties (no boarding while loading). */
+export function useBoarding() {
+  return useFeatureFlags().boarding ?? NO_BOARDING;
+}
+
 /** Super Admin / HOD switches that control which navigation entries and actions each user sees. */
 export function useFeatureFlags(): FeatureFlags {
   const { data } = useQuery({ queryKey: ['feature-flags'], queryFn: getFeatureFlags, staleTime: 60_000 });

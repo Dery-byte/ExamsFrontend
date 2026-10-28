@@ -6,7 +6,7 @@ import {
 } from '../../../api/attendance';
 import { readLocation, LocationError, GUESSED_LOCATION_METERS } from '../../../utils/attendanceDevice';
 import { classTitle, errMsg, fmtTime } from './shared';
-import { levelName, tx } from '../../../utils/terms';
+import { levelName, tx, showLevelPicker } from '../../../utils/terms';
 
 const LENGTHS = [30, 45, 60, 90, 120, 150, 180, 240];
 
@@ -123,12 +123,12 @@ export default function StartSessionDialog({ options, classrooms, schedule, onCl
                       {options.programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   </label>
-                  <label className="at-field"><span>{tx('Level')}</span>
+                  {showLevelPicker(program?.levels.length ?? 0) && <label className="at-field"><span>{tx('Level')}</span>
                     <select className="at-select" value={level} onChange={e => setLevel(e.target.value ? Number(e.target.value) : '')} disabled={!program}>
                       <option value="">{tx('Every level')}</option>
                       {program?.levels.map(l => <option key={l} value={l}>{levelName(l)}</option>)}
                     </select>
-                  </label>
+                  </label>}
                 </>
               )}
             </div>

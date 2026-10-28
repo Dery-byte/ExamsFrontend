@@ -63,6 +63,9 @@ import AttendanceSessionPage from './pages/shared/attendance/SessionPage';
 import ProjectorScreen from './pages/shared/attendance/ProjectorScreen';
 import { HelperScannerPage, StaffScannerPage } from './pages/shared/attendance/ScannerPages';
 import StudentAttendance from './pages/user/attendance/StudentAttendance';
+import BoardingGate from './components/common/BoardingGate';
+import BoardingHome from './pages/shared/boarding/BoardingHome';
+import HostelPage from './pages/shared/boarding/HostelPage';
 
 // Super Admin
 import SuperAdminWelcome from './pages/superadmin/SuperAdminWelcome';
@@ -72,6 +75,18 @@ import Programs from './pages/superadmin/Programs';
 import ManageHODs from './pages/superadmin/ManageHODs';
 import ManageStudentLevel from './pages/superadmin/ManageStudentLevel';
 import FeesPage from './pages/superadmin/fees/FeesPage';
+import FinanceStaff from './pages/superadmin/FinanceStaff';
+import AccountantLayout from './components/layout/AccountantLayout';
+import AccountsDashboard from './pages/accounts/AccountsDashboard';
+import FeeSettingsPage from './pages/accounts/FeeSettingsPage';
+import BillsPage from './pages/accounts/BillsPage';
+import StudentAccountPage from './pages/accounts/StudentAccountPage';
+import CashBookPage from './pages/accounts/CashBookPage';
+import ConcessionsPage from './pages/accounts/ConcessionsPage';
+import YearEndPage from './pages/accounts/YearEndPage';
+import StoresPage from './pages/accounts/StoresPage';
+import RemindersPage from './pages/accounts/RemindersPage';
+import BursarGate from './components/common/BursarGate';
 
 // Lecturer
 import LectWelcome from './pages/lecturer/LectWelcome';
@@ -163,6 +178,14 @@ export default function App() {
           <Route path="institution" element={<InstitutionSettings />} />
           <Route path="features" element={<FeatureControls />} />
           <Route path="fees" element={<FeesPage />} />
+          <Route path="bills" element={<BillsPage />} />
+          <Route path="student-accounts" element={<StudentAccountPage />} />
+          <Route path="stores" element={<StoresPage />} />
+          <Route path="reminders" element={<RemindersPage />} />
+          <Route path="cash-book" element={<CashBookPage />} />
+          <Route path="concessions" element={<ConcessionsPage />} />
+          <Route path="year-end" element={<YearEndPage />} />
+          <Route path="finance-staff" element={<FinanceStaff />} />
           <Route path="academic-records" element={<ModeGate only="university" redirectTo=".."><AcademicRecords /></ModeGate>} />
           <Route path="data-tools" element={<DataTools />} />
           <Route path="announcements" element={<Announcements />} />
@@ -173,6 +196,10 @@ export default function App() {
           <Route path="timetable" element={<AssessmentsGate><Timetable /></AssessmentsGate>} />
           <Route path="attendance" element={<AttendanceHome />} />
           <Route path="attendance/session/:id" element={<AttendanceSessionPage />} />
+          <Route path="boarding" element={<BoardingGate><BoardingHome /></BoardingGate>} />
+          <Route path="boarding/:id" element={<BoardingGate><HostelPage /></BoardingGate>} />
+          <Route path="boarding/reports" element={<BoardingGate><ReportsHub /></BoardingGate>} />
+          <Route path="boarding/reports/:key" element={<BoardingGate><ReportView /></BoardingGate>} />
           <Route path="question-bank" element={<AssessmentsGate><QuestionBank /></AssessmentsGate>} />
           <Route path="remarks" element={<AssessmentsGate><RemarkRequests /></AssessmentsGate>} />
           <Route path="profile" element={<Profile />} />
@@ -203,6 +230,10 @@ export default function App() {
           {/* Not gated: the HOD sets the rules (and the department switch) from here */}
           <Route path="attendance" element={<AttendanceHome />} />
           <Route path="attendance/session/:id" element={<AttendanceSessionPage />} />
+          <Route path="boarding" element={<BoardingGate><BoardingHome /></BoardingGate>} />
+          <Route path="boarding/:id" element={<BoardingGate><HostelPage /></BoardingGate>} />
+          <Route path="boarding/reports" element={<BoardingGate><ReportsHub /></BoardingGate>} />
+          <Route path="boarding/reports/:key" element={<BoardingGate><ReportView /></BoardingGate>} />
           <Route path="question-bank" element={<AssessmentsGate><FeatureGate feature="QUESTION_BANK" redirectTo="/admin"><QuestionBank /></FeatureGate></AssessmentsGate>} />
           <Route path="proctoring/:qId" element={<AssessmentsGate><ProctoringReport /></AssessmentsGate>} />
           <Route path="remarks" element={<AssessmentsGate><RemarkRequests /></AssessmentsGate>} />
@@ -233,6 +264,10 @@ export default function App() {
           <Route path="timetable" element={<AssessmentsGate><Timetable /></AssessmentsGate>} />
           <Route path="attendance" element={<FeatureGate feature="ATTENDANCE" redirectTo="/lect"><AttendanceHome /></FeatureGate>} />
           <Route path="attendance/session/:id" element={<FeatureGate feature="ATTENDANCE" redirectTo="/lect"><AttendanceSessionPage /></FeatureGate>} />
+          <Route path="boarding" element={<BoardingGate><BoardingHome /></BoardingGate>} />
+          <Route path="boarding/:id" element={<BoardingGate><HostelPage /></BoardingGate>} />
+          <Route path="boarding/reports" element={<BoardingGate><ReportsHub /></BoardingGate>} />
+          <Route path="boarding/reports/:key" element={<BoardingGate><ReportView /></BoardingGate>} />
           <Route path="question-bank" element={<AssessmentsGate><FeatureGate feature="QUESTION_BANK" redirectTo="/lect"><QuestionBank /></FeatureGate></AssessmentsGate>} />
           <Route path="reports" element={<FeatureGate feature="LECTURER_REPORTS" redirectTo="/lect"><ReportsHub /></FeatureGate>} />
           <Route path="reports/:key" element={<FeatureGate feature="LECTURER_REPORTS" redirectTo="/lect"><ReportView /></FeatureGate>} />
@@ -248,6 +283,24 @@ export default function App() {
           <Route path="quiz-review" element={<AssessmentsGate><LectQuizReview /></AssessmentsGate>} />
           <Route path="manual-marks" element={<FeatureGate flag="marksSheetLecturer" redirectTo="/lect"><ManualMarksEntry /></FeatureGate>} />
           <Route path="term-remarks" element={<ModeGate only="school" redirectTo="/lect"><FeatureGate flag="marksSheetLecturer" redirectTo="/lect"><TermRemarks /></FeatureGate></ModeGate>} />
+        </Route>
+
+        {/* Accounts office: bursars and cashiers */}
+        <Route path="/accounts" element={<ProtectedRoute role="ACCOUNTANT"><AccountantLayout /></ProtectedRoute>}>
+          <Route index element={<AccountsDashboard />} />
+          <Route path="fees" element={<FeesPage />} />
+          <Route path="bills" element={<BillsPage />} />
+          <Route path="students" element={<StudentAccountPage />} />
+          <Route path="stores" element={<StoresPage />} />
+          <Route path="reminders" element={<RemindersPage />} />
+          <Route path="cash-book" element={<CashBookPage />} />
+          <Route path="concessions" element={<ConcessionsPage />} />
+          <Route path="year-end" element={<YearEndPage />} />
+          <Route path="reports" element={<ReportsHub />} />
+          <Route path="reports/:key" element={<ReportView />} />
+          <Route path="settings" element={<BursarGate><FeeSettingsPage /></BursarGate>} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         {/* Student */}

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { saGetAllStudents, saSetStudentSemester, saGetPrograms } from '../../api/endpoints';
+import { saGetAllStudents, saSetStudentSemester, saGetPrograms, moveStudentClass } from '../../api/endpoints';
 import toast from 'react-hot-toast';
 import { Search, GraduationCap, BookOpen, RefreshCw, ChevronDown, Save, Users } from 'lucide-react';
-import { defaultLevels, periodsPerLevel, tx } from '../../utils/terms';
+import { defaultLevels, periodsPerLevel, tx, isSchoolMode } from '../../utils/terms';
 
 interface Student {
   id: number;
@@ -39,7 +39,9 @@ export default function ManageStudentLevel() {
   const [programFilter, setProgramFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<number | null>(null);
-  const [edits, setEdits] = useState<{ [id: number]: { currentSemester: number; currentLevel: number } }>({});
+  /** Schools edit the class (programmeId) instead of the level: a class is one year. */
+  const [edits, setEdits] = useState<{ [id: number]: { currentSemester: number; currentLevel: number; programId?: number } }>({});
+  const school = isSchoolMode();
 
   useEffect(() => { loadData(); }, []);
 
@@ -56,7 +58,7 @@ export default function ManageStudentLevel() {
     }
   };
 
-  const getEdit = (s: Student) => edits[s.id] || { currentSemester: s.currentSemester || 1, currentLevel: s.currentLevel || 100 };
+  const getEdit = (s: Student) => edits[s.id] || { currentSemester: s.currentSemester || 1, currentLevel: s.currentLevel || defaultLevels()[0], programId: s.programId };
   const setEdit = (id: number, field: string, val: number) =>
     setEdits(prev => ({ ...prev, [id]: { ...getEdit(students.find(s => s.id === id)!), [field]: val } }));
 
@@ -69,13 +71,17 @@ export default function ManageStudentLevel() {
     const edit = getEdit(student);
     setSaving(student.id);
     try {
-      await saSetStudentSemester(student.id, { currentSemester: edit.currentSemester, currentLevel: edit.currentLevel });
+      const movedClass = school && edit.programId && edit.programId !== student.programId;
+      // A new class starts at its first term; the term chosen here is set right after
+      if (movedClass) await moveStudentClass(student.id, { programId: edit.programId, override: true });
+      const level = movedClass ? (programs.find(p => p.id === edit.programId)?.configuredLevels?.[0] ?? 1) : edit.currentLevel;
+      await saSetStudentSemester(student.id, { currentSemester: edit.currentSemester, currentLevel: level });
       toast.success(`Updated ${student.firstname} ${student.lastname}`);
       setStudents(prev => prev.map(s => s.id === student.id
-        ? { ...s, currentSemester: edit.currentSemester, currentLevel: edit.currentLevel } : s));
+        ? { ...s, currentSemester: edit.currentSemester, currentLevel: level, ...(movedClass ? { programId: edit.programId!, program: programs.find(p => p.id === edit.programId)?.name ?? s.program } : {}) } : s));
       setEdits(prev => { const n = { ...prev }; delete n[student.id]; return n; });
-    } catch {
-      toast.error(tx('Failed to update student'));
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? tx('Failed to update student'));
     } finally {
       setSaving(null);
     }
@@ -96,7 +102,7 @@ export default function ManageStudentLevel() {
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{tx("Student Semester Management")}</h1>
-            <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Set current level & semester for each student</p>
+            <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>{school ? "Set each student's class and term" : 'Set current level & semester for each student'}</p>
           </div>
         </div>
       </div>
@@ -157,7 +163,24 @@ export default function ManageStudentLevel() {
                   </div>
                 </div>
 
-                {/* Level selector */}
+                {/* Level selector (schools: the class) */}
+                {school ? (
+                <div>
+                  <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>{tx("PROGRAM")}</label>
+                  <select
+                    value={edit.programId ?? ''}
+                    onChange={e => setEdit(student.id, 'programId', Number(e.target.value))}
+                    style={{
+                      width: '100%', padding: '7px 10px', borderRadius: 8,
+                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
+                      color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
+                    }}
+                  >
+                    {!edit.programId && <option value="" style={{ background: '#1a1a35' }}>Choose…</option>}
+                    {programs.map(p => <option key={p.id} value={p.id} style={{ background: '#1a1a35' }}>{p.name}</option>)}
+                  </select>
+                </div>
+                ) : (
                 <div>
                   <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>{tx("LEVEL")}</label>
                   <select
@@ -172,6 +195,7 @@ export default function ManageStudentLevel() {
                     {levels.map(l => <option key={l} value={l} style={{ background: '#1a1a35' }}>{tx("Level ")}{l}</option>)}
                   </select>
                 </div>
+                )}
 
                 {/* Semester selector */}
                 <div>
@@ -185,7 +209,9 @@ export default function ManageStudentLevel() {
                       color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
-                    {Array.from({ length: (programs.find(p => p.id === student.programId)?.semestersPerLevel?.[edit.currentLevel] || periodsPerLevel()) }, (_, i) => i + 1).map(sem => (
+                    {Array.from({ length: (school
+                      ? Object.values(programs.find(p => p.id === (edit.programId ?? student.programId))?.semestersPerLevel ?? {})[0]
+                      : programs.find(p => p.id === student.programId)?.semestersPerLevel?.[edit.currentLevel]) || periodsPerLevel() }, (_, i) => i + 1).map(sem => (
                       <option key={sem} value={sem} style={{ background: '#1a1a35' }}>{tx("Semester ")}{sem}</option>
                     ))}
                   </select>

@@ -8,16 +8,17 @@ import {
 } from "../../api/endpoints";
 import { useAuth } from "../../contexts/AuthContext";
 import { toggleAccount } from '../../components/admin/accountActions';
-import { useFeature } from '../../hooks/useFeatureFlags';
+import { useBoarding, useFeature } from '../../hooks/useFeatureFlags';
 import Swal from "sweetalert2";
 import toast, { Toaster } from "react-hot-toast";
 import PageHeader from "../../components/PageHeader";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
+import { getClassPromotion, promoteClass, moveStudentClass } from "../../api/endpoints";
 import {
   Users, Search, Edit, Trash2, GraduationCap, Mail, Power,
-  X, Save, Loader2, ChevronsUp, ArrowRight, RefreshCw, UserPlus,
+  X, Save, Loader2, ChevronsUp, ArrowRight, RefreshCw, UserPlus, BedDouble, Home,
 } from "lucide-react";
-import { defaultLevels, periodsPerLevel, tx } from '../../utils/terms';
+import { defaultLevels, periodsPerLevel, tx, isSchoolMode, oneYear } from '../../utils/terms';
 
 const LEVEL_COLORS: Record<string, { bg: string; border: string; text: string; badge: string }> = {
   "100": { bg: "rgba(var(--brand-rgb), 0.07)",  border: "var(--brand)", text: "var(--brand-hover)", badge: "var(--brand)" },
@@ -35,6 +36,10 @@ export default function Students() {
   const isSuper = typeof auth.isSuperAdmin === "function" ? auth.isSuperAdmin() : false;
   const hodMayPromote = useFeature("HOD_PROMOTION");
   const canPromote = isSuper || hodMayPromote;   // the Super Admin can switch HOD promotion off
+  const boarding = useBoarding();                // developer's day / boarding setting
+  const hasBoarding = boarding.mode !== "DAY";
+  const perStudentResidency = boarding.mode === "BOTH";
+  const [residencyFilter, setResidencyFilter] = useState<string>("");
 
   const [students, setStudents]         = useState<any[]>([]);
   const [programs, setPrograms]         = useState<any[]>([]);
@@ -47,7 +52,7 @@ export default function Students() {
   const [promotingLv, setPromotingLv]   = useState<string | null>(null);
   const [promotingSem, setPromotingSem] = useState<string | null>(null);
   const [programFilter, setProgramFilter]= useState<string>("");
-  const emptyStudent = { firstname: "", lastname: "", username: "", email: "", phone: "", password: "", programId: "", currentLevel: "", currentSemester: "" };
+  const emptyStudent = { firstname: "", lastname: "", username: "", email: "", phone: "", password: "", programId: "", currentLevel: "", currentSemester: "", gender: "", residency: "" };
   const [addModal, setAddModal]         = useState(false);
   const [newStudent, setNewStudent]     = useState<any>(emptyStudent);
   const [adding, setAdding]             = useState(false);
@@ -78,17 +83,31 @@ export default function Students() {
 
   const filtered = students.filter(s => {
     if (programFilter && s.programId !== Number(programFilter)) return false;
+    if (residencyFilter === "BOARDING" && s.residency !== "BOARDING") return false;
+    if (residencyFilter === "DAY" && s.residency !== "DAY") return false;
+    if (residencyFilter === "NOROOM" && (s.residency !== "BOARDING" || s.residence)) return false;
+    if (residencyFilter === "UNSET" && s.residency) return false;
     const q = search.toLowerCase();
-    return !q || [s.firstname, s.lastname, s.fullName, s.email, s.username, s.program]
+    return !q || [s.firstname, s.lastname, s.fullName, s.email, s.username, s.program, s.residence]
       .filter(Boolean).some((v: string) => v.toLowerCase().includes(q));
   });
 
+  // Universities group by level; schools by class (a class is one year), in the classes' order
+  const school = isSchoolMode();
   const grouped: Record<string, any[]> = {};
   filtered.forEach(s => {
-    const lv = String(s.currentLevel ?? 0);
-    (grouped[lv] = grouped[lv] || []).push(s);
+    const key = school ? String(s.programId ?? 0) : String(s.currentLevel ?? 0);
+    (grouped[key] = grouped[key] || []).push(s);
   });
-  const sortedLevels = Object.keys(grouped).sort((a, b) => Number(a) - Number(b));
+  const classIndex = (key: string) => { const i = programs.findIndex((p: any) => String(p.id) === key); return i < 0 ? 1e9 : i; };
+  const sortedLevels = Object.keys(grouped).sort((a, b) => school ? classIndex(a) - classIndex(b) : Number(a) - Number(b));
+  const groupLabel = (key: string) => school
+    ? (programs.find((p: any) => String(p.id) === key)?.name ?? grouped[key]?.[0]?.program ?? tx("No programme"))
+    : `${tx("Level ")}${key}`;
+  /** What a group's term buttons act on: the filtered programme at a level, or (schools) the group's class. */
+  const bulkTarget = (key: string) => school
+    ? { programId: Number(key), level: Number(grouped[key]?.[0]?.currentLevel ?? 1) }
+    : { programId: Number(programFilter), level: Number(key) };
 
   const getLevels = (s: any): number[] => {
     const prog = programs.find((p: any) => p.id === (s.programId || s.program_id));
@@ -108,6 +127,85 @@ export default function Students() {
   };
 
   const nextLvForGroup = (level: string) => nextLv(grouped[level]?.[0] ?? {});
+
+  // ── Schools: promotion moves students to their class's next class (or out of the school) ──
+  const esc = (t: string) => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" } as any)[c]);
+  /** The class a school class promotes to; null = its students leave the school. */
+  const nextClassOf = (programId: any): { id: number; name: string } | null => {
+    const p = programs.find((x: any) => x.id === Number(programId));
+    return p?.promotesToId ? { id: p.promotesToId, name: p.promotesToName } : null;
+  };
+
+  /** Whole class: preview who meets the promotion rules, then move them (the Super Admin may take everyone). */
+  const promoteWholeClass = async (key: string) => {
+    const pid = Number(key);
+    setPromotingLv(key);
+    try {
+      const pv = await getClassPromotion(pid);
+      const held = pv.students.filter(s => !s.eligible);
+      const where = pv.leaves ? "complete school (their accounts will be deactivated; records are kept)" : `move to <b>${esc(pv.targetName ?? "")}</b>`;
+      const heldList = held.length
+        ? `<p style="margin:12px 0 4px;font-weight:700">${held.length} short of the promotion rules:</p><ul style="text-align:left;margin:0;max-height:180px;overflow:auto">`
+          + held.map(s => `<li><b>${esc(s.name)}</b>: ${s.reasons.map(esc).join("; ")}</li>`).join("") + "</ul>"
+        : "";
+      const conf = await Swal.fire({
+        title: pv.leaves ? `Complete ${pv.className}?` : `Promote ${pv.className}?`,
+        html: `<p style="margin:0">${pv.eligible} of ${pv.students.length} student${pv.students.length === 1 ? "" : "s"} will ${where}.</p>${heldList}`,
+        icon: "question",
+        showCancelButton: true,
+        showDenyButton: pv.canOverride && held.length > 0,
+        confirmButtonText: held.length ? `Move ${pv.eligible} who qualify` : `Move ${pv.eligible}`,
+        denyButtonText: `Move all ${pv.students.length} (override)`,
+        confirmButtonColor: "var(--brand)", denyButtonColor: "#f59e0b", cancelButtonColor: "#adb5bd",
+      });
+      if (!conf.isConfirmed && !conf.isDenied) return;
+      if (conf.isConfirmed && pv.eligible === 0) { toast(tx("No student meets the promotion rules yet.")); return; }
+      const res = await promoteClass(pid, { override: conf.isDenied });
+      toast.success(res?.message ?? "Done");
+      await load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Promotion failed");
+    } finally { setPromotingLv(null); }
+  };
+
+  /** One student to their next class; the Super Admin may override the promotion rules. */
+  const promoteToNextClass = async (s: any) => {
+    const name = s.fullName ?? `${s.firstname ?? ""} ${s.lastname ?? ""}`.trim();
+    const next = nextClassOf(s.programId);
+    const conf = await Swal.fire({
+      title: next ? tx("Promote Student") : "Complete school?",
+      html: next ? `Move <b>${esc(name)}</b> to <b>${esc(next.name)}</b>?`
+        : `<b>${esc(name)}</b> is in a final class. Completing school deactivates their account; their records are kept.`,
+      icon: "question", showCancelButton: true,
+      confirmButtonText: next ? "Promote" : "Complete school",
+      confirmButtonColor: "var(--brand)", cancelButtonColor: "#adb5bd",
+    });
+    if (!conf.isConfirmed) return;
+    setPromotingId(s.id);
+    try {
+      const res = await moveStudentClass(s.id);
+      toast.success(res?.message ?? "Done");
+      await load();
+    } catch (e: any) {
+      const body = e?.response?.data;
+      if (e?.response?.status === 409 && Array.isArray(body?.reasons)) {
+        const over = await Swal.fire({
+          title: "Held back by promotion rules",
+          html: `<ul style="text-align:left;margin:0">${body.reasons.map((r: string) => `<li>${esc(r)}</li>`).join("")}</ul>`,
+          icon: "warning",
+          showCancelButton: body.canOverride, showConfirmButton: body.canOverride,
+          confirmButtonText: "Promote anyway", cancelButtonText: body.canOverride ? "Keep in this class" : "OK",
+          confirmButtonColor: "#f59e0b",
+        });
+        if (over.isConfirmed && isSuper) {
+          try { const r2 = await moveStudentClass(s.id, { override: true }); toast.success(r2?.message ?? "Done"); await load(); }
+          catch (e2: any) { toast.error(e2?.response?.data?.message ?? "Promotion failed"); }
+        }
+      } else {
+        toast.error(body?.message ?? "Promotion failed");
+      }
+    } finally { setPromotingId(null); }
+  };
 
   const promoteOne = async (s: any, target: number) => {
     const fwd  = target > (s.currentLevel ?? 0);
@@ -186,14 +284,15 @@ export default function Students() {
   };
 
   const promoteSemesterAll = async (level: string) => {
-    if (!programFilter) {
+    if (!school && !programFilter) {
       toast.error(tx("Please select a Program first before promoting in bulk."));
       return;
     }
     const count = grouped[level]?.length ?? 0;
     const conf  = await Swal.fire({
       title: tx("Promote Semester"),
-      html: tx(`Promote all <b>${count}</b> Level ${level} students in the selected program to the next semester?`),
+      html: school ? tx(`Move all <b>${count}</b> students in <b>${groupLabel(level)}</b> to the next semester?`)
+        : tx(`Promote all <b>${count}</b> Level ${level} students in the selected program to the next semester?`),
       icon: "question", showCancelButton: true,
       confirmButtonText: tx(`Promote Semester (${count})`),
       confirmButtonColor: "#2ab57d", cancelButtonColor: "#adb5bd",
@@ -201,7 +300,8 @@ export default function Students() {
     if (!conf.isConfirmed) return;
     setPromotingSem(level);
     try {
-      const res = await (isSuper ? saPromoteSemesterAllAtLevel : adminPromoteSemesterAllAtLevel)(Number(programFilter), Number(level));
+      const t = bulkTarget(level);
+      const res = await (isSuper ? saPromoteSemesterAllAtLevel : adminPromoteSemesterAllAtLevel)(t.programId, t.level);
       toast.success(res?.message ?? tx(`${count} students promoted to next semester!`));
       await load();
     } catch (e: any) {
@@ -210,14 +310,15 @@ export default function Students() {
   };
 
   const demoteSemesterAll = async (level: string) => {
-    if (!programFilter) {
+    if (!school && !programFilter) {
       toast.error(tx("Please select a Program first before demoting in bulk."));
       return;
     }
     const count = grouped[level]?.length ?? 0;
     const conf  = await Swal.fire({
       title: tx("Demote Semester"),
-      html: tx(`Demote all <b>${count}</b> Level ${level} students in the selected program to the previous semester?`),
+      html: school ? tx(`Move all <b>${count}</b> students in <b>${groupLabel(level)}</b> back to the previous semester?`)
+        : tx(`Demote all <b>${count}</b> Level ${level} students in the selected program to the previous semester?`),
       icon: "warning", showCancelButton: true,
       confirmButtonText: tx(`Demote Semester (${count})`),
       confirmButtonColor: "#f59e0b", cancelButtonColor: "#adb5bd",
@@ -226,7 +327,8 @@ export default function Students() {
     setPromotingSem(level + "-demote");
     try {
       const { saDemoteSemesterAllAtLevel, adminDemoteSemesterAllAtLevel } = await import("../../api/endpoints");
-      const res = await (isSuper ? saDemoteSemesterAllAtLevel : adminDemoteSemesterAllAtLevel)(Number(programFilter), Number(level));
+      const t = bulkTarget(level);
+      const res = await (isSuper ? saDemoteSemesterAllAtLevel : adminDemoteSemesterAllAtLevel)(t.programId, t.level);
       toast.success(res?.message ?? tx(`${count} students demoted to previous semester!`));
       await load();
     } catch (e: any) {
@@ -239,12 +341,15 @@ export default function Students() {
   };
 
   const saveEdit = async () => {
+    if (perStudentResidency && studentEdit.residence && studentEdit.residency !== "BOARDING"
+      && !(await Swal.fire({ title: "Leave their room?", html: `This student lives in <b>${String(studentEdit.residence).replace(/</g, "&lt;")}</b>. As a ${studentEdit.residency === "DAY" ? "day student" : "student with no residency"} they will leave it.`,
+        icon: "warning", showCancelButton: true, confirmButtonText: "Save", confirmButtonColor: "var(--brand)", cancelButtonColor: "#adb5bd" })).isConfirmed) return;
     setSaving(true);
     try {
-      await updateStudent(studentEdit.id, studentEdit);
+      await updateStudent(studentEdit.id, { ...studentEdit, currentLevel: onlyLevel(studentEdit.programId) ?? studentEdit.currentLevel, gender: studentEdit.gender ?? "", residency: perStudentResidency ? (studentEdit.residency ?? "") : null });
       toast.success(tx("Student updated"));
       setEditModal(false); await load();
-    } catch { toast.error("Update failed"); } finally { setSaving(false); }
+    } catch (e: any) { toast.error(e?.response?.data?.message ?? "Update failed", { duration: 6000 }); } finally { setSaving(false); }
   };
 
   const remove = async (id: number, name: string) => {
@@ -256,14 +361,23 @@ export default function Students() {
     catch (e: any) { toast.error(e?.response?.data?.message ?? "Delete failed", { duration: 6000 }); }
   };
 
+  /** A school class is one year: its students are always at its only level. */
+  const onlyLevel = (programId: any) => {
+    const p = programs.find((x: any) => x.id === Number(programId));
+    return oneYear(p) ? (p?.configuredLevels?.[0] ?? 1) : null;
+  };
+
   const saveNewStudent = async () => {
-    if (!newStudent.firstname || !newStudent.lastname || !newStudent.username || !newStudent.password || !newStudent.programId || !newStudent.currentLevel || !newStudent.currentSemester) {
-      toast.error(tx("Please fill in all required fields (Name, Student ID, Password, Program, Level, Semester)"));
+    const level = onlyLevel(newStudent.programId) ?? newStudent.currentLevel;
+    if (!newStudent.firstname || !newStudent.lastname || !newStudent.username || !newStudent.password || !newStudent.programId || !level || !newStudent.currentSemester) {
+      toast.error(school ? tx("Please fill in all required fields (Name, Student ID, Password, Program, Semester)")
+        : tx("Please fill in all required fields (Name, Student ID, Password, Program, Level, Semester)"));
       return;
     }
     setAdding(true);
     try {
-      await registerStudent({ ...newStudent, programId: Number(newStudent.programId), currentLevel: Number(newStudent.currentLevel), currentSemester: Number(newStudent.currentSemester) });
+      await registerStudent({ ...newStudent, programId: Number(newStudent.programId), currentLevel: Number(level), currentSemester: Number(newStudent.currentSemester),
+        gender: newStudent.gender || null, residency: perStudentResidency ? (newStudent.residency || null) : null });
       toast.success(tx("Student added successfully"));
       setAddModal(false);
       setNewStudent(emptyStudent);
@@ -275,32 +389,40 @@ export default function Students() {
     }
   };
 
+  /** Gender (always) and, with day and boarding students, residency; both optional. */
+  const residencyFields: Field[] = [
+    { key: "gender", label: "Gender (Optional)", type: "choice", choices: [{ value: "", label: "Not recorded" }, { value: "MALE", label: "Male" }, { value: "FEMALE", label: "Female" }] },
+    ...(perStudentResidency ? [{ key: "residency", label: "Residency (Optional)", type: "choice", choices: [{ value: "", label: "Not recorded" }, { value: "DAY", label: "Day student" }, { value: "BOARDING", label: "Boarder" }] } as Field] : []),
+  ];
+
   const editFields = (() => {
     const selectedProg = programs.find((p: any) => p.id === Number(studentEdit.programId));
-    const semsCount = selectedProg?.semestersPerLevel?.[Number(studentEdit.currentLevel)] ?? periodsPerLevel();
+    const semsCount = selectedProg?.semestersPerLevel?.[Number(onlyLevel(studentEdit.programId) ?? studentEdit.currentLevel)] ?? periodsPerLevel();
     return [
       { key: "firstname", label: "First Name", autoComplete: "off" }, { key: "lastname", label: "Last Name", autoComplete: "off" },
       { key: "email", label: "Email", type: "email" }, { key: "username", label: "Username" }, { key: "phone", label: "Phone", type: "tel" },
       { key: "programId", label: tx("Program"), type: "programSelect" },
-      { key: "currentLevel", label: tx("Level"), type: "select", options: selectedProg?.configuredLevels ?? defaultLevels() },
+      ...(school && oneYear(selectedProg) ? [] : [{ key: "currentLevel", label: tx("Level"), type: "select", options: selectedProg?.configuredLevels ?? defaultLevels() }]),
       { key: "currentSemester", label: tx("Semester"), type: "select", options: Array.from({ length: semsCount }, (_, i) => i + 1) },
+      ...residencyFields,
     ] as Field[];
   })();
 
   const addFields = (() => {
     const selectedProg = programs.find((p: any) => p.id === Number(newStudent.programId));
-    const semsCount = selectedProg?.semestersPerLevel?.[Number(newStudent.currentLevel)] ?? periodsPerLevel();
+    const semsCount = selectedProg?.semestersPerLevel?.[Number(onlyLevel(newStudent.programId) ?? newStudent.currentLevel)] ?? periodsPerLevel();
     return [
       { key: "firstname", label: "First Name", autoComplete: "off" }, { key: "lastname", label: "Last Name", autoComplete: "off" },
       { key: "email", label: "Email (Optional)", type: "email" }, { key: "phone", label: "Phone (Optional)", type: "tel" },
       { key: "username", label: tx("Student ID (Username)"), autoComplete: "off" }, { key: "password", label: "Password", type: "password", autoComplete: "new-password" },
       { key: "programId", label: tx("Program"), type: "programSelect" },
-      { key: "currentLevel", label: tx("Level"), type: "select", options: selectedProg?.configuredLevels ?? defaultLevels() },
+      ...(school && oneYear(selectedProg) ? [] : [{ key: "currentLevel", label: tx("Level"), type: "select", options: selectedProg?.configuredLevels ?? defaultLevels() }]),
       { key: "currentSemester", label: tx("Semester"), type: "select", options: Array.from({ length: semsCount }, (_, i) => i + 1) },
+      ...residencyFields,
     ] as Field[];
   })();
 
-  const filtering = search !== "" || programFilter !== "";
+  const filtering = search !== "" || programFilter !== "" || residencyFilter !== "";
 
   return (
     <div className="st" style={{ paddingBottom: 40 }}>
@@ -318,6 +440,15 @@ export default function Students() {
           <option value="">{tx("All Programs")}</option>
           {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
+        {hasBoarding && (
+          <select className="st-input st-prog" value={residencyFilter} onChange={e => setResidencyFilter(e.target.value)} aria-label="Filter by residency">
+            <option value="">{perStudentResidency ? "Any residency" : "All boarders"}</option>
+            {perStudentResidency && <option value="BOARDING">Boarders</option>}
+            {perStudentResidency && <option value="DAY">Day students</option>}
+            <option value="NOROOM">Boarders without a room</option>
+            {perStudentResidency && <option value="UNSET">Residency not recorded</option>}
+          </select>
+        )}
         <button type="button" className="st-icon-btn" onClick={load} disabled={loading} title="Refresh" aria-label="Refresh">
           <RefreshCw size={15} color="var(--brand-text)" className={loading ? "st-spin" : undefined} />
         </button>
@@ -332,7 +463,7 @@ export default function Students() {
         <div className="st-empty">
           <Users size={40} style={{ marginBottom: 12 }} />
           <p style={{ fontWeight: 700, margin: 0 }}>{tx("No students found")}</p>
-          {filtering && <button type="button" className="st-link" onClick={() => { setSearch(""); setProgramFilter(""); }}>Clear search and filter</button>}
+          {filtering && <button type="button" className="st-link" onClick={() => { setSearch(""); setProgramFilter(""); setResidencyFilter(""); }}>Clear search and filter</button>}
         </div>
       ) : sortedLevels.map(level => {
         const col   = colorFor(level);
@@ -341,15 +472,15 @@ export default function Students() {
         const bulky = promotingLv === level;
 
         return (
-          <section key={level} className="st-group" aria-label={`${tx("Level ")}${level}`}>
+          <section key={level} className="st-group" aria-label={groupLabel(level)}>
             {/* Level header */}
             <div className="st-group-head" style={{ background: col.bg, borderBottomColor: `color-mix(in srgb, ${col.badge} 18.8%, transparent)` }}>
               <div className="st-group-title">
-                <span className="st-level" style={{ background: col.badge }}>{tx("Level ")}{level}</span>
+                <span className="st-level" style={{ background: col.badge }}>{groupLabel(level)}</span>
                 <span style={{ color: col.text }}>{grp.length} {tx("student")}{grp.length !== 1 ? "s" : ""}</span>
               </div>
               <div className="st-bulk">
-                {programFilter && canPromote ? (
+                {(school ? level !== "0" : programFilter) && canPromote ? (
                   <>
                     <button type="button" className="st-bulk-btn" onClick={() => demoteSemesterAll(level)} disabled={promotingSem === level + "-demote" || bulky}
                       style={{ background: "rgba(245,158,11,0.15)", color: "#92400e", borderColor: "#f59e0b" }}>
@@ -359,7 +490,14 @@ export default function Students() {
                       style={{ background: "rgba(42,181,125,0.15)", color: "#065f46", borderColor: "#2ab57d" }}>
                       {promotingSem === level ? <Loader2 size={13} className="st-spin" /> : <ArrowRight size={13} />}
                       {tx("Promote Semester")}</button>
-                    {nxtG ? (
+                    {school ? (
+                      <button type="button" className="st-bulk-btn" onClick={() => promoteWholeClass(level)} disabled={bulky || promotingSem === level}
+                        style={{ background: col.badge, color: "#fff", borderColor: col.badge }}
+                        title={nextClassOf(level) ? `Promote to ${nextClassOf(level)!.name}` : "This is a final class"}>
+                        {bulky ? <Loader2 size={13} className="st-spin" /> : <ChevronsUp size={13} />}
+                        {nextClassOf(level) ? `Promote to ${nextClassOf(level)!.name}` : "Complete school"}
+                      </button>
+                    ) : nxtG ? (
                       <button type="button" className="st-bulk-btn" onClick={() => promoteAll(level, nxtG)} disabled={bulky || promotingSem === level}
                         style={{ background: col.badge, color: "#fff", borderColor: col.badge }}>
                         {bulky ? <Loader2 size={13} className="st-spin" /> : <ChevronsUp size={13} />}
@@ -399,19 +537,34 @@ export default function Students() {
                     <div className="st-meta">
                       {s.email && <span><Mail size={10} />{s.email}</span>}
                       {s.program && <span><GraduationCap size={10} />{s.program}</span>}
-                      {s.currentSemester > 0 && <span style={{ color: col.badge, fontWeight: 700 }}>Sem {s.currentSemester}</span>}
+                      {s.currentSemester > 0 && <span style={{ color: col.badge, fontWeight: 700 }}>{school ? `Term ${s.currentSemester}` : `Sem ${s.currentSemester}`}</span>}
+                      {hasBoarding && (s.residence
+                        ? <span className="st-res" title="Where they sleep"><BedDouble size={10} />{s.residence}</span>
+                        : s.residency === "BOARDING" ? <span className="st-res is-warn"><BedDouble size={10} />Boarder, no room</span>
+                        : s.residency === "DAY" ? <span className="st-res is-day"><Home size={10} />Day</span> : null)}
                     </div>
                   </div>
 
                   <div className="st-actions">
-                    {isSuper && prv && (
+                    {!school && isSuper && prv && (
                       <button type="button" className="st-move" onClick={() => promoteOne(s, prv)} disabled={isPro}
                         title={tx(`Demote to Level ${prv}`)} aria-label={tx(`Demote ${name} to Level ${prv}`)}
                         style={{ borderColor: "#f59e0b", background: "rgba(245,158,11,0.07)", color: "#b45309" }}>
                         <ArrowRight size={11} style={{ transform: "rotate(180deg)" }} />L{prv}
                       </button>
                     )}
-                    {nxt && canPromote && (
+                    {school && canPromote && s.enabled !== false && s.programId && (() => {
+                      const next = nextClassOf(s.programId);
+                      return (
+                        <button type="button" className="st-move" onClick={() => promoteToNextClass(s)} disabled={isPro}
+                          title={next ? `Promote to ${next.name}` : "Complete school"} aria-label={next ? `Promote ${name} to ${next.name}` : `${name} completes school`}
+                          style={{ borderColor: col.badge, background: col.bg, color: col.text, maxWidth: 170 }}>
+                          {isPro ? <Loader2 size={11} className="st-spin" /> : <ChevronsUp size={11} />}
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{next ? next.name : "Complete"}</span>
+                        </button>
+                      );
+                    })()}
+                    {!school && nxt && canPromote && (
                       <button type="button" className="st-move" onClick={() => promoteOne(s, nxt)} disabled={isPro}
                         title={tx(`Promote to Level ${nxt}`)} aria-label={tx(`Promote ${name} to Level ${nxt}`)}
                         style={{ borderColor: col.badge, background: col.bg, color: col.text }}>
@@ -471,7 +624,7 @@ export default function Students() {
   );
 }
 
-type Field = { key: string; label: string; type?: "select" | "programSelect" | "email" | "tel" | "password"; options?: number[]; autoComplete?: string };
+type Field = { key: string; label: string; type?: "select" | "programSelect" | "choice" | "email" | "tel" | "password"; options?: number[]; choices?: { value: string; label: string }[]; autoComplete?: string };
 
 /** The student form's fields; selects report `isSelect` so the edit form can keep numeric ids. */
 function FormFields({ fields, programs, value, onChange, markRequired }: {
@@ -491,6 +644,10 @@ function FormFields({ fields, programs, value, onChange, markRequired }: {
               <select id={id} className="st-input" value={value[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value, true)}>
                 <option value="" disabled>Select {f.label}</option>
                 {(f.options ?? []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            ) : f.type === "choice" ? (
+              <select id={id} className="st-input" value={value[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value, false)}>
+                {(f.choices ?? []).map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             ) : f.type === "programSelect" ? (
               <select id={id} className="st-input" value={value[f.key] ?? ""} onChange={e => onChange(f.key, e.target.value, true)}>
@@ -577,6 +734,9 @@ select.st-input { cursor: pointer; }
 .st-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 3px; font-size: 11px; color: #64748b; min-width: 0; }
 .st-meta > span { display: inline-flex; align-items: center; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
 .st-meta svg { flex-shrink: 0; }
+.st-res { padding: 1px 7px; border-radius: 6px; background: var(--brand-soft); color: var(--brand-text); font-weight: 700; }
+.st-res.is-warn { background: #fff4e0; color: #8a5a00; }
+.st-res.is-day { background: #f1f5f9; color: #475569; }
 .st-actions { display: flex; gap: 5px; flex-shrink: 0; align-items: center; }
 .st-actions-spacer { display: none; }
 .st-move { height: 30px; padding: 0 10px; border-radius: 7px; border: 1.5px solid; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; }

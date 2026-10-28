@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import { Search, Loader2, CheckCircle2, BookOpen, Info, Filter, Plus, ChevronRight, GraduationCap, Calendar } from 'lucide-react';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode, showLevelPicker } from '../../utils/terms';
 
 export default function RegisterCourses() {
   const { user } = useAuth();
@@ -125,20 +125,20 @@ export default function RegisterCourses() {
         }}>
           <GraduationCap size={18} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-hover)' }}>
-            Showing courses for&nbsp;
-            <strong>{tx("Level ")}{(user as any).currentLevel}</strong>
+            {tx('Showing courses for')}&nbsp;
+            {!isSchoolMode() && <strong>{tx("Level ")}{(user as any).currentLevel}</strong>}
             {(user as any).currentSemester && (
-              <>&nbsp;· <Calendar size={13} style={{ display:'inline', verticalAlign:'middle' }} />&nbsp;
+              <>{!isSchoolMode() && <>&nbsp;· </>}<Calendar size={13} style={{ display:'inline', verticalAlign:'middle' }} />&nbsp;
               <strong>{tx("Semester ")}{(user as any).currentSemester}</strong></>
             )}
-            &nbsp;— courses for subsequent levels/semesters are hidden.
+            &nbsp;— {isSchoolMode() ? tx('courses for later semesters are hidden.') : 'courses for subsequent levels/semesters are hidden.'}
           </span>
         </div>
       )}
 
       {/* Control Panel: Level Tabs & Search */}
       <div className="lexa-card" style={{ overflow: 'hidden' }}>
-        <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f7' }}>
+        <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f7', display: showLevelPicker(uniqueLevels.length) ? undefined : 'none' }}>
           <div style={{ display: 'flex', overflowX: 'auto' }}>
             {uniqueLevels.map(l => (
               <button
@@ -201,7 +201,9 @@ export default function RegisterCourses() {
           </div>
           <h4 style={{ fontWeight: 800, color: '#495057', marginBottom: 12 }}>Catalog Exhausted</h4>
           <p style={{ color: '#adb5bd', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
-            Excellent! It seems you've already enrolled in all available modules for the <strong>{selectedLevel}</strong> {tx("level, or no matching courses were found for your search.")}</p>
+            {isSchoolMode()
+              ? tx('Excellent! It seems you have already registered for every course open to you, or none match your search.')
+              : <>Excellent! It seems you've already enrolled in all available modules for the <strong>{selectedLevel}</strong> {tx("level, or no matching courses were found for your search.")}</>}</p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 30 }}>
             <button onClick={() => setSearchQuery('')} className="btn-lexa btn-lexa-outline">
               Clear Search

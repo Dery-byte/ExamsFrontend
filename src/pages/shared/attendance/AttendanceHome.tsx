@@ -135,7 +135,7 @@ export default function AttendanceHome() {
 function ModeNotice({ role, mode, department, canStart }: { role: string; mode: string; department: string | null; canStart: boolean }) {
   if (canStart) return null;
   const text = role === 'LECTURER' && mode === 'PROGRAMME'
-    ? `${department ?? 'Your department'} takes attendance by programme, so the HOD starts the sessions.`
+    ? tx(`${department ?? 'Your department'} takes attendance by programme, so the HOD starts the sessions.`)
     : role === 'LECTURER' ? 'No courses are assigned to you yet, so there is nothing to take attendance for.'
     : 'There is nothing you can start attendance for yet. Check the Rules tab: attendance may be switched off, or set to the other mode.';
   return <div className="at-alert is-info"><Info size={16} /><span>{tx(text)}</span></div>;

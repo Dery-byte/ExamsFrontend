@@ -8,7 +8,7 @@ import {
   Globe, RotateCcw, UserPlus, PlusCircle, Trash2, X, Award,
   ClipboardCheck, AlertCircle, Loader2, CheckSquare, TrendingUp, CalendarClock
 } from 'lucide-react';
-import { defaultLevels, periodName, periodsPerLevel, tx } from '../../utils/terms';
+import { defaultLevels, periodName, periodsPerLevel, tx, showLevelPicker, isSchoolMode } from '../../utils/terms';
 
 /* ═══════════════════════════════════════════════════════════════════
    STATUS HELPERS
@@ -107,7 +107,7 @@ function MarksViewerModal({ sheet, onClose, onApprove, onRevert, onPublish, acti
               Marks Review — {sheet.courseName || 'Sheet'}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
-              {sheet.sessionName ? <>{sheet.sessionName} &bull; </> : null}{tx("Level ")}{sheet.level} &bull; Sem {sheet.semester} &bull; {sheet.programName}
+              {sheet.sessionName ? <>{sheet.sessionName} &bull; </> : null}{!isSchoolMode() && <>{tx("Level ")}{sheet.level} &bull; </>}{isSchoolMode() ? periodName(sheet.semester) : `Sem ${sheet.semester}`} &bull; {sheet.programName}
             </div>
           </div>
         </div>
@@ -418,7 +418,7 @@ function SheetCard({ sheet, onAction, actionLoading, onViewMarks, onEdit, onDele
               {sheet.courseName || 'Unnamed Sheet'}
             </div>
             <div style={{ fontSize: 12, color: '#64748b' }}>
-              {sheet.sessionName ? <>{sheet.sessionName} &bull; </> : null}{sheet.programName} &bull; Level {sheet.level} &bull; Semester {sheet.semester}
+              {sheet.sessionName ? <>{sheet.sessionName} &bull; </> : null}{sheet.programName}{!isSchoolMode() && <> &bull; Level {sheet.level}</>} &bull; {isSchoolMode() ? periodName(sheet.semester) : `Semester ${sheet.semester}`}
             </div>
           </div>
           <StatusBadge status={sheet.status} />
@@ -900,20 +900,22 @@ const MarksSheetManager = () => {
                   <select style={inputStyle} value={programId} onChange={e => {
                     setProgramId(e.target.value);
                     const p = programs.find((p: any) => p.id === Number(e.target.value)) as any;
-                    setAvailableLevels(p?.configuredLevels || defaultLevels() as any);
-                    setLevel(''); setSemester('');
+                    const lvls = p?.configuredLevels || defaultLevels();
+                    setAvailableLevels(lvls as any);
+                    // A school class is one year: its level is picked for the user
+                    setLevel(showLevelPicker(lvls.length) ? '' : String(lvls[0] ?? '')); setSemester('');
                   }} required>
                     <option value="">{tx("Select Program")}</option>
                     {programs.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
-                <div>
+                {showLevelPicker(availableLevels.length) && <div>
                   <label style={labelStyle}>{tx("Level")}</label>
                   <select style={inputStyle} value={level} onChange={e => { setLevel(e.target.value); setSemester(''); }} required>
                     <option value="">{tx("Select Level")}</option>
                     {availableLevels.map((lv: number) => <option key={lv} value={lv}>{lv}</option>)}
                   </select>
-                </div>
+                </div>}
                 <div>
                   <label style={labelStyle}>{tx("Semester")}</label>
                   <select style={inputStyle} value={semester} onChange={e => setSemester(e.target.value)} required>

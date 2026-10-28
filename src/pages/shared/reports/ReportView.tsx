@@ -14,7 +14,7 @@ import {
   type ReportDefinition, type ReportFilterDef, type ReportParams, type ReportResult, type ReportsApi, type ReportTable,
 } from '../../../api/endpoints';
 import { downloadReportExcel, downloadTableCsv, formatCell, formatStat, isNumeric, reportFileName } from '../../../utils/reportExport';
-import { defaultLevels, periodsPerLevel } from '../../../utils/terms';
+import { defaultLevels, periodsPerLevel, tx } from '../../../utils/terms';
 import { catalogQuery, useReports, type ReportsRole } from './useReports';
 
 /* Chart tokens (same as Analytics): one series in categorical slot 1; text never wears the series color. */
@@ -27,9 +27,9 @@ const PAGE_SIZES = [25, 50, 100];
 /** URL parameter for each filter. "all" as the session means every session. */
 const PARAM: Record<string, keyof ReportParams> = {
   session: 'sessionId', department: 'departmentId', program: 'programId', level: 'level', semester: 'semester',
-  from: 'from', to: 'to', course: 'courseId', quiz: 'quizId', status: 'status',
+  from: 'from', to: 'to', course: 'courseId', quiz: 'quizId', status: 'status', hostel: 'hostelId',
 };
-const NUMBER_PARAMS = new Set(['sessionId', 'departmentId', 'programId', 'level', 'semester', 'courseId', 'quizId']);
+const NUMBER_PARAMS = new Set(['sessionId', 'departmentId', 'programId', 'level', 'semester', 'courseId', 'quizId', 'hostelId']);
 /** Parameters set by clicking a row (unless the report offers them as a filter). */
 const DRILLS: (keyof ReportParams)[] = ['courseId', 'quizId'];
 /** A table this narrow becomes stacked cards on a phone; wider ones scroll sideways with the first column fixed. */
@@ -237,7 +237,7 @@ function FilterBar({ def, search, setParam, sessions, onReset, role, loadProgram
           </select>
         );
       case 'department':
-        return select((Array.isArray(departments) ? departments : []).map((d: any) => ({ value: String(d.id), label: d.name })), 'All departments');
+        return select((Array.isArray(departments) ? departments : []).map((d: any) => ({ value: String(d.id), label: d.name })), tx('All departments'));
       case 'program':
         return select(progList.map((p: any) => ({ value: String(p.id), label: p.name })), f.required ? null : `All ${f.label.toLowerCase()}s`);
       case 'level':
@@ -253,6 +253,7 @@ function FilterBar({ def, search, setParam, sessions, onReset, role, loadProgram
         );
       case 'course':
       case 'quiz':
+      case 'hostel':
       case 'status':
         return select(f.options ?? [], f.required ? null : f.key === 'status' ? `Any ${f.label.toLowerCase()}` : `All ${f.label.toLowerCase()}s`);
       default:

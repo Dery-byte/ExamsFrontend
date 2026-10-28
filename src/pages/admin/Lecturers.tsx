@@ -12,7 +12,7 @@ import {
   Lock, Key
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode } from '../../utils/terms';
 
 const emptyLecturer = { firstname:'', lastname:'', username:'', email:'', phone:'', password:'', departmentId:'', secondaryDepartmentIds: [] as number[] };
 
@@ -238,11 +238,11 @@ export default function Lecturers() {
                 {lecturerEdit.firstname?.[0]?.toUpperCase()}{lecturerEdit.lastname?.[0]?.toUpperCase()}
               </div>
               <h3 className="lx-modal-aside-title">Edit Profile</h3>
-              <p className="lx-modal-aside-sub">Update faculty member details and department assignments.</p>
+              <p className="lx-modal-aside-sub">{tx('Update faculty member details and department assignments.')}</p>
               <div className="lx-modal-aside-steps">
                 <div className="lx-step active"><span className="lx-step-dot" /><span>Personal Info</span></div>
                 <div className="lx-step active"><span className="lx-step-dot" /><span>Credentials</span></div>
-                <div className="lx-step active"><span className="lx-step-dot" /><span>Department</span></div>
+                <div className="lx-step active"><span className="lx-step-dot" /><span>{tx('Department')}</span></div>
               </div>
             </div>
 
@@ -300,13 +300,13 @@ export default function Lecturers() {
                   </div>
                 </div>
 
-                <div className="lx-section-label" style={{marginTop:20}}><GraduationCap size={13}/> Department Assignment</div>
+                <div className="lx-section-label" style={{marginTop:20}}><GraduationCap size={13}/> {tx('Department Assignment')}</div>
                 <div className="lx-field">
-                  <label>Primary Department</label>
+                  <label>{isSchoolMode() ? 'Main section' : 'Primary Department'}</label>
                   <div className="lx-input-wrap">
                     <GraduationCap size={14} className="lx-input-icon"/>
                     <select value={lecturerEdit.departmentId||''} onChange={e=>setLecturerEdit({...lecturerEdit,departmentId:e.target.value})}>
-                      <option value="">— Select Department —</option>
+                      <option value="">{tx('— Select Department —')}</option>
                       {departments.map((d:any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                     </select>
                   </div>
@@ -316,7 +316,7 @@ export default function Lecturers() {
                   <div style={{marginTop:20}}>
                     <div className="lx-section-label">
                       <Shield size={13}/>
-                      <span>Additional Departments</span>
+                      <span>{tx('Additional Departments')}</span>
                       <span className="lx-super-badge">Super Admin</span>
                     </div>
                     <p className="lx-hint-text">{tx("This lecturer will be visible to HODs of every selected department.")}</p>
@@ -360,12 +360,12 @@ export default function Lecturers() {
                 <UserPlus size={28} color="#fff"/>
               </div>
               <h3 className="lx-modal-aside-title">Enroll Staff</h3>
-              <p className="lx-modal-aside-sub">Register a new faculty member and assign them to departments.</p>
+              <p className="lx-modal-aside-sub">{tx('Register a new faculty member and assign them to departments.')}</p>
               <div className="lx-modal-aside-steps">
                 <div className="lx-step active"><span className="lx-step-dot"/><span>Identity</span></div>
                 <div className="lx-step active"><span className="lx-step-dot"/><span>Contact</span></div>
                 <div className="lx-step active"><span className="lx-step-dot"/><span>Access</span></div>
-                <div className="lx-step active"><span className="lx-step-dot"/><span>Department</span></div>
+                <div className="lx-step active"><span className="lx-step-dot"/><span>{tx('Department')}</span></div>
               </div>
               <div className="lx-aside-notice">
                 <Lock size={13}/>
@@ -435,13 +435,13 @@ export default function Lecturers() {
                     </div>
                   </div>
 
-                  <div className="lx-section-label" style={{marginTop:20}}><GraduationCap size={13}/> Department</div>
+                  <div className="lx-section-label" style={{marginTop:20}}><GraduationCap size={13}/> {tx('Department')}</div>
                   <div className="lx-field">
-                    <label>Primary Department</label>
+                    <label>{isSchoolMode() ? 'Main section' : 'Primary Department'}</label>
                     <div className="lx-input-wrap">
                       <GraduationCap size={14} className="lx-input-icon"/>
                       <select value={newLect.departmentId} onChange={setNSelect('departmentId')}>
-                        <option value="">— Select Department —</option>
+                        <option value="">{tx('— Select Department —')}</option>
                         {departments.map((d:any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                       </select>
                     </div>
@@ -451,7 +451,7 @@ export default function Lecturers() {
                     <div style={{marginTop:20}}>
                       <div className="lx-section-label">
                         <Shield size={13}/>
-                        <span>Additional Departments</span>
+                        <span>{tx('Additional Departments')}</span>
                         <span className="lx-super-badge">Super Admin</span>
                       </div>
                       <p className="lx-hint-text">{tx("This lecturer will be visible to HODs of every selected department.")}</p>

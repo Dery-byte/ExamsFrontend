@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   adminGetAllStudents, downloadTranscriptPdf, getStudentEligibility, getStudentTranscript, saGetAllStudents,
 } from '../../api/endpoints';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode, levelSuffix } from '../../utils/terms';
 
 const nameOf = (s: any): string => (s.fullName ?? `${s.firstname ?? ''} ${s.lastname ?? ''}`.trim()) || s.username || 'Student';
 
@@ -55,7 +55,7 @@ export default function AcademicRecords() {
               : list.map(s => (
                 <button key={s.id} onClick={() => setSelected(s)} className={`ar-stu ${selected?.id === s.id ? 'is-active' : ''}`} aria-current={selected?.id === s.id}>
                   <span style={{ fontWeight: 700, color: '#1e293b' }}>{nameOf(s)}</span>
-                  <span style={{ fontSize: 11.5, color: '#64748b' }}>{s.username}{s.program ? ` · ${s.program}` : ''}{s.currentLevel ? ` · L${s.currentLevel}` : ''}</span>
+                  <span style={{ fontSize: 11.5, color: '#64748b' }}>{s.username}{s.program ? ` · ${s.program}` : ''}{s.currentLevel && !isSchoolMode() ? ` · L${s.currentLevel}` : ''}</span>
                 </button>
               ))}
           </div>
@@ -69,7 +69,7 @@ export default function AcademicRecords() {
               <div className="ar-banner">
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{nameOf(selected)}</div>
-                  <div style={{ fontSize: 12.5, color: '#64748b' }}>{selected.username}{selected.program ? ` · ${selected.program}` : ''}{selected.currentLevel ? tx(` · Level ${selected.currentLevel}`) : ''}</div>
+                  <div style={{ fontSize: 12.5, color: '#64748b' }}>{selected.username}{selected.program ? ` · ${selected.program}` : ''}{selected.currentLevel ? levelSuffix(selected.currentLevel) : ''}</div>
                 </div>
                 {e && (
                   <span className="ar-elig" style={e.eligible ? { background: '#eefbee', color: '#0b7a0b' } : { background: '#fdeeee', color: '#9f1f1f' }}

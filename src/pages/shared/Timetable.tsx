@@ -4,7 +4,7 @@ import { CalendarDays, Clock, AlertTriangle, Loader2, GraduationCap } from 'luci
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPrograms, getProgramsByDept, getTimetable, saGetDepartments } from '../../api/endpoints';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode } from '../../utils/terms';
 
 const iso = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -64,7 +64,7 @@ export default function Timetable() {
         <label className="tt-field"><span>To</span>
           <input type="date" className="tt-input" value={to} onChange={e => setTo(e.target.value)} /></label>
         {isSuper && (
-          <label className="tt-field"><span>Department</span>
+          <label className="tt-field"><span>{tx('Department')}</span>
             <select className="tt-input" value={departmentId} onChange={e => { setDepartmentId(e.target.value ? Number(e.target.value) : ''); setProgramId(''); }}>
               <option value="">All</option>
               {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -77,11 +77,11 @@ export default function Timetable() {
                 <option value="">All</option>
                 {programOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select></label>
-            <label className="tt-field"><span>{tx("Level")}</span>
+            {!isSchoolMode() && <label className="tt-field"><span>{tx("Level")}</span>
               <select className="tt-input" value={level} onChange={e => setLevel(e.target.value)}>
                 <option value="">All</option>
                 {['100', '200', '300', '400', '500', '600'].map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
-              </select></label>
+              </select></label>}
           </>
         )}
       </div>
@@ -119,7 +119,7 @@ export default function Timetable() {
                   <div className="tt-title">{i.courseCode && <strong>{i.courseCode}</strong>} {i.title}</div>
                   <div className="tt-meta">
                     {i.courseTitle && <span>{i.courseTitle}</span>}
-                    {i.level && <span><GraduationCap size={12} /> {tx("Level ")}{i.level}</span>}
+                    {i.level && !isSchoolMode() && <span><GraduationCap size={12} /> {tx("Level ")}{i.level}</span>}
                     {!isStudent && i.programs?.length > 0 && <span>{i.programs.join(', ')}</span>}
                     {!isStudent && i.lecturer && <span>{i.lecturer}</span>}
                   </div>

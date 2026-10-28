@@ -72,12 +72,12 @@ export default function FeatureControls() {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      <PageHeader title={isSuper ? 'Feature Controls' : 'Department Settings'} breadcrumbs={[isSuper ? 'Super Admin' : 'Admin', isSuper ? 'Feature Controls' : 'Department Settings']} />
+      <PageHeader title={isSuper ? 'Feature Controls' : tx('Department Settings')} breadcrumbs={[isSuper ? 'Super Admin' : 'Admin', isSuper ? 'Feature Controls' : tx('Department Settings')]} />
 
       <p className="fc-intro">
         {isSuper
           ? <>Switch features on or off for the whole system. <b>{tx("Department-level")}</b> {tx("features can also be switched per department, by you or by that department's HOD, as long as the system switch is on.")}</>
-          : <>Choose which features are available in <b>{data[0]?.departmentName ?? 'your department'}</b>. A feature the Super Admin has turned off can't be switched on here.</>}
+          : <>Choose which features are available in <b>{data[0]?.departmentName ?? tx('your department')}</b>. A feature the Super Admin has turned off can't be switched on here.</>}
       </p>
 
       {isLoading ? (
@@ -114,7 +114,7 @@ export default function FeatureControls() {
                       label={`${f.label}: ${on ? 'on' : 'off'}`}
                       onChange={() => hodView
                         // HOD: "on" means follow the (on) system switch; "off" is a department choice
-                        ? setDept(f, user.department.id, on ? false : null, f.departmentName ?? 'your department')
+                        ? setDept(f, user.department.id, on ? false : null, f.departmentName ?? tx('your department'))
                         : toggleSystem(f)} />
                   </div>
                 </div>
@@ -126,8 +126,8 @@ export default function FeatureControls() {
                     </button>
                     {open[f.key] && (
                       <div className="fc-depts">
-                        {!f.systemEnabled && <p className="fc-lock"><Lock size={12} /> Off system-wide: department choices apply again once it's switched back on.</p>}
-                        {departments.length === 0 ? <p className="fc-note">No departments yet.</p> : departments.map(d => {
+                        {!f.systemEnabled && <p className="fc-lock"><Lock size={12} /> {tx("Off system-wide: department choices apply again once it's switched back on.")}</p>}
+                        {departments.length === 0 ? <p className="fc-note">{tx('No departments yet.')}</p> : departments.map(d => {
                           const o = overrides.get(d.id);
                           const value: 'follow' | 'on' | 'off' = !o ? 'follow' : o.enabled ? 'on' : 'off';
                           const id = `${f.key}:${d.id}`;

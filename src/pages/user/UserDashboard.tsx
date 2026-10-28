@@ -21,6 +21,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PageHeader from '../../components/PageHeader';
 import FeesSummaryCard from './fees/FeesSummaryCard';
+import MyRoomCard from './boarding/MyRoomCard';
 import CheckInPanel from './attendance/CheckInPanel';
 import { useAssessments, useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { tx } from '../../utils/terms';
@@ -161,6 +162,9 @@ export default function UserDashboard() {
       {features?.ATTENDANCE === true && <CheckInPanel compact />}
 
       {feesStudent === true && <FeesSummaryCard />}
+
+      {/* Boarders: where they sleep */}
+      <MyRoomCard />
 
       {/* Stats Row */}
       <div className="dashboard-stats-grid">

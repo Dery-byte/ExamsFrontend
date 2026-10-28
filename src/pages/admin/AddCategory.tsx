@@ -9,7 +9,7 @@ import {
   ShieldCheck, Loader2, BadgeCheck, GraduationCap,
   Info, CheckCircle2, Award, Cpu, Sparkles, Calendar, Globe
 } from 'lucide-react';
-import { isSchoolMode, periodsPerLevel, tx } from '../../utils/terms';
+import { isSchoolMode, periodsPerLevel, tx, defaultLevels, showLevelPicker } from '../../utils/terms';
 
 const LEVELS = [
   { label: tx('Level 100'), sub: '1st Year', color: 'var(--brand-text)' },
@@ -47,7 +47,12 @@ export default function AddCategory() {
   const leadProgram = isGlobal ? undefined : programs.find(p => p.id === category.programIds[0]);
   const availableLevels = leadProgram
     ? (leadProgram.configuredLevels || []).map(l => String(l))
-    : ['100', '200', '300', '400'];
+    : defaultLevels().map(String);
+  // A school class is one year: its only level is chosen for the user and the picker stays hidden
+  const pickLevel = showLevelPicker(availableLevels.length);
+  useEffect(() => {
+    if (!pickLevel && availableLevels[0] && category.level !== availableLevels[0]) setCategory(c => ({ ...c, level: availableLevels[0] }));
+  }, [pickLevel, availableLevels[0], category.level]);
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setCategory(c => ({ ...c, [k]: e.target.value }));
@@ -262,7 +267,7 @@ export default function AddCategory() {
             )}
 
             {/* Row 3: Academic Level */}
-            <div className="acp-field">
+            {pickLevel && <div className="acp-field">
               <label className="acp-label">
                 <Layers size={13} />
                 {tx("Academic Level")}<span className="acp-required">*</span>
@@ -288,7 +293,7 @@ export default function AddCategory() {
                   );
                 })}
               </div>
-            </div>
+            </div>}
 
             {/* Row 4: Semester */}
             <div className="acp-field">
@@ -396,8 +401,8 @@ export default function AddCategory() {
             ))}
           </div>
 
-          {/* Level legend */}
-          <div className="acp-sb-level-legend">
+          {/* Level legend (universities: a school class is one year) */}
+          {!isSchoolMode() && <div className="acp-sb-level-legend">
             <p className="acp-sb-section-title"><Layers size={12} /> {tx("Level Structure")}</p>
             {LEVELS.map(lv => (
               <div key={lv.label} className="acp-sb-level-row">
@@ -406,7 +411,7 @@ export default function AddCategory() {
                 <span className="acp-sb-level-sub">— {lv.sub}</span>
               </div>
             ))}
-          </div>
+          </div>}
         </aside>
       </div>
 

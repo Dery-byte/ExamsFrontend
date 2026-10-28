@@ -346,6 +346,8 @@ export const saGetDepartments   = () => saClient.get('/departments').then(r => r
 export const saCreateDepartment = (data: object) => saClient.post('/departments', data).then(r => r.data);
 export const saUpdateDepartment = (id: number, data: object) => saClient.put(`/departments/${id}`, data).then(r => r.data);
 export const saDeleteDepartment = (id: number) => saClient.delete(`/departments/${id}`).then(r => r.data);
+/** Saves the order of the departments (school sections); returns them all in order. */
+export const saReorderDepartments = (ids: number[]) => saClient.put('/departments/order', { ids }).then(r => r.data);
 
 // ── Super Admin — Programs ─────────────────────────────────────────────────
 export const saGetPrograms       = () => saClient.get('/programs').then(r => r.data);
@@ -355,6 +357,8 @@ export const saUpdateProgram     = (id: number, data: object) => saClient.put(`/
 export const saDeleteProgram     = (id: number) => saClient.delete(`/programs/${id}`).then(r => r.data);
 /** Toggle a program's enabled/disabled state. Returns the updated ProgramDTO. */
 export const saToggleProgram     = (id: number) => saClient.patch(`/programs/${id}/toggle`).then(r => r.data);
+/** Saves the order of one section's classes (schools); returns every programme. */
+export const saReorderPrograms   = (ids: number[]) => saClient.put('/programs/order', { ids }).then(r => r.data);
 
 // ── Super Admin — HODs ─────────────────────────────────────────────────────
 export const saGetAllHods = () => saClient.get('/admins').then(r => r.data);
@@ -490,6 +494,11 @@ export interface FeatureFlags {
   assessments?: boolean;
   /** Each feature's state for the signed-in user (system switch + their department's choice). */
   features?: Partial<Record<FeatureKey, boolean>>;
+  /**
+   * Developer setting: how students are housed (DAY = no boarding at all), the word for a hostel
+   * ("House", "Hall" …), and whether the signed-in user has boarding duties (staff) or runs it all (head).
+   */
+  boarding?: { mode: 'DAY' | 'BOARDING' | 'BOTH'; word: string; plural: string; staff: boolean; head: boolean };
 }
 export const getFeatureFlags = (): Promise<FeatureFlags> =>
   client.get('/feature-flags').then(r => r.data);
@@ -515,6 +524,8 @@ export interface Announcement {
   id: number; title: string; body: string; audience: AnnouncementAudience;
   departmentId: number | null; departmentName: string | null;
   programId: number | null; programName: string | null; level: number | null;
+  /** Students: BOARDERS or DAY; one house (its boarders, and its staff for staff audiences). */
+  residency?: 'BOARDERS' | 'DAY' | null; hostelId?: number | null; hostelName?: string | null;
   pinned: boolean; expiresOn: string | null; createdAt: string;
   authorName: string | null; authorRole: string | null;
 }
@@ -525,6 +536,7 @@ export const getManageableAnnouncements = (): Promise<Announcement[]> =>
 export const postAnnouncement = (data: {
   title: string; body: string; audience: AnnouncementAudience; departmentId?: number | null;
   programId?: number | null; level?: number | null; pinned?: boolean; expiresOn?: string | null;
+  residency?: 'BOARDERS' | 'DAY' | null; hostelId?: number | null;
 }): Promise<Announcement> => client.post(`${apiRoot()}/announcements`, data).then(r => r.data);
 export const deleteAnnouncement = (id: number) =>
   client.delete(`${apiRoot()}/announcements/${id}`).then(r => r.data);
@@ -546,7 +558,7 @@ export const saGetAuditLogs = (params: AuditQuery): Promise<AuditPage> =>
 export const saGetAuditActions = (): Promise<string[]> => saClient.get('/audit-logs/actions').then(r => r.data);
 
 // ── Reports (Super Admin: whole institution; HOD: own department) ─────────
-export type ReportFilterKey = 'session' | 'department' | 'program' | 'level' | 'semester' | 'from' | 'to' | 'course' | 'quiz' | 'status';
+export type ReportFilterKey = 'session' | 'department' | 'program' | 'level' | 'semester' | 'from' | 'to' | 'course' | 'quiz' | 'status' | 'hostel';
 export interface ReportFilterDef {
   key: ReportFilterKey; label: string; options: { value: string; label: string }[] | null;
   /** The report shows nothing until this is chosen (e.g. the broadsheet's programme, level and semester). */
@@ -574,6 +586,8 @@ export interface ReportResult {
 export interface ReportParams {
   sessionId?: number; departmentId?: number; programId?: number; level?: number; semester?: number;
   from?: string; to?: string; courseId?: number; quizId?: number; status?: string;
+  /** Boarding reports: one house / hall. */
+  hostelId?: number;
 }
 /** List, run and print reports; the Super Admin and HODs each have their own (same shape). */
 export interface ReportsApi {
@@ -604,6 +618,8 @@ export const saReportsApi = reportsApi((path, config) => saClient.get(`/reports$
 export const hodReportsApi = reportsApi((path, config) => client.get(`${apiRoot()}/hod/reports${path}`, config));
 /** Always the lecturer's own courses and quizzes (the server locks it). */
 export const lecturerReportsApi = reportsApi((path, config) => client.get(`${apiRoot()}/lecturer/reports${path}`, config));
+/** Boarding staff's boarding reports (locked to the houses they look after). */
+export const boardingReportsApi = reportsApi((path, config) => client.get(`${apiRoot()}/boarding/reports${path}`, config));
 
 // ── Exam operations (Phase 2) ─────────────────────────────────────────────
 export const getTimetable = (params: { from?: string; to?: string; departmentId?: number | ''; programId?: number | ''; level?: string }) =>
@@ -666,6 +682,21 @@ export const getStudentTranscript = (id: number) => client.get(`${apiRoot()}/aca
 export const getStudentEligibility = (id: number) => client.get(`${apiRoot()}/academic/students/${id}/eligibility`).then(r => r.data);
 export const getPromotionPreview = (programId: number, level: number) =>
   client.get(`${apiRoot()}/academic/promotion-preview`, { params: { programId, level } }).then(r => r.data);
+
+// ── Schools: promotion moves students to their next class ──
+export interface ClassPromotion {
+  classId: number; className: string; targetId: number | null; targetName: string | null; leaves: boolean;
+  students: { studentId: number; name: string; username: string; term: number; eligible: boolean; reasons: string[] }[];
+  eligible: number; canOverride: boolean;
+}
+export const getClassPromotion = (programId: number): Promise<ClassPromotion> =>
+  client.get(`${apiRoot()}/academic/classes/${programId}/promotion`).then(r => r.data);
+/** Everyone (or the students listed) to the class's next class, or out of the school after a final class. */
+export const promoteClass = (programId: number, data: { studentIds?: number[]; override?: boolean } = {}) =>
+  client.post(`${apiRoot()}/academic/classes/${programId}/promote`, data).then(r => r.data);
+/** One student: to their next class, or (Super Admin) to the class given. */
+export const moveStudentClass = (id: number, data: { programId?: number | null; override?: boolean } = {}) =>
+  client.post(`${apiRoot()}/academic/students/${id}/move`, data).then(r => r.data);
 
 /** Downloads a transcript PDF (own when studentId is omitted). */
 export const downloadTranscriptPdf = async (studentId?: number) => {
@@ -793,9 +824,12 @@ export const getAuditLogAccess = (): Promise<{ superAdminVisible: boolean }> =>
 export const setAuditLogAccess = (superAdminVisible: boolean): Promise<{ superAdminVisible: boolean }> =>
   client.put(`${developerRootUrl()}/audit-log/access`, { superAdminVisible }).then(r => r.data);
 /** Developer: which modules this institution uses (Assessments = the whole quiz module). */
-export const getModules = (): Promise<{ assessments: boolean }> =>
+/** residency: DAY (day students only), BOARDING (boarding only) or BOTH. */
+export interface DeveloperModules { assessments: boolean; residency: 'DAY' | 'BOARDING' | 'BOTH' }
+export const getModules = (): Promise<DeveloperModules> =>
   client.get(`${developerRootUrl()}/modules`).then(r => r.data);
-export const setModules = (data: { assessments: boolean }): Promise<{ assessments: boolean }> =>
+/** Send only what changes. */
+export const setModules = (data: Partial<DeveloperModules>): Promise<DeveloperModules> =>
   client.put(`${developerRootUrl()}/modules`, data).then(r => r.data);
 
 // ── Subscription ─────────────────────────────────────────────────────────
@@ -858,12 +892,20 @@ export type FeeStatus = 'PAID' | 'PART_PAID' | 'UNPAID' | 'NO_FEE' | 'NO_CLASS';
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'ABANDONED' | 'VOIDED';
 export type PaymentMethod = 'PAYSTACK' | 'CASH' | 'BANK_TRANSFER' | 'OTHER';
 
-export interface FeeComponentItem { name: string; amount: number }
+/** EVERYONE (default), BOARDERS or DAY: who an item of an itemised fee is charged to. */
+export type FeeAppliesTo = 'EVERYONE' | 'BOARDERS' | 'DAY';
+export interface FeeComponentItem { name: string; amount: number; appliesTo?: FeeAppliesTo }
 /** One item of a student's itemised fee: what it costs, what's been paid towards it and what's left. */
 export interface FeeItemStatus { name: string; amount: number; paid: number; balance: number }
 export interface FeeScheduleInfo {
   id: number; programId: number; level: number; sessionId: number; amount: number; itemised: boolean;
+  /** Term / semester 1, 2 … or null for a whole-year fee; periodName: "Term 2" / "Whole year". */
+  term?: number | null; periodName?: string;
   components: FeeComponentItem[]; dueDate: string | null; note: string | null; updatedAt: string; updatedBy: string | null;
+  /** When some items are for boarders or day students only: each one's total. */
+  boarderAmount?: number; dayAmount?: number;
+  /** A student's statement: the whole fee before other residencies' items were left out. */
+  fullAmount?: number;
 }
 export interface SessionRef { id: number; name: string; current: boolean }
 export interface FeePaymentInfo {
@@ -872,7 +914,22 @@ export interface FeePaymentInfo {
   programName: string | null; level: number | null; studentName: string; studentId: string;
   /** The breakdown items this payment was for; empty when it was for the fee as a whole. */
   items: FeeComponentItem[];
+  /** RC-2026-000123 once the money is received; the code checks it on the verification page. */
+  receiptNo?: string | null; verificationCode?: string | null; periodName?: string | null;
   studentEmail?: string; recordedBy?: string | null; note?: string | null; gatewayTransactionId?: number | null;
+  /** Where the money went: fee terms, bills, credit. billTitle: the bill the payer chose, if any. */
+  allocations?: FeeAllocationLine[]; billTitle?: string | null;
+  /** Staff only: who recorded it, whether it is handed in (cash-up), when it was cancelled. */
+  recordedById?: number | null; cashedUp?: boolean; voidedAt?: string | null;
+}
+export interface FeeAllocationLine { kind: 'FEE' | 'BILL' | 'ARREARS' | 'REFUND' | 'CREDIT'; label: string; amount: number; scheduleId?: number; billId?: number; arrearsId?: number }
+export type BillStatus = 'PAID' | 'PART_PAID' | 'UNPAID' | 'CANCELLED' | 'DECLINED';
+export interface BillLineInfo { name: string; quantity: number; unitPrice: number; amount: number; lineId?: number; stocked?: boolean; issued?: number }
+/** A student's bill (uniform, books, an excursion …). */
+export interface StudentBillInfo {
+  id: number; batchId: number; title: string; amount: number; paid: number; balance: number; status: BillStatus;
+  optional: boolean; dueDate: string | null; createdAt: string; sessionName: string | null; note: string | null;
+  statusNote: string | null; lines: BillLineInfo[];
 }
 export interface MyFees {
   currency: string; session: SessionRef; onlinePayment: boolean; partPayment: boolean; itemPayment: boolean; minimumPayment: number;
@@ -883,6 +940,40 @@ export interface MyFees {
   payments: FeePaymentInfo[];
   /** What the student's unpaid fees are holding back (null when nothing is held). */
   resultsHold: ResultsHold | null;
+  /** Every fee owed so far this session (whole year, or each term up to now), oldest first; later terms coming up. */
+  dues?: FeeDue[]; upcoming?: FeeScheduleInfo[];
+  totalFees?: number; totalPaid?: number; totalBalance?: number;
+  residency?: 'DAY' | 'BOARDING' | null;
+  /** Bills (open, paid, declined; the office also sees cancelled), what they still owe, unused credit, and everything to pay. */
+  bills?: StudentBillInfo[]; billsBalance?: number; accountCredit?: number; toPay?: number;
+  /** Fees still owed from earlier sessions / opening balance (paid first), and this session's concessions in all. */
+  arrears?: ArrearsInfo[]; arrearsBalance?: number; totalDiscount?: number;
+  /** Staff statement only. */
+  concessions?: ConcessionInfo[]; refunds?: RefundInfo[];
+}
+export type ArrearsStatus = 'PAID' | 'PART_PAID' | 'UNPAID' | 'WRITTEN_OFF';
+export interface ArrearsInfo {
+  id: number; label: string; kind: 'CARRIED' | 'OPENING'; sessionName: string | null; programName: string | null; level: number | null;
+  amount: number; paid: number; balance: number; status: ArrearsStatus; writtenOff: number | null; note: string | null;
+  statusNote: string | null; statusBy: string | null; statusAt: string | null; createdAt: string;
+  studentId?: number; studentName?: string; username?: string; enabled?: boolean;
+}
+export type ConcessionKind = 'SCHOLARSHIP' | 'BURSARY' | 'SIBLING' | 'STAFF_CHILD' | 'WAIVER' | 'OTHER';
+export interface ConcessionInfo {
+  id: number; kind: ConcessionKind; kindLabel: string; title: string; mode: 'PERCENT' | 'AMOUNT'; value: number; items: string[];
+  term: number | null; termName: string | null; note: string | null; active: boolean; sessionName: string;
+  createdBy: string | null; createdAt: string; revokedBy: string | null; revokedAt: string | null; revokeReason: string | null;
+  studentId?: number; studentName?: string; username?: string; programName?: string | null; level?: number | null; studentSaves?: number | null;
+}
+export interface RefundInfo {
+  id: number; number: string; amount: number; currency: string; method: PaymentMethod; methodName: string; paidTo: string | null;
+  reason: string; status: 'DONE' | 'VOIDED'; paidAt: string; paidBy: string | null; voidedAt: string | null; voidedBy: string | null;
+  voidReason: string | null; cashedUp: boolean; studentId?: number; studentName?: string; username?: string; voidedToday?: boolean;
+}
+export interface FeeDue {
+  fee: FeeScheduleInfo; paid: number; balance: number; credit: number; status: FeeStatus; items: FeeItemStatus[];
+  /** Before concessions, what they take off, and their titles. */
+  gross?: number; discount?: number; concessions?: string[];
 }
 /**
  * Returned (as a 403 body) instead of report cards / the transcript while a student's fees fall short
@@ -919,22 +1010,32 @@ export interface ResultsHoldInput {
 export interface FeeLevelRow {
   level: number; students: number | null; schedule: FeeScheduleInfo | null; collected: number;
   billed?: number; outstanding?: number;
+  /** Terms a year for this class; how its fees are set this session (YEAR / TERM / null) and which terms have one. */
+  periods?: number; setAs?: 'YEAR' | 'TERM' | null; termsSet?: number[];
 }
 export interface FeeProgramRow { id: number; name: string; code: string; departmentName: string | null; enabled: boolean; levels: FeeLevelRow[] }
 export interface FeeOverview {
   session: SessionRef; sessions: SessionRef[]; currency: string;
   paystack: { configured: boolean; mode: 'live' | 'test' | null };
   settings: { visibleToStudents: boolean; onlinePayment: boolean; partPayment: boolean; itemPayment: boolean; resultsHold: boolean };
-  totals: { billed: number | null; collected: number; outstanding: number | null; students: number | null; levelsSet: number; levelsTotal: number };
+  totals: { billed: number | null; collected: number; outstanding: number | null; students: number | null; levelsSet: number; levelsTotal: number; residencyUnknown?: number };
   programs: FeeProgramRow[];
+  /** The period shown (null = whole year), the choices, and where the page opens. */
+  term?: number | null; periods?: { value: number; label: string }[]; defaultTerm?: number;
+  residencyMode?: 'DAY' | 'BOARDING' | 'BOTH';
 }
 export interface FeeScheduleInput {
   programId: number; level: number; sessionId: number; itemised: boolean; amount?: number;
   components?: FeeComponentItem[]; dueDate?: string | null; note?: string | null; alsoApplyToLevels?: number[];
+  /** 1, 2 … for a term's fee; null / 0 for the whole year. */
+  term?: number | null;
 }
 export interface FeeStudentMatch {
   id: number; name: string; studentId: string; email: string; programName: string | null; level: number | null;
   fee: number | null; balance: number | null; items: FeeItemStatus[];
+  dues?: FeeDue[]; residency?: 'DAY' | 'BOARDING' | null;
+  /** Open bills with a balance, and unused credit (balance is everything owed less credit). */
+  bills?: StudentBillInfo[]; credit?: number;
 }
 export interface PaymentPage { content: FeePaymentInfo[]; total: number; page: number; size: number }
 
@@ -944,15 +1045,19 @@ export const getMyFees = (): Promise<MyFees> => client.get(`${apiRoot()}/fees/me
  * Student: starts a Paystack checkout; send the browser to authorizationUrl.
  * Nothing = the full balance; amount = a part payment; items = those items of the breakdown.
  */
-export const startFeePayment = (pay: { amount?: number; items?: string[] } = {}): Promise<{ reference: string; authorizationUrl: string }> =>
+export const startFeePayment = (pay: { amount?: number; items?: string[]; scheduleId?: number; billId?: number } = {}): Promise<{ reference: string; authorizationUrl: string }> =>
   client.post(`${apiRoot()}/fees/pay`, pay).then(r => r.data);
 /** Student: back from Paystack — confirm the payment and get its final state. */
 export const confirmFeePayment = (reference: string): Promise<FeePaymentInfo> =>
   client.post(`${apiRoot()}/fees/payments/${encodeURIComponent(reference)}/confirm`).then(r => r.data);
+/** Student: turn down an optional bill nothing has been paid on. */
+export const declineBill = (id: number): Promise<StudentBillInfo> => client.post(`${apiRoot()}/fees/bills/${id}/decline`).then(r => r.data);
 
-const feesAdminUrl = () => `${superAdminRootUrl()}/fees`;
-export const getFeeOverview = (sessionId?: number): Promise<FeeOverview> =>
-  client.get(`${feesAdminUrl()}/overview`, { params: sessionId ? { sessionId } : {} }).then(r => r.data);
+/** The fee screens are shared: the Super Admin's under /super-admin, the accounts office's under /api/finance. */
+const isAccountant = () => { try { return JSON.parse(localStorage.getItem('user') || 'null')?.role === 'ACCOUNTANT'; } catch { return false; } };
+const feesAdminUrl = () => (isAccountant() ? `${apiRoot()}/finance/fees` : `${superAdminRootUrl()}/fees`);
+export const getFeeOverview = (sessionId?: number, term?: number | null): Promise<FeeOverview> =>
+  client.get(`${feesAdminUrl()}/overview`, { params: { ...(sessionId ? { sessionId } : {}), ...(term ? { term } : {}) } }).then(r => r.data);
 export const saveFeeSchedule = (data: FeeScheduleInput): Promise<FeeScheduleInfo[]> =>
   client.put(`${feesAdminUrl()}/schedules`, data).then(r => r.data);
 export const deleteFeeSchedule = (id: number) => client.delete(`${feesAdminUrl()}/schedules/${id}`).then(r => r.data);
@@ -962,8 +1067,8 @@ export const getFeePayments = (params: { sessionId?: number; status?: string; pr
   client.get(`${feesAdminUrl()}/payments`, { params }).then(r => r.data);
 export const searchFeeStudents = (q: string): Promise<FeeStudentMatch[]> =>
   client.get(`${feesAdminUrl()}/students`, { params: { q } }).then(r => r.data);
-/** amount is ignored when items are given: the server charges those items' balances. */
-export const recordFeePayment = (data: { studentId: number; amount?: number; method: PaymentMethod; paidOn?: string; note?: string; items?: string[] }): Promise<FeePaymentInfo> =>
+/** amount is ignored when items are given. No scheduleId / billId = everything owed, oldest first; any excess is kept as credit. */
+export const recordFeePayment = (data: { studentId: number; amount?: number; method: PaymentMethod; paidOn?: string; note?: string; items?: string[]; scheduleId?: number; billId?: number }): Promise<FeePaymentInfo> =>
   client.post(`${feesAdminUrl()}/payments/manual`, data).then(r => r.data);
 export const voidFeePayment = (id: number, reason: string): Promise<FeePaymentInfo> =>
   client.post(`${feesAdminUrl()}/payments/${id}/void`, { reason }).then(r => r.data);
@@ -974,3 +1079,174 @@ export const getResultsHolds = (): Promise<ResultsHoldOverview> =>
   client.get(`${feesAdminUrl()}/results-holds`).then(r => r.data);
 export const saveResultsHold = (data: ResultsHoldInput) => client.put(`${feesAdminUrl()}/results-holds`, data).then(r => r.data);
 export const removeResultsHold = (programId: number) => client.delete(`${feesAdminUrl()}/results-holds/${programId}`).then(r => r.data);
+
+// ── Accounts office ───────────────────────────────────────────────────────
+export interface FeeSettings { visibleToStudents: boolean; onlinePayment: boolean; partPayment: boolean; itemPayment: boolean; resultsHold: boolean; stockIssueUnpaid?: boolean }
+export const getFeeSettings = (): Promise<{ settings: FeeSettings; paystack: { configured: boolean; mode: 'live' | 'test' | null } }> =>
+  client.get(`${feesAdminUrl()}/settings`).then(r => r.data);
+export const saveFeeSettings = (data: Partial<FeeSettings>): Promise<{ settings: FeeSettings; paystack: { configured: boolean; mode: 'live' | 'test' | null } }> =>
+  client.put(`${feesAdminUrl()}/settings`, data).then(r => r.data);
+export interface FinanceDashboard {
+  currency: string; me: { name: string; duty: 'BURSAR' | 'CASHIER' | 'SUPER_ADMIN'; bursar: boolean };
+  today: { total: number; count: number; mine: number }; week: { total: number }; month: { total: number };
+  todayByMethod: { label: string; amount: number }[]; todayByCashier: { label: string; amount: number }[];
+  session: { name: string; owed: number; outstanding: number; paid: number; students: number; debtors: number; residencyUnknown: number;
+    discounts?: number; arrears?: number; withArrears?: number; credit?: number; closed?: boolean };
+  /** What the signed-in person has to hand in (cash-up). */
+  handIn?: CashUpMine;
+  recent: { id: number; receiptNo: string | null; reference: string; studentName: string; studentId: string; amount: number; method: PaymentMethod; paidAt: string; recordedBy: string | null }[];
+  settings: FeeSettings; paystack: { configured: boolean; mode: 'live' | 'test' | null };
+}
+export const getFinanceDashboard = (): Promise<FinanceDashboard> => client.get(`${feesAdminUrl()}/dashboard`).then(r => r.data);
+
+// ── Bills and price list ──────────────────────────────────────────────────
+export type PriceCategory = 'UNIFORM' | 'BOOKS' | 'LEVY' | 'EXAM' | 'TRIP' | 'FEEDING' | 'FINE' | 'OTHER';
+export interface PriceItem { id: number; name: string; category: PriceCategory; price: number; description: string | null; active: boolean; stocked?: boolean; onHand?: number | null; updatedBy: string | null; updatedAt: string | null }
+export type BillTarget = 'STUDENT' | 'CLASS' | 'HOSTEL' | 'BOARDERS' | 'DAY' | 'EVERYONE';
+export interface BillLineInput { itemId?: number; name?: string; quantity: number; unitPrice?: number }
+export interface BillInput {
+  title?: string; target: BillTarget; programId?: number; level?: number; hostelId?: number; studentIds?: number[];
+  lines: BillLineInput[]; optional?: boolean; dueDate?: string | null; note?: string | null; skipDuplicates?: boolean;
+}
+export interface BillPreview {
+  title: string; audience: string; students: number; amountEach: number; total: number; skipped: number; residencyUnknown: number;
+  optional: boolean; dueDate: string | null; currency: string; lines: BillLineInfo[]; sample?: string[]; batchId?: number;
+}
+export interface BillBatchInfo {
+  id: number; title: string; audience: string; amountEach: number; students: number; open: number; cancelled: number; declined: number;
+  billed: number; paid: number; outstanding: number; optional: boolean; dueDate: string | null; note: string | null;
+  sessionName: string | null; issuedBy: string | null; issuedAt: string; cancelledAt: string | null; cancelledBy: string | null;
+}
+export interface BillBatchDetail extends BillBatchInfo {
+  currency: string; lines: BillLineInfo[];
+  roster: { billId: number; studentId: number; name: string; username: string; programName: string | null; level: number | null; paid: number; balance: number; status: BillStatus; statusNote: string | null }[];
+}
+export interface PriceList {
+  currency: string; categories: PriceCategory[]; items: PriceItem[];
+  residencyMode: 'DAY' | 'BOARDING' | 'BOTH'; houseWord: string; hostels: { id: number; name: string }[]; classes: { id: number; name: string; levels: { level: number; students: number }[] }[];
+}
+export const getPriceList = (): Promise<PriceList> => client.get(`${feesAdminUrl()}/price-items`).then(r => r.data);
+export const savePriceItem = (id: number | null, data: { name: string; category: PriceCategory; price: number; description?: string | null }): Promise<PriceItem> =>
+  (id ? client.put(`${feesAdminUrl()}/price-items/${id}`, data) : client.post(`${feesAdminUrl()}/price-items`, data)).then(r => r.data);
+export const setPriceItemActive = (id: number, on: boolean): Promise<PriceItem> =>
+  client.post(`${feesAdminUrl()}/price-items/${id}/active`, null, { params: { on } }).then(r => r.data);
+export const previewBill = (data: BillInput): Promise<BillPreview> => client.post(`${feesAdminUrl()}/bills/preview`, data).then(r => r.data);
+export const issueBill = (data: BillInput): Promise<BillPreview> => client.post(`${feesAdminUrl()}/bills`, data).then(r => r.data);
+/** sessionId: omitted = current session, 0 = every session. */
+export const getBillBatches = (sessionId?: number): Promise<{ currency: string; session: SessionRef; batches: BillBatchInfo[] }> =>
+  client.get(`${feesAdminUrl()}/bills`, { params: sessionId !== undefined ? { sessionId } : {} }).then(r => r.data);
+export const getBillBatch = (id: number): Promise<BillBatchDetail> => client.get(`${feesAdminUrl()}/bills/${id}`).then(r => r.data);
+export const cancelBillBatch = (id: number, reason: string): Promise<BillBatchDetail> => client.post(`${feesAdminUrl()}/bills/${id}/cancel`, { reason }).then(r => r.data);
+export const cancelStudentBill = (id: number, reason: string): Promise<StudentBillInfo & { creditReleased: number }> =>
+  client.post(`${feesAdminUrl()}/student-bills/${id}/cancel`, { reason }).then(r => r.data);
+/** The accounts office's view of one student's account (same shape as the student's own, plus cancelled bills and voided payments). */
+export const getStudentStatement = (id: number): Promise<MyFees & { student: MyFees['student'] & { id: number } }> =>
+  client.get(`${feesAdminUrl()}/students/${id}/statement`).then(r => r.data);
+
+
+// ── Concessions, year end, refunds, cash book ─────────────────────────────
+export interface ConcessionInput {
+  studentId: number; sessionId?: number; kind: ConcessionKind; title?: string; mode: 'PERCENT' | 'AMOUNT'; value: number;
+  items?: string[]; term?: number | null; note: string;
+}
+export const getConcessions = (sessionId?: number): Promise<{
+  currency: string; session: SessionRef; closed: boolean; kinds: { value: ConcessionKind; label: string }[];
+  students: number; totalSaved: number; concessions: ConcessionInfo[];
+}> => client.get(`${feesAdminUrl()}/concessions`, { params: sessionId ? { sessionId } : {} }).then(r => r.data);
+export const grantConcession = (data: ConcessionInput): Promise<ConcessionInfo> => client.post(`${feesAdminUrl()}/concessions`, data).then(r => r.data);
+export const revokeConcession = (id: number, reason: string): Promise<ConcessionInfo> =>
+  client.post(`${feesAdminUrl()}/concessions/${id}/revoke`, { reason }).then(r => r.data);
+
+export interface SessionCloseInfo { sessionId: number; sessionName: string; current: boolean; students: number; total: number; automatic: boolean; closedBy: string | null; closedAt: string }
+export interface YearEndOverview {
+  currency: string; session: SessionRef; closes: SessionCloseInfo[];
+  preview: { sessionId: number; sessionName: string; hasFees: boolean; debtors: number; total: number; classes: { name: string; students: number; debtors: number; owed: number }[] } | null;
+  arrears: ArrearsInfo[]; totals: { owed: number; paid: number; writtenOff: number; lines: number };
+}
+export interface OpeningImportResult {
+  ok: number; errors: number; total: number; applied: boolean;
+  rows: { row: number; studentId: string | null; name?: string; amount: number | null; status: 'NEW' | 'REPLACE' | 'ERROR'; message?: string }[];
+}
+export const getYearEnd = (): Promise<YearEndOverview> => client.get(`${feesAdminUrl()}/year-end`).then(r => r.data);
+export const closeSessionFees = (sessionId?: number): Promise<SessionCloseInfo> =>
+  client.post(`${feesAdminUrl()}/year-end/close`, null, { params: sessionId ? { sessionId } : {} }).then(r => r.data);
+export const reopenSessionFees = (sessionId?: number) =>
+  client.post(`${feesAdminUrl()}/year-end/reopen`, null, { params: sessionId ? { sessionId } : {} }).then(r => r.data);
+export const checkOpeningBalances = (rows: Record<string, string>[]): Promise<OpeningImportResult> =>
+  client.post(`${feesAdminUrl()}/opening-balances/check`, { rows }).then(r => r.data);
+export const importOpeningBalances = (rows: Record<string, string>[]): Promise<OpeningImportResult> =>
+  client.post(`${feesAdminUrl()}/opening-balances`, { rows }).then(r => r.data);
+export const setOpeningBalance = (studentId: number, amount: number, note?: string) =>
+  client.put(`${feesAdminUrl()}/students/${studentId}/opening-balance`, { amount, note }).then(r => r.data);
+export const writeOffArrears = (id: number, reason: string): Promise<ArrearsInfo> =>
+  client.post(`${feesAdminUrl()}/arrears/${id}/write-off`, { reason }).then(r => r.data);
+export const restoreArrears = (id: number): Promise<ArrearsInfo> => client.post(`${feesAdminUrl()}/arrears/${id}/restore`).then(r => r.data);
+
+export const refundStudent = (data: { studentId: number; amount: number; method: PaymentMethod; paidTo?: string; reason: string }): Promise<RefundInfo> =>
+  client.post(`${feesAdminUrl()}/refunds`, data).then(r => r.data);
+export const voidRefund = (id: number, reason: string): Promise<RefundInfo> => client.post(`${feesAdminUrl()}/refunds/${id}/void`, { reason }).then(r => r.data);
+
+export interface CashUpMine { payments: number; refunds: number; expectedCash: number; nonCash: number; since: string | null }
+export interface CashUpInfo {
+  id: number; cashierId: number; cashier: string; payments: number; expectedCash: number; declaredCash: number; difference: number;
+  nonCash: number; note: string | null; status: 'SUBMITTED' | 'CONFIRMED'; createdAt: string; confirmedBy: string | null; confirmedAt: string | null; confirmNote: string | null;
+}
+export interface CashBookRow {
+  id: number; receiptNo: string | null; reference: string; studentName: string; studentId: string; amount: number; method: PaymentMethod;
+  methodName: string; status: PaymentStatus; paidAt: string; recordedBy: string | null; voidedAt: string | null; voidedBy: string | null; note: string | null; cashedUp: boolean;
+}
+export interface CashBookDay {
+  date: string; today: boolean; currency: string;
+  totals: { received: number; payments: number; refunded: number; net: number };
+  byMethod: { label: string; amount: number }[]; byCashier: { label: string; payments: number; amount: number; cash: number }[];
+  payments: CashBookRow[]; voids: CashBookRow[]; refunds: RefundInfo[]; cashUps: CashUpInfo[]; awaitingConfirmation: CashUpInfo[];
+  notHandedIn: { cashierId: number; cashier: string; payments: number; amount: number }[]; mine: CashUpMine; canConfirm: boolean;
+}
+export const getCashBook = (date?: string): Promise<CashBookDay> => client.get(`${feesAdminUrl()}/cash-book`, { params: date ? { date } : {} }).then(r => r.data);
+export const submitCashUp = (declaredCash: number, note?: string): Promise<CashUpInfo> => client.post(`${feesAdminUrl()}/cash-ups`, { declaredCash, note }).then(r => r.data);
+export const confirmCashUp = (id: number, note?: string): Promise<CashUpInfo> => client.post(`${feesAdminUrl()}/cash-ups/${id}/confirm`, { note }).then(r => r.data);
+
+// ── Stores and reminders ──────────────────────────────────────────────────
+export interface StoreItem { id: number; name: string; category: PriceCategory; price: number; active: boolean; stocked: boolean; onHand: number; reorderLevel: number | null; unitCost: number | null; low: boolean; toHandOver?: number }
+export interface StockMove { id: number; kind: 'RECEIVED' | 'ISSUED' | 'RETURNED' | 'ADJUSTED'; quantity: number; balanceAfter: number; unitCost: number | null; reference: string | null; note: string | null; studentName: string | null; by: string | null; at: string }
+export interface HandOverLine { lineId: number; itemId: number; name: string; quantity: number; issued: number; billId: number; billTitle: string; billedAt: string; studentId: number; studentName: string; username: string; billBalance?: number; canHandOver?: boolean }
+export const getStores = (): Promise<{ currency: string; items: StoreItem[]; low: number; value: number; issueBeforePayment: boolean }> => client.get(`${feesAdminUrl()}/stores`).then(r => r.data);
+export const setItemStocked = (id: number, stocked: boolean, reorderLevel?: number | null): Promise<StoreItem> => client.put(`${feesAdminUrl()}/stores/items/${id}`, { stocked, reorderLevel }).then(r => r.data);
+export const receiveStock = (id: number, d: { quantity: number; unitCost?: number; reference?: string; note?: string }): Promise<StoreItem> => client.post(`${feesAdminUrl()}/stores/items/${id}/receive`, d).then(r => r.data);
+export const adjustStock = (id: number, countedQuantity: number, reason: string): Promise<StoreItem> => client.post(`${feesAdminUrl()}/stores/items/${id}/adjust`, { countedQuantity, reason }).then(r => r.data);
+export const getStockHistory = (id: number): Promise<StockMove[]> => client.get(`${feesAdminUrl()}/stores/items/${id}/history`).then(r => r.data);
+export const getToHandOver = (studentId?: number): Promise<{ currency: string; issueBeforePayment: boolean; lines: HandOverLine[] }> =>
+  client.get(`${feesAdminUrl()}/stores/to-hand-over`, { params: studentId ? { studentId } : {} }).then(r => r.data);
+export const handOverItems = (lineId: number, quantity: number, note?: string): Promise<HandOverLine> => client.post(`${feesAdminUrl()}/stores/lines/${lineId}/hand-over`, { quantity, note }).then(r => r.data);
+export const takeBackItems = (lineId: number, quantity: number, note: string): Promise<HandOverLine> => client.post(`${feesAdminUrl()}/stores/lines/${lineId}/take-back`, { quantity, note }).then(r => r.data);
+
+export interface ReminderInput { programId?: number; level?: number; minOwed?: number; skipDays?: number; email?: boolean; sms?: boolean; message?: string }
+export interface ReminderPreview { students: number; total: number; skipped: number; withEmail: number; withPhone: number; smsReady: boolean; sample: { name: string; owed: number }[]; example: string | null }
+export interface ReminderBatch { batch: string; sentAt: string; sentBy: string; automatic: boolean; email: boolean; sms: boolean; students: number; total: number }
+export const getReminders = (): Promise<{ currency: string; autoEveryDays: number; smsReady: boolean; defaultMessage: string; studentWord: string; history: ReminderBatch[] }> =>
+  client.get(`${feesAdminUrl()}/reminders`).then(r => r.data);
+export const previewReminders = (d: ReminderInput): Promise<ReminderPreview> => client.post(`${feesAdminUrl()}/reminders/preview`, d).then(r => r.data);
+export const sendReminders = (d: ReminderInput): Promise<{ students: number; emails: number; sms: number; total: number; skipped: number }> => client.post(`${feesAdminUrl()}/reminders`, d).then(r => r.data);
+export const setAutoReminders = (everyDays: number) => client.put(`${feesAdminUrl()}/reminders/automatic`, { everyDays }).then(r => r.data);
+
+/** The accounts office's fee reports. */
+export const financeReportsApi = reportsApi((path, config) => client.get(`${apiRoot()}/finance/reports${path}`, config));
+
+/** Super Admin: accountant logins (bursar / cashier). */
+export interface FinanceStaff {
+  id: number; firstname: string; lastname: string; name: string; username: string; email: string; phone: string | null;
+  duty: 'BURSAR' | 'CASHIER'; photo: string | null; enabled: boolean; deactivatedAt: string | null; deactivationReason: string | null;
+  /** Only right after creating or resetting: the temporary password, shown once. */
+  password?: string; emailed?: boolean;
+}
+export const getFinanceStaff = (): Promise<FinanceStaff[]> => client.get(`${superAdminRootUrl()}/finance-staff`).then(r => r.data);
+export const addFinanceStaff = (d: { firstname: string; lastname: string; username: string; email: string; phone?: string; duty: 'BURSAR' | 'CASHIER'; emailLogin: boolean }): Promise<FinanceStaff> =>
+  client.post(`${superAdminRootUrl()}/finance-staff`, d).then(r => r.data);
+export const updateFinanceStaff = (id: number, d: { firstname?: string; lastname?: string; phone?: string; duty?: 'BURSAR' | 'CASHIER' }): Promise<FinanceStaff> =>
+  client.put(`${superAdminRootUrl()}/finance-staff/${id}`, d).then(r => r.data);
+/** Super Admin: one-person accounts office (the bursar's own cash-ups need no second check). */
+export const getAccountsOfficeSettings = (): Promise<{ selfCashUp: boolean }> => client.get(`${superAdminRootUrl()}/finance-staff/settings`).then(r => r.data);
+export const saveAccountsOfficeSettings = (selfCashUp: boolean): Promise<{ selfCashUp: boolean }> =>
+  client.put(`${superAdminRootUrl()}/finance-staff/settings`, { selfCashUp }).then(r => r.data);
+export const resetFinanceStaffPassword = (id: number): Promise<FinanceStaff> =>
+  client.post(`${superAdminRootUrl()}/finance-staff/${id}/reset-password`).then(r => r.data);

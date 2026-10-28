@@ -6,7 +6,7 @@ import {
   BookOpen, Save, ChevronRight, Loader2, Tag, Hash, AlignLeft,
   GraduationCap, ArrowLeft, Sparkles, CheckCircle, Calendar, Layers
 } from 'lucide-react';
-import { periodName, periodsPerLevel, tx } from '../../utils/terms';
+import { periodName, periodsPerLevel, tx, defaultLevels, showLevelPicker } from '../../utils/terms';
 
 const LEVELS = ['Level 100', 'Level 200', 'Level 300', 'Level 400'];
 
@@ -22,7 +22,12 @@ export default function AddCourse() {
 
   const availableLevels = category.programId
     ? (programs.find(p => p.id === Number(category.programId))?.configuredLevels || []).map(l => String(l))
-    : ['100', '200', '300', '400'];
+    : defaultLevels().map(String);
+  // A school class is one year: its only level is chosen for the user and the picker stays hidden
+  const pickLevel = showLevelPicker(availableLevels.length);
+  useEffect(() => {
+    if (!pickLevel && availableLevels[0] && category.level !== availableLevels[0]) setCategory(c => ({ ...c, level: availableLevels[0] }));
+  }, [pickLevel, availableLevels[0], category.level]);
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setCategory(c => ({ ...c, [k]: e.target.value }));
@@ -138,7 +143,7 @@ export default function AddCourse() {
                     />
                   </div>
                 </div>
-                <div className="ac-field-group">
+                {pickLevel && <div className="ac-field-group">
                   <label className="ac-label">{tx("Academic Level")}</label>
                   <div className="ac-input-wrap">
                     <span className="ac-input-icon"><Layers size={16} /></span>
@@ -152,7 +157,7 @@ export default function AddCourse() {
                       {availableLevels.map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
                     </select>
                   </div>
-                </div>
+                </div>}
               </div>
 
               {/* Program + Semester row */}

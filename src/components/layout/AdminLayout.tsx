@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
-import { useFeatureFlags, useAssessments } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments, useBoarding } from '../../hooks/useFeatureFlags';
 import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { 
   LayoutDashboard, 
@@ -33,7 +33,8 @@ import {
   ToggleRight,
   ClipboardPen,
   FileBarChart,
-  UserCheck
+  UserCheck,
+  BedDouble
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
@@ -48,6 +49,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { marksSheetAdmin, features } = useFeatureFlags();
+  const boarding = useBoarding();
   const quizzesOn = useAssessments();   // the developer's Assessments switch
   const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
@@ -67,7 +69,7 @@ export default function AdminLayout() {
       items: [
         { to: '/admin', exact: true, icon: <LayoutDashboard size={20} />, label: 'Overview' },
         ...(on('HOD_ANALYTICS') ? [{ to: '/admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' }] : []),
-        { to: '/admin/department-settings', icon: <ToggleRight size={20} />, label: 'Department Settings' },
+        { to: '/admin/department-settings', icon: <ToggleRight size={20} />, label: tx('Department Settings') },
         { to: '/admin/announcements', icon: <Megaphone size={20} />, label: 'Announcements' },
         { to: '/admin/profile', icon: <UserCircle size={20} />, label: 'Admin Profile' },
       ]
@@ -93,6 +95,7 @@ export default function AdminLayout() {
         { to: '/admin/enroll-student', icon: <BookMarked size={20} />, label: tx('Enroll Student') },
         ...(!isSchoolMode() ? [{ to: '/admin/academic-records', icon: <FileText size={20} />, label: 'Academic Records' }] : []),
         { to: '/admin/lecturers', icon: <Users size={20} />, label: tx('Faculty Directory') },
+        ...(boarding.mode !== 'DAY' && boarding.staff ? [{ to: '/admin/boarding', icon: <BedDouble size={20} />, label: 'Boarding' }] : []),
         ...(on('HOD_DATA_TOOLS') ? [{ to: '/admin/data-tools', icon: <DatabaseZap size={20} />, label: 'Data Tools' }] : []),
       ]
     },

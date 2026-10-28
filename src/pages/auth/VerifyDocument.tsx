@@ -11,7 +11,7 @@ type Result = {
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  TRANSCRIPT: 'Academic transcript', REPORT_CARD: 'Report card', CUMULATIVE_REPORT: 'Cumulative report card',
+  TRANSCRIPT: 'Academic transcript', REPORT_CARD: 'Report card', CUMULATIVE_REPORT: 'Cumulative report card', RECEIPT: 'Fee receipt',
 };
 
 /** Public page: anyone holding a printed transcript or report card can check its code. */

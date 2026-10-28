@@ -42,7 +42,7 @@ export default function AttendanceRules() {
   };
   const reset = async (departmentId: number) => {
     if (!window.confirm(tx('Use the default rules for this department again?'))) return;
-    try { await resetDepartmentAttendancePolicy(departmentId); toast.success('The department follows the default rules'); refresh(); }
+    try { await resetDepartmentAttendancePolicy(departmentId); toast.success(tx('The department follows the default rules')); refresh(); }
     catch (e) { toast.error(errMsg(e)); }
   };
 
@@ -104,7 +104,7 @@ export default function AttendanceRules() {
                   <div className="at-meta">
                     <span>{(d.policy ?? data.system).mode === 'PROGRAMME' ? tx('By programme') : tx('By course')}</span>
                     <span>{d.policy ? 'Own rules' : 'Follows the default'}</span>
-                    {depFeature && depFeature.enabled === false && <span className="at-chip is-bad">Switched off by department</span>}
+                    {depFeature && depFeature.enabled === false && <span className="at-chip is-bad">{tx('Switched off by department')}</span>}
                   </div>
                 </div>
                 <div className="at-row">

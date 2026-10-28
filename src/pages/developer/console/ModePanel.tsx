@@ -26,7 +26,8 @@ const MODE_ICON: Record<SystemMode, ReactNode> = {
 /** The university word each term key stands for, in display order. */
 const CONCEPTS: [string, string][] = [
   ['level', 'Year of study'], ['semester', 'Academic period'], ['course', 'Course'], ['courses', 'Courses (plural)'],
-  ['program', 'Programme'], ['lecturer', 'Instructor'], ['hod', 'Head of department'], ['student', 'Learner'],
+  ['program', 'Programme'], ['programs', 'Programmes (plural)'], ['department', 'Department'], ['departments', 'Departments (plural)'],
+  ['lecturer', 'Instructor'], ['hod', 'Head of department'], ['student', 'Learner'],
   ['studentId', 'Learner ID'], ['reportCard', 'Report'],
 ];
 
@@ -35,7 +36,8 @@ function facts(o: ModeOption) {
   const period = (o.terms.semester ?? (uni ? 'Semester' : 'Term')).toLowerCase();
   return {
     calendar: `${o.periodsPerLevel} ${period}s a year`,
-    levels: uni ? '100, 200, 300 …' : `${o.terms.level} 1, 2, 3 …`,
+    // Schools: sections (Primary School …) holding one-year classes (Primary 1 …) the Super Admin adds
+    levels: uni ? 'Levels 100, 200, 300 …' : 'Sections → classes',
     report: o.terms.reportCard,
     people: `${o.terms.courses} · ${o.terms.lecturer}s`,
   };
@@ -105,7 +107,7 @@ export default function ModePanel() {
         {cur && (
           <dl className="dd-facts">
             <div><dt><CalendarDays size={14} /> Calendar</dt><dd>{facts(cur).calendar}</dd></div>
-            <div><dt><Hash size={14} /> Levels</dt><dd>{facts(cur).levels}</dd></div>
+            <div><dt><Hash size={14} /> Structure</dt><dd>{facts(cur).levels}</dd></div>
             <div><dt><FileText size={14} /> Reports</dt><dd>{facts(cur).report}</dd></div>
           </dl>
         )}
@@ -186,16 +188,13 @@ export default function ModePanel() {
 
           <div className="dd-callout dd-callout-warn">
             <AlertTriangle size={18} />
-            <div>
-              <strong>Existing records are not renumbered.</strong> Levels such as 100 or 200 stay as they are. Switch on a
-              fresh system, or update programmes and students afterwards.
-            </div>
+            <div>{structureWarning(current, staged)}</div>
           </div>
 
           <div className="dd-review-foot">
             <label className="dd-check">
               <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} disabled={saving} />
-              <span>I understand that every user is affected and existing data is not renumbered.</span>
+              <span>I understand that every user is affected and existing data is not converted.</span>
             </label>
             <div className="dd-review-actions">
               <button className="dd-btn" onClick={() => setStaged(null)} disabled={saving}>Cancel</button>
@@ -217,12 +216,30 @@ export default function ModePanel() {
             ))}
           </dl>
           <p className="dd-note">
-            <Info size={14} /> The calendar default ({facts(cur).calendar}) can be overridden per level on the Programmes page.
+            <Info size={14} /> The calendar default ({facts(cur).calendar}) can be overridden {cur.value === 'UNIVERSITY' ? 'per level on the Programmes page' : 'per class on the Classes page'}.
           </p>
         </div>
       )}
     </section>
   );
+}
+
+/** What happens to the existing departments and programmes (nothing is converted automatically). */
+function structureWarning(from: SystemMode, to: SystemMode): ReactNode {
+  const uniFrom = from === 'UNIVERSITY', uniTo = to === 'UNIVERSITY';
+  if (!uniFrom && uniTo) return <>
+    <strong>Classes are not converted back.</strong> Each school class shows as a one-year programme in its department
+    (the section). Set each programme's duration and levels on the Programmes page, or switch on a fresh system.
+  </>;
+  if (uniFrom && !uniTo) return <>
+    <strong>Programmes are not split into classes.</strong> Departments show as sections and programmes as classes; a
+    programme longer than a year keeps its levels until you replace it with one class per year (Primary 1, Primary 2 …).
+    Switch on a fresh system when you can.
+  </>;
+  return <>
+    <strong>Existing records are not renumbered.</strong> Sections and classes stay as they are. Add, rename or reorder
+    them on the Sections and Classes pages afterwards.
+  </>;
 }
 
 /** Known concepts in order, then any key the server adds later. */
@@ -250,10 +267,12 @@ function Impact({ cur, next }: { cur: ModeOption; next: ModeOption }) {
         : <><b>{fc.calendar}</b> becomes <b>{fn.calendar}</b> by default. Programmes with their own setting keep it.</>,
     },
     {
-      title: 'Level numbering',
+      title: 'Structure',
       body: fc.levels === fn.levels
         ? <>Stays <b>{fn.levels}</b></>
-        : <>New levels are numbered <b>{fn.levels}</b> instead of <b>{fc.levels}</b></>,
+        : next.value === 'UNIVERSITY'
+          ? <>Departments with programmes and <b>levels 100, 200 …</b> instead of sections with one-year classes</>
+          : <><b>Sections</b> (Primary School, Junior High School …) with one-year <b>classes</b> the Super Admin adds, instead of programmes with levels</>,
     },
   ];
   return (

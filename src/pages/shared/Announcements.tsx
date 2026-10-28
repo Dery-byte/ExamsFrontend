@@ -5,7 +5,8 @@ import Swal from 'sweetalert2';
 import { Megaphone, Pin, Send, Trash2, Loader2, Inbox, Settings2, CalendarClock } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
-import { useFeature } from '../../hooks/useFeatureFlags';
+import { useBoarding, useFeature } from '../../hooks/useFeatureFlags';
+import { getBoardingOverview } from '../../api/boarding';
 import {
   deleteAnnouncement, getAnnouncements, getManageableAnnouncements, getPrograms, getProgramsByDept,
   postAnnouncement, saGetDepartments, type Announcement, type AnnouncementAudience,
@@ -24,13 +25,18 @@ const AUDIENCE_LABEL = Object.fromEntries(AUDIENCES.map(a => [a.value, a.label])
 const EMPTY_FORM = {
   title: '', body: '', audience: 'ALL' as AnnouncementAudience,
   departmentId: '', programId: '', level: '', pinned: false, expiresOn: '',
+  /** '' everyone, BOARDERS, DAY, or H:<house id> */
+  boarding: '',
 };
 
 function scopeText(a: Announcement) {
   const parts = [AUDIENCE_LABEL[a.audience] ?? a.audience];
   if (a.departmentName) parts.push(a.departmentName);
   if (a.programName) parts.push(a.programName);
-  if (a.level) parts.push(`Level ${a.level}`);
+  if (a.level && !isSchoolMode()) parts.push(tx(`Level ${a.level}`));
+  if (a.hostelName) parts.push(a.hostelName);
+  else if (a.residency === 'BOARDERS') parts.push('Boarders');
+  else if (a.residency === 'DAY') parts.push('Day students');
   return parts.join(' · ');
 }
 
@@ -39,7 +45,12 @@ export default function Announcements() {
   const role: string = user?.role ?? '';
   const isSuper = role === 'SUPER_ADMIN';
   const hodMayPost = useFeature('HOD_ANNOUNCEMENTS');
-  const canPost = isSuper || (role === 'ADMIN' && hodMayPost);
+  const boarding = useBoarding();
+  const hasBoarding = boarding.mode !== 'DAY';
+  const fullPoster = isSuper || (role === 'ADMIN' && hodMayPost);
+  // Housemasters (teacher / HOD accounts with boarding duties) post to the houses they look after
+  const boardingPoster = !fullPoster && hasBoarding && boarding.staff;
+  const canPost = fullPoster || boardingPoster;
   const qc = useQueryClient();
 
   const [tab, setTab] = useState<'inbox' | 'manage'>('inbox');
@@ -50,6 +61,9 @@ export default function Announcements() {
 
   const inbox = useQuery({ queryKey: ['announcements', 'inbox'], queryFn: getAnnouncements });
   const managed = useQuery({ queryKey: ['announcements', 'manage'], queryFn: getManageableAnnouncements, enabled: canPost });
+  const houses = useQuery({ queryKey: ['boarding', 'overview', false], queryFn: () => getBoardingOverview(false), enabled: canPost && hasBoarding && boarding.staff });
+  const myHouses = (houses.data?.hostels ?? []).filter(h => h.canManage);
+  const houseTarget = form.boarding.startsWith('H:');
 
   // Scope pickers: Super Admin chooses any department; an HOD is fixed to their own
   useEffect(() => {
@@ -67,7 +81,11 @@ export default function Announcements() {
     return programs.filter((p: any) => String(p.departmentId ?? p.department?.id) === form.departmentId);
   }, [programs, form.departmentId, isSuper]);
 
-  const studentScoped = form.audience === 'ALL' || form.audience === 'STUDENTS';
+  const studentScoped = (form.audience === 'ALL' || form.audience === 'STUDENTS') && !houseTarget && !boardingPoster;
+  // A boarding post must name a house (the head of boarding may also write to all boarders)
+  useEffect(() => {
+    if (boardingPoster && !form.boarding && myHouses.length) setForm(f => ({ ...f, boarding: `H:${myHouses[0].id}` }));
+  }, [boardingPoster, form.boarding, myHouses]);
   const set = (k: keyof typeof EMPTY_FORM, v: any) => setForm(f => ({ ...f, [k]: v }));
 
   const submit = async (e: React.FormEvent) => {
@@ -77,9 +95,11 @@ export default function Announcements() {
     try {
       await postAnnouncement({
         title: form.title, body: form.body, audience: form.audience,
-        departmentId: isSuper && form.departmentId ? Number(form.departmentId) : null,
+        departmentId: isSuper && form.departmentId && !houseTarget ? Number(form.departmentId) : null,
         programId: studentScoped && form.programId ? Number(form.programId) : null,
         level: studentScoped && form.level ? Number(form.level) : null,
+        residency: form.boarding === 'BOARDERS' || form.boarding === 'DAY' ? form.boarding : null,
+        hostelId: houseTarget ? Number(form.boarding.slice(2)) : null,
         pinned: form.pinned, expiresOn: form.expiresOn || null,
       });
       toast.success('Announcement posted');
@@ -132,21 +152,40 @@ export default function Announcements() {
             <textarea id="ann-body" className="ann-input" rows={5} value={form.body}
               onChange={e => set('body', e.target.value)} placeholder="Write the announcement…" style={{ resize: 'vertical', height: 'auto', paddingTop: 8 }} />
 
+            {hasBoarding && (
+              <>
+                <label className="ann-label" htmlFor="ann-boarding">{boarding.word} / boarding</label>
+                <select id="ann-boarding" className="ann-input" value={form.boarding}
+                  onChange={e => setForm(f => ({ ...f, boarding: e.target.value, audience: e.target.value.startsWith('H:') && !['ALL', 'STUDENTS', 'STAFF'].includes(f.audience) ? 'ALL' : f.audience }))}>
+                  {!boardingPoster && <option value="">{boarding.mode === 'BOTH' ? 'Day students and boarders' : 'Everyone'}</option>}
+                  {(!boardingPoster || boarding.head) && <option value="BOARDERS">All boarders</option>}
+                  {!boardingPoster && boarding.mode === 'BOTH' && <option value="DAY">Day students only</option>}
+                  {myHouses.map(h => <option key={h.id} value={`H:${h.id}`}>{boarding.word}: {h.name}</option>)}
+                </select>
+              </>
+            )}
+
             <label className="ann-label" htmlFor="ann-aud">Audience</label>
             <select id="ann-aud" className="ann-input" value={form.audience} onChange={e => set('audience', e.target.value)}>
-              {AUDIENCES.filter(a => isSuper || a.value !== 'ADMINS').map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+              {houseTarget || boardingPoster ? (
+                <>
+                  <option value="ALL">Its boarders and {boarding.word.toLowerCase()} staff</option>
+                  <option value="STUDENTS">Its boarders</option>
+                  <option value="STAFF">Its {boarding.word.toLowerCase()} staff</option>
+                </>
+              ) : AUDIENCES.filter(a => isSuper || a.value !== 'ADMINS').map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
             </select>
 
-            <label className="ann-label" htmlFor="ann-dept">Department</label>
-            {isSuper ? (
+            {!houseTarget && !boardingPoster && <label className="ann-label" htmlFor="ann-dept">{tx('Department')}</label>}
+            {houseTarget || boardingPoster ? null : isSuper ? (
               <select id="ann-dept" className="ann-input" value={form.departmentId}
                 onChange={e => setForm(f => ({ ...f, departmentId: e.target.value, programId: '' }))}>
-                <option value="">All departments</option>
+                <option value="">{tx('All departments')}</option>
                 {departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             ) : (
               <div className="ann-input" style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', color: '#475569' }}>
-                {user?.department?.name ?? 'Your department'}
+                {user?.department?.name ?? tx('Your department')}
               </div>
             )}
 
@@ -159,13 +198,14 @@ export default function Announcements() {
                     {programOptions.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
-                <div>
+                {/* Universities only: a school class is one year, so the class is the whole audience */}
+                {!isSchoolMode() && <div>
                   <label className="ann-label" htmlFor="ann-level">{tx("Level (students)")}</label>
                   <select id="ann-level" className="ann-input" value={form.level} onChange={e => set('level', e.target.value)}>
                     <option value="">{tx("All levels")}</option>
-                    {(isSchoolMode() ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [100, 200, 300, 400, 500, 600]).map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
+                    {[100, 200, 300, 400, 500, 600].map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
                   </select>
-                </div>
+                </div>}
               </div>
             )}
 
@@ -193,7 +233,7 @@ export default function Announcements() {
         <div className="ann-card">
           {canPost && (
             <div role="tablist" style={{ display: 'flex', gap: 4, padding: '10px 12px 0', borderBottom: '1px solid #f1f5f9' }}>
-              {([['inbox', 'Inbox', Inbox], ['manage', isSuper ? 'All posted' : 'Posted in my department', Settings2]] as const).map(([key, label, Icon]) => (
+              {([['inbox', 'Inbox', Inbox], ['manage', isSuper ? 'All posted' : boardingPoster ? 'My posts' : tx('Posted in my department'), Settings2]] as const).map(([key, label, Icon]) => (
                 <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
                   className={`ann-tab ${tab === key ? 'is-active' : ''}`}>
                   <Icon size={14} /> {label}

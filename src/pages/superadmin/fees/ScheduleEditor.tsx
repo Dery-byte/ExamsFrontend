@@ -2,28 +2,41 @@ import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AlertTriangle, ChevronDown, ChevronUp, Info, Layers, Loader2, Plus, Trash2, Wallet } from 'lucide-react';
 import FeeModal from './FeeModal';
-import { saveFeeSchedule, type FeeLevelRow, type FeeProgramRow, type SessionRef } from '../../../api/endpoints';
+import { saveFeeSchedule, type FeeAppliesTo, type FeeLevelRow, type FeeProgramRow, type SessionRef } from '../../../api/endpoints';
 import { formatMoney, moneyInput, parseMoney, roundMoney } from '../../../utils/money';
-import { isSchoolMode, levelName } from '../../../utils/terms';
+import { isSchoolMode, levelName, tx, levelSuffix } from '../../../utils/terms';
 
-type Item = { key: number; name: string; amount: string };
+type Item = { key: number; name: string; amount: string; appliesTo: FeeAppliesTo };
+
+const FOR_OPTIONS: { value: FeeAppliesTo; label: string }[] = [
+  { value: 'EVERYONE', label: 'Everyone' }, { value: 'BOARDERS', label: 'Boarders only' }, { value: 'DAY', label: 'Day students only' },
+];
 
 const UNIVERSITY_ITEMS = ['Tuition', 'Academic facility user fee', 'SRC dues', 'ICT / Internet', 'Library', 'Medical / Health', 'Examination', 'Sports', 'Hall / Residence'];
 const SCHOOL_ITEMS = ['School fees', 'PTA levy', 'Sanitation', 'Maintenance', 'ICT', 'Sports', 'Examination', 'Library', 'Feeding'];
+/** Suggested items charged to boarders only (with day students and boarders). */
+const BOARDER_ITEMS = ['Boarding fee', 'Feeding', 'Hall / Residence', 'House levy'];
 
 let nextKey = 1;
-const newItem = (name = '', amount = ''): Item => ({ key: nextKey++, name, amount });
+const newItem = (name = '', amount = '', appliesTo: FeeAppliesTo = 'EVERYONE'): Item => ({ key: nextKey++, name, amount, appliesTo });
 
-/** Sets what one programme + level pays this session: a lump sum, or a breakdown students can see. */
-export default function ScheduleEditor({ program, row, session, currency, onClose, onSaved }: {
+/**
+ * Sets what one programme + level pays for the session or for one term of it: a lump sum, or a
+ * breakdown students can see. With day students and boarders, each item can be for boarders or day
+ * students only.
+ */
+export default function ScheduleEditor({ program, row, session, currency, term, periodName, residencyMode, onClose, onSaved }: {
   program: FeeProgramRow; row: FeeLevelRow; session: SessionRef; currency: string;
+  /** null = the whole year */
+  term: number | null; periodName: string; residencyMode?: 'DAY' | 'BOARDING' | 'BOTH';
   onClose: () => void; onSaved: () => void;
 }) {
+  const both = residencyMode === 'BOTH';
   const existing = row.schedule;
   const [itemised, setItemised] = useState(existing?.itemised ?? false);
   const [lump, setLump] = useState(existing && !existing.itemised ? String(existing.amount) : '');
   const [items, setItems] = useState<Item[]>(() =>
-    existing?.itemised ? existing.components.map(c => newItem(c.name, String(c.amount))) : []);
+    existing?.itemised ? existing.components.map(c => newItem(c.name, String(c.amount), c.appliesTo ?? 'EVERYONE')) : []);
   const [dueDate, setDueDate] = useState(existing?.dueDate ?? '');
   const [note, setNote] = useState(existing?.note ?? '');
   const [also, setAlso] = useState<number[]>([]);
@@ -32,8 +45,14 @@ export default function ScheduleEditor({ program, row, session, currency, onClos
 
   const suggestions = (isSchoolMode() ? SCHOOL_ITEMS : UNIVERSITY_ITEMS)
     .filter(s => !items.some(i => i.name.trim().toLowerCase() === s.toLowerCase()));
+  const suggest = (name: string) => newItem(name, '', both && BOARDER_ITEMS.includes(name) ? 'BOARDERS' : 'EVERYONE');
   const otherLevels = program.levels.filter(l => l.level !== row.level);
-  const title = `${program.name} · ${levelName(row.level)}`;
+  const title = `${program.name}${levelSuffix(row.level)}`;
+  const amountOf = (i: Item) => (Number.isFinite(parseMoney(i.amount)) ? parseMoney(i.amount) : 0);
+  // What a boarder and a day student pay when some items are only for one of them
+  const varies = itemised && both && items.some(i => i.appliesTo !== 'EVERYONE');
+  const boarderTotal = roundMoney(items.filter(i => i.appliesTo !== 'DAY').reduce((t, i) => t + amountOf(i), 0));
+  const dayTotal = roundMoney(items.filter(i => i.appliesTo !== 'BOARDERS').reduce((t, i) => t + amountOf(i), 0));
 
   const total = useMemo(() => itemised
     ? roundMoney(items.reduce((sum, i) => sum + (Number.isFinite(parseMoney(i.amount)) ? parseMoney(i.amount) : 0), 0))
@@ -84,13 +103,13 @@ export default function ScheduleEditor({ program, row, session, currency, onClos
       const saved = await saveFeeSchedule({
         programId: program.id, level: row.level, sessionId: session.id, itemised,
         amount: itemised ? undefined : parseMoney(lump),
-        components: itemised ? items.map(i => ({ name: i.name.trim(), amount: parseMoney(i.amount) })) : undefined,
-        dueDate: dueDate || null, note: note.trim() || null, alsoApplyToLevels: also,
+        components: itemised ? items.map(i => ({ name: i.name.trim(), amount: parseMoney(i.amount), appliesTo: both ? i.appliesTo : 'EVERYONE' })) : undefined,
+        dueDate: dueDate || null, note: note.trim() || null, alsoApplyToLevels: also, term,
       });
-      toast.success(saved.length > 1 ? `Fee saved for ${saved.length} levels` : `Fee saved for ${levelName(row.level)}`);
+      toast.success(saved.length > 1 ? `Fee saved for ${saved.length} levels` : `Fee saved for ${isSchoolMode() ? program.name : levelName(row.level)}`);
       onSaved();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not save the fee');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not save the fee'));
     } finally {
       setSaving(false);
     }
@@ -99,12 +118,14 @@ export default function ScheduleEditor({ program, row, session, currency, onClos
   return (
     <FeeModal
       title={existing ? 'Edit fee' : 'Set fee'}
-      subtitle={<>{title} · {session.name}</>}
+      subtitle={<>{title} · {session.name} · {periodName}</>}
       onClose={onClose}
       busy={saving}
       footer={<>
         <div className="fe-muted" style={{ fontSize: 12.5 }}>
-          Total <strong style={{ color: '#fff', fontSize: 15, marginLeft: 6 }}>{formatMoney(total, currency)}</strong>
+          {varies ? <>Boarders <strong style={{ color: '#fff', fontSize: 15, margin: '0 8px 0 6px' }}>{formatMoney(boarderTotal, currency)}</strong>
+            Day <strong style={{ color: '#fff', fontSize: 15, marginLeft: 6 }}>{formatMoney(dayTotal, currency)}</strong></>
+            : <>Total <strong style={{ color: '#fff', fontSize: 15, marginLeft: 6 }}>{formatMoney(total, currency)}</strong></>}
           {also.length > 0 && <span> · also for {also.length} other level{also.length > 1 ? 's' : ''}</span>}
         </div>
         <div className="fe-foot-actions">
@@ -138,7 +159,7 @@ export default function ScheduleEditor({ program, row, session, currency, onClos
 
       {!itemised ? (
         <div className="fe-field">
-          <label className="fe-label" htmlFor="fe-lump">Fee for the session</label>
+          <label className="fe-label" htmlFor="fe-lump">{term ? `Fee for ${periodName.toLowerCase()}` : 'Fee for the whole year'}</label>
           <div className="fe-money lg">
             <span>{currency}</span>
             <input id="fe-lump" className="fe-input" inputMode="decimal" placeholder="0.00" value={lump}
@@ -151,7 +172,8 @@ export default function ScheduleEditor({ program, row, session, currency, onClos
           <span className="fe-label">Breakdown <span className="fe-muted" style={{ fontWeight: 500 }}>— students see each line on their Fees page</span></span>
           <div className="fe-items">
             {items.map((it, i) => (
-              <div className="fe-item" key={it.key}>
+              <div className="fe-item-wrap" key={it.key}>
+              <div className="fe-item">
                 <div className="fe-order">
                   <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${it.name || 'item'} up`}><ChevronUp size={14} /></button>
                   <button type="button" onClick={() => move(i, 1)} disabled={i === items.length - 1} aria-label={`Move ${it.name || 'item'} down`}><ChevronDown size={14} /></button>
@@ -168,18 +190,36 @@ export default function ScheduleEditor({ program, row, session, currency, onClos
                 <button type="button" className="fe-icon-btn danger" onClick={() => setItems(list => list.filter(x => x.key !== it.key))}
                   aria-label={`Remove ${it.name || 'item'}`}><Trash2 size={14} /></button>
               </div>
+              {both && (
+                <div className="fe-for" role="radiogroup" aria-label={`Who pays ${it.name || 'this item'}`}>
+                  <span>For</span>
+                  {FOR_OPTIONS.map(o => (
+                    <button key={o.value} type="button" role="radio" aria-checked={it.appliesTo === o.value}
+                      className={it.appliesTo === o.value ? 'on' : ''} onClick={() => update(it.key, { appliesTo: o.value })}>{o.label}</button>
+                  ))}
+                </div>
+              )}
+              </div>
             ))}
           </div>
           <div className="fe-suggest">
             <button type="button" onClick={() => setItems(list => [...list, newItem()])} style={{ borderStyle: 'solid' }}><Plus size={13} /> Add item</button>
             {suggestions.slice(0, 7).map(s => (
-              <button type="button" key={s} onClick={() => setItems(list => [...list, newItem(s)])}><Plus size={12} /> {s}</button>
+              <button type="button" key={s} onClick={() => setItems(list => [...list, suggest(s)])}><Plus size={12} /> {s}</button>
             ))}
           </div>
-          <div className="fe-total">
-            <span>Total ({items.length} item{items.length === 1 ? '' : 's'})</span>
-            <strong>{formatMoney(total, currency)}</strong>
-          </div>
+          {varies ? (
+            <>
+              <div className="fe-total"><span>A boarder pays</span><strong>{formatMoney(boarderTotal, currency)}</strong></div>
+              <div className="fe-total" style={{ marginTop: 6 }}><span>A day student pays</span><strong>{formatMoney(dayTotal, currency)}</strong></div>
+              <div className="fe-hint">Students whose residency isn't recorded pay only the items for everyone ({formatMoney(roundMoney(items.filter(i => i.appliesTo === 'EVERYONE').reduce((t, i) => t + amountOf(i), 0)), currency)}).</div>
+            </>
+          ) : (
+            <div className="fe-total">
+              <span>Total ({items.length} item{items.length === 1 ? '' : 's'})</span>
+              <strong>{formatMoney(total, currency)}</strong>
+            </div>
+          )}
         </div>
       )}
 

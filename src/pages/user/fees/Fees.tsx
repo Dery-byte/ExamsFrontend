@@ -3,18 +3,19 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
-  AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, CreditCard, FileText, Info, Landmark, Loader2,
-  Lock, Printer, Receipt, RefreshCw, ShieldCheck, Smartphone, Wallet, X, XCircle,
+  AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, CreditCard, FileText, History, Info, Landmark, Layers, Loader2,
+  Lock, Receipt, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Wallet, X, XCircle,
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import PageHeader from '../../../components/PageHeader';
-import { useInstitution } from '../../../hooks/useInstitution';
 import {
-  confirmFeePayment, getMyFees, institutionLogoUrl, startFeePayment, type FeePaymentInfo, type MyFees,
+  confirmFeePayment, declineBill, getMyFees, startFeePayment, type FeeDue, type FeePaymentInfo, type MyFees, type StudentBillInfo,
 } from '../../../api/endpoints';
 import { formatDate, formatMoney, moneyInput, parseMoney, paymentMethodLabel, roundMoney } from '../../../utils/money';
-import { levelName, tx } from '../../../utils/terms';
+import { levelName, tx, isSchoolMode } from '../../../utils/terms';
 import { STUDENT_FEE_CSS } from './studentFeeStyles';
 import FeeDialog from './FeeDialog';
+import ReceiptModal from './ReceiptModal';
 import ResultsHoldNotice from '../../../components/academic/ResultsHoldNotice';
 
 type Banner =
@@ -27,7 +28,11 @@ type Banner =
 const STATUS_LABEL: Record<string, string> = { SUCCESS: 'Paid', PENDING: 'Processing', FAILED: 'Failed', ABANDONED: 'Not completed' };
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-/** Student: this session's fee, its breakdown, what's been paid, and paying online with Paystack. */
+/**
+ * Student: this session's fees (the whole-year fee, or each term owed so far, oldest first), the
+ * breakdown, their bills (uniform, books …; optional ones can be declined), what's been paid, and
+ * paying online with Paystack.
+ */
 export default function Fees() {
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
@@ -35,8 +40,8 @@ export default function Fees() {
   const [returnRef] = useState(() => params.get('reference') || params.get('trxref'));
   const [cancelledRef] = useState(() => params.get('cancelled'));
   const [banner, setBanner] = useState<Banner | null>(cancelledRef ? { kind: 'cancelled' } : null);
-  /** Open pay dialog; items = breakdown items chosen from the list (empty = let the student choose). */
-  const [paying, setPaying] = useState<{ items: string[] } | null>(null);
+  /** Open pay dialog for one fee (term) or one bill; items = breakdown items chosen from the list (empty = let the student choose). */
+  const [paying, setPaying] = useState<{ due?: FeeDue; bill?: StudentBillInfo; items: string[] } | null>(null);
   const [receipt, setReceipt] = useState<FeePaymentInfo | null>(null);
 
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['my-fees'], queryFn: getMyFees, retry: false });
@@ -89,21 +94,34 @@ export default function Fees() {
         <div className="sf-card"><Empty icon={<AlertTriangle size={28} />} title="We couldn't load your fees"
           text={<>Check your connection and <button className="sf-link-btn" onClick={() => refetch()}>try again</button>.</>} /></div>
       ) : (
-        <FeesBody data={data} onPay={items => setPaying({ items })} onReceipt={setReceipt} />
+        <FeesBody data={data} onPay={(due, items) => setPaying({ due, items })} onPayBill={bill => setPaying({ bill, items: [] })}
+          onPayAll={() => setPaying({ items: [] })}
+          onDeclined={() => qc.invalidateQueries({ queryKey: ['my-fees'] })} onReceipt={setReceipt} />
       )}
 
-      {paying && data && <PayModal data={data} initialItems={paying.items} onClose={() => setPaying(null)} />}
-      {receipt && data && <ReceiptModal payment={receipt} data={data} onClose={() => setReceipt(null)} />}
+      {paying && data && <PayModal data={data} due={paying.due} bill={paying.bill} initialItems={paying.items} onClose={() => setPaying(null)} />}
+      {receipt && data && <ReceiptModal payment={receipt} onClose={() => setReceipt(null)}
+        foot={data.totalBalance != null && receipt.sessionName === data.session.name
+          ? <>Fees for {data.session.name} so far: {formatMoney(data.totalFees, data.currency)}, paid {formatMoney(data.totalPaid, data.currency)}, balance {formatMoney(data.totalBalance, data.currency)}.</>
+          : undefined} />}
     </div>
   );
 }
 
-function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: string[]) => void; onReceipt: (p: FeePaymentInfo) => void }) {
+function FeesBody({ data, onPay, onPayBill, onPayAll, onDeclined, onReceipt }: {
+  data: MyFees; onPay: (due: FeeDue, items: string[]) => void; onPayBill: (b: StudentBillInfo) => void; onPayAll: () => void;
+  onDeclined: () => void; onReceipt: (p: FeePaymentInfo) => void;
+}) {
   const { fee, currency, student, session } = data;
-  const classLabel = [student.programName, student.level != null ? levelName(student.level) : null].filter(Boolean).join(' · ');
+  // The fee shown on top: the oldest one with a balance (what the next payment goes to)
+  const current: FeeDue | null = fee ? { fee, paid: data.paid, balance: data.balance, credit: data.credit, status: data.status, items: data.items } : null;
+  const dues = data.dues ?? [];
+  const perTerm = dues.length > 1 || (data.upcoming?.length ?? 0) > 0 || (fee?.term ?? null) != null;
+  const owedElsewhere = roundMoney((data.totalBalance ?? data.balance) - data.balance);
+  const classLabel = [student.programName, student.level != null && !isSchoolMode() ? levelName(student.level) : null].filter(Boolean).join(' · ');
 
   if (data.status === 'NO_CLASS') {
-    return <div className="sf-card"><Empty icon={<Info size={28} />} title={tx('Your programme and level are not set')}
+    return <div className="sf-card"><Empty icon={<Info size={28} />} title={(isSchoolMode() ? 'Your class is not set' : 'Your programme and level are not set')}
       text={tx('Fees depend on your programme and level. Please ask your HOD or the school office to update your record.')} /></div>;
   }
 
@@ -114,6 +132,27 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
     <div className="sf-grid">
       <div className="sf-col">
         {data.resultsHold && <ResultsHoldNotice hold={data.resultsHold} compact />}
+        {(data.arrearsBalance ?? 0) > 0 && (
+          <section className="sf-card">
+            <div className="sf-card-head"><h3><History size={17} color="#c0392b" /> From earlier years</h3>
+              <span style={{ fontSize: 12, color: '#74788d', fontWeight: 600 }}>Paid first</span></div>
+            <ul className="sf-items">
+              {(data.arrears ?? []).filter(a => a.balance > 0).map(a => (
+                <li key={a.id}>
+                  <div className="sf-item-main"><b>{a.label}</b>
+                    <small>{formatMoney(a.amount, currency)}{a.paid > 0 ? ` · ${formatMoney(a.paid, currency)} paid` : ''}</small></div>
+                  <div className="sf-item-side"><div className="sf-item-left"><b>{formatMoney(a.balance, currency)}</b><small>to pay</small></div></div>
+                </li>
+              ))}
+            </ul>
+            <div className="sf-items-total"><span>Owed in all</span><span>{formatMoney(data.toPay ?? 0, currency)}</span></div>
+            {data.onlinePayment && (data.toPay ?? 0) > 0 && (
+              <div style={{ padding: '0 20px 16px' }}>
+                <button type="button" className="sf-btn" onClick={onPayAll}><Wallet size={16} /> Pay what I owe <ArrowRight size={16} /></button>
+              </div>
+            )}
+          </section>
+        )}
         {!fee ? (
           <div className="sf-card"><Empty icon={<Wallet size={28} />} title="No fee set yet"
             text={tx(`The school hasn't set the fee for ${classLabel || 'your class'} for ${session.name} yet. Check back later.`)} /></div>
@@ -127,10 +166,12 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
                 </div>
                 <span className="sf-session"><CalendarClock size={13} /> {session.name}</span>
               </div>
-              <div className="sf-balance-label">{data.status === 'PAID' ? 'Balance' : 'Balance to pay'}</div>
+              <div className="sf-balance-label">{perTerm ? `${tx(fee.periodName ?? '')} · ` : ''}{data.status === 'PAID' ? 'Balance' : 'Balance to pay'}</div>
               <div className="sf-balance">{formatMoney(data.balance, currency)}</div>
+              {(owedElsewhere > 0 || (data.billsBalance ?? 0) > 0 || (data.arrearsBalance ?? 0) > 0) && <div style={{ fontSize: 13, opacity: 0.85, marginTop: -4, marginBottom: 10 }}>
+                Owed in all{(data.arrearsBalance ?? 0) > 0 ? ', with earlier years' + ((data.billsBalance ?? 0) > 0 ? ' and bills' : '') : (data.billsBalance ?? 0) > 0 ? ', with bills' : ' this year'}: <b>{formatMoney(data.toPay ?? data.totalBalance, currency)}</b></div>}
               <div className="sf-hero-stats">
-                <div className="sf-hero-stat"><span>Total fee</span><strong>{formatMoney(fee.amount, currency)}</strong></div>
+                <div className="sf-hero-stat"><span>{perTerm ? `${tx(fee.periodName ?? 'Fee')} fee` : 'Total fee'}</span><strong>{formatMoney(fee.amount, currency)}</strong></div>
                 <div className="sf-hero-stat"><span>Paid</span><strong>{formatMoney(data.paid, currency)}</strong></div>
                 <div className="sf-hero-stat"><span>Due</span><strong>{fee.dueDate ? formatDate(fee.dueDate) : '—'}</strong></div>
               </div>
@@ -145,7 +186,7 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
                   <span className="sf-paid-badge"><CheckCircle2 size={18} /> Fully paid — thank you</span>
                 ) : data.onlinePayment ? (
                   <>
-                    <button type="button" className="sf-pay-btn" onClick={() => onPay([])}><Wallet size={18} /> Pay now <ArrowRight size={16} /></button>
+                    <button type="button" className="sf-pay-btn" onClick={() => current && onPay(current, [])}><Wallet size={18} /> Pay now <ArrowRight size={16} /></button>
                     <span className="sf-hero-note">Card or Mobile Money</span>
                   </>
                 ) : (
@@ -160,13 +201,49 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
             )}
             {fee.note && <div className="sf-callout info"><Info size={16} /><span>{fee.note}</span></div>}
 
+            {perTerm && (
+              <section className="sf-card">
+                <div className="sf-card-head">
+                  <h3><Layers size={17} color="var(--brand-text)" /> {tx('This year, semester by semester')}</h3>
+                  <span style={{ fontSize: 12, color: '#74788d', fontWeight: 600 }}>{session.name}</span>
+                </div>
+                <ul className="sf-items">
+                  {dues.map(d => (
+                    <li key={d.fee.id}>
+                      <div className="sf-item-main">
+                        <b>{tx(d.fee.periodName ?? 'Fee')}</b>
+                        <small>{formatMoney(d.fee.amount, currency)}{(d.discount ?? 0) > 0 ? ` (${formatMoney(d.discount, currency)} off: ${d.concessions?.join(', ')})` : ''}{d.paid > 0 ? ` · ${formatMoney(Math.min(d.paid, d.fee.amount), currency)} paid` : ''}{d.fee.dueDate ? ` · due ${formatDate(d.fee.dueDate)}` : ''}</small>
+                      </div>
+                      <div className="sf-item-side">
+                        {d.balance <= 0 ? <span className="sf-status SUCCESS"><CheckCircle2 size={12} style={{ marginRight: 4 }} />Paid</span> : (
+                          <>
+                            <div className="sf-item-left"><b>{formatMoney(d.balance, currency)}</b><small>to pay</small></div>
+                            {data.onlinePayment && <button type="button" className="sf-item-pay" onClick={() => onPay(d, [])} aria-label={`Pay ${d.fee.periodName}`}>Pay</button>}
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                  {(data.upcoming ?? []).map(u => (
+                    <li key={u.id} style={{ opacity: 0.6 }}>
+                      <div className="sf-item-main"><b>{tx(u.periodName ?? 'Fee')}</b><small>{formatMoney(u.amount, currency)}</small></div>
+                      <div className="sf-item-side"><span className="sf-status PENDING">Coming up</span></div>
+                    </li>
+                  ))}
+                </ul>
+                {(data.totalBalance ?? 0) > 0 && (
+                  <div className="sf-items-total"><span>Owed so far</span><span>{formatMoney(data.totalBalance, currency)}</span></div>
+                )}
+              </section>
+            )}
+
             <section className="sf-card">
               <div className="sf-card-head">
                 <h3><FileText size={17} color="var(--brand-text)" /> {fee.itemised ? 'Fee breakdown' : 'Fee'}</h3>
-                <span style={{ fontSize: 12, color: '#74788d', fontWeight: 600 }}>{session.name}</span>
+                <span style={{ fontSize: 12, color: '#74788d', fontWeight: 600 }}>{perTerm ? `${tx(fee.periodName ?? '')} · ` : ''}{session.name}</span>
               </div>
-              {fee.itemised && data.items.length > 0 ? (
-                <ItemList data={data} onPay={onPay} />
+              {fee.itemised && data.items.length > 0 && current ? (
+                <ItemList data={data} due={current} onPay={items => onPay(current, items)} />
               ) : (
                 <div className="sf-card-body" style={{ paddingTop: 6, paddingBottom: 10 }}>
                   <table className="sf-lines">
@@ -180,6 +257,7 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
             </section>
           </>
         )}
+        {(data.bills?.length ?? 0) > 0 && <BillList data={data} onPay={onPayBill} onDeclined={onDeclined} />}
       </div>
 
       <div className="sf-col">
@@ -223,14 +301,72 @@ function FeesBody({ data, onPay, onReceipt }: { data: MyFees; onPay: (items: str
   );
 }
 
+/** The student's bills: what each is for, what's left, Pay, and Decline for an optional one nothing is paid on. */
+function BillList({ data, onPay, onDeclined }: { data: MyFees; onPay: (b: StudentBillInfo) => void; onDeclined: () => void }) {
+  const { currency } = data;
+  const [busy, setBusy] = useState<number | null>(null);
+  const decline = async (b: StudentBillInfo) => {
+    const res = await Swal.fire({
+      title: 'Decline this bill?', text: `${b.title} (${formatMoney(b.amount, currency)}) will be taken off your account.`,
+      icon: 'question', showCancelButton: true, confirmButtonText: 'Decline', cancelButtonText: 'Keep it',
+    });
+    if (!res.isConfirmed) return;
+    setBusy(b.id);
+    try {
+      await declineBill(b.id);
+      toast.success('Bill declined');
+      onDeclined();
+    } catch (e: any) {
+      toast.error(tx(e?.response?.data?.message ?? 'Could not decline the bill'));
+    } finally { setBusy(null); }
+  };
+  return (
+    <section className="sf-card">
+      <div className="sf-card-head"><h3><ShoppingBag size={17} color="var(--brand-text)" /> Bills</h3></div>
+      <ul className="sf-items">
+        {data.bills!.map(b => {
+          const what = b.lines.map(l => l.quantity > 1 ? `${l.name} × ${l.quantity}` : l.name).join(', ');
+          return (
+            <li key={b.id} style={b.status === 'DECLINED' ? { opacity: 0.6 } : undefined}>
+              <div className="sf-item-main">
+                <b>{b.title}{b.optional && <span className="sf-status PENDING" style={{ marginLeft: 6 }}>Optional</span>}</b>
+                <small>{formatMoney(b.amount, currency)}{what && what !== b.title ? ` · ${what}` : ''}{b.paid > 0 && b.balance > 0 ? ` · ${formatMoney(b.paid, currency)} paid` : ''}{b.dueDate && b.balance > 0 ? ` · due ${formatDate(b.dueDate)}` : ''}</small>
+                {b.note && <small>{b.note}</small>}
+              </div>
+              <div className="sf-item-side">
+                {b.status === 'DECLINED' ? <span className="sf-status ABANDONED">Declined</span>
+                  : b.balance <= 0 ? <span className="sf-status SUCCESS"><CheckCircle2 size={12} style={{ marginRight: 4 }} />Paid</span> : (
+                  <>
+                    <div className="sf-item-left"><b>{formatMoney(b.balance, currency)}</b><small>to pay</small></div>
+                    {b.optional && b.paid === 0 && (
+                      <button type="button" className="sf-link-btn" onClick={() => decline(b)} disabled={busy === b.id}>
+                        {busy === b.id ? <Loader2 size={13} className="sf-spin" /> : 'Decline'}
+                      </button>
+                    )}
+                    {data.onlinePayment && <button type="button" className="sf-item-pay" onClick={() => onPay(b)} aria-label={`Pay ${b.title}`}>Pay</button>}
+                  </>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {(data.billsBalance ?? 0) > 0 && <div className="sf-items-total"><span>Bills to pay</span><span>{formatMoney(data.billsBalance, currency)}</span></div>}
+      {(data.accountCredit ?? 0) > 0 && (
+        <div className="sf-items-hint"><Info size={13} /> You have {formatMoney(data.accountCredit, currency)} in credit; {tx('it goes to your next bill or semester.')}</div>
+      )}
+    </section>
+  );
+}
+
 /** Each item of the breakdown with what's paid and left, and a Pay button for items still owed. */
-function ItemList({ data, onPay }: { data: MyFees; onPay: (items: string[]) => void }) {
+function ItemList({ data, due, onPay }: { data: MyFees; due: FeeDue; onPay: (items: string[]) => void }) {
   const { currency } = data;
   const canPayItems = data.onlinePayment && data.itemPayment;
   return (
     <>
       <ul className="sf-items">
-        {data.items.map(it => {
+        {due.items.map(it => {
           const done = it.balance <= 0;
           const pct = it.amount > 0 ? Math.min(100, (it.paid / it.amount) * 100) : 0;
           return (
@@ -258,9 +394,9 @@ function ItemList({ data, onPay }: { data: MyFees; onPay: (items: string[]) => v
       </ul>
       <div className="sf-items-total">
         <span>Total</span>
-        <span>{formatMoney(data.fee?.amount, currency)}</span>
+        <span>{formatMoney(due.fee.amount, currency)}</span>
       </div>
-      {data.paid > 0 && data.status !== 'PAID' && (
+      {due.paid > 0 && due.status !== 'PAID' && (
         <div className="sf-items-hint">
           <Info size={13} /> Money you paid without choosing an item is counted against the items from the top of this list.
         </div>
@@ -278,8 +414,10 @@ function HistoryRow({ p, onReceipt }: { p: FeePaymentInfo; onReceipt: (p: FeePay
       <div className="sf-h-ico" style={{ background: tone[0], color: tone[1] }}><Icon size={18} /></div>
       <div className="sf-h-main">
         <b>{formatMoney(p.amount, p.currency)}</b>
-        <small>{paymentMethodLabel(p)} · {formatDate(p.paidAt ?? p.createdAt)} · {p.sessionName}</small>
-        {p.items.length > 0 && <small className="sf-h-for">For {p.items.map(i => i.name).join(', ')}</small>}
+        <small>{paymentMethodLabel(p)} · {formatDate(p.paidAt ?? p.createdAt)} · {p.periodName && p.periodName !== 'Whole year' ? `${tx(p.periodName)}, ` : ''}{p.sessionName}</small>
+        {p.receiptNo && <small className="sf-h-for">Receipt {p.receiptNo}</small>}
+        {p.items.length > 0 ? <small className="sf-h-for">For {p.items.map(i => i.name).join(', ')}</small>
+          : (p.allocations?.length ?? 0) > 1 || p.allocations?.some(a => a.kind !== 'FEE') ? <small className="sf-h-for">For {p.allocations!.map(a => tx(a.label)).join(', ')}</small> : null}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
         <span className={`sf-status ${p.status}`}>{STATUS_LABEL[p.status] ?? p.status}</span>
@@ -299,7 +437,7 @@ function ResultBanner({ banner, currency, onClose, onRecheck, onReceipt }: {
     case 'ok':
       return <div className="sf-banner ok" role="status"><div className="sf-banner-ico"><CheckCircle2 size={20} /></div>
         <div><h4>Payment received — {formatMoney(banner.payment.amount, banner.payment.currency || currency)}{banner.payment.items.length > 0 ? ` for ${banner.payment.items.map(i => i.name).join(', ')}` : ''}</h4>
-          <p>Thank you. Reference <b>{banner.payment.reference}</b>. <button className="sf-link-btn" style={{ padding: 0, color: 'inherit', textDecoration: 'underline' }} onClick={() => onReceipt(banner.payment)}>View receipt</button></p></div>
+          <p>Thank you. Receipt <b>{banner.payment.receiptNo ?? banner.payment.reference}</b>. <button className="sf-link-btn" style={{ padding: 0, color: 'inherit', textDecoration: 'underline' }} onClick={() => onReceipt(banner.payment)}>View receipt</button></p></div>
         <button className="sf-banner-close" onClick={onClose} aria-label="Dismiss"><X size={16} /></button></div>;
     case 'wait':
       return <div className="sf-banner warn" role="status"><div className="sf-banner-ico"><RefreshCw size={18} /></div>
@@ -320,10 +458,14 @@ function ResultBanner({ banner, currency, onClose, onRecheck, onReceipt }: {
 
 type PayMode = 'full' | 'items' | 'part';
 
-function PayModal({ data, initialItems, onClose }: { data: MyFees; initialItems: string[]; onClose: () => void }) {
-  const { balance, currency, partPayment, minimumPayment } = data;
-  const owedItems = data.items.filter(i => i.balance > 0);
-  const itemsAllowed = data.itemPayment && !!data.fee?.itemised && owedItems.length > 0;
+/** Pays one fee (term), one bill, or (neither) everything owed, oldest first. */
+function PayModal({ data, due, bill, initialItems, onClose }: { data: MyFees; due?: FeeDue; bill?: StudentBillInfo; initialItems: string[]; onClose: () => void }) {
+  const { currency, partPayment, minimumPayment } = data;
+  const balance = bill ? bill.balance : due ? due.balance : data.toPay ?? 0;
+  const owedItems = due ? due.items.filter(i => i.balance > 0) : [];
+  const itemsAllowed = data.itemPayment && !!due?.fee.itemised && owedItems.length > 0;
+  const forWhat = bill ? bill.title : !due ? 'everything you owe, oldest first'
+    : due.fee.term != null ? `${tx(due.fee.periodName ?? '')} · ${data.session.name}` : data.session.name;
   const [mode, setMode] = useState<PayMode>(itemsAllowed && initialItems.length > 0 ? 'items' : 'full');
   const [chosen, setChosen] = useState<string[]>(initialItems.filter(n => owedItems.some(i => i.name === n)));
   const [text, setText] = useState('');
@@ -357,18 +499,18 @@ function PayModal({ data, initialItems, onClose }: { data: MyFees; initialItems:
     setBusy(true);
     try {
       const { authorizationUrl } = await startFeePayment(
-        mode === 'full' ? {} : mode === 'items' ? { items: chosen } : { amount: roundMoney(value) });
+        { ...(bill ? { billId: bill.id } : due ? { scheduleId: due.fee.id } : {}), ...(mode === 'full' ? {} : mode === 'items' ? { items: chosen } : { amount: roundMoney(value) }) });
       window.location.assign(authorizationUrl);   // Paystack's secure checkout; it sends the student back here
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not start the payment. Please try again.');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not start the payment. Please try again.'));
       setBusy(false);
     }
   };
 
   return (
     <FeeDialog
-      title="Pay school fees"
-      subtitle={<>{data.session.name} · Balance <b style={{ color: '#2a3142' }}>{formatMoney(balance, currency)}</b></>}
+      title={bill ? 'Pay bill' : due ? 'Pay school fees' : 'Pay what you owe'}
+      subtitle={<>{forWhat} · Balance <b style={{ color: '#2a3142' }}>{formatMoney(balance, currency)}</b></>}
       onClose={onClose}
       busy={busy}
       footer={<>
@@ -394,7 +536,7 @@ function PayModal({ data, initialItems, onClose }: { data: MyFees; initialItems:
         <div className="sf-due">
           <span>You'll pay</span>
           <strong>{formatMoney(balance, currency)}</strong>
-          <small>This clears everything you owe for {data.session.name}.</small>
+          <small>This clears everything you owe for {forWhat}.</small>
         </div>
       )}
 
@@ -449,86 +591,6 @@ function PayModal({ data, initialItems, onClose }: { data: MyFees; initialItems:
       <div className="sf-secure-line">
         <Lock size={13} />
         <span>Secured by Paystack · <b>Mobile Money</b> or <b>card</b>. Confirmation goes to {data.student.email}.</span>
-      </div>
-    </FeeDialog>
-  );
-}
-
-function ReceiptModal({ payment, data, onClose }: { payment: FeePaymentInfo; data: MyFees; onClose: () => void }) {
-  const { institution } = useInstitution();
-  const method = payment.method === 'PAYSTACK' ? `${paymentMethodLabel(payment)} (Paystack)` : paymentMethodLabel(payment);
-  const receiptRef = useRef<HTMLDivElement>(null);
-
-  /** Prints only the receipt, from its own frame (printing the page would include the hidden dashboard's height). */
-  const print = () => {
-    const node = receiptRef.current;
-    if (!node) return;
-    const frame = document.createElement('iframe');
-    frame.setAttribute('aria-hidden', 'true');
-    Object.assign(frame.style, { position: 'fixed', right: '0', bottom: '0', width: '0', height: '0', border: '0' });
-    document.body.appendChild(frame);
-    const doc = frame.contentDocument;
-    const win = frame.contentWindow;
-    if (!doc || !win) { frame.remove(); window.print(); return; }
-    doc.open();
-    doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>Receipt ${payment.reference}</title>`
-      + `<style>${STUDENT_FEE_CSS} body{margin:24px;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact} .sf-receipt{border:none}</style>`
-      + `</head><body>${node.outerHTML}</body></html>`);
-    doc.close();
-    const go = () => { win.focus(); win.print(); setTimeout(() => frame.remove(), 1000); };
-    // Wait for the logo, but never more than 2 s
-    const pending = Array.from(doc.images).filter(img => !img.complete);
-    if (pending.length === 0) go();
-    else Promise.race([
-      Promise.all(pending.map(img => new Promise(r => { img.onload = img.onerror = r; }))),
-      sleep(2000),
-    ]).then(go);
-  };
-
-  return (
-    <FeeDialog title="Receipt" subtitle="Print it or save it as a PDF." onClose={onClose} wide
-      footer={<>
-        <button type="button" className="sf-btn-ghost" onClick={onClose}>Close</button>
-        <button type="button" className="sf-btn" onClick={print}><Printer size={16} /> Print / Save PDF</button>
-      </>}>
-      <div className="sf-receipt" ref={receiptRef}>
-        <div className="sf-receipt-head">
-          <div className="sf-receipt-brand">
-            {institution.hasLogo && <img src={institutionLogoUrl(institution.logoVersion)} alt="" />}
-            <div style={{ minWidth: 0 }}>
-              <h3>{institution.name}</h3>
-              {institution.subtitle && <p>{institution.subtitle}</p>}
-            </div>
-          </div>
-          <div className="sf-receipt-title"><b>Payment receipt</b><span>{payment.reference}</span></div>
-        </div>
-        <div className="sf-stamp" aria-hidden="true">PAID</div>
-        <dl className="sf-receipt-grid">
-          <div><dt>{tx('Student')}</dt><dd>{payment.studentName}</dd></div>
-          <div><dt>{tx('Student ID')}</dt><dd>{payment.studentId}</dd></div>
-          <div><dt>{tx('Programme')}</dt><dd>{payment.programName ?? '—'}</dd></div>
-          <div><dt>{tx('Level')}</dt><dd>{payment.level != null ? levelName(payment.level) : '—'}</dd></div>
-          <div><dt>Academic session</dt><dd>{payment.sessionName}</dd></div>
-          <div><dt>Date paid</dt><dd>{formatDate(payment.paidAt ?? payment.createdAt, true)}</dd></div>
-          <div><dt>Payment method</dt><dd>{method}</dd></div>
-          <div><dt>Reference</dt><dd style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}>{payment.reference}</dd></div>
-        </dl>
-        {payment.items.length > 0 && (
-          <table className="sf-lines" style={{ marginBottom: 12 }}>
-            <tbody>
-              {payment.items.map(i => (
-                <tr key={i.name}><td><span className="sf-dot" />{i.name}</td><td>{formatMoney(i.amount, payment.currency)}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        <div className="sf-receipt-amount"><span>Amount paid</span><strong>{formatMoney(payment.amount, payment.currency)}</strong></div>
-        <div className="sf-receipt-foot">
-          Fees for {payment.sessionName}: {data.fee && data.session.name === payment.sessionName
-            ? <>total {formatMoney(data.fee.amount, data.currency)}, paid to date {formatMoney(data.paid, data.currency)}, balance {formatMoney(data.balance, data.currency)}.</>
-            : 'see your Fees page for the current balance.'}
-          <br />Issued electronically by {institution.name}. Quote the reference above in any enquiry.
-        </div>
       </div>
     </FeeDialog>
   );

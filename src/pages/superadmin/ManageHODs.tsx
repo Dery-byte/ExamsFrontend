@@ -142,10 +142,10 @@ export default function ManageHODs() {
               </div>
             </div>
             <div>
-              <label style={labelStyle}>Department *</label>
+              <label style={labelStyle}>{tx('Department *')}</label>
               {iconInput(<Building2 size={14} />, (
                 <select style={inputStyle} value={form.departmentId} onChange={e => setForm(p => ({ ...p, departmentId: e.target.value }))}>
-                  <option value="" style={{ background: '#1a1a35' }}>Select department…</option>
+                  <option value="" style={{ background: '#1a1a35' }}>{tx('Select department…')}</option>
                   {departments.map(d => <option key={d.id} value={d.id} style={{ background: '#1a1a35' }}>{d.name}</option>)}
                 </select>
               ))}
@@ -221,10 +221,10 @@ export default function ManageHODs() {
                   </button>
                 </div>
               </div>
-              <div><label style={labelStyle}>Department *</label>
+              <div><label style={labelStyle}>{tx('Department *')}</label>
                 {iconInput(<Building2 size={14} />, (
                   <select style={inputStyle} value={editForm.departmentId} onChange={e => setEditForm(p => ({ ...p, departmentId: e.target.value }))}>
-                    <option value="" style={{ background: '#1a1a35' }}>Select department…</option>
+                    <option value="" style={{ background: '#1a1a35' }}>{tx('Select department…')}</option>
                     {departments.map(d => <option key={d.id} value={d.id} style={{ background: '#1a1a35' }}>{d.name}</option>)}
                   </select>
                 ))}

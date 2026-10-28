@@ -18,6 +18,7 @@ const ROLE_META: Record<string, { label: string; color: string; bg: string; grad
   ADMIN:    { label: 'Administrator',   color: 'var(--brand-text)', bg: 'var(--brand-soft)', grad: 'linear-gradient(135deg,var(--brand),var(--accent))', icon: <Shield size={18}/> },
   LECTURER: { label: tx('Academic Faculty'), color: '#0891b2', bg: '#ecfeff', grad: 'linear-gradient(135deg,#0891b2,#06b6d4)', icon: <Briefcase size={18}/> },
   NORMAL:   { label: tx('Student'),          color: '#059669', bg: '#ecfdf5', grad: 'linear-gradient(135deg,#059669,#10b981)', icon: <User size={18}/> },
+  ACCOUNTANT: { label: 'Accounts Office',    color: '#b45309', bg: '#fffbeb', grad: 'linear-gradient(135deg,#d97706,#f59e0b)', icon: <Briefcase size={18}/> },
 };
 
 /* ── tiny reusable modal wrapper ─────────────────────────────────────────── */

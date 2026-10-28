@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
-import { useFeatureFlags, useAssessments } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments, useBoarding } from '../../hooks/useFeatureFlags';
 import { hideQuizItems } from '../../utils/assessmentsNav';
 import { 
   Home, 
@@ -21,7 +21,8 @@ import {
   MessageSquareWarning,
   ClipboardPen,
   FileBarChart,
-  UserCheck
+  UserCheck,
+  BedDouble
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import InstitutionMark from '../common/InstitutionMark';
@@ -32,6 +33,7 @@ export default function LecturerLayout() {
   const { term } = useInstitution();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { marksSheetLecturer, features } = useFeatureFlags();
+  const boarding = useBoarding();
   const quizzesOn = useAssessments();   // the developer's Assessments switch
 
   const navItems = [
@@ -46,6 +48,7 @@ export default function LecturerLayout() {
     ...(features?.LECTURER_REPORTS !== false ? [{ to: '/lect/reports', icon: <FileBarChart size={20} />, title: 'Reports' }] : []),
     ...(features?.QUESTION_BANK !== false ? [{ to: '/lect/question-bank', icon: <Library size={20} />, title: 'Question Bank' }] : []),
     ...(features?.ATTENDANCE !== false ? [{ to: '/lect/attendance', icon: <UserCheck size={20} />, title: 'Attendance' }] : []),
+    ...(boarding.mode !== 'DAY' && boarding.staff ? [{ to: '/lect/boarding', icon: <BedDouble size={20} />, title: 'Boarding' }] : []),
     { to: '/lect/timetable', icon: <CalendarDays size={20} />, title: 'Exam Timetable' },
     ...(marksSheetLecturer ? [{ to: '/lect/manual-marks', icon: <FileText size={20} />, title: 'Marks Sheet' }] : []),
     ...(marksSheetLecturer && isSchoolMode() ? [{ to: '/lect/term-remarks', icon: <ClipboardPen size={20} />, title: 'Report Remarks' }] : []),

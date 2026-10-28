@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saGetDepartments, saGetPrograms, saGetAllHods, saGetAllStudents } from '../../api/endpoints';
 import { Building2, BookMarked, UserCog, GraduationCap, ChevronRight, TrendingUp, ShieldCheck } from 'lucide-react';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode } from '../../utils/terms';
 
 const card = (accent = 'var(--accent)') => ({
   background: 'rgba(255,255,255,0.03)',
@@ -34,14 +34,14 @@ export default function SuperAdminWelcome() {
   }, []);
 
   const statCards = [
-    { label: 'Departments', value: stats.departments, icon: <Building2 size={22} color="#fff" />, gradient: 'linear-gradient(135deg,var(--accent),var(--brand))', to: '/super-admin/departments' },
+    { label: tx('Departments'), value: stats.departments, icon: <Building2 size={22} color="#fff" />, gradient: 'linear-gradient(135deg,var(--accent),var(--brand))', to: '/super-admin/departments' },
     { label: tx('Programs'), value: stats.programs, icon: <BookMarked size={22} color="#fff" />, gradient: 'linear-gradient(135deg,#0ea5e9,#2563eb)', to: '/super-admin/programs' },
     { label: tx('HOD Accounts'), value: stats.hods, icon: <UserCog size={22} color="#fff" />, gradient: 'linear-gradient(135deg,#10b981,#059669)', to: '/super-admin/hods' },
     { label: tx('Students'), value: stats.students, icon: <GraduationCap size={22} color="#fff" />, gradient: 'linear-gradient(135deg,#f59e0b,#d97706)', to: '/super-admin/student-semester' },
   ];
 
   const quickActions = [
-    { label: 'Create Department', sub: 'Add a new faculty or school', icon: <Building2 size={18} />, to: '/super-admin/departments', color: 'var(--accent-light)' },
+    { label: tx('Create Department'), sub: isSchoolMode() ? 'Add a section, e.g. Primary School' : 'Add a new faculty or school', icon: <Building2 size={18} />, to: '/super-admin/departments', color: 'var(--accent-light)' },
     { label: tx('Add Program'), sub: tx('Configure levels & duration'), icon: <BookMarked size={18} />, to: '/super-admin/programs', color: '#0ea5e9' },
     { label: tx('Register HOD'), sub: tx('Create Head of Department account'), icon: <UserCog size={18} />, to: '/super-admin/hods', color: '#10b981' },
     { label: tx('Set Semester'), sub: tx('Update student level & semester'), icon: <GraduationCap size={18} />, to: '/super-admin/student-semester', color: '#f59e0b' },

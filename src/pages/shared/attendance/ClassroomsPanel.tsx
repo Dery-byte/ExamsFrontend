@@ -8,6 +8,7 @@ import { saGetDepartments } from '../../../api/endpoints';
 import { distanceMeters, measureRoom, readLocation, LocationError, GUESSED_LOCATION_METERS, type RoomMeasurement } from '../../../utils/attendanceDevice';
 import { errMsg } from './shared';
 import { useAuth } from '../../../contexts/AuthContext';
+import { tx } from '../../../utils/terms';
 
 const PRESETS = [
   { value: 25, label: 'Small room · 25 m' },
@@ -53,7 +54,7 @@ export default function ClassroomsPanel({ maxAccuracy }: { maxAccuracy: number }
                   <div className="at-meta">
                     <span><Ruler size={12} /> {r.radiusMeters} m allowed</span>
                     {r.measuredAccuracyMeters != null && <span><Crosshair size={12} /> measured ±{r.measuredAccuracyMeters} m</span>}
-                    <span>{r.departmentName ?? 'All departments'}</span>
+                    <span>{r.departmentName ?? tx('All departments')}</span>
                     {r.createdBy && <span>by {r.createdBy}</span>}
                   </div>
                 </div>
@@ -146,9 +147,9 @@ function ClassroomDialog({ room, onClose, onSaved }: { room: Classroom | null; o
           <label className="at-field"><span>Building (optional)</span>
             <input className="at-input" value={building} maxLength={100} onChange={e => setBuilding(e.target.value)} placeholder="e.g. Science Block" /></label>
           {isSuper && (
-            <label className="at-field at-span-2"><span>Department</span>
+            <label className="at-field at-span-2"><span>{tx('Department')}</span>
               <select className="at-select" value={departmentId} onChange={e => setDepartmentId(e.target.value ? Number(e.target.value) : '')}>
-                <option value="">All departments (shared room)</option>
+                <option value="">{tx('All departments (shared room)')}</option>
                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select></label>
           )}

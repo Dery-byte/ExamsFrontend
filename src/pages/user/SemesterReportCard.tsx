@@ -6,7 +6,7 @@ import {
   Award, GraduationCap, User, FileText, Calendar, TrendingUp,
   CheckCircle, AlertCircle, Clock
 } from 'lucide-react';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode, periodName } from '../../utils/terms';
 import { resultsHoldOf, type ResultsHold } from '../../api/endpoints';
 import ResultsHoldNotice from '../../components/academic/ResultsHoldNotice';
 
@@ -38,7 +38,8 @@ const SemesterReportCard = () => {
   const [allReports, setAllReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingAll, setDownloadingAll] = useState(false);
-  const [downloadingSingle, setDownloadingSingle] = useState<number | null>(null);
+  /** The report being downloaded (its reportKey: session, class in schools, level and term). */
+  const [downloadingSingle, setDownloadingSingle] = useState<string | null>(null);
   const [hold, setHold] = useState<ResultsHold | null>(null);
 
   const base = client.defaults.baseURL!.replace('/v1/auth', '');
@@ -78,13 +79,19 @@ const SemesterReportCard = () => {
     }
   };
 
-  const handleDownloadSingle = async (level: string, semester: number) => {
-    const loaderId = semester + parseInt(level) * 1000;
-    setDownloadingSingle(loaderId);
+  const keyOf = (r: any) => r.reportKey ?? `${r.sessionName}|${r.level}-${r.semester}`;
+
+  const handleDownloadSingle = async (report: any) => {
+    const { level, semester } = report;
+    setDownloadingSingle(keyOf(report));
     try {
       const token = localStorage.getItem('access_token');
+      // Session and class pick the right one: a school student is at level 1 in every class
+      const q = new URLSearchParams();
+      if (report.sessionName) q.set('session', report.sessionName);
+      if (report.programId != null) q.set('programId', String(report.programId));
       const response = await fetch(
-        `${base}/marks/sheet/report-card/level/${level}/semester/${semester}/pdf`,
+        `${base}/marks/sheet/report-card/level/${level}/semester/${semester}/pdf?${q}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!response.ok) throw new Error('Failed to generate PDF');
@@ -92,7 +99,7 @@ const SemesterReportCard = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `SemesterReportCard_Level${level}_Sem${semester}.pdf`;
+      a.download = isSchoolMode() ? `TerminalReport_${String(report.programName ?? '').replace(/[^\w-]+/g, '_')}_Term${semester}.pdf` : `SemesterReportCard_Level${level}_Sem${semester}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success(tx('Semester Report Card downloaded!'));
@@ -134,7 +141,8 @@ const SemesterReportCard = () => {
     );
   }
 
-  const studentInfo = allReports[0];
+  // Schools: the latest report names the class they are in now
+  const studentInfo = isSchoolMode() ? allReports[allReports.length - 1] : allReports[0];
 
   return (
     <div style={{ padding: '16px', maxWidth: 1100, margin: '0 auto' }}>
@@ -224,7 +232,7 @@ const SemesterReportCard = () => {
         const passCount = courseMarks.filter((cm: any) => cm.grade && cm.grade !== 'F').length;
 
         return (
-          <div key={`${report.level}-${report.semester}`} style={{
+          <div key={keyOf(report)} style={{
             background: '#fff', borderRadius: 16,
             boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
             overflow: 'hidden', border: '1px solid #e2e8f0',
@@ -245,16 +253,16 @@ const SemesterReportCard = () => {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#1e293b' }}>
-                    {tx("Level ")}{report.level}
+                    {isSchoolMode() ? report.programName : <>{tx("Level ")}{report.level}</>}
                   </h3>
                   <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
-                    {tx("Semester ")}{report.semester}
+                    {isSchoolMode() ? [periodName(report.semester), report.sessionName].filter(Boolean).join(' · ') : <>{tx("Semester ")}{report.semester}</>}
                   </div>
                 </div>
               </div>
               <button
-                onClick={() => handleDownloadSingle(report.level, report.semester)}
-                disabled={downloadingSingle === (report.semester + parseInt(report.level) * 1000)}
+                onClick={() => handleDownloadSingle(report)}
+                disabled={downloadingSingle === keyOf(report)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '8px 16px', border: '1.5px solid #e2e8f0', borderRadius: 8,
@@ -262,7 +270,7 @@ const SemesterReportCard = () => {
                   transition: 'all 0.15s'
                 }}
               >
-                {downloadingSingle === (report.semester + parseInt(report.level) * 1000) ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={16} />}
+                {downloadingSingle === keyOf(report) ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={16} />}
                 {tx("Download Semester")}</button>
             </div>
 

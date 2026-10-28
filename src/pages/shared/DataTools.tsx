@@ -8,9 +8,32 @@ import {
   bulkEnroll, getPrograms, getProgramsByDept, getResultsSummary, importRows, type ImportType,
 } from '../../api/endpoints';
 import { downloadWorkbook, readRows, slug } from '../../utils/spreadsheet';
-import { defaultLevels, periodName, periodsPerLevel, tx } from '../../utils/terms';
+import { defaultLevels, isSchoolMode, periodName, periodsPerLevel, tx, oneYear } from '../../utils/terms';
+import { useBoarding } from '../../hooks/useFeatureFlags';
 
-const TEMPLATES: Record<ImportType, { label: string; columns: string[]; example: string[]; notes: string }> = {
+/** Schools: classes (one year each) instead of programmes and levels, sections instead of departments. */
+const SCHOOL_TEMPLATES: Record<ImportType, { label: string; columns: string[]; example: string[]; notes: string }> = {
+  students: {
+    label: tx('Students'),
+    columns: ['First Name', 'Last Name', 'Admission No.', 'Email', 'Phone', 'Class', 'Term', 'Password'],
+    example: ['Ama', 'Mensah', 'WGS/2026/0001', 'ama.mensah@example.com', '0240000000', 'P4', '1', ''],
+    notes: 'Class = class code or exact name (e.g. P4 or Primary 4). Term defaults to 1. Leave Password empty to generate a temporary one.',
+  },
+  lecturers: {
+    label: tx('Lecturers'),
+    columns: ['First Name', 'Last Name', 'Staff ID', 'Email', 'Phone', 'Section', 'Password'],
+    example: ['Kofi', 'Owusu', 'STF1024', 'k.owusu@example.com', '0200000000', 'PRI', ''],
+    notes: 'Section = section code or exact name (e.g. PRI or Primary School). Leave Password empty to generate a temporary one.',
+  },
+  courses: {
+    label: tx('Courses'),
+    columns: ['Subject Code', 'Title', 'Term', 'Classes', 'Teacher', 'Description'],
+    example: ['ENG4', 'English Language', '1', 'P4;P5', 'STF1024', ''],
+    notes: 'Classes = class codes separated by ";" (empty = every class, Super Admin only). Teacher = staff ID (optional).',
+  },
+};
+
+const TEMPLATES: Record<ImportType, { label: string; columns: string[]; example: string[]; notes: string }> = isSchoolMode() ? SCHOOL_TEMPLATES : {
   students: {
     label: tx('Students'),
     columns: ['First Name', 'Last Name', 'Student ID', 'Email', 'Phone', 'Program', 'Level', 'Semester', 'Password'],
@@ -30,6 +53,20 @@ const TEMPLATES: Record<ImportType, { label: string; columns: string[]; example:
     notes: 'Programs = codes separated by ";" (empty = global course, Super Admin only). Lecturer = staff ID (optional).',
   },
 };
+
+/** The student template with Gender, and (as the institution houses students) Residency and the room columns. */
+function studentTemplate(b: { mode: 'DAY' | 'BOARDING' | 'BOTH'; word: string }) {
+  const t = TEMPLATES.students;
+  const both = b.mode === 'BOTH', rooms = b.mode !== 'DAY';
+  return {
+    ...t,
+    columns: [...t.columns, 'Gender', ...(both ? ['Residency'] : []), ...(rooms ? [b.word, 'Block', 'Room', 'Bed'] : [])],
+    example: [...t.example, 'Female', ...(both ? ['Boarding'] : []), ...(rooms ? ['Aggrey House', '', '14', '3'] : [])],
+    notes: t.notes + ' Gender = Male or Female (optional).'
+      + (both ? ' Residency = Day or Boarding (optional).' : '')
+      + (rooms ? ` ${b.word}, Block, Room and Bed are optional: fill them to give the student a room at once (boarding staff only; the room must fit their gender${isSchoolMode() ? '' : ' and level'}).` : ''),
+  };
+}
 
 type Tab = 'import' | 'enroll' | 'export';
 
@@ -96,7 +133,8 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
   const [over, setOver] = useState(false);
   const [notify, setNotify] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
-  const tpl = TEMPLATES[type];
+  const boarding = useBoarding();
+  const tpl = type === 'students' ? studentTemplate(boarding) : TEMPLATES[type];
   const isPeople = type !== 'courses';
 
   const reset = () => { setRows([]); setResult(null); setFileName(''); };
@@ -248,18 +286,27 @@ function ProgramLevelPicker({ programs, programId, setProgramId, level, setLevel
   programs: any[]; programId: number | ''; setProgramId: (v: number | '') => void; level: number | ''; setLevel: (v: number | '') => void; requireLevel: boolean;
 }) {
   const levels: number[] = programs.find(p => p.id === programId)?.configuredLevels ?? defaultLevels();
+  // A school class is one year: its level is chosen for the user and the picker is hidden
+  const single = oneYear(programs.find(p => p.id === programId));
   return (
     <>
-      <label className="dt-field">{tx("Program")}<select className="dt-input" value={programId} onChange={e => { setProgramId(e.target.value ? Number(e.target.value) : ''); setLevel(''); }}>
+      <label className="dt-field">{tx("Program")}<select className="dt-input" value={programId} onChange={e => {
+          const id = e.target.value ? Number(e.target.value) : '';
+          setProgramId(id);
+          const p = programs.find(x => x.id === id);
+          setLevel(id !== '' && oneYear(p) && requireLevel ? (p?.configuredLevels?.[0] ?? 1) : '');
+        }}>
           <option value="">{tx("Choose a program…")}</option>
           {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </label>
+      {!single ? (
       <label className="dt-field" style={{ flex: '0 1 150px' }}>{tx("Level")}<select className="dt-input" value={level} onChange={e => setLevel(e.target.value ? Number(e.target.value) : '')}>
           <option value="">{requireLevel ? 'Choose…' : tx('All levels')}</option>
           {levels.map(l => <option key={l} value={l}>{tx("Level ")}{l}</option>)}
         </select>
       </label>
+      ) : null}
     </>
   );
 }
@@ -294,7 +341,9 @@ function EnrollPanel({ programs }: { programs: any[] }) {
         </label>
         <button className="dt-ghost" disabled={!programId || !level || busy} onClick={() => run(false)}>Preview</button>
       </div>
-      <p className="dt-note">{tx("Enrols every active student at this program and level in all of the level's courses for the program. Existing enrolments are kept; deactivated students are skipped.")}</p>
+      <p className="dt-note">{isSchoolMode()
+        ? tx("Enrols every active student in this class in all of its courses. Existing enrolments are kept; deactivated students are skipped.")
+        : tx("Enrols every active student at this program and level in all of the level's courses for the program. Existing enrolments are kept; deactivated students are skipped.")}</p>
 
       {busy && <div style={{ padding: 16, textAlign: 'center' }}><Loader2 size={22} color="var(--brand-text)" style={{ animation: 'spin 1s linear infinite' }} /></div>}
       {preview && !busy && (
@@ -336,7 +385,7 @@ function ExportPanel({ programs }: { programs: any[] }) {
       downloadWorkbook(`results-${slug(program)}${level ? `-L${level}` : ''}`, [{
         name: 'Results',
         rows: rows.map(r => ({
-          'Student ID': r.studentId, Name: r.name, Email: r.email, Program: r.program, Level: r.level, Semester: r.semester,
+          [tx('Student ID')]: r.studentId, Name: r.name, Email: r.email, [tx('Program')]: r.program, ...(isSchoolMode() ? {} : { Level: r.level }), [tx('Semester')]: r.semester,
           'Credits attempted': r.creditsAttempted, 'Credits earned': r.creditsEarned,
           CGPA: r.cgpa == null ? '' : Number(r.cgpa), Class: r.class ?? '', 'Outstanding courses': r.outstandingCourses,
           'Meets promotion rules': r.meetsPromotionRules, 'Account status': r.accountStatus,

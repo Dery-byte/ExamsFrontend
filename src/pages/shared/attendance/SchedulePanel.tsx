@@ -8,7 +8,7 @@ import {
   type AttendanceMode, type AttendanceOptions, type ClassScheduleItem, type Classroom,
 } from '../../../api/attendance';
 import { DAYS, classTitle, dayName, errMsg } from './shared';
-import { levelName, tx } from '../../../utils/terms';
+import { levelName, tx, showLevelPicker } from '../../../utils/terms';
 
 const todayName = () => DAYS[(new Date().getDay() + 6) % 7];
 
@@ -138,11 +138,11 @@ function ScheduleDialog({ item, options, classrooms, onClose, onSaved }: {
                   <option value="">{tx('Choose a programme…')}</option>
                   {options.programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select></label>
-              <label className="at-field"><span>{tx('Level')}</span>
+              {showLevelPicker(program?.levels.length ?? 0) && <label className="at-field"><span>{tx('Level')}</span>
                 <select className="at-select" value={level} onChange={e => setLevel(e.target.value ? Number(e.target.value) : '')}>
                   <option value="">{tx('Every level')}</option>
                   {program?.levels.map(l => <option key={l} value={l}>{levelName(l)}</option>)}
-                </select></label>
+                </select></label>}
             </>
           )}
           <label className="at-field at-span-2"><span>Day</span>

@@ -6,7 +6,7 @@ import {
   User, Mail, Phone, Lock, Eye, EyeOff, Loader2, GraduationCap, ShieldCheck,
   ChevronRight, CheckCircle2, ArrowRight, BookOpen, Layers
 } from 'lucide-react';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode, oneYear } from '../../utils/terms';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function Signup() {
   const [hidePass, setHidePass] = useState(true);
   const [hideConfirm, setHideConfirm] = useState(true);
 
-  const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[] }[]>([]);
+  const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[]; departmentName?: string }[]>([]);
   const [selectedProgramId, setSelectedProgramId] = useState<number | ''>('');
   const [selectedLevel, setSelectedLevel] = useState<number | ''>('');
   
@@ -595,12 +595,19 @@ export default function Signup() {
                         if (prog?.configuredLevels?.length) setSelectedLevel(prog.configuredLevels[0]);
                       }}
                     >
-                      {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      {isSchoolMode()
+                        // Schools: classes listed under their section (Primary School › Primary 1 …)
+                        ? [...new Set(programs.map(p => p.departmentName ?? ''))].map(section => (
+                            <optgroup key={section} label={section}>
+                              {programs.filter(p => (p.departmentName ?? '') === section).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </optgroup>
+                          ))
+                        : programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   </div>
                 </div>
 
-                <div className="form-group full">
+                {!oneYear(programs.find(p => p.id === selectedProgramId)) && <div className="form-group full">
                   <label className="input-label">{tx("Current Level / Year")}</label>
                   <div className="input-wrapper">
                     <Layers size={18} className="input-icon" />
@@ -614,7 +621,7 @@ export default function Signup() {
                       ))}
                     </select>
                   </div>
-                </div>
+                </div>}
               </>
             )}
 

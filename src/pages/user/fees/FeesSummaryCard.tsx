@@ -9,10 +9,15 @@ import { STUDENT_FEE_CSS } from './studentFeeStyles';
 export default function FeesSummaryCard() {
   const navigate = useNavigate();
   const { data } = useQuery({ queryKey: ['my-fees'], queryFn: getMyFees, retry: false, staleTime: 60_000 });
-  if (!data?.fee) return null;
+  const bills = data?.billsBalance ?? 0;
+  if (!data || (!data.fee && bills <= 0)) return null;
 
-  const paid = data.status === 'PAID';
-  const pct = data.fee.amount > 0 ? Math.min(100, (data.paid / data.fee.amount) * 100) : 0;
+  // Everything owed so far this session (every term up to now) and bills, less credit
+  const total = data.totalFees ?? data.fee?.amount ?? 0;
+  const paidSoFar = Math.min(data.totalPaid ?? data.paid, total);
+  const balance = data.toPay ?? data.totalBalance ?? data.balance;
+  const paid = balance <= 0;
+  const pct = total > 0 ? Math.min(100, (paidSoFar / total) * 100) : 0;
   return (
     <div className="sf lexa-card" style={{ marginBottom: 16, padding: 0 }}>
       <style>{STUDENT_FEE_CSS}</style>
@@ -21,13 +26,16 @@ export default function FeesSummaryCard() {
           {paid ? <CheckCircle2 size={26} /> : <Wallet size={26} />}
         </div>
         <div className="sf-dash-main">
-          <small>School fees · {data.session.name}</small>
-          <b>{paid ? 'Fully paid' : `${formatMoney(data.balance, data.currency)} to pay`}</b>
-          <div className="sf-progress-track"><span style={{ width: `${pct}%` }} /></div>
-          <div style={{ fontSize: 12, color: '#74788d', marginTop: 6, fontWeight: 600 }}>
-            {formatMoney(data.paid, data.currency)} of {formatMoney(data.fee.amount, data.currency)} paid
-            {!paid && data.fee.dueDate ? ` · due ${formatDate(data.fee.dueDate)}` : ''}
-          </div>
+          <small>{data.fee ? 'School fees' : 'Bills'}{data.fee && bills > 0 ? ' and bills' : ''} · {data.session.name}</small>
+          <b>{paid ? 'Fully paid' : `${formatMoney(balance, data.currency)} to pay`}</b>
+          {data.fee && <>
+            <div className="sf-progress-track"><span style={{ width: `${pct}%` }} /></div>
+            <div style={{ fontSize: 12, color: '#74788d', marginTop: 6, fontWeight: 600 }}>
+              {formatMoney(paidSoFar, data.currency)} of {formatMoney(total, data.currency)} fees paid
+              {bills > 0 ? ` · bills ${formatMoney(bills, data.currency)}` : ''}
+              {!paid && data.fee.dueDate ? ` · due ${formatDate(data.fee.dueDate)}` : ''}
+            </div>
+          </>}
         </div>
         <button type="button" className={paid ? 'sf-btn-ghost' : 'sf-btn'} onClick={() => navigate('/user-dashboard/fees')}>
           {paid ? 'View fees' : data.onlinePayment ? 'Pay now' : 'View fees'} <ArrowRight size={16} />

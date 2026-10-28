@@ -5,7 +5,7 @@ import { getRegCourses, deleteRegCourse } from '../../api/endpoints';
 import Swal from 'sweetalert2';
 import PageHeader from '../../components/PageHeader';
 import { Search, Loader2, BookOpen, Trash2, ChevronRight, Filter, Download, Activity } from 'lucide-react';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode } from '../../utils/terms';
 
 export default function CoursesRegistered() {
   const { user } = useAuth();
@@ -153,8 +153,10 @@ export default function CoursesRegistered() {
                       <td>
                         <div style={{ fontWeight: 800, color: '#2a3142', fontSize: 15, marginBottom: 2 }}>{course.category?.title}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#adb5bd', fontWeight: 600 }}>
+                          {!isSchoolMode() && <>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Activity size={12} className="text-info" /> {course.category?.level} {tx("Level")}</span>
                           <span style={{ color: '#e1e9f1' }}>|</span>
+                          </>}
                           <span>Verified Registration</span>
                         </div>
                       </td>

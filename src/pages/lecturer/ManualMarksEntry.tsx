@@ -8,7 +8,7 @@ import {
     DownloadCloud, RefreshCw, Plus, Trash2, Loader2, X,
     ClipboardCheck, Users, BookOpen, Award, TrendingUp, Save, Send
 } from 'lucide-react';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode, periodName } from '../../utils/terms';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; dotColor: string }> = {
     DRAFT:     { label: 'Draft',     bg: '#f3f4f6', color: '#374151', dotColor: '#9ca3af' },
@@ -259,7 +259,7 @@ const ManualMarksEntry = () => {
                         <option value="">{tx("Select an active semester sheet")}</option>
                         {sheets.map((s: any) => (
                             <option key={s.id} value={s.id}>
-                                {s.courseName || `Sheet #${s.id}`} — {s.sessionName ? `${s.sessionName} | ` : ''}{tx("Level ")}{s.level} | Sem {s.semester} | {s.status}
+                                {s.courseName || `Sheet #${s.id}`} — {s.sessionName ? `${s.sessionName} | ` : ''}{isSchoolMode() ? `${s.programName ? `${s.programName} | ` : ''}${periodName(s.semester)}` : `${tx('Level ')}${s.level} | Sem ${s.semester}`} | {s.status}
                             </option>
                         ))}
                     </select>
@@ -284,7 +284,7 @@ const ManualMarksEntry = () => {
                             Manual Marks Entry {allCourses[0]?.courseCode ? `— ${allCourses[0].courseCode}` : ''}
                         </div>
                         <div className="mme-ov-subtitle">
-                            {sheetData.sessionName ? <>{sheetData.sessionName} &bull; </> : null}{tx("Level ")}{sheetData.level} &bull; Sem {sheetData.semester}
+                            {sheetData.sessionName ? <>{sheetData.sessionName} &bull; </> : null}{isSchoolMode() ? <>{sheetData.programName ? <>{sheetData.programName} &bull; </> : null}{periodName(sheetData.semester)}</> : <>{tx("Level ")}{sheetData.level} &bull; Sem {sheetData.semester}</>}
                         </div>
                     </div>
                 </div>

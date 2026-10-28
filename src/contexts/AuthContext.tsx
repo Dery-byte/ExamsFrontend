@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authenticate as apiAuth, doLogout, getCurrentUser } from '../api/endpoints';
 import { flushSaveQueue, kickSaveQueue } from '../utils/saveQueue';
 
-export type UserRole = 'ADMIN' | 'LECTURER' | 'NORMAL' | 'SUPER_ADMIN' | 'DEVELOPER';
+export type UserRole = 'ADMIN' | 'LECTURER' | 'NORMAL' | 'SUPER_ADMIN' | 'DEVELOPER' | 'ACCOUNTANT';
 
 export interface AuthUser {
   id: number;
@@ -23,6 +23,8 @@ export interface AuthUser {
   department?: { id: number; name: string; description?: string };
   /** Staff set this account's password; the user must choose a new one first. */
   mustChangePassword?: boolean;
+  /** Accountants: BURSAR (sets fees, voids payments) or CASHIER (records payments). */
+  financeDuty?: 'BURSAR' | 'CASHIER' | null;
 }
 
 interface AuthCtx {
@@ -65,6 +67,7 @@ const ROLE_HOMES: Record<UserRole, string[]> = {
   LECTURER: ['/lect'],
   NORMAL: ['/user-dashboard'],
   DEVELOPER: ['/developer'],
+  ACCOUNTANT: ['/accounts'],
 };
 /** Landing page for each role after sign-in. */
 export function homeFor(role: UserRole): string {
@@ -72,6 +75,7 @@ export function homeFor(role: UserRole): string {
   if (role === 'ADMIN') return '/admin';
   if (role === 'LECTURER') return '/lect';
   if (role === 'DEVELOPER') return '/developer/dashboard';
+  if (role === 'ACCOUNTANT') return '/accounts';
   return '/user-dashboard/user-dashboard';
 }
 function canVisit(role: UserRole, path: string): boolean {

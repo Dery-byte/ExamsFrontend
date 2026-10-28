@@ -1,6 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import {
@@ -16,22 +16,49 @@ import {
   type FeeLevelRow, type FeeOverview, type FeeProgramRow,
 } from '../../../api/endpoints';
 import { formatDate, formatMoney } from '../../../utils/money';
-import { levelName, tx } from '../../../utils/terms';
+import { levelName, tx, levelSuffix, showLevelPicker } from '../../../utils/terms';
+import { useAuth } from '../../../contexts/AuthContext';
+
+/** Who is looking: the Super Admin and bursars change fees; cashiers see them. Links go to their own area. */
+function useFeeRights() {
+  const { user } = useAuth() as any;
+  const accountant = user?.role === 'ACCOUNTANT';
+  return {
+    accountant,
+    canEdit: !accountant || user?.financeDuty === 'BURSAR',
+    settingsLink: accountant ? (user?.financeDuty === 'BURSAR' ? '/accounts/settings' : null) : '/super-admin/configuration',
+    programmesLink: accountant ? null : '/super-admin/programs',
+  };
+}
 
 type Tab = 'schedules' | 'payments';
 
-/** Super Admin: fee per programme and level for each session, and every payment made against them. */
+/**
+ * The Super Admin's and the accounts office's fees: what each programme and level pays for the whole
+ * year or each term, and every payment made against them. Cashiers see the fees; bursars change them.
+ */
 export default function FeesPage() {
   const qc = useQueryClient();
+  const rights = useFeeRights();
   const [sessionId, setSessionId] = useState<number | undefined>();
-  const [tab, setTab] = useState<Tab>('schedules');
+  // null until the page knows where to open (per term for schools, else the whole year); 0 = whole year
+  const [period, setPeriod] = useState<number | null>(null);
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<Tab>(params.get('tab') === 'payments' ? 'payments' : 'schedules');
   const [editing, setEditing] = useState<{ program: FeeProgramRow; row: FeeLevelRow } | null>(null);
   const [copyOpen, setCopyOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['fee-overview', sessionId ?? 'current'],
-    queryFn: () => getFeeOverview(sessionId),
+    queryKey: ['fee-overview', sessionId ?? 'current', period ?? 'default'],
+    queryFn: () => getFeeOverview(sessionId, period),
+    placeholderData: prev => prev,
   });
+  // First load: open on the period the server suggests
+  useEffect(() => {
+    if (period === null && data?.defaultTerm != null) setPeriod(data.defaultTerm);
+  }, [data?.defaultTerm, period]);
+  const shownTerm = period ?? data?.term ?? 0;
+  const periodName = data?.periods?.find(p => p.value === shownTerm)?.label ?? 'Whole year';
   const refresh = () => qc.invalidateQueries({ queryKey: ['fee-overview'] });
 
   return (
@@ -43,7 +70,9 @@ export default function FeesPage() {
           <div className="fe-logo"><Wallet size={24} color="#fff" /></div>
           <div style={{ minWidth: 0 }}>
             <h1 className="fe-h1">Fees &amp; Payments</h1>
-            <p className="fe-sub">{tx('Set what each programme and level pays, and follow payments as they come in.')}</p>
+            <p className="fe-sub">{rights.canEdit
+              ? tx('Set what each programme and level pays for the year or each semester, and follow payments as they come in.')
+              : tx('What each programme and level pays, and every payment. Only the bursar changes fees.')}</p>
           </div>
         </div>
         {data && (
@@ -52,7 +81,12 @@ export default function FeesPage() {
               onChange={e => setSessionId(Number(e.target.value))}>
               {data.sessions.map(s => <option key={s.id} value={s.id}>{s.name}{s.current ? ' (current)' : ''}</option>)}
             </select>
-            {data.sessions.length > 1 && (
+            {(data.periods?.length ?? 0) > 1 && tab === 'schedules' && (
+              <select className="fe-select" aria-label="Term" value={shownTerm} onChange={e => setPeriod(Number(e.target.value))}>
+                {data.periods!.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            )}
+            {rights.canEdit && data.sessions.length > 1 && (
               <button type="button" className="fe-ghost" onClick={() => setCopyOpen(true)}><Copy size={15} /> Copy fees</button>
             )}
           </div>
@@ -67,8 +101,14 @@ export default function FeesPage() {
         </div></div>
       ) : (
         <>
-          <StatusChips data={data} />
-          <Kpis data={data} />
+          <StatusChips data={data} settingsLink={rights.settingsLink} />
+          <Kpis data={data} periodName={periodName} />
+          {(data.totals.residencyUnknown ?? 0) > 0 && (
+            <div className="fe-note warn" style={{ marginBottom: 14 }}>
+              <AlertCircle size={15} />
+              <span>{data.totals.residencyUnknown} student{data.totals.residencyUnknown === 1 ? ' has' : 's have'} no residency recorded, so {data.totals.residencyUnknown === 1 ? 'they pay' : 'they pay'} only the items for everyone. Record them as day students or boarders on the Students page.</span>
+            </div>
+          )}
 
           <div className="fe-tabs" role="tablist">
             <button type="button" role="tab" aria-selected={tab === 'schedules'} className={`fe-tab${tab === 'schedules' ? ' active' : ''}`} onClick={() => setTab('schedules')}>
@@ -80,11 +120,13 @@ export default function FeesPage() {
           </div>
 
           {tab === 'schedules'
-            ? <Schedules data={data} onEdit={(program, row) => setEditing({ program, row })} onChanged={refresh} />
+            ? <Schedules data={data} canEdit={rights.canEdit} programmesLink={rights.programmesLink} term={shownTerm || null} periodName={periodName}
+                onEdit={(program, row) => setEditing({ program, row })} onChanged={refresh} />
             : <PaymentsPanel overview={data} onChanged={refresh} />}
 
           {editing && (
             <ScheduleEditor program={editing.program} row={editing.row} session={data.session} currency={data.currency}
+              term={shownTerm || null} periodName={periodName} residencyMode={data.residencyMode}
               onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refresh(); }} />
           )}
           {copyOpen && <CopyModal data={data} onClose={() => setCopyOpen(false)} onDone={() => { setCopyOpen(false); refresh(); }} />}
@@ -94,13 +136,13 @@ export default function FeesPage() {
   );
 }
 
-function StatusChips({ data }: { data: FeeOverview }) {
+function StatusChips({ data, settingsLink }: { data: FeeOverview; settingsLink: string | null }) {
   const { paystack, settings } = data;
   return (
     <div className="fe-chips">
       {settings.visibleToStudents
         ? <span className="fe-chip ok"><Eye size={13} /> {tx('Students can see their fees')}</span>
-        : <span className="fe-chip off"><EyeOff size={13} /> {tx('Hidden from students')} · <Link to="/super-admin/configuration">turn on</Link></span>}
+        : <span className="fe-chip off"><EyeOff size={13} /> {tx('Hidden from students')}{settingsLink && <> · <Link to={settingsLink}>turn on</Link></>}</span>}
       {!paystack.configured
         ? <span className="fe-chip warn" title="Set PAYSTACK_SECRET_KEY on the server"><CreditCard size={13} /> Paystack not connected</span>
         : !settings.onlinePayment
@@ -108,18 +150,18 @@ function StatusChips({ data }: { data: FeeOverview }) {
           : <span className={`fe-chip ${paystack.mode === 'live' ? 'ok' : 'warn'}`}><CreditCard size={13} /> Paystack {paystack.mode === 'live' ? 'live' : 'test mode'} · Card &amp; Mobile Money</span>}
       <span className="fe-chip off">{settings.partPayment ? 'Part payments allowed' : 'Full payment only'}</span>
       <span className="fe-chip off">{settings.itemPayment ? 'Students can pay by item' : 'Paying by item off'}</span>
-      {settings.resultsHold && <span className="fe-chip warn"><Lock size={13} /> {tx('Results held for unpaid fees')} · <Link to="/super-admin/configuration">rules</Link></span>}
+      {settings.resultsHold && <span className="fe-chip warn"><Lock size={13} /> {tx('Results held for unpaid fees')}{settingsLink && <> · <Link to={settingsLink}>rules</Link></>}</span>}
     </div>
   );
 }
 
-function Kpis({ data }: { data: FeeOverview }) {
+function Kpis({ data, periodName }: { data: FeeOverview; periodName: string }) {
   const { totals, currency, session } = data;
   const rate = totals.billed ? Math.min(100, (totals.collected / totals.billed) * 100) : 0;
   const setRate = totals.levelsTotal ? (totals.levelsSet / totals.levelsTotal) * 100 : 0;
   return (
     <div className="fe-kpis">
-      <Kpi label="Expected this session" icon={<Users size={18} />} color="var(--accent-light)"
+      <Kpi label={data.term ? `Expected for ${periodName.toLowerCase()}` : 'Expected this session'} icon={<Users size={18} />} color="var(--accent-light)"
         value={totals.billed == null ? '—' : formatMoney(totals.billed, currency)}
         foot={totals.billed == null ? `Only worked out for the current session` : tx(`${(totals.students ?? 0).toLocaleString()} active students × their fee`)} />
       <Kpi label="Collected" icon={<TrendingUp size={18} />} color="#34d399" value={formatMoney(totals.collected, currency)}
@@ -150,8 +192,9 @@ function Kpi({ label, value, foot, icon, color }: { label: string; value: string
   );
 }
 
-function Schedules({ data, onEdit, onChanged }: {
-  data: FeeOverview; onEdit: (p: FeeProgramRow, r: FeeLevelRow) => void; onChanged: () => void;
+function Schedules({ data, canEdit, programmesLink, term, periodName, onEdit, onChanged }: {
+  data: FeeOverview; canEdit: boolean; programmesLink: string | null; term: number | null; periodName: string;
+  onEdit: (p: FeeProgramRow, r: FeeLevelRow) => void; onChanged: () => void;
 }) {
   const [q, setQ] = useState('');
   const [missingOnly, setMissingOnly] = useState(false);
@@ -170,7 +213,7 @@ function Schedules({ data, onEdit, onChanged }: {
     if (!row.schedule) return;
     const ok = await Swal.fire({
       title: 'Remove this fee?',
-      text: `${p.name} · ${levelName(row.level)} will have no fee for ${session.name}.`,
+      text: `${p.name}${levelSuffix(row.level)} will have no fee for ${term ? `${periodName.toLowerCase()} of ` : ''}${session.name}.`,
       icon: 'warning', showCancelButton: true, confirmButtonText: 'Remove', confirmButtonColor: '#e34948',
     });
     if (!ok.isConfirmed) return;
@@ -180,7 +223,7 @@ function Schedules({ data, onEdit, onChanged }: {
       toast.success('Fee removed');
       onChanged();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not remove the fee');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not remove the fee'));
     } finally { setDeleting(null); }
   };
 
@@ -189,7 +232,7 @@ function Schedules({ data, onEdit, onChanged }: {
       <div className="fe-card"><div className="fe-empty">
         <BookMarked size={34} style={{ color: 'rgba(var(--accent-rgb), 0.45)' }} />
         <h3>{tx('No programmes yet')}</h3>
-        <p>{tx('Fees are set per programme and level.')} <Link to="/super-admin/programs" style={{ color: 'var(--accent-light)' }}>{tx('Create a programme')}</Link> first.</p>
+        <p>{tx('Fees are set per programme and level.')} {programmesLink ? <><Link to={programmesLink} style={{ color: 'var(--accent-light)' }}>{tx('Create a programme')}</Link> first.</> : tx('Ask the Super Admin to create the programmes first.')}</p>
       </div></div>
     );
   }
@@ -229,13 +272,13 @@ function Schedules({ data, onEdit, onChanged }: {
                   <div className="fe-prog-meta"><span className="fe-code">{p.code}</span>{p.departmentName ? ` · ${p.departmentName}` : ''}</div>
                 </div>
               </div>
-              <span className={`fe-tag ${set === all.levels.length ? 'done' : 'part'}`}>{set}/{all.levels.length} {tx('levels set')}</span>
+              <span className={`fe-tag ${set === all.levels.length ? 'done' : 'part'}`}>{showLevelPicker(all.levels.length) ? <>{set}/{all.levels.length} {tx('levels set')}</> : set ? 'Fee set' : 'No fee yet'}</span>
             </div>
             <div className="fe-table-wrap">
               <table className="fe-table fe-stack sched">
                 <thead>
                   <tr>
-                    <th>{tx('Level')}</th>
+                    <th>{showLevelPicker(p.levels.length) ? tx('Level') : 'Fee for'}</th>
                     {session.current && <th className="fe-num">{tx('Students')}</th>}
                     <th className="fe-num">Fee</th>
                     <th>Breakdown</th>
@@ -249,13 +292,16 @@ function Schedules({ data, onEdit, onChanged }: {
                     const pct = row.billed ? Math.min(100, (row.collected / row.billed) * 100) : 0;
                     return (
                       <tr key={row.level}>
-                        <td className="fe-strong fe-c-title" style={{ whiteSpace: 'nowrap' }}>{levelName(row.level)}</td>
+                        <td className="fe-strong fe-c-title" style={{ whiteSpace: 'nowrap' }}>{showLevelPicker(p.levels.length) ? levelName(row.level) : p.name}</td>
                         {session.current && <td className="fe-num" data-label={tx('Students')}>{row.students ?? 0}</td>}
                         <td className="fe-num" data-label="Fee">
                           {s ? <>
-                            <div className="fe-strong">{formatMoney(s.amount, currency)}</div>
+                            {s.boarderAmount != null && s.dayAmount != null ? <>
+                              <div className="fe-strong">{formatMoney(s.boarderAmount, currency)} <span className="fe-muted fe-small">boarders</span></div>
+                              <div className="fe-strong">{formatMoney(s.dayAmount, currency)} <span className="fe-muted fe-small">day</span></div>
+                            </> : <div className="fe-strong">{formatMoney(s.amount, currency)}</div>}
                             {s.dueDate && <div className="fe-muted fe-small">Due {formatDate(s.dueDate)}</div>}
-                          </> : <span className="fe-unset">Not set</span>}
+                          </> : <span className="fe-unset">{otherKind(row, term)}</span>}
                         </td>
                         <td className="fe-c-full" data-label="Breakdown">
                           {!s ? <span className="fe-muted">—</span> : s.itemised ? (
@@ -278,13 +324,13 @@ function Schedules({ data, onEdit, onChanged }: {
                         </td>
                         <td className="fe-c-actions">
                           <div className="fe-row-actions">
-                            {s ? <>
+                            {!canEdit ? null : s ? <>
                               <button type="button" className="fe-ghost sm" onClick={() => onEdit(all, all.levels.find(l => l.level === row.level)!)}><Pencil size={13} /> Edit</button>
                               <button type="button" className="fe-icon-btn danger" onClick={() => remove(p, row)} disabled={deleting === s.id || row.collected > 0}
-                                title={row.collected > 0 ? 'Students have paid towards this fee; edit it instead' : 'Remove fee'} aria-label={`Remove fee for ${levelName(row.level)}`}>
+                                title={row.collected > 0 ? 'Students have paid towards this fee; edit it instead' : 'Remove fee'} aria-label={`Remove fee for ${p.name}${levelSuffix(row.level)}`}>
                                 {deleting === s.id ? <Loader2 size={14} className="fe-spin" /> : <Trash2 size={14} />}
                               </button>
-                            </> : (
+                            </> : blocked(row, term) ? null : (
                               <button type="button" className="fe-btn sm" onClick={() => onEdit(all, all.levels.find(l => l.level === row.level)!)}><Plus size={13} /> Set fee</button>
                             )}
                           </div>
@@ -315,7 +361,7 @@ function CopyModal({ data, onClose, onDone }: { data: FeeOverview; onClose: () =
       toast.success(r.copied === 0 ? 'Nothing new to copy' : `Copied ${r.copied} fee${r.copied === 1 ? '' : 's'}${r.skipped ? ` (${r.skipped} kept as they were)` : ''}`);
       onDone();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message ?? 'Could not copy the fees');
+      toast.error(tx(e?.response?.data?.message ?? 'Could not copy the fees'));
     } finally { setBusy(false); }
   };
 
@@ -354,4 +400,16 @@ function LoadingState() {
       {[1, 2].map(i => <div key={i} className="fe-skel" style={{ height: 220, marginBottom: 16 }} />)}
     </>
   );
+}
+
+/** A class whose fees this session are set the other way (whole year vs per term) can't get one here: students would pay twice. */
+function blocked(row: FeeLevelRow, term: number | null) {
+  return term ? row.setAs === 'YEAR' : row.setAs === 'TERM';
+}
+
+function otherKind(row: FeeLevelRow, term: number | null) {
+  if (term && row.setAs === 'YEAR') return 'Set for the whole year';
+  if (term && term > (row.periods ?? 99)) return 'No such term';
+  if (!term && row.setAs === 'TERM') return `Set per term (${(row.termsSet ?? []).join(', ')})`;
+  return 'Not set';
 }

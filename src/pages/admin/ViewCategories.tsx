@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Edit, Trash2, UserPlus, BookOpen, User, Info, X, Loader2, Search, Filter, Book, ChevronRight, GraduationCap, Layers, ShieldCheck, Target, Award, ArrowRight, CheckCircle2, MoreVertical, LayoutGrid, List, Database, Activity, BadgeCheck } from 'lucide-react';
-import { tx } from '../../utils/terms';
+import { tx, isSchoolMode } from '../../utils/terms';
 
 export default function ViewCategories() {
   const qc = useQueryClient();
@@ -171,7 +171,7 @@ export default function ViewCategories() {
                  <h6 className="t">{el.title}</h6>
                  <span className="m" style={{ color: '#64748b' }}>
                     <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.length ? el.programNames.join(', ') : el.openToEveryone ? tx('🌐 Global — open to everyone') : tx('🌐 Global (All Programs)')}</span>
-                    {' • '}{el.level}{' • '}{el.description?.substring(0, 60)}...
+                    {!isSchoolMode() && <>{' • '}{el.level}</>}{' • '}{el.description?.substring(0, 60)}...
                  </span>
               </div>
               <div className="reg-col lead">
@@ -217,14 +217,15 @@ export default function ViewCategories() {
                   </div>
                 </div>
 
-                <div className="f-grp-mini">
+                {/* Universities only: a school class is one year, so its subjects keep level 1 */}
+                {!isSchoolMode() && <div className="f-grp-mini">
                    <label>{tx("Academic Level")}</label>
                    <div className="mini-level-grid">
                       {LEVELS.map(l => (
                         <button key={l} className={`l-pill-btn ${categoryEdit.level === l ? 'active' : ''}`} onClick={()=>setCategoryEdit({...categoryEdit, level: l})}>{l}</button>
                       ))}
                    </div>
-                </div>
+                </div>}
                 <div className="f-grp-mini">
                    <label>Synopsis</label>
                    <textarea className="mini-area" rows={3} value={categoryEdit.description||''} onChange={e=>setCategoryEdit({...categoryEdit,description:e.target.value})} placeholder="Description..."/>

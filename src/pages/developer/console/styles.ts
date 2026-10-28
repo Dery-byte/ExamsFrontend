@@ -226,6 +226,8 @@ body:has(.dd-shell) { margin: 0; background: #f5f7fa; }
 .dd-fieldset:disabled .dd-mcard { cursor: not-allowed; opacity: .7; }
 .dd-mgrid { display: grid; gap: 12px; }
 @media (min-width: 720px) { .dd-mgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .dd-mgrid.dd-mgrid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.dd-section-gap { margin-top: 28px; }
 .dd-mcard { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 12px; cursor: pointer;
   background: var(--dd-surface); border: 1px solid var(--dd-border); box-shadow: var(--dd-shadow);
   transition: border-color .15s, box-shadow .15s, background .15s; }
