@@ -45,8 +45,9 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         { to: '/user-dashboard/courses',         label: tx('My Courses'),   icon: BookOpen         },
         ...(on('ATTENDANCE') ? [{ to: '/user-dashboard/attendance', label: 'Attendance', icon: UserCheck }] : []),
         ...(feesStudent === true ? [{ to: '/user-dashboard/fees', label: 'School Fees', icon: Wallet }] : []),
-        // Off until the Super Admin switches it on, so only shown once the flags say so (no flash while loading)
-        ...(feesStudent === true && features?.STUDENT_WALLET === true ? [{ to: '/user-dashboard/wallet', label: 'My Wallet', icon: PiggyBank }] : []),
+        // Shown whenever the wallet is on, even while the School Fees page is hidden (paying fees from it then waits);
+        // only once the flags have loaded, so it doesn't flash
+        ...(features?.STUDENT_WALLET === true ? [{ to: '/user-dashboard/wallet', label: 'My Wallet', icon: PiggyBank }] : []),
         { to: '/user-dashboard/announcements',   label: 'Announcements', icon: Megaphone       },
       ]
     },
