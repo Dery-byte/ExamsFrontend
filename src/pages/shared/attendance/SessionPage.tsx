@@ -25,6 +25,8 @@ type Filter = 'ALL' | 'IN' | 'PENDING' | 'NOT_YET' | 'ABSENT' | 'FLAGGED' | 'PLA
 
 /** Waiting for the lecturer because the phone's location couldn't confirm it. */
 const unclearCheckIn = (st: SessionStudent) => st.status === 'PENDING' && st.flags.includes('LOCATION_UNCLEAR');
+/** Flags worth showing: "Location unclear" only while the check-in is still waiting (Present or Late settles it). */
+const shownFlags = (st: SessionStudent) => st.flags.filter(f => !(f === 'LOCATION_UNCLEAR' && st.status !== 'PENDING'));
 /** Hasn't checked in, and their phone's newest reading doesn't fit the room: probably trying and stuck. */
 const tryingOutside = (st: SessionStudent) => !st.status && !!st.lastPlace && st.lastPlace.fit !== 'INSIDE';
 
@@ -395,7 +397,7 @@ const MARK_OPTIONS: { value: AttendanceStatus; label: string }[] = [
 function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: (k: string, fn: () => Promise<any>, ok?: string) => Promise<boolean> }) {
   const [filter, setFilter] = useState<Filter>('ALL');
   const [q, setQ] = useState('');
-  const flagged = (st: SessionStudent) => st.locked || st.flags.length > 0;
+  const flagged = (st: SessionStudent) => st.locked || shownFlags(st).length > 0;
 
   const counts = useMemo(() => ({
     ALL: s.students.length,
@@ -460,7 +462,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
               {st.secondCheckAt && <span>2nd check {fmtTime(st.secondCheckAt)}</span>}
               {st.method === 'MANUAL' && st.reviewedBy && <span>marked by {st.reviewedBy}</span>}
               {st.method === 'SCAN' && st.reviewedBy && <span className="at-chip is-src"><ScanLine size={11} /> Scanned by {st.reviewedBy}</span>}
-              {st.flags.filter(f => !(f === 'LATE' && st.status === 'LATE')).map(f => <span key={f} className={`at-chip ${f === 'MISSED_SECOND_CHECK' ? 'is-bad' : 'is-warn'}`}>{FLAG_LABELS[f] ?? f}</span>)}
+              {shownFlags(st).filter(f => !(f === 'LATE' && st.status === 'LATE')).map(f => <span key={f} className={`at-chip ${f === 'MISSED_SECOND_CHECK' ? 'is-bad' : 'is-warn'}`}>{FLAG_LABELS[f] ?? f}</span>)}
               {tryingOutside(st) && st.lastPlace && (
                 <span className={`at-chip ${st.lastPlace.fit === 'UNCLEAR' ? 'is-warn' : 'is-bad'}`} title={`Newest reading at ${fmtTime(st.lastPlace.at)}`}>
                   <MapPin size={11} /> Trying: {PLACE_LABELS[st.lastPlace.fit] ?? st.lastPlace.fit}
