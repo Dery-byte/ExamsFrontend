@@ -91,6 +91,17 @@
 .at-alert.is-error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
 .at-alert.is-ok { background: #ecfdf3; color: #065f46; border-color: #bbf7d0; }
 
+/* Student's live location box (what the phone sees, and what to fix) */
+.at-loc { padding: 9px 12px; border-radius: 10px; font-size: 12.5px; line-height: 1.45; border: 1.5px solid transparent; overflow-wrap: anywhere; }
+.at-loc-line { display: flex; gap: 8px; align-items: flex-start; font-weight: 600; }
+.at-loc-line svg { flex-shrink: 0; margin-top: 1px; }
+.at-loc-steps { margin: 6px 0 0; padding-left: 22px; font-weight: 500; }
+.at-loc-steps li { margin: 3px 0; }
+.at-loc.is-quiet { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+.at-loc.is-ok { background: #ecfdf3; color: #065f46; border-color: #bbf7d0; }
+.at-loc.is-warn { background: #fffbeb; color: #78350f; border-color: #fde68a; }
+.at-loc.is-bad { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
 .at-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 34px 16px; color: #94a3b8; text-align: center; font-size: 13.5px; }
 .at-empty p { margin: 0; max-width: 420px; line-height: 1.45; }
 .at-spin { animation: at-spin 1s linear infinite; }

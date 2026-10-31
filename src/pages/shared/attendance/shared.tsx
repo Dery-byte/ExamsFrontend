@@ -21,6 +21,15 @@ export const FLAG_LABELS: Record<string, string> = {
   LATE: 'Late',
   NEW_PHONE: 'New phone',
   MISSED_SECOND_CHECK: 'Missed second check',
+  LOCATION_UNCLEAR: 'Location unclear',
+};
+
+/** A student's newest location reading, in a few words for the class list. */
+export const PLACE_LABELS: Record<string, string> = {
+  INSIDE: 'in the room',
+  UNCLEAR: 'location unclear',
+  OUTSIDE: 'outside the room',
+  NO_GPS: 'approximate location only',
 };
 
 /** Staff area the page is shown in: /lect, /admin or /super-admin. */
@@ -43,7 +52,7 @@ export const fmtClock = (seconds: number) => {
 };
 
 export const errMsg = (e: any, fallback = 'Something went wrong. Please try again.') =>
-  tx(e?.response?.data?.message ?? fallback);
+  tx(e?.response?.data?.message ?? (e?.name === 'LocationError' ? e.message : fallback));
 
 /** "CSC 201 Data Structures · Level 200" in the system mode's words. */
 export const classTitle = (t: string) => tx(t);

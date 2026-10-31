@@ -3,9 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
-  AlertTriangle, ArrowLeft, CheckCheck, Clock, Copy, DoorClosed, DoorOpen, Link2, Loader2, Lock, MapPin, Maximize2, Plus, ScanLine, Search,
+  AlertTriangle, ArrowLeft, CheckCheck, Clock, Copy, Crosshair, DoorClosed, DoorOpen, Link2, Loader2, Lock, MapPin, Maximize2, Plus, ScanLine, Search,
   QrCode, Share2, ShieldAlert, Smartphone, Square, Trash2, UserPlus, Users, XCircle,
 } from 'lucide-react';
+import { readLocation } from '../../../utils/attendanceDevice';
 import QRCode from 'qrcode';
 import ClassQr from './ClassQr';
 import AppModal from '../../../components/ui/AppModal';
@@ -13,14 +14,19 @@ import PageHeader from '../../../components/PageHeader';
 import {
   approvePendingAttendance, cancelSecondCheck, closeAttendanceCheckIn, deleteAttendanceSession, endAttendanceSession,
   extendAttendanceCheckIn, getAttendanceCode, getAttendanceSession, markAttendance, resetAttendancePhone,
-  setAttendanceHeadcount, startSecondCheck, unlockAttendanceStudent, addAttendanceHelper, cancelAttendanceHelper,
+  setAttendanceHeadcount, startSecondCheck, unlockAttendanceStudent, addAttendanceHelper, cancelAttendanceHelper, recentreAttendanceSession,
   type AttendanceStatus, type SessionDetail, type SessionStudent,
 } from '../../../api/attendance';
-import { FLAG_LABELS, StatusPill, classTitle, errMsg, fmtClock, fmtDate, fmtTime, useAttendanceBase } from './shared';
+import { FLAG_LABELS, PLACE_LABELS, StatusPill, classTitle, errMsg, fmtClock, fmtDate, fmtTime, useAttendanceBase } from './shared';
 import { tx } from '../../../utils/terms';
 import './attendance.css';
 
-type Filter = 'ALL' | 'IN' | 'PENDING' | 'NOT_YET' | 'ABSENT' | 'FLAGGED' | 'PHONE';
+type Filter = 'ALL' | 'IN' | 'PENDING' | 'NOT_YET' | 'ABSENT' | 'FLAGGED' | 'PLACE' | 'PHONE';
+
+/** Waiting for the lecturer because the phone's location couldn't confirm it. */
+const unclearCheckIn = (st: SessionStudent) => st.status === 'PENDING' && st.flags.includes('LOCATION_UNCLEAR');
+/** Hasn't checked in, and their phone's newest reading doesn't fit the room: probably trying and stuck. */
+const tryingOutside = (st: SessionStudent) => !st.status && !!st.lastPlace && st.lastPlace.fit !== 'INSIDE';
 
 /** A class meeting: the code, live counts, controls, and every student on the list. */
 export default function SessionPage() {
@@ -105,8 +111,21 @@ export default function SessionPage() {
                   <XCircle size={16} /> Cancel the planned second check</button>
               )}
               {(s.counts.PENDING ?? 0) > 0 && (
-                <button className="at-btn" disabled={!!busy} onClick={() => run('approve', () => approvePendingAttendance(s.id), 'Waiting check-ins approved')}>
+                <button className="at-btn" disabled={!!busy} onClick={() => {
+                  const unclear = s.students.filter(unclearCheckIn).length;
+                  if (unclear > 0 && !window.confirm(`${unclear} of them could not be confirmed by location. Approve all only if you can see everyone waiting in the room (or approve them one by one).`)) return;
+                  run('approve', () => approvePendingAttendance(s.id), 'Waiting check-ins approved');
+                }}>
                   <CheckCheck size={16} /> Approve all {s.counts.PENDING} waiting</button>
+              )}
+              {s.live && (
+                <button className="at-btn-ghost" disabled={!!busy} onClick={() => {
+                  if (!window.confirm(tx('Move the room centre to where this phone is now, for this class only? Stand near the middle of the room first.'))) return;
+                  run('recentre', async () => {
+                    const here = await readLocation({ goodEnough: 10, maxWaitMs: 15000 });
+                    return recentreAttendanceSession(s.id, here);
+                  }, 'Room centre moved to where you are');
+                }}>{busy === 'recentre' ? <Loader2 size={16} className="at-spin" /> : <Crosshair size={16} />} Re-centre the room here</button>
               )}
               {s.live && (
                 <button className="at-btn-danger" disabled={!!busy} onClick={() => {
@@ -123,6 +142,13 @@ export default function SessionPage() {
               {s.secondCheckPlanned ? 'A second check will appear at a random time during class. Its time is kept hidden so it can’t be passed on. '
                 : s.secondCheckDone ? 'The second check has been done. Students who missed it are marked absent when the class ends. ' : ''}
               {s.live && `The class ends on its own at ${fmtTime(s.endsAt)}.`}
+            </p>
+            <p className="at-help" style={{ marginTop: 6 }}>
+              <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {s.placeName ?? 'Room'}: {s.radiusMeters} m around the centre
+              {s.centreAccuracyMeters != null && ` (centre measured to ±${s.centreAccuracyMeters} m)`}.{' '}
+              {s.confirmUnclearLocation
+                ? tx('Students whose phones can’t place them precisely still check in and wait for you, marked “Location unclear”; a later precise reading confirms them on its own.')
+                : tx('Students whose phones can’t place them precisely are refused until the reading improves.')}
             </p>
           </div>
         </div>
@@ -378,6 +404,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
     NOT_YET: s.students.filter(x => !x.status).length,
     ABSENT: s.students.filter(x => x.status === 'ABSENT' || x.status === 'REJECTED').length,
     FLAGGED: s.students.filter(flagged).length,
+    PLACE: s.students.filter(x => unclearCheckIn(x) || tryingOutside(x)).length,
     PHONE: s.students.filter(x => x.phoneLinked).length,
   }), [s.students]);
 
@@ -387,6 +414,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
     if (filter === 'NOT_YET' && x.status) return false;
     if (filter === 'ABSENT' && !(x.status === 'ABSENT' || x.status === 'REJECTED')) return false;
     if (filter === 'FLAGGED' && !flagged(x)) return false;
+    if (filter === 'PLACE' && !(unclearCheckIn(x) || tryingOutside(x))) return false;
     if (filter === 'PHONE' && !x.phoneLinked) return false;
     const t = q.trim().toLowerCase();
     return !t || x.name.toLowerCase().includes(t) || (x.indexNo ?? '').toLowerCase().includes(t);
@@ -395,7 +423,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
   const filters: { key: Filter; label: string }[] = [
     { key: 'ALL', label: 'All' }, { key: 'PENDING', label: 'Waiting' }, { key: 'IN', label: 'Checked in' },
     { key: 'NOT_YET', label: 'Not yet' }, { key: 'ABSENT', label: 'Absent' }, { key: 'FLAGGED', label: 'Flagged' },
-    { key: 'PHONE', label: 'Phone linked' },
+    { key: 'PLACE', label: 'Location trouble' }, { key: 'PHONE', label: 'Phone linked' },
   ];
 
   return (
@@ -433,6 +461,13 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
               {st.method === 'MANUAL' && st.reviewedBy && <span>marked by {st.reviewedBy}</span>}
               {st.method === 'SCAN' && st.reviewedBy && <span className="at-chip is-src"><ScanLine size={11} /> Scanned by {st.reviewedBy}</span>}
               {st.flags.filter(f => !(f === 'LATE' && st.status === 'LATE')).map(f => <span key={f} className={`at-chip ${f === 'MISSED_SECOND_CHECK' ? 'is-bad' : 'is-warn'}`}>{FLAG_LABELS[f] ?? f}</span>)}
+              {tryingOutside(st) && st.lastPlace && (
+                <span className={`at-chip ${st.lastPlace.fit === 'UNCLEAR' ? 'is-warn' : 'is-bad'}`} title={`Newest reading at ${fmtTime(st.lastPlace.at)}`}>
+                  <MapPin size={11} /> Trying: {PLACE_LABELS[st.lastPlace.fit] ?? st.lastPlace.fit}
+                  {st.lastPlace.distance != null ? ` · ${st.lastPlace.distance >= 1000 ? `${(st.lastPlace.distance / 1000).toFixed(1)} km` : `${st.lastPlace.distance} m`}` : ''}
+                  {st.lastPlace.accuracy != null ? ` ±${st.lastPlace.accuracy >= 1000 ? `${Math.round(st.lastPlace.accuracy / 1000)} km` : `${st.lastPlace.accuracy} m`}` : ''}
+                </span>
+              )}
               {st.locked && <span className="at-chip is-bad"><Lock size={11} /> Locked out</span>}
               {st.phoneLinked
                 ? <span className="at-chip is-ok" title={`Linked ${fmtDate(st.phoneLinkedAt)}${st.phoneLastUsedAt ? `, last used ${fmtDate(st.phoneLastUsedAt)} ${fmtTime(st.phoneLastUsedAt)}` : ''}`}>
@@ -476,7 +511,7 @@ function Roster({ s, busy, run }: { s: SessionDetail; busy: string | null; run: 
         ))}
       </div>
       <p className="at-help" style={{ marginTop: 10 }}>
-        <Smartphone size={12} style={{ verticalAlign: '-2px' }} /> {tx('Mark students by hand only when you can see them in the room (for example, their phone could not get a precise location).')}
+        <Smartphone size={12} style={{ verticalAlign: '-2px' }} /> {tx('Mark students by hand only when you can see them in the room. “Location trouble” lists students whose phones can’t place them in the room: if they are in front of you, approve or mark them present.')}
       </p>
     </div>
   );

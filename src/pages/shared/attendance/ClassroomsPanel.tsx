@@ -5,7 +5,7 @@ import { Building2, Crosshair, Loader2, MapPin, Pencil, Plus, Ruler, Trash2, XCi
 import AppModal from '../../../components/ui/AppModal';
 import { deleteClassroom, getClassrooms, saveClassroom, type Classroom } from '../../../api/attendance';
 import { saGetDepartments } from '../../../api/endpoints';
-import { distanceMeters, measureRoom, readLocation, LocationError, GUESSED_LOCATION_METERS, type RoomMeasurement } from '../../../utils/attendanceDevice';
+import { distanceMeters, judgePlace, measureRoom, readLocation, LocationError, GUESSED_LOCATION_METERS, type PlaceFit, type RoomMeasurement } from '../../../utils/attendanceDevice';
 import { errMsg } from './shared';
 import { useAuth } from '../../../contexts/AuthContext';
 import { tx } from '../../../utils/terms';
@@ -195,14 +195,20 @@ function ClassroomDialog({ room, onClose, onSaved }: { room: Classroom | null; o
           <label className="at-field"><span>Metres from the centre</span>
             <input className="at-input" type="number" min={10} max={300} value={radius} onChange={e => setRadius(Number(e.target.value) || 0)} /></label>
         </div>
-        <p className="at-help">A student passes only if their distance <b>plus</b> their reading's accuracy fits inside this. After saving, use <b>Test a spot</b> from the corners of the room.</p>
+        <p className="at-help">The room's edge. A student passes when they <b>could</b> be inside it, allowing for their phone's error and this measurement's; 30–50 m suits most rooms. After saving, use <b>Test a spot</b> from the corners of the room.</p>
         {error && <div className="at-alert is-error" role="alert" style={{ marginTop: 12, marginBottom: 0 }}><XCircle size={16} /><span>{error}</span></div>}
       </div>
     </AppModal>
   );
 }
 
-interface TestResult { distance: number; accuracy: number; pass: boolean; at: string }
+interface TestResult { distance: number; accuracy: number; fit: PlaceFit; at: string }
+
+const FIT_TEXT: Record<PlaceFit, string> = {
+  INSIDE: 'A student here would be accepted.',
+  UNCLEAR: 'A student here would be checked in, waiting for the lecturer (location unclear).',
+  OUTSIDE: 'A student here would be refused.',
+};
 
 /** Takes a reading where the tester stands and shows whether a student there would be accepted. */
 function LocationTestDialog({ room, maxAccuracy, onClose }: { room: Classroom; maxAccuracy: number; onClose: () => void }) {
@@ -219,7 +225,8 @@ function LocationTestDialog({ room, maxAccuracy, onClose }: { room: Classroom; m
       const r = await readLocation({ goodEnough: 8, maxWaitMs: 12000, onUpdate: x => setLive(Math.round(x.accuracy)) });
       const d = Math.round(distanceMeters(room, r));
       const acc = Math.ceil(r.accuracy);
-      setResults(list => [{ distance: d, accuracy: acc, pass: acc <= maxAccuracy && d + acc <= room.radiusMeters, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }, ...list].slice(0, 8));
+      const fit: PlaceFit = acc > GUESSED_LOCATION_METERS ? 'OUTSIDE' : judgePlace(d, room.measuredAccuracyMeters, room.radiusMeters, maxAccuracy, acc).fit;
+      setResults(list => [{ distance: d, accuracy: acc, fit, at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }, ...list].slice(0, 8));
     } catch (e: any) {
       setError(e instanceof LocationError ? e.message : 'Could not read the location.');
     } finally {
@@ -229,7 +236,7 @@ function LocationTestDialog({ room, maxAccuracy, onClose }: { room: Classroom; m
 
   const last = results[0];
   return (
-    <AppModal title={`Test a spot in ${room.name}`} subtitle={`Allowed: distance + accuracy within ${room.radiusMeters} m, accuracy ±${maxAccuracy} m or better.`} onClose={onClose}>
+    <AppModal title={`Test a spot in ${room.name}`} subtitle={`Allowed: ${room.radiusMeters} m around the centre, allowing for the phone's and the room's errors; readings ±${maxAccuracy} m or better confirm on their own.`} onClose={onClose}>
       <div className="at-page" style={{ paddingBottom: 0 }}>
         <p className="at-help" style={{ marginTop: 0, marginBottom: 12 }}>Stand where a student would sit (the back row, a corner) and test. Then step outside the door and test again: that should fail.</p>
         <button className="at-btn at-btn-block at-btn-big" onClick={test} disabled={busy}>
@@ -237,15 +244,14 @@ function LocationTestDialog({ room, maxAccuracy, onClose }: { room: Classroom; m
         </button>
         {error && <div className="at-alert is-error" role="alert" style={{ marginTop: 12, marginBottom: 0 }}><XCircle size={16} /><span>{error}</span></div>}
         {last && (
-          <div className={`at-verdict ${last.pass ? 'is-pass' : 'is-fail'}`} style={{ marginTop: 12 }} role="status">
-            {last.pass ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
+          <div className={`at-verdict ${last.fit === 'INSIDE' ? 'is-pass' : 'is-fail'}`} style={{ marginTop: 12 }} role="status">
+            {last.fit === 'INSIDE' ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
             <span>
-              {last.pass ? 'A student here would be accepted.' : 'A student here would be refused.'}
+              {tx(FIT_TEXT[last.fit])}
               <span style={{ display: 'block', fontWeight: 600, fontSize: 12.5 }}>
                 {last.accuracy > GUESSED_LOCATION_METERS
                   ? `This device is only guessing its location (±${Math.round(last.accuracy / 1000)} km). Test with a phone that has location (GPS) on.`
-                  : <>{last.distance} m from the centre, accuracy ±{last.accuracy} m
-                    {last.accuracy > maxAccuracy ? ' (too imprecise)' : ` (${last.distance + last.accuracy} m of ${room.radiusMeters} m)`}</>}
+                  : <>{last.distance} m from the centre, accuracy ±{last.accuracy} m{last.accuracy > maxAccuracy ? ' (rough)' : ''}</>}
               </span>
             </span>
           </div>
@@ -255,7 +261,8 @@ function LocationTestDialog({ room, maxAccuracy, onClose }: { room: Classroom; m
             {results.slice(1).map((r, i) => (
               <div key={i} className="at-item" style={{ padding: '8px 12px' }}>
                 <span className="at-sub" style={{ marginTop: 0, flex: 1 }}>{r.at} · {r.distance} m · ±{r.accuracy} m</span>
-                <span className={`at-pill ${r.pass ? 'is-present' : 'is-absent'}`}>{r.pass ? 'Accepted' : 'Refused'}</span>
+                <span className={`at-pill ${r.fit === 'INSIDE' ? 'is-present' : r.fit === 'UNCLEAR' ? 'is-pending' : 'is-absent'}`}>
+                  {r.fit === 'INSIDE' ? 'Accepted' : r.fit === 'UNCLEAR' ? 'Lecturer confirms' : 'Refused'}</span>
               </div>
             ))}
           </div>

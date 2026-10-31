@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Loader2, Lock, MapPin, ScanLine, ShieldAlert, Timer, UserCheck, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Loader2, Lock, MapPin, ScanLine, ShieldAlert, Timer, UserCheck, X, XCircle } from 'lucide-react';
 import { checkInToClass, getMyOpenClasses, type CheckInResult, type OpenClass, type ScanResult } from '../../../api/attendance';
 import { getDeviceId, readLocation, LocationError } from '../../../utils/attendanceDevice';
 import QrScanner from '../../shared/attendance/QrScanner';
@@ -8,7 +8,13 @@ import { parseClassQr } from '../../shared/attendance/ClassQr';
 import { StatusPill, classTitle, errMsg, fmtClock } from '../../shared/attendance/shared';
 import { tx } from '../../../utils/terms';
 import StudentQr from './StudentQr';
+import { LocationStatus, useClassLocation } from './LocationStatus';
 import '../../shared/attendance/attendance.css';
+
+/** Location problems the live location panel explains (with steps), so the result box needn't repeat them. */
+const PLACE_REASONS = new Set(['TOO_FAR', 'IMPRECISE', 'NO_GPS', 'NO_LOCATION']);
+/** Wait this long for a precise reading before sending what there is (the server decides; it never counts as a wrong code). */
+const FIX_OPTS = { goodEnough: 15, maxWaitMs: 12000 };
 
 /**
  * Classes taking attendance right now, with a code box for each one that needs a code.
@@ -82,18 +88,10 @@ function ClassCard({ s }: { s: OpenClass }) {
   const busy = stage !== 'idle';
   const needs = s.needsCheck;
 
-  // While the camera is open, find the location in the background so a scan is sent at once
-  // (the code in the picture only lives a few seconds). Reused for a minute, then read again.
-  const fix = useRef<{ at: number; p: ReturnType<typeof readLocation> } | null>(null);
-  const locate = useCallback(() => {
-    if (!fix.current || Date.now() - fix.current.at > 60_000) {
-      const p = readLocation({ goodEnough: Math.min(15, s.maxAccuracyMeters / 2), maxWaitMs: 10000, onUpdate: r => setAccuracy(Math.round(r.accuracy)) });
-      fix.current = { at: Date.now(), p };
-      p.catch(() => { if (fix.current?.p === p) fix.current = null; });
-    }
-    return fix.current.p;
-  }, [s.maxAccuracyMeters]);
-  useEffect(() => { if (scanning) locate().catch(() => {}); }, [scanning, locate]);
+  // Location runs from the moment the card needs it, so it is warm by the time a code is typed or
+  // scanned (a code only lives a few seconds), and keeps running while a check-in waits on it
+  const loc = useClassLocation(s.sessionId, needs !== 0 || s.needsScan || s.locationUnclear);
+  const locate = useCallback(() => readLocation({ ...FIX_OPTS, onUpdate: r => setAccuracy(Math.round(r.accuracy)) }), []);
 
   const onScan = useCallback(async (text: string): Promise<ScanResult> => {
     const refuse = (message: string): ScanResult =>
@@ -103,10 +101,10 @@ function ClassCard({ s }: { s: OpenClass }) {
     if (qr.sessionId !== s.sessionId) return refuse(tx('That code is for a different class.'));
     const deviceId = getDeviceId();
     if (!deviceId) return refuse('This browser is blocking storage (private browsing?). Use your normal browser to check in.');
-    let loc;
-    try { loc = await locate(); }
+    let here;
+    try { here = await locate(); }
     catch (err) { return refuse(err instanceof LocationError ? err.message : 'Your location could not be found. Turn on location and try again.'); }
-    const r = await checkInToClass({ sessionId: s.sessionId, code: qr.code, latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, deviceId, source: qr.source });
+    const r = await checkInToClass({ sessionId: s.sessionId, code: qr.code, latitude: here.latitude, longitude: here.longitude, accuracy: here.accuracy, deviceId, source: qr.source });
     const message = tx(r.message);
     if (r.ok) {
       setScanning(false);
@@ -130,13 +128,9 @@ function ClassCard({ s }: { s: OpenClass }) {
     setAccuracy(null);
     setStage('locating');
     try {
-      const loc = await readLocation({
-        goodEnough: Math.min(15, s.maxAccuracyMeters / 2),
-        maxWaitMs: 10000,
-        onUpdate: r => setAccuracy(Math.round(r.accuracy)),
-      });
+      const here = await locate();
       setStage('sending');
-      const r = await checkInToClass({ sessionId: s.sessionId, code: typed, latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, deviceId });
+      const r = await checkInToClass({ sessionId: s.sessionId, code: typed, latitude: here.latitude, longitude: here.longitude, accuracy: here.accuracy, deviceId });
       setResult({ ...r, message: tx(r.message) });
       if (r.ok) setCode('');
       else if (r.reason === 'WRONG_CODE' || r.reason === 'EXPIRED_CODE') { setCode(''); inputRef.current?.focus(); }
@@ -178,7 +172,7 @@ function ClassCard({ s }: { s: OpenClass }) {
       )}
 
       {s.method === 'STAFF_SCAN' ? (
-        s.needsScan ? <StudentQr s={s} /> : null
+        s.needsScan ? <StudentQr s={s} loc={loc} /> : null
       ) : s.locked && needs !== 0 ? (
         <div className="at-alert is-error" style={{ marginTop: 12, marginBottom: 0 }}>
           <Lock size={16} />
@@ -187,10 +181,8 @@ function ClassCard({ s }: { s: OpenClass }) {
       ) : needs !== 0 && scanClass && scanning ? (
         <div className="at-checkin-scan">
           <QrScanner onCode={onScan} concurrent={false} hint={needs === 2 ? tx('Second check: point your camera at the new class QR code.') : tx('Point your camera at the class QR code your lecturer is showing.')} />
-          <div className="at-help" style={{ margin: 0, textAlign: 'center' }}>
-            <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {accuracy != null ? `Location found (±${accuracy} m).` : 'Finding your location…'}
-            {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
-          </div>
+          <LocationStatus loc={loc} compact />
+          {s.attemptsLeft < 5 && <div className="at-help" style={{ margin: 0, textAlign: 'center' }}>{s.attemptsLeft} attempt{s.attemptsLeft === 1 ? '' : 's'} left.</div>}
           <div className="at-checkin-alt">
             <button type="button" className="at-btn-ghost at-btn-sm" onClick={() => setScanning(false)}><X size={14} /> Close camera</button>
           </div>
@@ -203,6 +195,7 @@ function ClassCard({ s }: { s: OpenClass }) {
           <button type="button" className="at-btn at-btn-big at-btn-block" onClick={() => { setResult(null); setError(null); setScanning(true); }}>
             <ScanLine size={18} /> {needs === 2 ? 'Scan for the second check' : 'Scan the class QR code'}
           </button>
+          <LocationStatus loc={loc} />
           <p className="at-help" style={{ margin: 0 }}>
             <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {tx('Location and camera must be allowed. The code changes every few seconds, so scan it live in class.')}
             {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
@@ -232,11 +225,20 @@ function ClassCard({ s }: { s: OpenClass }) {
               : stage === 'sending' ? <><Loader2 size={18} className="at-spin" /> Checking in…</>
               : <><CheckCircle2 size={18} /> {needs === 2 ? 'Confirm I’m still here' : 'Check in'}</>}
           </button>
+          <LocationStatus loc={loc} />
           <p id={`at-help-${s.sessionId}`} className="at-help" style={{ margin: 0 }}>
             <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {tx('Location must be on. Codes change every few seconds, so type the one showing now.')}
             {s.attemptsLeft < 5 && ` ${s.attemptsLeft} attempt${s.attemptsLeft === 1 ? '' : 's'} left.`}
           </p>
         </form>
+      ) : s.locationUnclear ? (
+        <div className="at-checkin-form">
+          <div className="at-alert is-warn" style={{ marginBottom: 0 }}>
+            <Clock size={16} />
+            <span>{tx("You're checked in, waiting for your lecturer because your location wasn't precise. Keep this page open: when your phone finds you in the room, it confirms on its own.")}</span>
+          </div>
+          <LocationStatus loc={loc} compact />
+        </div>
       ) : null}
 
       {error && (
@@ -244,9 +246,15 @@ function ClassCard({ s }: { s: OpenClass }) {
           <XCircle size={16} /><span>{error}</span>
         </div>
       )}
-      {result && (
-        <div className={`at-alert ${result.ok ? 'is-ok' : 'is-error'}`} role={result.ok ? 'status' : 'alert'} style={{ marginTop: 12, marginBottom: 0 }}>
-          {result.ok ? <CheckCircle2 size={16} /> : <XCircle size={16} />}<span>{result.message}</span>
+      {result && !(result.ok && s.locationUnclear) && (
+        <div className={`at-alert ${!result.ok ? 'is-error' : result.reason === 'LOCATION_UNCLEAR' ? 'is-warn' : 'is-ok'}`} role={result.ok ? 'status' : 'alert'} style={{ marginTop: 12, marginBottom: 0 }}>
+          {!result.ok ? <XCircle size={16} /> : result.reason === 'LOCATION_UNCLEAR' ? <Clock size={16} /> : <CheckCircle2 size={16} />}
+          <span>{result.message}{!result.ok && PLACE_REASONS.has(result.reason) ? ` ${tx('See the location box above for what to do.')}` : ''}</span>
+        </div>
+      )}
+      {loc.verdict?.confirmed && !s.locationUnclear && (
+        <div className="at-alert is-ok" role="status" style={{ marginTop: 12, marginBottom: 0 }}>
+          <CheckCircle2 size={16} /><span>{tx(loc.verdict.message)}</span>
         </div>
       )}
     </article>

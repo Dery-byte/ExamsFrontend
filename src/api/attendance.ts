@@ -25,8 +25,17 @@ export interface OpenClass {
   method: AttendanceMethod;
   /** Scanned class: the student should show their QR code now. */
   needsScan: boolean;
+  /** Checked in, waiting for the lecturer only because the location wasn't precise; a precise reading confirms it. */
+  locationUnclear: boolean;
 }
+/** reason LOCATION_UNCLEAR: recorded (ok), but waiting for the lecturer because the location couldn't confirm it. */
 export interface CheckInResult { ok: boolean; status: AttendanceStatus | null; message: string; reason: string; attemptsLeft: number | null }
+/**
+ * fit: INSIDE, UNCLEAR (could be in the room; the lecturer confirms), OUTSIDE, NO_GPS (approximate
+ * location only), NO_LOCATION, or why the class can't be joined (ENDED, NOT_LISTED, OFF, NO_SESSION).
+ */
+export type PlaceFitResult = 'INSIDE' | 'UNCLEAR' | 'OUTSIDE' | 'NO_GPS' | 'NO_LOCATION' | 'ENDED' | 'NOT_LISTED' | 'OFF' | 'NO_SESSION';
+export interface LocateResult { fit: PlaceFitResult; distance: number | null; accuracy: number | null; message: string; confirmed: boolean }
 export interface StudentAttendanceSummary {
   academicSession: string;
   summary: { key: string; scope: AttendanceMode; title: string; held: number; attended: number; late: number; absent: number; excused: number; pending: number; counted: number; percent: number | null;
@@ -39,6 +48,9 @@ export const getMyOpenClasses = (): Promise<{ enabled: boolean; sessions: OpenCl
 /** {@code source}: from a scanned class QR, whose screen it was on (L or H<helper id>). */
 export const checkInToClass = (data: { sessionId: number; code: string; latitude: number; longitude: number; accuracy: number; deviceId: string; source?: string }): Promise<CheckInResult> =>
   client.post(`${root()}/student/check-in`, data).then(r => r.data);
+/** The phone's location while a class card is open; also confirms a check-in that waited only on location. */
+export const locateForClass = (data: { sessionId: number; latitude: number; longitude: number; accuracy: number; deviceId: string }): Promise<LocateResult> =>
+  client.post(`${root()}/student/locate`, data).then(r => r.data);
 export interface QrKeyResult {
   ok: boolean; message: string; reason: string; key: string | null; sessionId: number | null; studentId: number | null;
   stepSeconds: number | null; serverTime: number | null; name: string | null; indexNo: string | null;
@@ -54,6 +66,8 @@ export const getMyAttendance = (): Promise<StudentAttendanceSummary> =>
 export interface AttendancePolicy {
   mode: AttendanceMode; codeSeconds: number; readAloudCodeSeconds: number; graceSeconds: number;
   checkInMinutes: number; lateAfterMinutes: number; radiusMeters: number; maxAccuracyMeters: number;
+  /** A reading that can't confirm a student but fits someone in the room: true = waits for the lecturer, false = refused. */
+  confirmUnclearLocation: boolean;
   maxFailedAttempts: number; secondCheck: boolean; secondCheckMinutes: number;
   /** Students below minimumPercent can't start quizzes (the course's, or any for programme attendance). */
   minimumRequired: boolean; minimumPercent: number;
@@ -69,6 +83,8 @@ export interface SessionSummary {
   department: string | null; meetingNumber: number; topic: string | null; openedBy: string | null; openedAt: string;
   checkInClosesAt: string; lateAfter: string; endsAt: string; closedAt: string | null; live: boolean; phase: SessionPhase;
   codeDisplay: CodeDisplay; codeSeconds: number; placeName: string | null; radiusMeters: number; maxAccuracyMeters: number;
+  /** How precise the room centre is (± m); null when not recorded. */
+  centreAccuracyMeters: number | null; classroomId: number | null; confirmUnclearLocation: boolean;
   maxFailedAttempts: number; headcount: number | null; secondCheckPlanned: boolean; secondCheckRunning: boolean;
   secondCheckDone: boolean; secondCheckMinutes: number; counts?: Partial<Record<AttendanceStatus, number>>;
   method: AttendanceMethod;
@@ -84,6 +100,8 @@ export interface SessionStudent {
   phoneLinked: boolean; phoneLinkedAt: string | null; phoneLastUsedAt: string | null;
   /** Students scan the class QR: whose QR they scanned (lecturer or helper), at check-in and at the second check. */
   qrSource: string | null; secondQrSource: string | null;
+  /** The student's newest location reading this meeting (distance from the room and ±; never coordinates). */
+  lastPlace: { fit: 'INSIDE' | 'UNCLEAR' | 'OUTSIDE' | 'NO_GPS'; distance: number | null; accuracy: number | null; at: string } | null;
 }
 export interface SessionDetail extends SessionSummary {
   students: SessionStudent[]; counts: Record<string, number>; rosterSize: number;
@@ -131,7 +149,10 @@ export const startSecondCheck = (id: number): Promise<SessionDetail> => client.p
 export const cancelSecondCheck = (id: number): Promise<SessionDetail> => client.delete(`${m()}/sessions/${id}/second-check`).then(r => r.data);
 export const setAttendanceHeadcount = (id: number, headcount: number | null): Promise<SessionDetail> =>
   client.put(`${m()}/sessions/${id}/headcount`, { headcount }).then(r => r.data);
-export const markAttendance = (id: number, studentId: number, status: AttendanceStatus, note?: string): Promise<SessionDetail> =>
+/** Moves the room centre to where this phone is now, for this meeting only. */
+export const recentreAttendanceSession = (id: number, data: { latitude: number; longitude: number; accuracy: number }): Promise<SessionDetail> =>
+  client.post(`${m()}/sessions/${id}/recentre`, data).then(r => r.data);
+export const markAttendance =(id: number, studentId: number, status: AttendanceStatus, note?: string): Promise<SessionDetail> =>
   client.put(`${m()}/sessions/${id}/students/${studentId}`, { status, note }).then(r => r.data);
 export const approvePendingAttendance = (id: number): Promise<SessionDetail> => client.post(`${m()}/sessions/${id}/approve-pending`).then(r => r.data);
 export const unlockAttendanceStudent = (id: number, studentId: number): Promise<SessionDetail> =>

@@ -7,12 +7,13 @@ import { getDeviceId, readLocation, LocationError } from '../../../utils/attenda
 import { cacheQrKey, cachedQrKey, qrCoder, type QrKey } from '../../../utils/attendanceQr';
 import { errMsg } from '../../shared/attendance/shared';
 import { tx } from '../../../utils/terms';
+import { LocationStatus, type ClassLocation } from './LocationStatus';
 
 /**
  * Scanned classes: the student's personal QR code. Shown only after the phone and location checks
  * pass; it changes every 10 seconds, so a photo or screenshot of it is useless.
  */
-export default function StudentQr({ s }: { s: OpenClass }) {
+export default function StudentQr({ s, loc }: { s: OpenClass; loc: ClassLocation }) {
   const qc = useQueryClient();
   const [key, setKey] = useState<QrKey | null>(() => cachedQrKey(s.sessionId));
   const [stage, setStage] = useState<'idle' | 'locating' | 'fetching'>('idle');
@@ -26,9 +27,9 @@ export default function StudentQr({ s }: { s: OpenClass }) {
     try {
       setStage('locating');
       setAccuracy(null);
-      const loc = await readLocation({ goodEnough: Math.min(15, s.maxAccuracyMeters / 2), maxWaitMs: 10000, onUpdate: r => setAccuracy(Math.round(r.accuracy)) });
+      const here = await readLocation({ goodEnough: 15, maxWaitMs: 12000, onUpdate: r => setAccuracy(Math.round(r.accuracy)) });
       setStage('fetching');
-      const r = await getMyQrKey({ sessionId: s.sessionId, latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy, deviceId });
+      const r = await getMyQrKey({ sessionId: s.sessionId, latitude: here.latitude, longitude: here.longitude, accuracy: here.accuracy, deviceId });
       if (!r.ok || !r.key) { setError(tx(r.message)); return; }
       const k: QrKey = { key: r.key, sessionId: r.sessionId!, studentId: r.studentId!, stepSeconds: r.stepSeconds ?? 10,
         offsetMs: (r.serverTime ?? Date.now()) - Date.now(), name: r.name, indexNo: r.indexNo };
@@ -50,6 +51,7 @@ export default function StudentQr({ s }: { s: OpenClass }) {
           : stage === 'fetching' ? <><Loader2 size={18} className="at-spin" /> Getting your code…</>
           : <><QrCode size={18} /> Show my attendance QR code</>}
       </button>
+      <LocationStatus loc={loc} />
       <p className="at-help" style={{ margin: 0 }}>
         <MapPin size={12} style={{ verticalAlign: '-2px' }} /> {tx('Your lecturer scans this class. Location must be on; then hold up your code to be scanned.')}
       </p>

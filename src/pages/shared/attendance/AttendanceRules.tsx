@@ -141,7 +141,8 @@ function PolicySummary({ p }: { p: AttendancePolicy }) {
     ['Projector code', `New every ${p.codeSeconds} s (+${p.graceSeconds} s to finish typing)`],
     ['Read-aloud code', `New every ${p.readAloudCodeSeconds} s, check-ins wait for review`],
     ['Check-in window', `${p.checkInMinutes} min, late after ${p.lateAfterMinutes} min`],
-    ['Location', `Within ${p.radiusMeters} m (when no saved room), accuracy ±${p.maxAccuracyMeters} m or better`],
+    ['Location', `Within ${p.radiusMeters} m (when no saved room); readings ±${p.maxAccuracyMeters} m or better confirm on their own; `
+      + (p.confirmUnclearLocation ? 'unclear ones wait for the lecturer' : 'unclear ones are refused')],
     ['Wrong codes allowed', `${p.maxFailedAttempts} per class, then locked out`],
     ['Second check', p.secondCheck ? `On, open ${p.secondCheckMinutes} min at a random time` : 'Off'],
     ...(!quizzesOn ? [] : [['Minimum for quizzes', p.minimumRequired
@@ -228,9 +229,22 @@ function PolicyDialog({ title, initial, onClose, onSave }: {
 
         <h4 className="at-section-title">Location</h4>
         <div className="at-form-grid">
-          {num('maxAccuracyMeters', 'Readings must be accurate to', '± metres', 5, 150, 'Rougher readings are refused.')}
+          {num('maxAccuracyMeters', 'Readings confirm a student on their own when accurate to', '± metres', 5, 150, 'Phones indoors are usually ±10–50 m; 50 suits most rooms.')}
           {num('radiusMeters', 'Allowed distance', 'metres', 10, 300, "Used when the lecturer's own location is the room centre. Saved classrooms have their own.")}
         </div>
+        <p className="at-help">
+          {tx('A student passes when they could be in the room given both their phone’s error and the room centre’s. Phone location can’t tell neighbouring rooms apart: the live code is what proves they are in your room.')}
+        </p>
+        <label className="at-switch" style={{ marginTop: 6 }}>
+          <input type="checkbox" checked={p.confirmUnclearLocation} onChange={e => set('confirmUnclearLocation', e.target.checked)} />
+          <span className="at-switch-track" />
+          <span>When a phone can’t place the student precisely, keep the check-in for the lecturer to confirm</span>
+        </label>
+        <p className="at-help">
+          {p.confirmUnclearLocation
+            ? tx('Recommended. A rough or just-outside reading (that still fits someone in the room) is marked “Location unclear” and waits for the lecturer; it confirms on its own if the phone gets a precise reading while check-in is open. Readings clearly elsewhere are always refused.')
+            : tx('Off: rough or just-outside readings are refused, and the student tries again once the phone is more precise (or the lecturer marks them by hand).')}
+        </p>
 
         <h4 className="at-section-title">Second check</h4>
         <label className="at-switch">
