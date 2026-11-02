@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import ExportSheetButton from '../../components/admin/ExportSheetButton';
+import MarksImportDialog from '../../components/lecturer/MarksImportDialog';
+import { recalcCourse, markKey } from '../../utils/marksImport';
 import { createPortal } from 'react-dom';
 import client from '../../api/client';
 import { toast } from 'react-hot-toast';
 import { syncMarksForStudent, syncMarksBulk, addSheetSection, deleteSheetSection } from '../../api/endpoints';
 import {
     DownloadCloud, RefreshCw, Plus, Trash2, Loader2, X,
-    ClipboardCheck, Users, BookOpen, Award, TrendingUp, Save, Send
+    ClipboardCheck, Users, BookOpen, Award, TrendingUp, Save, Send, Upload
 } from 'lucide-react';
 import { tx, isSchoolMode, periodName } from '../../utils/terms';
 
@@ -41,6 +43,9 @@ const ManualMarksEntry = () => {
     const [addingSection, setAddingSection] = useState(false);
     const [saving, setSaving] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [showImport, setShowImport] = useState(false);
+    // Cells filled from an uploaded file and not saved yet — highlighted until Save Progress
+    const [uploadedCells, setUploadedCells] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         const u = localStorage.getItem('user');
@@ -64,6 +69,7 @@ const ManualMarksEntry = () => {
         try {
             const res = await client.get(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${sheetId}`);
             setSheetData(res.data);
+            setUploadedCells(new Set());
         } catch (error) {
             toast.error("Failed to load sheet details");
             console.error(error);
@@ -105,23 +111,8 @@ const ManualMarksEntry = () => {
         }
         mark.scoreObtained = val;
 
-        // Recalculate total score based on the sheet's canonical section list
-        let total = 0;
-        newData.sections.forEach((sec: any) => {
-            const m = getSectionMark(courseMark, sec.id);
-            total += (m?.scoreObtained || 0);
-        });
-
-        // Recalculate grade
-        let grade = "F";
-        if (total >= 90) grade = "A+";
-        else if (total >= 80) grade = "A";
-        else if (total >= 70) grade = "B";
-        else if (total >= 60) grade = "C";
-        else if (total >= 50) grade = "D";
-
-        courseMark.totalScore = total;
-        courseMark.grade = grade;
+        // Recalculate total and grade based on the sheet's canonical section list
+        recalcCourse(courseMark, newData.sections);
 
         setSheetData(newData);
     };
@@ -130,6 +121,7 @@ const ManualMarksEntry = () => {
         setSaving(true);
         try {
             await client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${selectedSheetId}/save`, sheetData);
+            setUploadedCells(new Set());
             toast.success("Marks saved successfully!");
         } catch(error: any) {
             const msg = error?.response?.data?.message || error?.message || "Failed to save marks";
@@ -147,6 +139,7 @@ const ManualMarksEntry = () => {
             await client.post(client.defaults.baseURL!.replace('/v1/auth', '') + `/marks/sheet/${selectedSheetId}/submit`);
             toast.success("Sheet submitted to Super Admin!");
             setSheetData(null);
+            setUploadedCells(new Set());
             fetchSheets();
         } catch (error: any) {
             const msg = error?.response?.data?.message || error?.message || "Failed to submit sheet";
@@ -292,6 +285,11 @@ const ManualMarksEntry = () => {
                 <div className="mme-ov-header-right">
                     <StatusBadge status={sheetData.status} />
                     <ExportSheetButton sheetId={selectedSheetId!} />
+                    {!isReadOnly && (
+                        <button onClick={() => setShowImport(true)} className="mme-pill mme-pill-ghost" title="Upload marks from an Excel file">
+                            <Upload size={13} /> <span>Upload Excel</span>
+                        </button>
+                    )}
 
                     {!isReadOnly && (
                         <button onClick={() => setShowAddSection(!showAddSection)} className="mme-pill mme-pill-warning">
@@ -314,7 +312,11 @@ const ManualMarksEntry = () => {
                         </button>
                     )}
 
-                    <button onClick={() => setSheetData(null)} className="mme-close-btn" title="Back to sheet list">
+                    <button onClick={() => {
+                        if (uploadedCells.size && !window.confirm("Uploaded marks haven't been saved yet. Close the sheet anyway?")) return;
+                        setSheetData(null);
+                        setUploadedCells(new Set());
+                    }} className="mme-close-btn" title="Back to sheet list">
                         <X size={16} />
                     </button>
                 </div>
@@ -415,7 +417,7 @@ const ManualMarksEntry = () => {
                                                     const mark = getSectionMark(cMark, sec.id);
                                                     const score = mark?.scoreObtained || 0;
                                                     return (
-                                                        <td key={`${cMark.courseId}-${sec.id}`} className="mme-td mme-td-score">
+                                                        <td key={`${cMark.courseId}-${sec.id}`} className={`mme-td mme-td-score${uploadedCells.has(markKey(student.studentId, cMark.courseId, sec.id)) ? ' mme-td-uploaded' : ''}`}>
                                                             <input
                                                                 type="number"
                                                                 value={score === 0 ? '' : score}
@@ -451,9 +453,22 @@ const ManualMarksEntry = () => {
                 <div className="mme-legend">
                     <span>Scores shown are the raw marks entered per section</span>
                     {!isReadOnly && <span>&bull; Tap the refresh icon to auto-fetch a student's system marks</span>}
+                    {uploadedCells.size > 0 && <span className="mme-legend-uploaded">&bull; {uploadedCells.size} uploaded mark{uploadedCells.size === 1 ? '' : 's'} highlighted — press Save Progress to keep them</span>}
                     {isReadOnly && <span className="mme-legend-locked">&#9888; This sheet is {sheetData.status.toLowerCase()} and can no longer be edited</span>}
                 </div>
             </div>
+            {showImport && (
+                <MarksImportDialog
+                    sheet={sheetData}
+                    sheetId={selectedSheetId}
+                    onClose={() => setShowImport(false)}
+                    onApplied={(next, changedKeys) => {
+                        setSheetData(next);
+                        setUploadedCells(prev => new Set([...prev, ...changedKeys]));
+                        setShowImport(false);
+                    }}
+                />
+            )}
             <style>{mmeStyles}</style>
         </div>,
         document.body
@@ -602,6 +617,7 @@ const mmeStyles = `
     .mme-pill-purple { background: linear-gradient(135deg,var(--accent),var(--accent-hover)); box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35); }
     .mme-pill-blue { background: linear-gradient(135deg,#3b82f6,#1d4ed8); box-shadow: 0 4px 14px rgba(59,130,246,0.35); }
     .mme-pill-green { background: linear-gradient(135deg,#10b981,#059669); box-shadow: 0 4px 14px rgba(16,185,129,0.35); }
+    .mme-pill-ghost { background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35); }
 
     .mme-close-btn {
         width: 36px;
@@ -901,6 +917,13 @@ const mmeStyles = `
     }
 
     .mme-legend-locked { color: #92400e; font-weight: 600; }
+    .mme-legend-uploaded { color: #854d0e; font-weight: 600; }
+
+    .mme-td-uploaded .mme-score-input {
+        background: #fef9c3;
+        border-color: #facc15;
+        color: #854d0e;
+    }
 
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
