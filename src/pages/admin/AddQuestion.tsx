@@ -1,20 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStaffBase } from '../../hooks/useStaffBase';
 import {
-  getQuiz, addQuestion, uploadQuestions,
+  getQuiz, addQuestion, uploadQuestions, getQuestionsForAdmin, getQuestionsForLecturer,
   uploadTheoryQuestions, addNumberOfTheoryToAnswer, addTheoryQuestion, uploadQuestionImage
 } from '../../api/endpoints';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   FilePlus, FileText, Upload, Save, List, Info, ArrowLeft,
   Loader2, Database, Zap, Hash, Award, Target, ChevronRight,
-  Layers, CheckSquare, ToggleLeft, Link2, X, Check, Plus, Trash2, PenLine, Calculator, Download
+  Layers, CheckSquare, ToggleLeft, Link2, X, Check, Plus, Trash2, PenLine, Calculator, Download, ListChecks,
+  Shuffle, AlertTriangle, Tag
 } from 'lucide-react';
 import RichTextEditor from '../../components/ui/RichTextEditor';
 import QuestionImageField from '../../components/ui/QuestionImageField';
 import { tx } from '../../utils/terms';
 import { downloadQuestionTemplate, downloadTemplateGuide } from '../../utils/questionTemplates';
+import { readQuestionFile, checkDrafts, QUESTION_FILE_ACCEPT } from '../../utils/questionImport';
+import type { Draft, ImportResult, ImportTarget } from '../../utils/questionImport';
+import QuestionReviewModal from '../../components/examops/QuestionReviewModal';
 
 // Strip HTML tags for validation
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim();
@@ -65,6 +70,9 @@ const Q_TYPES = [
 
 const blankTyped = () => ({ content: '', accepted: [''] as string[], value: '', tolerance: '' });
 
+/** The most objective questions a question-pool quiz may hold (QuestionDraw.MAX_POOL on the server). */
+const POOL_MAX = 2000;
+
 // ─── Blank form factories ─────────────────────────────────────────────────────
 const blankMCQ = (qId: any) => ({
   quiz: { qId },
@@ -91,6 +99,39 @@ const blankMatching = (qId: any) => ({
   matchingPairs: [] as { prompt: string; answer: string; pairOrder: number }[],
 });
 
+/** A bulk-upload file as read: its questions wait in the review window, or the reasons it can't be used. */
+interface PendingUpload extends ImportResult { fileName: string; file: File }
+
+/** Under a Bulk Upload file picker: why the file can't be used, or its questions waiting for review. */
+function UploadStatus({ pending, target, green, problem, onReview }: {
+  pending: PendingUpload | null; target: ImportTarget; green?: boolean; problem?: string; onReview: () => void;
+}) {
+  if (!pending) return null;
+  if (pending.errors.length) return (
+    <div className="addq-check-errors" role="alert">
+      <strong>This file can't be used. Fix it, save it and choose it again.</strong>
+      <ul>{pending.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>
+    </div>
+  );
+  const count = pending.drafts.filter(d => !d.excluded).length;
+  const toFix = checkDrafts(pending.drafts, target).size;
+  return (
+    <div className="addq-staging">
+      <div className="addq-staging-head">
+        <span>Waiting for review</span>
+        <span className={`addq-staging-badge${green ? ' addq-sb-green' : ''}`}>{count} question{count !== 1 ? 's' : ''}</span>
+      </div>
+      <div className="addq-staging-row">
+        {toFix ? `${toFix} need${toFix === 1 ? 's' : ''} fixing. You can correct ${toFix === 1 ? 'it' : 'them'} in the review.` : problem ? '' : 'No problems found.'}
+      </div>
+      {problem && <div className="addq-staging-row addq-staging-warn">{problem}</div>}
+      <button type="button" className={`addq-upload-btn${green ? ' addq-upload-green' : ''}`} onClick={onReview} style={{ marginTop: 10 }}>
+        <ListChecks size={15} /><span>Review &amp; upload</span>
+      </button>
+    </div>
+  );
+}
+
 export default function AddQuestion({ adminMode = true }: { adminMode?: boolean }) {
   const { qId, title } = useParams();
   const navigate = useNavigate();
@@ -113,6 +154,9 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
   // Fill in the blank / numeric
   const [typedForm, setTypedForm]     = useState(blankTyped());
   const [typedImage, setTypedImage]   = useState<File | null>(null);
+  // Optional Topic / Difficulty, kept from one question to the next; a question-pool quiz balances its draw by them
+  const [tags, setTags] = useState({ topic: '', difficulty: '' });
+  const tagPayload = () => ({ topic: tags.topic.trim() || null, difficulty: tags.difficulty || null });
   const [theoryImage, setTheoryImage] = useState<File | null>(null);
 
   // ── Theory state ─────────────────────────────────────────────────────────────
@@ -121,10 +165,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
   });
 
   // ── Bulk / file state ────────────────────────────────────────────────────────
-  const [selectedFile, setSelectedFile]             = useState<File | null>(null);
-  const [filePreview, setFilePreview]               = useState<any[]>([]);
-  const [selectedFileTheory, setSelectedFileTheory] = useState<File | null>(null);
-  const [theoryPreview, setTheoryPreview]           = useState<any[]>([]);
+  // The chosen file's questions (kept with any corrections until uploaded) and which review window is open
+  const [objUpload, setObjUpload]                   = useState<PendingUpload | null>(null);
+  const [theoryUpload, setTheoryUpload]             = useState<PendingUpload | null>(null);
+  const [reviewing, setReviewing]                   = useState<'OBJ' | 'THEORY' | null>(null);
+  // Objective questions already in the quiz (null until loaded); students get all of them, so the quiz's
+  // Number of Questions caps the total, not each upload
+  const [objCount, setObjCount]                     = useState<number | null>(null);
   const [theoryQuesToAnswer, setTheoryQA]           = useState({ totalQuestToAnswer: '', timeAllowed: '', quiz: { qId } });
 
   const [loading, setLoading]     = useState(false);
@@ -144,6 +191,14 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
       if (qt.includes('THEORY') && !qt.includes('BOTH')) setActiveTab('THEORY');
     });
   }, [qId]);
+
+  const refreshObjCount = useCallback(() => {
+    if (!qId) return;
+    (adminMode ? getQuestionsForAdmin : getQuestionsForLecturer)(qId)
+      .then(list => setObjCount(Array.isArray(list) ? list.length : null))
+      .catch(() => setObjCount(null));
+  }, [qId, adminMode]);
+  useEffect(() => { refreshObjCount(); }, [refreshObjCount]);
 
   // ─── MCQ helpers ─────────────────────────────────────────────────────────────
   const setMcq = (k: string, v: any) => setMcqForm((f: any) => ({ ...f, [k]: v }));
@@ -200,11 +255,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
     if (numeric && isNaN(Number(accepted[0].replace(',', '.')))) { toast.error('The correct answer must be a number'); return; }
     const tolerance = numeric && typedForm.tolerance.trim() !== '' ? Number(typedForm.tolerance) : null;
     if (tolerance !== null && (isNaN(tolerance) || tolerance < 0)) { toast.error('Tolerance must be 0 or more'); return; }
+    if (objFull()) return;
     setLoading(true);
     try {
       const image = typedImage ? await uploadQuestionImage(typedImage) : null;
-      await addQuestion({ quiz: { qId }, content: typedForm.content, questionType, correct_answer: accepted, tolerance, image });
+      await addQuestion({ quiz: { qId }, content: typedForm.content, questionType, correct_answer: accepted, tolerance, image, ...tagPayload() });
       toast.success(numeric ? 'Numeric question added!' : 'Fill-in-the-blank question added!');
+      refreshObjCount();
       setTypedForm(blankTyped());
       setTypedImage(null);
     } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
@@ -217,11 +274,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
     if (!stripHtml(mcqForm.content)) { toast.error('Question content is required'); return; }
     if (!mcqForm.option1.trim() || !mcqForm.option2.trim()) { toast.error('At least two options are required'); return; }
     if (!mcqForm.correct_answer.length) { toast.error('Mark at least one correct answer'); return; }
+    if (objFull()) return;
     setLoading(true);
     try {
       const image = mcqImage ? await uploadQuestionImage(mcqImage) : null;
-      await addQuestion({ ...mcqForm, image });
+      await addQuestion({ ...mcqForm, image, ...tagPayload() });
       toast.success('MCQ question added!');
+      refreshObjCount();
       setMcqForm(blankMCQ(qId));
       setMcqImage(null);
     } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
@@ -232,11 +291,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
     e.preventDefault();
     if (!stripHtml(tfForm.content)) { toast.error('Question content is required'); return; }
     if (!tfForm.correct_answer.length) { toast.error('Select True or False as the correct answer'); return; }
+    if (objFull()) return;
     setLoading(true);
     try {
       const image = tfImage ? await uploadQuestionImage(tfImage) : null;
-      await addQuestion({ ...tfForm, image });
+      await addQuestion({ ...tfForm, image, ...tagPayload() });
       toast.success('True/False question added!');
+      refreshObjCount();
       setTfForm(blankTF(qId));
       setTfImage(null);
     } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
@@ -249,11 +310,13 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
     if (matchForm.matchingPairs.length < 2) { toast.error('Add at least 2 matching pairs'); return; }
     const incomplete = matchForm.matchingPairs.some((p: any) => !p.prompt.trim() || !p.answer.trim());
     if (incomplete) { toast.error('All pairs must have both a prompt and an answer'); return; }
+    if (objFull()) return;
     setLoading(true);
     try {
       const image = matchImage ? await uploadQuestionImage(matchImage) : null;
-      await addQuestion({ ...matchForm, image });
+      await addQuestion({ ...matchForm, image, ...tagPayload() });
       toast.success('Matching question added!');
+      refreshObjCount();
       setMatchForm(blankMatching(qId));
       setMatchImage(null);
     } catch (err: any) { toast.error(err?.response?.data?.message || 'Failed to add question'); }
@@ -285,37 +348,70 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
   // ─── File handlers ────────────────────────────────────────────────────────────
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'OBJ' | 'THEORY') => {
     const file = e.target.files?.[0];
+    e.target.value = '';   // choosing the same file again (after fixing it) still fires onChange
     if (!file) return;
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      if (type === 'OBJ') { setSelectedFile(file); setFilePreview(Array.isArray(parsed) ? parsed : [parsed]); }
-      else { setSelectedFileTheory(file); setTheoryPreview(Array.isArray(parsed) ? parsed : [parsed]); }
-    } catch { toast.error('Invalid JSON format'); }
+    const read = await readQuestionFile(file, type === 'OBJ' ? 'OBJECTIVE' : 'THEORY');
+    const pending: PendingUpload = { ...read, fileName: file.name, file };
+    if (type === 'OBJ') setObjUpload(pending); else setTheoryUpload(pending);
+    if (!read.errors.length) setReviewing(type);   // straight into the full-screen review
   };
 
-  const uploadObj = async () => {
-    if (!selectedFile || filePreview.length === 0) return;
-    setLoading(true);
-    try { await uploadQuestions(qId!, filePreview); toast.success('Questions uploaded!'); setSelectedFile(null); setFilePreview([]); }
-    catch { toast.error('Upload failed'); }
-    finally { setLoading(false); }
+  // The review window edits the drafts in place, so closing it keeps the corrections
+  const setObjDrafts: Dispatch<SetStateAction<Draft[]>> = useCallback(u =>
+    setObjUpload(p => p && { ...p, drafts: typeof u === 'function' ? u(p.drafts) : u }), []);
+  const setTheoryDrafts: Dispatch<SetStateAction<Draft[]>> = useCallback(u =>
+    setTheoryUpload(p => p && { ...p, drafts: typeof u === 'function' ? u(p.drafts) : u }), []);
+
+  // Without a question pool the quiz's Number of Questions caps the objective questions in it, counting those
+  // already added. With one, the quiz may hold up to POOL_MAX and each student gets Number of Questions of them.
+  const pooled = !!specificQuiz?.questionPool && String(specificQuiz?.quizType || '').toUpperCase() !== 'THEORY';
+  const perStudent = specificQuiz?.numberOfQuestions == null ? null : Number(specificQuiz.numberOfQuestions);
+  const allowedObj = pooled ? POOL_MAX : perStudent;
+  const objRoom = allowedObj == null || objCount == null ? null : Math.max(0, allowedObj - objCount);
+  const fullMessage = () => pooled
+    ? `A question pool can hold at most ${POOL_MAX} questions and this quiz already has ${objCount}.`
+    : `This quiz allows ${allowedObj} objective question${allowedObj === 1 ? '' : 's'} and already has ${objCount}. `
+      + 'Delete some questions, raise the quiz\'s Number of Questions, or turn on the question pool in the quiz settings.';
+  const objFull = () => {
+    if (objRoom !== 0) return false;
+    toast.error(fullMessage());
+    return true;
+  };
+  const roomMessage = (n: number) => objRoom === 0 ? fullMessage()
+    : pooled
+      ? `A question pool can hold at most ${POOL_MAX} questions and this quiz already has ${objCount}, so only ${objRoom} more can be added. `
+        + `Remove ${n - (objRoom ?? 0)} from this upload.`
+      : `This quiz allows ${allowedObj} objective questions and already has ${objCount}, so only ${objRoom} more can be added. `
+        + `Remove ${n - (objRoom ?? 0)} from this upload, raise the quiz's Number of Questions, or turn on the question pool in the quiz settings.`;
+  // A pool quiz can only go live once it holds one full draw
+  const poolShort = pooled && perStudent != null && objCount != null && objCount < perStudent ? perStudent - objCount : 0;
+
+  // The OBJ review's file also holds theory questions: read the same file for the THEORY tab and review those
+  const reviewTheoryFromObj = async () => {
+    if (!objUpload) return;
+    const read = await readQuestionFile(objUpload.file, 'THEORY');
+    setTheoryUpload({ ...read, fileName: objUpload.fileName, file: objUpload.file });
+    setActiveTab('THEORY');
+    setReviewing(read.errors.length ? null : 'THEORY');
   };
 
-  const uploadTheory = async () => {
-    if (!selectedFileTheory || !theoryQuesToAnswer.totalQuestToAnswer || !theoryQuesToAnswer.timeAllowed || theoryPreview.length === 0) {
-      toast.error('Fill all parameters and select a valid JSON file'); return;
-    }
-    setLoading(true);
-    try {
-      await addNumberOfTheoryToAnswer(theoryQuesToAnswer);
-      await uploadTheoryQuestions(qId!, theoryPreview);
-      toast.success('Theory questions uploaded!');
-      setSelectedFileTheory(null); setTheoryPreview([]);
-      setTheoryQA(t => ({ ...t, totalQuestToAnswer: '', timeAllowed: '' }));
-    } catch { toast.error('Upload failed'); }
-    finally { setLoading(false); }
+  // Called by the review window; a rejection keeps it open and shows the server's message
+  const approveObj = async (items: any[]) => {
+    await uploadQuestions(qId!, items);
+    toast.success(`${items.length} question${items.length !== 1 ? 's' : ''} uploaded!`);
+    setReviewing(null); setObjUpload(null);
+    refreshObjCount();
   };
+
+  const approveTheory = async (items: any[]) => {
+    await addNumberOfTheoryToAnswer(theoryQuesToAnswer);
+    await uploadTheoryQuestions(qId!, items);
+    toast.success(`${items.length} theory question${items.length !== 1 ? 's' : ''} uploaded!`);
+    setReviewing(null); setTheoryUpload(null);
+    setTheoryQA(t => ({ ...t, totalQuestToAnswer: '', timeAllowed: '' }));
+  };
+
+  const positive = (v: string) => Number(v) > 0;
 
   const qType   = String(specificQuiz?.quizType || '').toUpperCase();
   const isOBJ   = qType.includes('OBJ') || qType.includes('BOTH');
@@ -332,7 +428,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
       {/* ── Top bar ── */}
       <div className="addq-topbar">
         <div className="addq-topbar-left">
-          <button className="addq-back-btn" onClick={() => navigate(`${basePath}/view-questions/${qId}/${qTitle}`)}>
+          <button className="addq-back-btn" onClick={() => navigate(`${basePath}/view-questions/${qId}/${encodeURIComponent(qTitle)}`)}>
             <ArrowLeft size={15} /><span>Back</span>
           </button>
           <div className="addq-breadcrumb">
@@ -353,6 +449,9 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
           <div className="addq-banner-meta">
             <span className="addq-pill">ID: {qId}</span>
             <span className="addq-pill addq-pill-type">{specificQuiz?.quizType || '—'}</span>
+            {pooled && (
+              <span className="addq-pill addq-pill-pool"><Shuffle size={11} />{tx(`Question pool · ${perStudent ?? '?'} per student`)}</span>
+            )}
           </div>
         </div>
       </div>
@@ -376,6 +475,20 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
           {/* ══ OBJECTIVE TAB ══ */}
           {activeTab === 'OBJ' && isOBJ && (
             <div className="animate-fade-in">
+
+              {pooled && objCount != null && (
+                <div className={`addq-pool-note${poolShort ? ' is-short' : ''}`} role="status">
+                  {poolShort ? <AlertTriangle size={16} /> : <Shuffle size={16} />}
+                  <div>
+                    <strong>{tx(`Question pool: ${objCount} question${objCount === 1 ? '' : 's'} · each student gets ${perStudent ?? '?'}`)}</strong>
+                    <span>
+                      {poolShort
+                        ? `Add ${poolShort} more before the quiz can go live.`
+                        : tx('Add as many as you like. Each student gets a balanced random set: give questions a Topic and Difficulty for the best balance.')}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* STEP 1 — Pick question type */}
               {!questionType ? (
@@ -419,6 +532,30 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                     <button className="addq-change-btn" onClick={() => setQuestionType(null)}>
                       <X size={13} /><span>Change Type</span>
                     </button>
+                  </div>
+
+                  {/* Optional tags, shared by every question type's form */}
+                  <div className="addq-tags-row">
+                    <div className="addq-field">
+                      <label className="addq-label" htmlFor="addq-topic"><Tag size={13} />Topic (optional)</label>
+                      <input id="addq-topic" className="addq-input" maxLength={120} value={tags.topic} placeholder="e.g. Sorting"
+                        onChange={e => setTags(t => ({ ...t, topic: e.target.value }))} />
+                    </div>
+                    <div className="addq-field">
+                      <label className="addq-label" htmlFor="addq-difficulty"><Target size={13} />Difficulty (optional)</label>
+                      <select id="addq-difficulty" className="addq-input" value={tags.difficulty}
+                        onChange={e => setTags(t => ({ ...t, difficulty: e.target.value }))}>
+                        <option value="">Not set</option>
+                        <option value="EASY">Easy</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HARD">Hard</option>
+                      </select>
+                    </div>
+                    <p className="addq-field-hint addq-tags-hint">
+                      {pooled
+                        ? tx('Kept for the next question too. The question pool uses them so every student gets the same mix.')
+                        : 'Kept for the next question too. Used to balance the draw if the question pool is turned on.'}
+                    </p>
                   </div>
 
                   {/* ── MCQ Form ── */}
@@ -751,33 +888,30 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
               {activeTab === 'OBJ' && isOBJ && (
                 <div className="animate-fade-in">
                   <div className="addq-tpl-row">
-                    <button type="button" className="addq-tpl-btn"
-                      onClick={() => downloadQuestionTemplate('SECTION_A')}>
-                      <Download size={13} /><span>Download template</span>
+                    <button type="button" className="addq-tpl-btn" onClick={downloadQuestionTemplate}>
+                      <Download size={13} /><span>Download Excel template</span>
                     </button>
                     <button type="button" className="addq-tpl-link" onClick={downloadTemplateGuide}>How to fill it</button>
                   </div>
                   <label className="addq-dropzone">
-                    <input type="file" accept=".json" onChange={e => onFileChange(e, 'OBJ')} style={{ display: 'none' }} />
+                    <input type="file" accept={QUESTION_FILE_ACCEPT} onChange={e => onFileChange(e, 'OBJ')} style={{ display: 'none' }} />
                     <FilePlus size={30} />
-                    <span className="addq-dz-title">{selectedFile ? selectedFile.name : 'Select JSON File'}</span>
-                    <span className="addq-dz-sub">Objective questions in bulk</span>
+                    <span className="addq-dz-title">{objUpload ? objUpload.fileName : 'Choose Excel file'}</span>
+                    <span className="addq-dz-sub">{objUpload ? 'Click to choose a different file' : 'Objective & Matching tabs (.xlsx, or .json)'}</span>
                   </label>
-                  {filePreview.length > 0 && (
-                    <div className="addq-staging">
-                      <div className="addq-staging-head">
-                        <span>Preview</span>
-                        <span className="addq-staging-badge">{filePreview.length} items</span>
-                      </div>
-                      {filePreview.slice(0, 3).map((p, i) => (
-                        <div key={i} className="addq-staging-row">{i + 1}. {String(p.content || '').substring(0, 50)}…</div>
-                      ))}
+                  {allowedObj != null && objCount != null && (pooled ? (
+                    <div className={`addq-capacity${objRoom === 0 || poolShort ? ' is-full' : ''}`}>
+                      <span><strong>{objCount}</strong> in the pool · {tx(`${perStudent ?? '?'} per student`)}</span>
+                      <span>{objRoom === 0 ? 'Pool full' : poolShort ? `${poolShort} more needed` : 'Ready'}</span>
                     </div>
-                  )}
-                  <button className="addq-upload-btn" onClick={uploadObj} disabled={!selectedFile || loading}>
-                    {loading ? <Loader2 className="addq-spin" size={15} /> : <Upload size={15} />}
-                    <span>{loading ? 'Uploading...' : 'Upload Questions'}</span>
-                  </button>
+                  ) : (
+                    <div className={`addq-capacity${objRoom === 0 ? ' is-full' : ''}`}>
+                      <span><strong>{objCount}</strong> of {allowedObj} objective questions added</span>
+                      <span>{objRoom === 0 ? 'Full' : `${objRoom} more allowed`}</span>
+                    </div>
+                  ))}
+                  <UploadStatus pending={objUpload} target="OBJECTIVE" onReview={() => setReviewing('OBJ')}
+                    problem={objUpload && objRoom != null && objUpload.drafts.filter(d => !d.excluded).length > objRoom ? roomMessage(objUpload.drafts.filter(d => !d.excluded).length) : undefined} />
                 </div>
               )}
               {activeTab === 'THEORY' && isTheory && (
@@ -785,68 +919,103 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
                   <div className="addq-dark-fields">
                     <div className="addq-dark-field">
                       <label>Questions to Answer</label>
-                      <input type="number" value={theoryQuesToAnswer.totalQuestToAnswer}
+                      <input type="number" min={1} value={theoryQuesToAnswer.totalQuestToAnswer}
+                        className={theoryUpload && !positive(theoryQuesToAnswer.totalQuestToAnswer) ? 'is-missing' : ''}
                         onChange={e => setTheoryQA(t => ({ ...t, totalQuestToAnswer: e.target.value }))} placeholder="0" />
                     </div>
                     <div className="addq-dark-field">
                       <label>Time Allowed (mins)</label>
-                      <input type="number" value={theoryQuesToAnswer.timeAllowed}
+                      <input type="number" min={1} value={theoryQuesToAnswer.timeAllowed}
+                        className={theoryUpload && !positive(theoryQuesToAnswer.timeAllowed) ? 'is-missing' : ''}
                         onChange={e => setTheoryQA(t => ({ ...t, timeAllowed: e.target.value }))} placeholder="0" />
                     </div>
                   </div>
                   <div className="addq-tpl-row">
-                    <button type="button" className="addq-tpl-btn addq-tpl-btn-green"
-                      onClick={() => downloadQuestionTemplate('SECTION_B')}>
-                      <Download size={13} /><span>Download template</span>
+                    <button type="button" className="addq-tpl-btn addq-tpl-btn-green" onClick={downloadQuestionTemplate}>
+                      <Download size={13} /><span>Download Excel template</span>
                     </button>
                     <button type="button" className="addq-tpl-link" onClick={downloadTemplateGuide}>How to fill it</button>
                   </div>
                   <label className="addq-dropzone addq-dropzone-green">
-                    <input type="file" accept=".json" onChange={e => onFileChange(e, 'THEORY')} style={{ display: 'none' }} />
+                    <input type="file" accept={QUESTION_FILE_ACCEPT} onChange={e => onFileChange(e, 'THEORY')} style={{ display: 'none' }} />
                     <Layers size={30} />
-                    <span className="addq-dz-title">{selectedFileTheory ? selectedFileTheory.name : 'Select JSON File'}</span>
-                    <span className="addq-dz-sub">Theory questions in bulk</span>
+                    <span className="addq-dz-title">{theoryUpload ? theoryUpload.fileName : 'Choose Excel file'}</span>
+                    <span className="addq-dz-sub">{theoryUpload ? 'Click to choose a different file' : 'Theory tab (.xlsx, or .json)'}</span>
                   </label>
-                  {theoryPreview.length > 0 && (
-                    <div className="addq-staging" style={{ marginBottom: 0 }}>
-                      <div className="addq-staging-head">
-                        <span>Preview</span>
-                        <span className="addq-staging-badge addq-sb-green">{theoryPreview.length} items</span>
-                      </div>
-                    </div>
-                  )}
-                  <button className="addq-upload-btn addq-upload-green" onClick={uploadTheory} disabled={!selectedFileTheory || loading}>
-                    {loading ? <Loader2 className="addq-spin" size={15} /> : <Upload size={15} />}
-                    <span>{loading ? 'Uploading...' : 'Upload Questions'}</span>
-                  </button>
+                  <UploadStatus pending={theoryUpload} target="THEORY" green onReview={() => setReviewing('THEORY')}
+                    problem={theoryUpload && !theoryUpload.errors.length && !(positive(theoryQuesToAnswer.totalQuestToAnswer) && positive(theoryQuesToAnswer.timeAllowed)) ? 'Fill in Questions to Answer and Time Allowed above before uploading.' : undefined} />
                 </div>
               )}
             </div>
           </div>
 
-          {/* JSON Schema Reference */}
+          {reviewing === 'OBJ' && objUpload && (
+            <QuestionReviewModal
+              title={`Review objective questions${qTitle ? ` · ${qTitle}` : ''}`}
+              fileName={objUpload.fileName} target="OBJECTIVE"
+              note={objUpload.leftOut ? (isTheory
+                ? `This file also has ${objUpload.leftOut} theory question${objUpload.leftOut !== 1 ? 's' : ''}. They aren't part of this upload: review them separately, where Questions to Answer and Time Allowed are also set.`
+                : `This file also has ${objUpload.leftOut} theory question${objUpload.leftOut !== 1 ? 's' : ''}. This quiz has no theory section, so they are left out.`)
+                : undefined}
+              noteAction={objUpload.leftOut && isTheory ? { label: `Review the ${objUpload.leftOut} theory question${objUpload.leftOut !== 1 ? 's' : ''}`, onClick: reviewTheoryFromObj } : undefined}
+              drafts={objUpload.drafts} setDrafts={setObjDrafts}
+              maxItems={objRoom ?? undefined}
+              maxItemsMessage={roomMessage}
+              onApprove={approveObj} onClose={() => setReviewing(null)} />
+          )}
+          {reviewing === 'THEORY' && theoryUpload && (
+            <QuestionReviewModal
+              title={`Review theory questions${qTitle ? ` · ${qTitle}` : ''}`}
+              fileName={theoryUpload.fileName} target="THEORY" note={isOBJ ? theoryUpload.note : undefined}
+              drafts={theoryUpload.drafts} setDrafts={setTheoryDrafts}
+              settings={{
+                title: 'Section B settings',
+                fields: [
+                  {
+                    id: 'qrv-theory-answer', label: 'Questions to answer', placeholder: 'e.g. 3',
+                    value: theoryQuesToAnswer.totalQuestToAnswer, onChange: v => setTheoryQA(t => ({ ...t, totalQuestToAnswer: v })),
+                    error: positive(theoryQuesToAnswer.totalQuestToAnswer) ? undefined : 'How many main questions each student must answer.',
+                  },
+                  {
+                    id: 'qrv-theory-time', label: 'Time allowed (minutes)', placeholder: 'e.g. 60',
+                    value: theoryQuesToAnswer.timeAllowed, onChange: v => setTheoryQA(t => ({ ...t, timeAllowed: v })),
+                    error: positive(theoryQuesToAnswer.timeAllowed) ? undefined : 'Time for Section B, in minutes.',
+                  },
+                ],
+              }}
+              blockReason={positive(theoryQuesToAnswer.totalQuestToAnswer) && positive(theoryQuesToAnswer.timeAllowed)
+                ? undefined : 'Fill in Questions to answer and Time allowed at the top.'}
+              onApprove={approveTheory} onClose={() => setReviewing(null)} />
+          )}
+
+          {/* What goes in the template's columns */}
           <div className="addq-schema-card">
             <div className="addq-schema-head">
               <div className="addq-schema-icon"><Target size={15} /></div>
-              <h6 className="addq-schema-title">JSON Schema Reference</h6>
+              <h6 className="addq-schema-title">Template columns</h6>
             </div>
             <div className="addq-schema-body">
-              <div className="addq-schema-block">
-                <div className="addq-schema-label"><span className="addq-dot blue" />MCQ</div>
-                <pre>{`{\n  "content": "Q text",\n  "option1": "A", "option2": "B",\n  "option3": "C", "option4": "D",\n  "correct_answer": ["A"],\n  "questionType": "MCQ"\n}`}</pre>
-              </div>
-              <div className="addq-schema-block">
-                <div className="addq-schema-label"><span className="addq-dot cyan" />True / False</div>
-                <pre>{`{\n  "content": "Statement",\n  "option1": "True",\n  "option2": "False",\n  "correct_answer": ["True"],\n  "questionType": "TRUE_FALSE"\n}`}</pre>
-              </div>
-              <div className="addq-schema-block">
-                <div className="addq-schema-label"><span className="addq-dot purple" />Matching</div>
-                <pre>{`{\n  "content": "Instructions",\n  "matchingPairs": [\n    {"prompt":"HTTP 404",\n     "answer":"Not Found",\n     "pairOrder":0}\n  ],\n  "questionType": "MATCHING"\n}`}</pre>
-              </div>
-              <div className="addq-schema-block">
-                <div className="addq-schema-label"><span className="addq-dot green" />Theory</div>
-                <pre>{`{\n  "quesNo": "Q1",\n  "question": "Explain...",\n  "marks": 5,\n  "evaluationCriteria": "..."\n}`}</pre>
-              </div>
+              {activeTab === 'OBJ' ? (
+                <>
+                  <div className="addq-schema-block">
+                    <div className="addq-schema-label"><span className="addq-dot blue" />Objective tab · Multiple choice</div>
+                    <pre>{`Type      Multiple choice\nQuestion  Which is an input device?\nOption A  Monitor\nOption B  Keyboard   (C, D optional)\nAnswer    B    more than one: A, C`}</pre>
+                  </div>
+                  <div className="addq-schema-block">
+                    <div className="addq-schema-label"><span className="addq-dot cyan" />Objective tab · other types</div>
+                    <pre>{`True/False         Answer: True or False\nFill in the blank  Answer: CPU; processor\nNumeric            Answer: 8\n                   Tolerance: 0.5 (or empty)`}</pre>
+                  </div>
+                  <div className="addq-schema-block">
+                    <div className="addq-schema-label"><span className="addq-dot purple" />Matching tab · one row per pair</div>
+                    <pre>{`Question             Left     Right\nMatch each device…   Mouse    Input device\n                     Printer  Output device`}</pre>
+                  </div>
+                </>
+              ) : (
+                <div className="addq-schema-block">
+                  <div className="addq-schema-label"><span className="addq-dot green" />Theory tab · one row per part</div>
+                  <pre>{`Q No   Question                  Marks\nQ1a    Define an OS.             4\nQ1b    Give two examples.        2\nQ2ai   …(i) Name the topology.   2\nQ2aii  (ii) State one advantage. 3\n\nSame number = one question (Q2ai,\nQ2aii, Q2b are Question 2), shown\nin row order.\nAlso: Marking guide, Compulsory (Yes/No)`}</pre>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -876,6 +1045,16 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
         .addq-banner-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
         .addq-pill { background:#f1f5f9; color:#64748b; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; }
         .addq-pill-type { background:var(--brand-soft); color:var(--brand-text); }
+        .addq-pill-pool { display:inline-flex; align-items:center; gap:5px; background:#ecfdf5; color:#047857; }
+        .addq-pool-note { display:flex; align-items:flex-start; gap:10px; margin-bottom:16px; padding:12px 14px; border-radius:12px; background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; }
+        .addq-pool-note.is-short { background:#fffbeb; border-color:#fde68a; color:#92400e; }
+        .addq-pool-note svg { flex-shrink:0; margin-top:2px; }
+        .addq-pool-note > div { display:flex; flex-direction:column; gap:2px; min-width:0; }
+        .addq-pool-note strong { font-size:13px; font-weight:800; overflow-wrap:anywhere; }
+        .addq-pool-note span { font-size:12px; font-weight:500; line-height:1.5; }
+        .addq-tags-row { display:grid; grid-template-columns:2fr 1fr; gap:12px; padding:20px 24px 0; }
+        .addq-tags-row .addq-field { min-width:0; }
+        .addq-tags-hint { grid-column:1 / -1; }
 
         /* Tab bar */
         .addq-tab-bar { display:flex; margin:20px 28px 0; background:#fff; border-radius:12px; border:1px solid #e2e8f0; padding:6px; gap:6px; }
@@ -1017,6 +1196,15 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
         .addq-sb-green      { background:rgba(16,185,129,.2); color:#6ee7b7; }
         .addq-staging-row { font-size:11px; color:rgba(255,255,255,.6); padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04); }
         .addq-staging-row:last-child { border-bottom:none; }
+        .addq-check-errors { background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); border-radius:9px; padding:10px 12px; font-size:11px; line-height:1.5; color:#fecaca; overflow-wrap:anywhere; }
+        .addq-check-errors strong { display:block; color:#fff; font-size:11.5px; }
+        .addq-check-errors ul { margin:6px 0 0; padding-left:16px; }
+        .addq-check-errors li { margin-bottom:3px; }
+        .addq-staging-warn { color:#fcd34d; font-weight:600; line-height:1.45; }
+        .addq-capacity { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:12px; padding:8px 12px; border-radius:9px; background:rgba(255,255,255,.06); font-size:11px; color:rgba(255,255,255,.6); }
+        .addq-capacity strong { color:#fff; }
+        .addq-capacity.is-full { background:rgba(239,68,68,.15); color:#fecaca; }
+        .addq-dark-field input.is-missing { border-color:#f87171; background:rgba(239,68,68,.12); }
 
         .addq-upload-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:11px; border-radius:9px; border:none; background:linear-gradient(135deg,var(--brand),var(--accent)); color:var(--brand-contrast); font-size:13px; font-weight:700; cursor:pointer; transition:.2s; font-family:'Inter',sans-serif; }
         .addq-upload-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(var(--brand-rgb), .4); }
@@ -1052,6 +1240,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
           .addq-topbar { padding:10px 16px; }
           .addq-breadcrumb { display:none; }
           .addq-form-body { padding:16px; gap:16px; }
+          .addq-tags-row { padding:16px 16px 0; }
           .addq-sidebar { grid-template-columns:1fr; }
           .addq-schema-card { grid-column:span 1; }
           .addq-theory-top { flex-direction:column; }
@@ -1062,6 +1251,7 @@ export default function AddQuestion({ adminMode = true }: { adminMode?: boolean 
           .addq-tf-row { grid-template-columns:1fr 1fr; }
           .addq-banner-title { font-size:15px; }
           .addq-dark-fields { grid-template-columns:1fr; }
+          .addq-tags-row { grid-template-columns:1fr; }
           .addq-pair-row { grid-template-columns:1fr 22px 1fr 26px; }
           .addq-pair-num { display:none; }
         }

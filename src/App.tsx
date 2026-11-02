@@ -280,7 +280,11 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="courses" element={<ViewCourse />} />
           <Route path="quizes" element={<AssessmentsGate><LectViewQuizzes /></AssessmentsGate>} />
+          {/* The shared quiz pages link to {base}/quizzes, the spelling the other staff areas use */}
+          <Route path="quizzes" element={<AssessmentsGate><LectViewQuizzes /></AssessmentsGate>} />
           <Route path="add-quizes" element={<AssessmentsGate><LectAddQuiz /></AssessmentsGate>} />
+          <Route path="view-questions/:qId/:qTitle" element={<AssessmentsGate><LectViewQuizQuestions /></AssessmentsGate>} />
+          {/* The old misspelled path, kept so saved links still work */}
           <Route path="view-quetions/:qId/:qTitle" element={<AssessmentsGate><LectViewQuizQuestions /></AssessmentsGate>} />
           <Route path="add-question/:qId/:title" element={<AssessmentsGate><LectAddQuestion /></AssessmentsGate>} />
           <Route path="quiz-review" element={<AssessmentsGate><LectQuizReview /></AssessmentsGate>} />

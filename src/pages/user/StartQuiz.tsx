@@ -342,7 +342,9 @@ export default function StartQuiz() {
         if (q.questionType === 'MATCHING') {
           if (!shuffleCache.current.has(q.quesId)) {
             const pool = (q.matchingPairs ?? []).map((p: any) => p.answer);
-            shuffleCache.current.set(q.quesId, seededShuffle(pool, q.quesId));
+            // The attempt's own seed: each student gets their own order, the same on every reload. Only the
+            // list to choose from moves; answers stay tied to their pair, which is how they are marked.
+            shuffleCache.current.set(q.quesId, seededShuffle(pool, q.optionSeed ?? q.quesId));
           }
           const dbMatching = dbMatchingMap[String(q.quesId)];
           q.matchingAnswers = dbMatching ? dbMatching.split('|') : (q.matchingPairs ?? []).map(() => '');

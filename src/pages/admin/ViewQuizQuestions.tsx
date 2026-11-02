@@ -25,6 +25,8 @@ import QuestionImageField from '../../components/ui/QuestionImageField';
 import { tx } from '../../utils/terms';
 import { theoryGroupKey, compareTheoryGroups } from '../../utils/theoryGroups';
 
+const DIFFICULTY_LABEL: Record<string, string> = { EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' };
+
 export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: boolean }) {
   const { qId, qTitle } = useParams();
   const navigate = useNavigate();
@@ -36,8 +38,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   const [bankMode, setBankMode] = useState<'draw' | 'import' | null>(null);
   const bankOn = useFeature('QUESTION_BANK');
   const [courseId, setCourseId] = useState<number | null>(null);
+  // Question-pool quiz: how many questions each student gets (null = no pool)
+  const [poolEach, setPoolEach] = useState<number | null>(null);
   useEffect(() => {
-    if (qId) getQuiz(qId).then((q: any) => setCourseId(q?.category?.cid ?? null)).catch(() => {});
+    if (qId) getQuiz(qId).then((q: any) => {
+      setCourseId(q?.category?.cid ?? null);
+      const pooled = !!q?.questionPool && String(q?.quizType || '').toUpperCase() !== 'THEORY';
+      setPoolEach(pooled ? (Number(q?.numberOfQuestions) || null) : null);
+    }).catch(() => {});
   }, [qId]);
   const [sectionB, setSectionB] = useState<any[]>([]);
   const [numberOfquestionsToAnswers, setNqta] = useState<any[]>([]);
@@ -220,7 +228,9 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
       image,
       questionType: specificObj.questionType,
       correct_answer: specificObj.correctAnswer,
-      marks: specificObj.marks
+      marks: specificObj.marks,
+      topic: (specificObj.topic ?? '').trim(),
+      difficulty: specificObj.difficulty ?? '',
     };
 
     if (specificObj.questionType === 'MATCHING') {
@@ -382,7 +392,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
           <Link to={`${basePath}/proctoring/${qId}`} className="vqq-btn-back" title="Proctoring report for this quiz">
             <ShieldAlert size={15} /><span>Proctoring</span>
           </Link>
-          <Link to={`${basePath}/add-question/${qId}/${qTitle}`} className="vqq-btn-add">
+          <Link to={`${basePath}/add-question/${qId}/${encodeURIComponent(qTitle ?? '')}`} className="vqq-btn-add">
             <Plus size={16} /><span>Add Items</span>
           </Link>
         </div>
@@ -437,7 +447,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
           </div>
           <h5 className="font-size-18 fw-bold">Registry Empty</h5>
           <p className="text-muted w-50 mx-auto">No assessment protocols established for this node.</p>
-          <button className="btn-primary-custom mt-3" onClick={() => navigate(`${basePath}/add-question/${qId}/${qTitle}`)}>Launch Setup</button>
+          <button className="btn-primary-custom mt-3" onClick={() => navigate(`${basePath}/add-question/${qId}/${encodeURIComponent(qTitle ?? '')}`)}>Launch Setup</button>
         </div>
       ) : (
         <div className="d-flex flex-column gap-5">
@@ -455,6 +465,15 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                   <span className="text-muted font-size-12 fw-medium">{questions.length} Active Items</span>
                 </div>
               </div>
+              {poolEach != null && (
+                <div className={`vqq-pool-note${questions.length < poolEach ? ' is-short' : ''}`} role="status">
+                  <Shuffle size={15} />
+                  <span>
+                    {tx(`Question pool: each student gets ${poolEach} of these ${questions.length}, balanced by difficulty, type and topic.`)}
+                    {questions.length < poolEach && ` Add ${poolEach - questions.length} more before the quiz can go live.`}
+                  </span>
+                </div>
+              )}
 
               <div className="vqq-obj-grid">
                 {questions.map((q, i) => {
@@ -493,6 +512,12 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                       <div className="vqq-obj-body">
                         <QuestionImage src={q.image} />
                         <p className="vqq-obj-question ql-content" dangerouslySetInnerHTML={{ __html: q.content }} />
+                        {(q.topic || q.difficulty) && (
+                          <div className="vqq-tags">
+                            {q.topic && <span className="vqq-tag">{q.topic}</span>}
+                            {q.difficulty && <span className={`vqq-tag vqq-tag-${String(q.difficulty).toLowerCase()}`}>{DIFFICULTY_LABEL[q.difficulty] ?? q.difficulty}</span>}
+                          </div>
+                        )}
 
                         {/* Fill in the blank / numeric: accepted answers */}
                         {isTyped && (
@@ -750,6 +775,27 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Marks</label>
                   <input type="number" style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '14px', fontWeight: 700, color: 'var(--brand-text)', textAlign: 'center', height: '38px', boxSizing: 'border-box' }}
                     value={specificObj.marks || ''} onChange={e => setSpecificObj(prev => ({ ...prev, marks: Number(e.target.value) }))} placeholder="0" />
+                </div>
+              </div>
+
+              {/* Topic + Difficulty (optional; a question-pool quiz balances its draw by them) */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '2 1 180px', minWidth: 0 }}>
+                  <label htmlFor="edit-obj-topic" style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Topic <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                  <input id="edit-obj-topic" maxLength={120} disabled={isModalLoading} value={specificObj.topic ?? ''} placeholder="e.g. Sorting"
+                    onChange={e => setSpecificObj((prev: any) => ({ ...prev, topic: e.target.value }))}
+                    style={{ width: '100%', height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #e9ecef', fontSize: '13px', color: '#2a3142', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ flex: '1 1 120px', minWidth: 0 }}>
+                  <label htmlFor="edit-obj-difficulty" style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#74788d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Difficulty</label>
+                  <select id="edit-obj-difficulty" disabled={isModalLoading} value={specificObj.difficulty ?? ''}
+                    onChange={e => setSpecificObj((prev: any) => ({ ...prev, difficulty: e.target.value }))}
+                    style={{ width: '100%', height: '38px', padding: '0 10px', borderRadius: '8px', border: '1px solid #e9ecef', background: '#fff', fontSize: '13px', fontWeight: 600, color: '#2a3142', cursor: 'pointer', boxSizing: 'border-box' }}>
+                    <option value="">Not set</option>
+                    <option value="EASY">Easy</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HARD">Hard</option>
+                  </select>
                 </div>
               </div>
 
@@ -1286,6 +1332,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         .vqq-hdr-btn-danger:hover { background:rgba(253,98,94,0.55); }
         .vqq-obj-body { padding:16px 18px; flex:1; display:flex; flex-direction:column; gap:12px; }
         .vqq-obj-question { font-size:14px; font-weight:700; color:#2a3142; line-height:1.6; margin:0; }
+        .vqq-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+        .vqq-tag { font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; background:#f1f5f9; color:#475569; max-width:100%; overflow-wrap:anywhere; }
+        .vqq-tag-easy { background:#ecfdf5; color:#047857; }
+        .vqq-tag-medium { background:#fffbeb; color:#b45309; }
+        .vqq-tag-hard { background:#fef2f2; color:#b91c1c; }
+        .vqq-pool-note { display:flex; align-items:flex-start; gap:8px; margin:0 0 16px; padding:10px 12px; border-radius:10px; background:#ecfdf5; color:#065f46; font-size:12.5px; font-weight:600; line-height:1.5; }
+        .vqq-pool-note.is-short { background:#fffbeb; color:#92400e; }
+        .vqq-pool-note svg { flex-shrink:0; margin-top:2px; }
         .vqq-opts-list { display:flex; flex-direction:column; gap:6px; }
         .vqq-opt { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; border:1px solid #e9ecef; background:#fafbff; transition:all 0.15s; }
         .vqq-opt-correct { font-weight:600; }

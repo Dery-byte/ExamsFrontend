@@ -1,31 +1,21 @@
 /**
- * Bulk-upload starter files: example questions the lecturer overwrites, plus a plain-language guide.
- * Copies also live in the repo's Templates/ folder; keep the two in step.
+ * Bulk-upload starter files: the Excel template (example questions the lecturer overwrites, one tab each for
+ * objective, matching and theory questions) plus a plain-language guide. The workbook is built by
+ * Templates/make_question_template.py, which also writes the copy in the repo's Templates/ folder.
+ * The older JSON templates stay in Templates/ for anyone still using JSON; uploads accept both.
  */
-import sectionA from '../assets/question-templates/SectionA_Objective_Template.json?raw';
-import sectionB from '../assets/question-templates/SectionB_Theory_Template.json?raw';
-import bankObjective from '../assets/question-templates/Bank_Objective_Template.json?raw';
-import bankTheory from '../assets/question-templates/Bank_Theory_Template.json?raw';
+import templateUrl from '../assets/question-templates/Questions_Template.xlsx?url';
 import guide from '../assets/question-templates/HOW_TO_USE_THE_TEMPLATES.md?raw';
 
-const TEMPLATES = {
-  SECTION_A: { content: sectionA, fileName: 'SectionA_Objective_Template.json' },
-  SECTION_B: { content: sectionB, fileName: 'SectionB_Theory_Template.json' },
-  BANK_OBJECTIVE: { content: bankObjective, fileName: 'Bank_Objective_Template.json' },
-  BANK_THEORY: { content: bankTheory, fileName: 'Bank_Theory_Template.json' },
-} as const;
-
-export type QuestionTemplate = keyof typeof TEMPLATES;
-
-function downloadText(content: string, fileName: string, type: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
+function download(href: string, fileName: string) {
   const a = document.createElement('a');
-  a.href = url; a.download = fileName; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  a.href = href; a.download = fileName; a.click();
 }
 
-export const downloadQuestionTemplate = (which: QuestionTemplate) =>
-  downloadText(TEMPLATES[which].content, TEMPLATES[which].fileName, 'application/json');
+export const downloadQuestionTemplate = () => download(templateUrl, 'Questions_Template.xlsx');
 
-export const downloadTemplateGuide = () =>
-  downloadText(guide, 'How_to_fill_the_question_templates.txt', 'text/plain');
+export const downloadTemplateGuide = () => {
+  const url = URL.createObjectURL(new Blob([guide], { type: 'text/plain' }));
+  download(url, 'How_to_fill_the_question_template.txt');
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+};

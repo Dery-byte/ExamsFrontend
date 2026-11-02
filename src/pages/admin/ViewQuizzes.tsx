@@ -3,13 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useStaffBase } from '../../hooks/useStaffBase';
 import { createPortal } from 'react-dom';
-import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders, getMyDepartmentPrograms, saGetPrograms } from '../../api/endpoints';
+import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders, getQuestionsForAdmin, getMyDepartmentPrograms, saGetPrograms } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
 import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
 import AttemptsField from '../../components/ui/AttemptsField';
 import IndexRangeField, { indexRangeError } from '../../components/ui/IndexRangeField';
 import AutoOpenField from '../../components/ui/AutoOpenField';
 import AutoCloseField from '../../components/ui/AutoCloseField';
+import QuestionPoolField, { poolNotReadyMessage } from '../../components/ui/QuestionPoolField';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
@@ -34,6 +35,14 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
   const [quiz, setQuiz] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [hide, setHide] = useState(true);
+
+  // Objective questions in the quiz, for the question-pool checks (undefined while loading or if it fails:
+  // the server checks again on save)
+  const { data: poolSize } = useQuery<number>({
+    queryKey: ['quizPoolSize', qId],
+    queryFn: () => getQuestionsForAdmin(qId).then((r: any) => (Array.isArray(r) ? r : (r?.content ?? [])).length),
+    retry: 1,
+  });
 
   useEffect(() => {
     getQuiz(qId).then(data => {
@@ -89,11 +98,24 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
 
   const set = (k: string, v: any) => setQuiz((q: any) => ({ ...q, [k]: v }));
 
+  // Going live: a question-pool quiz needs a full draw in its pool first
+  const toggleActive = () => {
+    if (!quiz.active && quiz.questionPool && quiz.quizType !== 'THEORY' && poolSize !== undefined) {
+      const msg = poolNotReadyMessage(true, quiz.numberOfQuestions, poolSize);
+      if (msg) { toast.error(tx(msg)); return; }
+    }
+    set('active', !quiz.active);
+  };
+
   const save = async () => {
     if (!quiz.quizType)    { toast.error('Please select a quiz type'); return; }
     if (!quiz.category?.cid) { toast.error(tx('Please select a course category')); return; }
     const rangeError = indexRangeError(quiz.indexRangeStart, quiz.indexRangeEnd);
     if (rangeError) { toast.error(rangeError); return; }
+    const pooled = !!quiz.questionPool && quiz.quizType !== 'THEORY';
+    if (pooled && !(Number(quiz.numberOfQuestions) >= 1)) { toast.error(tx('Set No. of Questions to how many questions each student gets.')); return; }
+    const notReady = pooled && quiz.active && poolSize !== undefined ? poolNotReadyMessage(true, quiz.numberOfQuestions, poolSize) : null;
+    if (notReady) { toast.error(tx(notReady)); return; }
     setSaving(true);
     try {
       const payload = {
@@ -279,10 +301,10 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                         </div>
                       </div>
                       <div className="aq-field">
-                        <label className="aq-label">No. of Questions</label>
+                        <label className="aq-label">{quiz.questionPool ? tx('Questions per student') : 'No. of Questions'}</label>
                         <div className="aq-iw">
                           <span className="aq-ii"><Hash size={15} /></span>
-                          <input className="aq-input text-center" type="number" required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder="40" />
+                          <input className="aq-input text-center" type="number" min={1} required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder={quiz.questionPool ? '30' : '40'} />
                         </div>
                       </div>
                       <div className="aq-field">
@@ -333,6 +355,12 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                   <div className="aq-grid-3" style={{ paddingTop: 0, paddingBottom: 24 }}>
                     <AttemptsField value={quiz.maxAttempts ?? 1} onChange={n => set('maxAttempts', n)} />
                   </div>
+                  {quiz.quizType !== 'THEORY' && (
+                    <div style={{ paddingBottom: 24 }}>
+                      <QuestionPoolField checked={!!quiz.questionPool} onChange={on => set('questionPool', on)}
+                                         perStudent={quiz.numberOfQuestions} poolSize={poolSize} />
+                    </div>
+                  )}
                   <div style={{ paddingBottom: 24 }}>
                     <AutoOpenField checked={quiz.autoOpen ?? false} onChange={on => setQuiz((q: any) => ({ ...q, autoOpen: on, active: on ? false : q.active }))} quizDate={quiz.quizDate} startTime={quiz.startTime} />
                   </div>
@@ -375,7 +403,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                 ) : (
                   // Already live (whether published manually or by the schedule) — same toggle either way,
                   // so a lecturer can still take it back to draft if needed.
-                  <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={() => set('active', !quiz.active)}>
+                  <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={toggleActive}>
                     <div className="aq-deploy-icon">
                       {quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}
                     </div>
@@ -526,6 +554,7 @@ export default function ViewQuizzes() {
               status={q.status}
               category={q.category}
               numberOfQuestions={q.numberOfQuestions}
+              questionPool={q.questionPool}
               maxMarks={q.maxMarks}
               quizTime={q.quizTime}
               onEdit={setEditQuizId}

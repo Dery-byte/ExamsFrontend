@@ -13,6 +13,8 @@ interface AssessmentCardProps {
   status: string;
   category?: { title?: string };
   numberOfQuestions: number;
+  /** Question pool on: numberOfQuestions is how many each student gets from a larger pool. */
+  questionPool?: boolean;
   maxMarks: number;
   quizTime: number;
   onEdit: (id: number) => void;
@@ -30,6 +32,7 @@ export default function AssessmentCard({
   status,
   category,
   numberOfQuestions,
+  questionPool,
   maxMarks,
   quizTime,
   onEdit,
@@ -85,7 +88,7 @@ export default function AssessmentCard({
 
       <div className="metrics-row">
         <div className="metric">
-          <span className="m-label">ITEMS</span>
+          <span className="m-label">{questionPool && quizType !== 'THEORY' ? tx('PER STUDENT') : 'ITEMS'}</span>
           <span className="m-val">{numberOfQuestions}</span>
         </div>
         <div className="metric">
@@ -99,7 +102,7 @@ export default function AssessmentCard({
       </div>
 
       <div className="card-bottom">
-        <Link to={`${staffBase}/view-questions/${qId}/${title}`} className="bank-btn">
+        <Link to={`${staffBase}/view-questions/${qId}/${encodeURIComponent(title)}`} className="bank-btn">
           <List size={16} /> Question Bank
         </Link>
         <div className="sync-section">

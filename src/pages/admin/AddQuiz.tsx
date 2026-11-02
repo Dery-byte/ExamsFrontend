@@ -10,6 +10,7 @@ import AttemptsField from '../../components/ui/AttemptsField';
 import IndexRangeField, { indexRangeError } from '../../components/ui/IndexRangeField';
 import AutoOpenField from '../../components/ui/AutoOpenField';
 import AutoCloseField from '../../components/ui/AutoCloseField';
+import QuestionPoolField from '../../components/ui/QuestionPoolField';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock, Layers,
@@ -37,6 +38,7 @@ const defaultQuiz = () => ({
   indexRangeEnd: '',
   maxAttempts: 1,
   autoOpen: false,
+  questionPool: false,
   autoClose: false,
   autoCloseFraction: 'HALF' as 'HALF' | 'QUARTER'
 });
@@ -111,6 +113,19 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     // with it; turning it off is left as a plain flag flip — the lecturer picks LIVE/DRAFT again.
     setQuiz(q => ({ ...q, autoOpen: on, active: on ? false : q.active }));
 
+  // A new quiz has no questions yet, so a question-pool quiz starts as a draft: it can only go live once
+  // its pool holds a full draw (the server refuses otherwise)
+  const toggleQuestionPool = (on: boolean) =>
+    setQuiz(q => ({ ...q, questionPool: on, active: on ? false : q.active }));
+
+  const toggleActive = () => {
+    if (!quiz.active && quiz.questionPool && quiz.quizType !== 'THEORY') {
+      toast.error('A question-pool quiz goes live after its questions are added: save it as a draft, add them, then go live from the quiz list.');
+      return;
+    }
+    set('active', !quiz.active);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quiz.quizType) { toast.error('Please select a quiz type'); return; }
@@ -120,9 +135,13 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
     if (!lectMode && programs.length === 0) { toast.error(tx('No programs available to assign this quiz to')); return; }
     const rangeError = indexRangeError(quiz.indexRangeStart, quiz.indexRangeEnd);
     if (rangeError) { toast.error(rangeError); return; }
+    const pooled = quiz.questionPool && quiz.quizType !== 'THEORY';
+    if (pooled && !(Number(quiz.numberOfQuestions) >= 1)) { toast.error('Set No. of Questions to how many questions each student gets.'); return; }
     setLoading(true);
     try {
-      const created = lectMode ? await addLecturerQuiz(quiz) : await addQuiz(quiz);
+      // The pool only applies to the objective section; a Theory quiz never carries it
+      const payload = { ...quiz, questionPool: pooled, active: pooled ? false : quiz.active };
+      const created = lectMode ? await addLecturerQuiz(payload) : await addQuiz(payload);
       if (created?.qId) {
         // The response's category is only the id we sent, so take the course name from the list.
         const course = (categories as any[]).find((c: any) => String(c.cid) === String(quiz.category.cid));
@@ -303,10 +322,10 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                     </div>
                   </div>
                   <div className="aq-field">
-                    <label className="aq-label">No. of Questions</label>
+                    <label className="aq-label">{quiz.questionPool ? tx('Questions per student') : 'No. of Questions'}</label>
                     <div className="aq-iw">
                       <span className="aq-ii"><Hash size={15} /></span>
-                      <input className="aq-input text-center" type="number" required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder="40" />
+                      <input className="aq-input text-center" type="number" min={1} required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder={quiz.questionPool ? '30' : '40'} />
                     </div>
                   </div>
                   <div className="aq-field">
@@ -347,6 +366,11 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
               <div className="aq-grid-3">
                 <AttemptsField value={quiz.maxAttempts} onChange={n => set('maxAttempts', n)} />
               </div>
+              {quiz.quizType !== 'THEORY' && (
+                <div style={{ padding: '0 24px 24px' }}>
+                  <QuestionPoolField checked={quiz.questionPool} onChange={toggleQuestionPool} perStudent={quiz.numberOfQuestions} isNew />
+                </div>
+              )}
               <div style={{ padding: '0 24px 24px' }}>
                 <AutoOpenField checked={quiz.autoOpen} onChange={toggleAutoOpen} quizDate={quiz.quizDate} startTime={quiz.startTime} />
               </div>
@@ -396,13 +420,14 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 </div>
               </div>
             ) : (
-              <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={() => set('active', !quiz.active)}>
+              <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={toggleActive}>
                 <div className="aq-deploy-icon">
                   {quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}
                 </div>
                 <div>
                   <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
-                  <p className="aq-deploy-hint">{quiz.active ? tx('Visible to students') : 'Private – not published'}</p>
+                  <p className="aq-deploy-hint">{quiz.active ? tx('Visible to students')
+                    : quiz.questionPool && quiz.quizType !== 'THEORY' ? 'Go live once the question pool is filled' : 'Private – not published'}</p>
                 </div>
               </div>
             )}
