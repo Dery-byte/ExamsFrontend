@@ -326,9 +326,23 @@ export default function StartQuiz() {
     };
   }, [realId]);
 
+  // Navigator jumps: the question to bring into view once its page has rendered (a tick re-runs it on the same page)
+  const jumpRef = useRef<number | null>(null);
+  const [jumpTick, setJumpTick] = useState(0);
+  const jumpToQuestion = (index: number, quesId: number) => {
+    jumpRef.current = quesId;
+    setPage(Math.ceil((index + 1) / PAGE_SIZE));
+    setSection('A');
+    setJumpTick(t => t + 1);
+  };
+
   useEffect(() => {
-    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page, section]);
+    const id = jumpRef.current;
+    jumpRef.current = null;
+    const target = id != null ? document.getElementById(`quiz-q-${id}`) : null;
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page, section, jumpTick]);
 
   const loadAll = async () => {
     try {
@@ -875,7 +889,7 @@ export default function StartQuiz() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {pagedObjQs.map(q => (
-                  <div key={q.quesId} className="lexa-card" style={{ background: theme.card }}>
+                  <div key={q.quesId} id={`quiz-q-${q.quesId}`} className="lexa-card" style={{ background: theme.card, scrollMarginTop: 12 }}>
                     <div className="lexa-card-body">
                       <QuestionImage src={q.image} />
                       <div style={{ display: 'flex', gap: 12, marginBottom: 15 }}>
@@ -1098,10 +1112,7 @@ export default function StartQuiz() {
                   {questions.map((q, i) => (
                     <button
                       key={q.quesId}
-                      onClick={() => {
-                        setPage(Math.ceil((i + 1) / PAGE_SIZE));
-                        setSection('A');
-                      }}
+                      onClick={() => jumpToQuestion(i, q.quesId)}
                       style={{
                         width: 26, height: 26, borderRadius: 4, border: 'none',
                         background: (q.givenAnswer?.length > 0) ? 'var(--brand)' : (isLight ? '#f1f5f7' : '#2d333b'),
