@@ -4,7 +4,7 @@
  * Every save the exam page makes while a student writes (answers, theory text, the exam clock,
  * violations and lock-outs) goes through this queue instead of straight to the server:
  *  - saves of the same thing replace each other, so a burst of clicks or one tab switch sends a
- *    single request, and all queued theory answers go together in one request
+ *    single request, and all of a quiz's queued answers (objective or theory) go together in one request
  *  - an entry stays in localStorage until the server confirms it and is retried with backoff, so a
  *    slow or overloaded server never silently loses an answer or a violation
  *  - one request at a time, shared by every open tab (Web Locks), oldest first
@@ -14,7 +14,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import {
-  updateQuizAnswer, saveTheoryAnswers, saveQuizTimer, saveViolationDelay, recordProctoringEvent,
+  updateQuizAnswer, updateQuizAnswers, saveTheoryAnswers, saveQuizTimer, saveViolationDelay, recordProctoringEvent,
 } from '../api/endpoints';
 
 type Kind = 'answer' | 'theory' | 'timer' | 'violation' | 'delay';
@@ -103,13 +103,38 @@ const delayLeft = (e: Entry) => e.payload.paused
   ? Math.max(0, e.payload.seconds)
   : Math.max(0, e.payload.seconds - Math.floor((Date.now() - e.at) / 1000));
 
+/** Most answer changes one request carries (the server accepts up to 500). */
+const MAX_ANSWER_BATCH = 200;
+/** Set once a server without the batch endpoint answers 404: answers then go one per request. */
+let answerBatchUnsupported = false;
+
 /** The entries one request will carry, starting from the head of the queue. */
-const batchFor = (head: Entry, q: Entry[]): Entry[] =>
-  head.kind === 'theory' ? q.filter(e => e.kind === 'theory' && e.quizId === head.quizId) : [head];
+const batchFor = (head: Entry, q: Entry[]): Entry[] => {
+  if (head.kind === 'theory') return q.filter(e => e.kind === 'theory' && e.quizId === head.quizId);
+  // A quiz's answer changes go together, oldest first, so the server applies them in the order made
+  if (head.kind === 'answer' && !answerBatchUnsupported) {
+    return q.filter(e => e.kind === 'answer' && e.quizId === head.quizId).slice(0, MAX_ANSWER_BATCH);
+  }
+  return [head];
+};
+
+const sendAnswers = async (batch: Entry[]): Promise<unknown> => {
+  if (batch.length === 1) return updateQuizAnswer(batch[0].payload);
+  try {
+    return await updateQuizAnswers(batch.map(e => e.payload));
+  } catch (err: any) {
+    const status = err?.response?.status;
+    if (status !== 404 && status !== 405) throw err;
+    // An older server: from now on send answers one at a time. This one goes now; the rest stay queued.
+    answerBatchUnsupported = true;
+    await updateQuizAnswer(batch[0].payload);
+    throw Object.assign(new Error('batch unsupported'), { sentOnly: batch[0].id });
+  }
+};
 
 const send = (head: Entry, batch: Entry[]): Promise<unknown> => {
   switch (head.kind) {
-    case 'answer':    return updateQuizAnswer(head.payload);
+    case 'answer':    return sendAnswers(batch);
     case 'theory':    return saveTheoryAnswers(head.quizId, batch.map(e => e.payload));
     case 'timer':     return saveQuizTimer(head.quizId, head.payload.remainingTime);
     case 'delay':     return saveViolationDelay(head.quizId, delayLeft(head));
@@ -131,6 +156,10 @@ const drain = async () => {
       nextAllowedAt = 0;
       setFailing(false);
     } catch (err: any) {
+      if (err?.sentOnly) {                       // see sendAnswers: only the head went, the rest go singly next
+        write(read().filter(e => e.id !== err.sentOnly));
+        continue;
+      }
       const status: number | undefined = err?.response?.status;
       if (status === 401) return;                // client.ts signs the user out; resend after sign-in
       const retry = !status || RETRY_ALWAYS.has(status) || (status >= 500 && head.tries + 1 < MAX_SERVER_ERROR_TRIES);

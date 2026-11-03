@@ -265,6 +265,9 @@ export const updateQuizAnswer = (data: {
   replace?: boolean;    // FILL_BLANK / NUMERIC: the typed text replaces the saved answer
 }) =>
   client.post('/quiz-progress/update', data).then(r => r.data);
+/** Several answer changes in one request, applied by the server in this order. */
+export const updateQuizAnswers = (changes: object[]) =>
+  client.post('/quiz-progress/update-batch', changes).then(r => r.data);
 export const getQuizAnswersByQuiz = (quizId: number | string) =>
   client.get(`/quiz-progress/quiz/${quizId}`).then(r => r.data);
 export const clearQuizAnswers = (quizId: number | string) =>
@@ -454,6 +457,13 @@ export const beginQuizAttempt = (qid: number | string) =>
   client.post(`/quiz-attempts/${qid}/begin`).then(r => r.data);
 export const finishQuizAttempt = (qid: number | string) =>
   client.post(`/quiz-attempts/${qid}/finish`).then(r => r.data);
+/**
+ * Everything the exam page loads, in one request (after beginQuizAttempt): quiz, questions,
+ * theoryQuestions, theorySettings, timer, answers, theoryAnswers, violationDelay, violationCount.
+ * A part the server could not load is null.
+ */
+export const getExamSession = (qid: number | string) =>
+  client.get(`/quiz-attempts/${qid}/session`).then(r => r.data);
 /** Staff: every attempt of every student for a quiz, each with its own marks. */
 export const getQuizAttempts = (qid: number | string) =>
   client.get(`/quiz-attempts/quiz/${qid}`).then(r => r.data);

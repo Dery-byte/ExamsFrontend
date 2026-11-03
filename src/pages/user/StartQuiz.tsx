@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore, type CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getQuiz, getQuestionsForStudent, getTheoryQuestions, getNumberOfTheoryToAnswer,
@@ -6,7 +6,7 @@ import {
   loadTheoryAnswers,
   evalQuiz, evalTheory, addSectionBMarks,
   getViolationDelay, getViolationCount,
-  beginQuizAttempt, finishQuizAttempt
+  beginQuizAttempt, finishQuizAttempt, getExamSession
 } from '../../api/endpoints';
 import {
   queueAnswer, queueTheoryAnswer, queueTimer, pendingViolationState,
@@ -119,6 +119,61 @@ const ProgressRing = ({ pct, size, color }: { pct: number; size: number; color: 
   );
 };
 
+// ─── Exam clock ───────────────────────────────────────────────────────────────
+// The seconds left live outside React state: the 1-second tick redraws only the small clock
+// displays below, not the whole exam page (questions, navigator) — which matters on cheap phones.
+function createExamClock() {
+  let seconds = 0;
+  let total = 1;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => seconds,
+    total: () => total,
+    set(s: number, totalSeconds?: number) {
+      seconds = s;
+      if (totalSeconds) total = totalSeconds;
+      listeners.forEach(fn => fn());
+    },
+    subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
+  };
+}
+type ExamClock = ReturnType<typeof createExamClock>;
+
+const useClockSeconds = (clock: ExamClock) => useSyncExternalStore(clock.subscribe, clock.get);
+const clockColor = (s: number) => s < 120 ? '#ec4561' : s < 300 ? '#f1b44c' : '#28bbe3';
+const clockPct = (clock: ExamClock, s: number) => clock.total() > 0 ? (s / clock.total()) * 100 : 0;
+
+/** Clock icon and time, as in the header and the phone's floating pill. */
+const ClockLabel = ({ clock, iconSize, fontSize }: { clock: ExamClock; iconSize: number; fontSize: number }) => {
+  const s = useClockSeconds(clock);
+  const color = clockColor(s);
+  return (
+    <>
+      <Clock size={iconSize} style={{ color }} />
+      <span style={{ fontSize, fontWeight: 700, color, fontFamily: 'monospace' }}>{fmtTimer(s)}</span>
+    </>
+  );
+};
+
+const ClockRing = ({ clock, mutedColor }: { clock: ExamClock; mutedColor: string }) => {
+  const s = useClockSeconds(clock);
+  const color = clockColor(s);
+  return (
+    <>
+      <ProgressRing pct={clockPct(clock, s)} size={110} color={color} />
+      <div style={{ position: 'absolute' }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color }}>{fmtTimer(s)}</div>
+        <div style={{ fontSize: 8, fontWeight: 700, color: mutedColor, textTransform: 'uppercase' }}>Remaining</div>
+      </div>
+    </>
+  );
+};
+
+const ClockBar = ({ clock }: { clock: ExamClock }) => {
+  const s = useClockSeconds(clock);
+  return <div style={{ height: '100%', width: `${clockPct(clock, s)}%`, background: clockColor(s), transition: 'width 1s linear' }} />;
+};
+
 /* ─── main component ────────────────────────────────────────────────────────── */
 export default function StartQuiz() {
   const { qid } = useParams<{ qid: string }>();
@@ -153,7 +208,7 @@ export default function StartQuiz() {
   const [timeO, setTimeO] = useState(0);
   const [timeT, setTimeT] = useState(0);
 
-  const [timer, setTimer] = useState(0);
+  const clock = useRef(createExamClock()).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isTimerLoaded = useRef(false);
   const isExpiredHandled = useRef(false);
@@ -300,7 +355,19 @@ export default function StartQuiz() {
       // first, so what is loaded below includes them
       await flushSaveQueue({ quizId: realId, timeoutMs: 8000 });
 
-      const [quizData, rawQs, theoryRaw, nqArr, savedTime, savedAns, savedTh, savedDelay, savedViolationCount] = await Promise.all([
+      // One request for everything; a server without it (or a failed request) gets the separate calls
+      const session: any = await getExamSession(realId).catch(() => null);
+      const [quizData, rawQs, theoryRaw, nqArr, savedTime, savedAns, savedTh, savedDelay, savedViolationCount] = session?.quiz ? [
+        session.quiz,
+        session.questions ?? [],
+        session.theoryQuestions ?? [],
+        session.theorySettings ?? [],
+        session.timer ?? null,
+        session.answers ?? {},
+        session.theoryAnswers ?? [],
+        session.violationDelay ?? null,
+        session.violationCount ?? null,
+      ] : await Promise.all([
         getQuiz(realId),
         getQuestionsForStudent(realId).catch(() => []),
         getTheoryQuestions(realId).catch(() => []),
@@ -346,19 +413,18 @@ export default function StartQuiz() {
             // list to choose from moves; answers stay tied to their pair, which is how they are marked.
             shuffleCache.current.set(q.quesId, seededShuffle(pool, q.optionSeed ?? q.quesId));
           }
-          const dbMatching = dbMatchingMap[String(q.quesId)];
-          q.matchingAnswers = dbMatching ? dbMatching.split('|') : (q.matchingPairs ?? []).map(() => '');
+          // Saved by pair position ("a||c"); one entry per pair, blank where nothing was chosen yet
+          const dbMatching = dbMatchingMap[String(q.quesId)]?.split('|') ?? [];
+          q.matchingAnswers = (q.matchingPairs ?? []).map((_: any, i: number) => dbMatching[i] ?? '');
         }
         return q;
       });
       setQuestions(qs);
 
       const theoryRawArray: any[] = Array.isArray(theoryRaw) ? theoryRaw : (Array.isArray((theoryRaw as any)?.content) ? (theoryRaw as any).content : []);
-      const savedThArray: any[] = Array.isArray(savedTh) ? savedTh : [];
-      const theoryQs = theoryRawArray.map((q: any) => {
-        const saved = savedThArray.find((a: any) => a.quesNo === q.quesNo);
-        return { ...q, givenAnswer: saved?.givenAnswer ?? '' };
-      });
+      const savedThByNo = new Map<string, any>();
+      (Array.isArray(savedTh) ? savedTh : []).forEach((a: any) => { if (!savedThByNo.has(a.quesNo)) savedThByNo.set(a.quesNo, a); });
+      const theoryQs = theoryRawArray.map((q: any) => ({ ...q, givenAnswer: savedThByNo.get(q.quesNo)?.givenAnswer ?? '' }));
       sectionBAllRef.current = theoryQs; // keep ref in sync from the start
       setSectionBAll(theoryQs);
       if (theoryQs.length > 0) {
@@ -397,7 +463,6 @@ export default function StartQuiz() {
         t0 = totalSec;
       }
 
-      setTimer(t0);
       startTimer(t0, totalSec);
 
       // First checkpoint right away, so the server's clock starts now even if the page closes early
@@ -418,10 +483,11 @@ export default function StartQuiz() {
   const startTimer = (initial: number, total: number) => {
     timerVal.current = initial;
     totalSecRef.current = total || initial || 1;
+    clock.set(initial, totalSecRef.current);
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       timerVal.current--;
-      setTimer(timerVal.current);
+      clock.set(timerVal.current);
       if (timerVal.current <= 0) {
         clearInterval(timerRef.current!);
         timerRef.current = null;
@@ -534,9 +600,10 @@ export default function StartQuiz() {
       // ── Section A: Objective ──────────────────────────────────────────────
       if ((quizType === 'OBJ' || quizType === 'BOTH') && questions.length > 0) {
         addLog(`Submitting ${questions.length} objective question(s)…`, 'info');
+        // Only the ids and answers: the server marks from its own copy of each question
         const objectiveAnswers = questions.map(q => ({
-          ...q,
-          givenAnswer: q.questionType === 'MATCHING' 
+          quesId: q.quesId,
+          givenAnswer: q.questionType === 'MATCHING'
             ? (q.matchingAnswers ?? []) 
             : (Array.isArray(q.givenAnswer) ? q.givenAnswer : [q.givenAnswer ?? '']),
         }));
@@ -658,8 +725,6 @@ export default function StartQuiz() {
   const answered = useMemo(() => questions.filter(q => (q.questionType === 'MATCHING' ? (q.matchingAnswers ?? []).some((a: string) => a) : (q.givenAnswer?.length ?? 0) > 0)).length, [questions]);
   const totalObjPgs = Math.ceil(questions.length / PAGE_SIZE);
   const pagedObjQs = questions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const timerPct = totalSecRef.current > 0 ? (timer / totalSecRef.current) * 100 : 0;
-  const timerColor = timer < 120 ? '#ec4561' : timer < 300 ? '#f1b44c' : '#28bbe3';
 
   const theme = {
     bg: isLight ? '#f4f7fa' : '#1a1d21',
@@ -715,8 +780,7 @@ export default function StartQuiz() {
             display: 'flex', alignItems: 'center', gap: 10, padding: '5px 15px',
             background: isLight ? '#f8f9fa' : '#2d333b', borderRadius: 4, border: `1px solid ${theme.border}`
           }}>
-            <Clock size={16} style={{ color: timerColor }} />
-            <span style={{ fontSize: 16, fontWeight: 700, color: timerColor, fontFamily: 'monospace' }}>{fmtTimer(timer)}</span>
+            <ClockLabel clock={clock} iconSize={16} fontSize={16} />
           </div>
           <button onClick={() => setIsLight(!isLight)} style={{ background: 'none', border: 'none', color: theme.muted, cursor: 'pointer', padding: 5 }}>
             {isLight ? <Moon size={18} /> : <Sun size={18} />}
@@ -992,14 +1056,10 @@ export default function StartQuiz() {
             </div>
             <div className="lexa-card-body" style={{ overflowX: 'hidden' }}>
               <div className="mobile-hide-spinner" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-                <ProgressRing pct={timerPct} size={110} color={timerColor} />
-                <div style={{ position: 'absolute' }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: timerColor }}>{fmtTimer(timer)}</div>
-                  <div style={{ fontSize: 8, fontWeight: 700, color: theme.muted, textTransform: 'uppercase' }}>Remaining</div>
-                </div>
+                <ClockRing clock={clock} mutedColor={theme.muted} />
               </div>
               <div className="mobile-hide-progress-bar" style={{ height: 4, background: isLight ? '#f1f5f7' : '#2d333b', borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${timerPct}%`, background: timerColor, transition: 'width 1s linear' }} />
+                <ClockBar clock={clock} />
               </div>
 
               <div className="mobile-inline-progress">
@@ -1095,8 +1155,7 @@ export default function StartQuiz() {
         border: `1px solid ${theme.border}`,
         boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
       }}>
-        <Clock size={14} style={{ color: timerColor }} />
-        <span style={{ fontSize: 15, fontWeight: 700, color: timerColor, fontFamily: 'monospace' }}>{fmtTimer(timer)}</span>
+        <ClockLabel clock={clock} iconSize={14} fontSize={15} />
       </div>
 
       <style>{`
@@ -1134,6 +1193,8 @@ export default function StartQuiz() {
           box-sizing: border-box;
         }
         .quiz-left-panel { display: flex; flex-direction: column; }
+        /* Phones only (shown in the max-width: 900px block below); desktop has the clock in the header */
+        .mobile-float-timer { display: none; }
 
         @media (max-width: 900px) {
           .quiz-shell {
