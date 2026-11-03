@@ -5,6 +5,7 @@ import { useStaffBase } from '../../hooks/useStaffBase';
 import { createPortal } from 'react-dom';
 import { loadQuizzes, getCategories, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders, getQuestionsForAdmin, getMyDepartmentPrograms, saGetPrograms } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
+import { lockMessage, explainLocked, apiMessage, superAdminDeleteTakenQuiz } from '../../utils/deleteLocks';
 import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
 import AttemptsField from '../../components/ui/AttemptsField';
 import IndexRangeField, { indexRangeError } from '../../components/ui/IndexRangeField';
@@ -488,6 +489,8 @@ export default function ViewQuizzes() {
   const navigate = useNavigate();
   const staffBase = useStaffBase();
   const { data: rawQuizzes, isLoading } = useQuery({ queryKey: ['quizzes'], queryFn: loadQuizzes });
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
 
   const [editQuizId, setEditQuizId] = useState<number | null>(null);
@@ -501,12 +504,20 @@ export default function ViewQuizzes() {
   const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : (rawQuizzes?.quizzes || []);
 
   const doDelete = (qId: number) => {
+    const quiz = quizzes.find((q: any) => q.qId === qId);
+    if (quiz?.hasResults) {
+      // Students have taken it: only the Super Admin may delete it, with a reason for the audit log
+      if (!isSuperAdmin) { explainLocked(lockMessage.quiz()); return; }
+      superAdminDeleteTakenQuiz(qId, quiz.title).then(done => { if (done) qc.invalidateQueries({ queryKey: ['quizzes'] }); });
+      return;
+    }
     Swal.fire({
       title: 'Delete Quiz?', text: 'This action is permanent and cannot be undone.',
       icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--brand)', confirmButtonText: 'Yes, Delete'
     }).then(r => {
       if (r.isConfirmed) {
-        deleteQuiz(qId).then(() => { toast.success('Quiz deleted'); qc.invalidateQueries({ queryKey: ['quizzes'] }); });
+        deleteQuiz(qId).then(() => { toast.success('Quiz deleted'); qc.invalidateQueries({ queryKey: ['quizzes'] }); })
+          .catch(err => { toast.error(apiMessage(err, 'Could not delete the quiz.')); qc.invalidateQueries({ queryKey: ['quizzes'] }); });
       }
     });
   };
@@ -559,6 +570,8 @@ export default function ViewQuizzes() {
               quizTime={q.quizTime}
               onEdit={setEditQuizId}
               onDelete={doDelete}
+              deleteLocked={!!q.hasResults && !isSuperAdmin}
+              deleteHint={q.hasResults ? (isSuperAdmin ? lockMessage.quizSuperAdmin() : lockMessage.quiz()) : undefined}
               selectedStatus={statusMap[q.qId] ?? q.status}
               onStatusChange={handleStatusChange}
               onSync={() => doUpdateStatus(q)}

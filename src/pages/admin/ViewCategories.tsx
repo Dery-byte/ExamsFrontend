@@ -12,6 +12,7 @@ import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Edit, Trash2, UserPlus, BookOpen, User, Info, X, Loader2, Search, Filter, Book, ChevronRight, GraduationCap, Layers, ShieldCheck, Target, Award, ArrowRight, CheckCircle2, MoreVertical, LayoutGrid, List, Database, Activity, BadgeCheck } from 'lucide-react';
 import { tx, isSchoolMode } from '../../utils/terms';
+import { lockMessage, LOCKED_CLASS, explainLocked, apiMessage } from '../../utils/deleteLocks';
 
 export default function ViewCategories() {
   const qc = useQueryClient();
@@ -115,6 +116,7 @@ export default function ViewCategories() {
   };
 
   const deleteCateg = (cid: number) => {
+    if ((categories as any[]).find(c => c.cid === cid)?.hasResults) { explainLocked(lockMessage.course()); return; }
     Swal.fire({ 
       title: 'Purge Category?',
       text: "Permanent removal from registry.",
@@ -127,7 +129,7 @@ export default function ViewCategories() {
       deleteCategory(cid).then(() => {
         toast.success('Registry item purged');
         qc.invalidateQueries({ queryKey: ['categories'] });
-      }).catch(() => toast.error('Purge failed'));
+      }).catch(err => { toast.error(apiMessage(err, 'Purge failed')); qc.invalidateQueries({ queryKey: ['categories'] }); });
     });
   };
 
@@ -185,7 +187,9 @@ export default function ViewCategories() {
               <div className="reg-col acts">
                  <button className="a-btn s" onClick={()=>openAssign(el.cid)}><UserPlus size={14} /></button>
                  <button className="a-btn p" onClick={()=>openEdit(el.cid)}><Edit size={14} /></button>
-                 <button className="a-btn d" onClick={()=>deleteCateg(el.cid)}><Trash2 size={14} /></button>
+                 <button className={`a-btn d ${el.hasResults ? LOCKED_CLASS : ''}`} onClick={()=>deleteCateg(el.cid)}
+                   title={el.hasResults ? lockMessage.course() : tx('Delete course')} aria-label={el.hasResults ? lockMessage.course() : tx('Delete course')}
+                   aria-disabled={!!el.hasResults}><Trash2 size={14} /></button>
               </div>
             </div>
           ))

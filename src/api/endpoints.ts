@@ -103,6 +103,9 @@ export const addLecturerQuiz = (data: object) => client.post('/lecturer/addQuiz'
 export const addUserQuiz = (data: object) => client.post('/user/addQuiz', data).then(r => r.data);
 export const updateQuiz = (data: object) => client.put('/update', data).then(r => r.data);
 export const deleteQuiz = (id: number) => client.delete(`/delete/quiz/${id}`).then(r => r.data);
+/** Whether students have results on a quiz; while they do, its questions and the quiz can't be deleted. */
+export const getQuizResultsSummary = (qid: number | string): Promise<{ hasResults: boolean; students: number }> =>
+  client.get(`/quiz/${qid}/results-summary`).then(r => r.data);
 export const setQuizEmailReport = (id: number, enabled: boolean): Promise<boolean> =>
   client.put(`/quiz/${id}/email-report`, { enabled }).then(r => !!r.data?.enabled);
 export const updateQuizStatus = (id: number, status: string) =>
@@ -365,6 +368,9 @@ export const saGetAllHods = () => saClient.get('/admins').then(r => r.data);
 export const saCreateHod  = (data: object) => saClient.post('/register/hod', data).then(r => r.data);
 export const saUpdateHod  = (id: number, data: object) => saClient.put(`/admin/${id}`, data).then(r => r.data);
 export const saDeleteHod  = (id: number) => saClient.delete(`/admin/${id}`).then(r => r.data);
+/** Super Admin only: delete a quiz students have taken, with all their results. The reason goes into the audit log. */
+export const saDeleteQuizWithResults = (qid: number, reason: string): Promise<{ deleted: boolean; students: number }> =>
+  saClient.post(`/quizzes/${qid}/delete-with-results`, { reason }).then(r => r.data);
 
 
 // ── Super Admin — Students semester ───────────────────────────────────────

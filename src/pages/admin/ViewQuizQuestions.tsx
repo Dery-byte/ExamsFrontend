@@ -6,8 +6,10 @@ import {
   getQuestionsForAdmin, getQuestionsForLecturer, getTheoryQuestions, getNumberOfTheoryToAnswer,
   getQuestion, updateQuestion, deleteQuestion,
   getTheoryQuestion, updateTheoryQuestion, deleteTheoryQuestion,
-  setCompulsoryQuestion, updateNumberOfTheoryToAnswer, uploadQuestionImage, getQuiz
+  setCompulsoryQuestion, updateNumberOfTheoryToAnswer, uploadQuestionImage, getQuiz, getQuizResultsSummary
 } from '../../api/endpoints';
+import { useAuth } from '../../contexts/AuthContext';
+import { lockMessage, LOCKED_CLASS, explainLocked, apiMessage } from '../../utils/deleteLocks';
 import QuizBankDialog from '../../components/examops/QuizBankDialog';
 import { useFeature } from '../../hooks/useFeatureFlags';
 import Swal from 'sweetalert2';
@@ -52,6 +54,14 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   const [compulsoryPrefixes, setCompulsory] = useState<Record<string, boolean>>({});
   const [isUpdatingCompulsory, setUpdating] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
+  // Students who have taken this quiz; while there are any, its questions can't be deleted
+  const [takenBy, setTakenBy] = useState(0);
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const questionsLocked = takenBy > 0;
+  const loadResults = () => {
+    if (qId) getQuizResultsSummary(qId).then(r => setTakenBy(r.students || 0)).catch(() => {});
+  };
 
   // Modals
   const [editObjModal, setEditObjModal] = useState(false);
@@ -92,7 +102,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
     } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { loadData(); }, [qId]);
+  useEffect(() => { loadData(); loadResults(); }, [qId]);
 
   const initCompulsory = (data: any[]) => {
     const map: Record<string, boolean> = {};
@@ -259,6 +269,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   };
 
   const doDeleteQuestion = (quesId: number) => {
+    if (questionsLocked) { explainLocked(lockMessage.question()); return; }
     Swal.fire({
       title: 'Purge Registry Item?',
       text: "This action cannot be undone.",
@@ -268,7 +279,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
       deleteQuestion(quesId).then(() => {
         toast.success('Item purged');
         setQuestions(q => q.filter(q => q.quesId !== quesId));
-      });
+      }).catch(err => { toast.error(apiMessage(err, 'Could not delete the question.')); loadResults(); });
     });
   };
 
@@ -328,6 +339,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
   };
 
   const doDeleteTheoryAction = (tqId: number) => {
+    if (questionsLocked) { explainLocked(lockMessage.question()); return; }
     Swal.fire({
       title: 'Purge Theory Protocol?',
       text: "Permanent removal from the registry.",
@@ -337,7 +349,7 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
       deleteTheoryQuestion(tqId).then(() => {
         toast.success('Protocol purged');
         setSectionB(b => b.filter(q => q.tqId !== tqId));
-      });
+      }).catch(err => { toast.error(apiMessage(err, 'Could not delete the question.')); loadResults(); });
     });
   };
 
@@ -428,6 +440,19 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
         </div>
       </div>
 
+      {questionsLocked && (
+        <div className="delete-lock-note mb-4" role="note">
+          <Lock size={16} />
+          <span>
+            <b>{takenBy} {takenBy === 1 ? 'student has' : 'students have'} taken this quiz</b>, so its questions can't be deleted.
+            Their answers and marks depend on them.
+            {isSuperAdmin
+              ? ' To remove it anyway, delete the whole quiz from the quiz list. You will be asked for a reason, which is saved in the audit log.'
+              : ' To hide the quiz from students, unpublish it from the quiz list.'}
+          </span>
+        </div>
+      )}
+
       {isLoading ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '380px', gap: '20px' }}>
           <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'rgba(var(--brand-rgb), 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -502,7 +527,9 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                           <button className="vqq-hdr-btn" title="Edit" onClick={() => openUpdateObj(q.quesId || q.id || q.qId, q.questionType)}>
                             <Edit size={14} />
                           </button>
-                          <button className="vqq-hdr-btn vqq-hdr-btn-danger" title="Delete" onClick={() => doDeleteQuestion(q.quesId || q.id || q.qId)}>
+                          <button className={`vqq-hdr-btn vqq-hdr-btn-danger ${questionsLocked ? LOCKED_CLASS : ''}`}
+                            title={questionsLocked ? lockMessage.question() : 'Delete'} aria-disabled={questionsLocked}
+                            onClick={() => doDeleteQuestion(q.quesId || q.id || q.qId)}>
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -709,8 +736,9 @@ export default function ViewQuizQuestions({ adminMode = true }: { adminMode?: bo
                                 onClick={() => openUpdateTheory(q.tqId || q.id || q.quesId || q.theoryId)}
                               ><Edit size={14} /></button>
                               <button
-                                className="vqq-act-btn vqq-act-del"
-                                title="Delete question"
+                                className={`vqq-act-btn vqq-act-del ${questionsLocked ? LOCKED_CLASS : ''}`}
+                                title={questionsLocked ? lockMessage.question() : 'Delete question'}
+                                aria-disabled={questionsLocked}
                                 onClick={() => doDeleteTheoryAction(q.tqId || q.id || q.quesId || q.theoryId)}
                               ><Trash2 size={14} /></button>
                             </div>

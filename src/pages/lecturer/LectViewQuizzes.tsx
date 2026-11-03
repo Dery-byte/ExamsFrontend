@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { loadQuizzesForUser, getCategoriesForUser, getQuiz, updateQuiz, deleteQuiz, updateQuizStatus, getAvailableLlmProviders, getQuestionsForLecturer } from '../../api/endpoints';
 import Swal from 'sweetalert2';
+import { lockMessage, LOCKED_CLASS, explainLocked, apiMessage } from '../../utils/deleteLocks';
 import QuizProgramPicker from '../../components/ui/QuizProgramPicker';
 import AttemptsField from '../../components/ui/AttemptsField';
 import IndexRangeField, { indexRangeError } from '../../components/ui/IndexRangeField';
@@ -502,8 +503,9 @@ export default function LectViewQuizzes() {
   }, [editQuizId]);
 
   const doDelete = (qId: number) => {
+    if ((quizzes as any[]).find(q => q.qId === qId)?.hasResults) { explainLocked(lockMessage.quiz()); return; }
     Swal.fire({ title: 'Are you sure?', text: "You won't be able to revert this!", icon: 'warning', showCancelButton: true, confirmButtonColor: 'var(--brand)', cancelButtonColor: '#74788d', confirmButtonText: 'Yes, delete it!' })
-      .then(r => { if (!r.isConfirmed) return; deleteQuiz(qId).then(() => { toast.success('Quiz deleted'); qc.invalidateQueries({ queryKey: ['lectQuizzes'] }); }).catch(() => toast.error('Deletion failed')); });
+      .then(r => { if (!r.isConfirmed) return; deleteQuiz(qId).then(() => { toast.success('Quiz deleted'); qc.invalidateQueries({ queryKey: ['lectQuizzes'] }); }).catch(err => { toast.error(apiMessage(err, 'Deletion failed')); qc.invalidateQueries({ queryKey: ['lectQuizzes'] }); }); });
   };
 
   const doUpdateStatus = (q: any) => {
@@ -565,8 +567,9 @@ export default function LectViewQuizzes() {
                     title={tx("Copy student link")} onClick={() => copyQuizLink(q.qId, { title: q.title, courseTitle: q.category?.title })} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.35)')} onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}><Link2 size={14} /></button>
                   <button style={{ width: 30, height: 30, borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
                     title="Configure" onClick={() => setEditQuizId(q.qId)} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.35)')} onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}><Settings size={14} /></button>
-                  <button style={{ width: 30, height: 30, borderRadius: '8px', border: 'none', background: 'rgba(253,98,94,0.35)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
-                    title="Delete" onClick={() => doDelete(q.qId)} onMouseOver={e => (e.currentTarget.style.background = 'rgba(253,98,94,0.6)')} onMouseOut={e => (e.currentTarget.style.background = 'rgba(253,98,94,0.35)')}><Trash2 size={14} /></button>
+                  <button className={q.hasResults ? LOCKED_CLASS : undefined} aria-disabled={!!q.hasResults} aria-label={q.hasResults ? lockMessage.quiz() : 'Delete'}
+                    style={{ width: 30, height: 30, borderRadius: '8px', border: 'none', background: 'rgba(253,98,94,0.35)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                    title={q.hasResults ? lockMessage.quiz() : 'Delete'} onClick={() => doDelete(q.qId)} onMouseOver={e => (e.currentTarget.style.background = 'rgba(253,98,94,0.6)')} onMouseOut={e => (e.currentTarget.style.background = 'rgba(253,98,94,0.35)')}><Trash2 size={14} /></button>
                 </div>
               </div>
 

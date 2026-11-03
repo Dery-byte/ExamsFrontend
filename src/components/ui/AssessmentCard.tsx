@@ -5,6 +5,7 @@ import { Settings, Trash2, List, Zap, Loader2, Layers, Trophy, Clock, CheckCircl
 import { copyQuizLink } from '../../utils/quizLink';
 import './AssessmentCard.css';
 import { tx } from '../../utils/terms';
+import { LOCKED_CLASS } from '../../utils/deleteLocks';
 
 interface AssessmentCardProps {
   qId: number;
@@ -19,6 +20,10 @@ interface AssessmentCardProps {
   quizTime: number;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
+  /** Students have results: the delete button looks disabled (the click still explains why). */
+  deleteLocked?: boolean;
+  /** Hover text for the delete button. */
+  deleteHint?: string;
   selectedStatus: string;
   onStatusChange: (id: number, newStatus: string) => void;
   onSync: () => void;
@@ -37,6 +42,8 @@ export default function AssessmentCard({
   quizTime,
   onEdit,
   onDelete,
+  deleteLocked,
+  deleteHint,
   selectedStatus,
   onStatusChange,
   onSync,
@@ -71,7 +78,8 @@ export default function AssessmentCard({
             <button className="icon-btn" onClick={() => onEdit(qId)} title="Settings">
               <Settings size={16} />
             </button>
-            <button className="icon-btn delete" onClick={() => onDelete(qId)} title="Delete">
+            <button className={`icon-btn delete ${deleteLocked ? LOCKED_CLASS : ''}`} onClick={() => onDelete(qId)}
+              title={deleteHint || 'Delete'} aria-label={deleteHint || 'Delete'} aria-disabled={deleteLocked}>
               <Trash2 size={16} />
             </button>
           </div>

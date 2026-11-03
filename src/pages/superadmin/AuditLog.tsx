@@ -96,7 +96,11 @@ export default function AuditLog() {
                       <div className="al-who">{e.actorName ?? '—'}</div>
                       <div className="al-role">{ROLE_LABEL[e.actorRole ?? ''] ?? e.actorRole}</div>
                     </td>
-                    <td className="al-c-action" data-label="Action">{e.action}</td>
+                    <td className="al-c-action" data-label="Action">
+                      {e.action}
+                      {/* e.g. the reason a quiz with student results was deleted */}
+                      {e.details && <div className="al-details">{e.details}</div>}
+                    </td>
                     <td className="al-c-record" data-label="Record">{e.entityId ? `#${e.entityId}` : '—'}</td>
                     <td className="al-c-result">
                       <span className="al-status" style={{ color: ok ? '#0b7a0b' : '#b42323', background: ok ? '#eefbee' : '#fdeeee' }}>
@@ -149,6 +153,7 @@ export default function AuditLog() {
         .al-who { font-weight: 700; color: #1e293b; }
         .al-role { font-size: 11px; color: #94a3b8; }
         .al-c-action { font-weight: 600; color: #1e293b; }
+        .al-details { font-weight: 400; font-size: 12px; line-height: 1.45; color: #64748b; margin-top: 3px; max-width: 520px; overflow-wrap: anywhere; white-space: pre-wrap; }
         .al-c-record { color: #64748b; }
         .al-status { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
         .al-pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; font-size: 12.5px; color: #64748b; flex-wrap: wrap; border-top: 1px solid #f1f5f9; }
