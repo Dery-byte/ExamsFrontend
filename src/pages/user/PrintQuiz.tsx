@@ -445,7 +445,7 @@ export default function PrintQuiz() {
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 800, letterSpacing: '0.05em' }}>OFFICIAL ACADEMIC TRANSCRIPT</div>
-                <div style={{ fontSize: 13, color: '#fff', fontWeight: 700, marginTop: 2 }}>Lexa Examination Framework • Verified Records</div>
+                <div style={{ fontSize: 13, color: '#fff', fontWeight: 700, marginTop: 2 }}>Examination Framework • Verified Records</div>
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>

@@ -182,7 +182,7 @@ export default function AvailableQuizzes() {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
-      <PageHeader title="Examination Portal" breadcrumbs={['Lexa', 'Portal', 'Assessments']} />
+      <PageHeader title="Examination Portal" breadcrumbs={['Portal', 'Assessments']} />
 
       {/* Control Panel: Filter & Search */}
       <div className="lexa-card">

@@ -125,7 +125,7 @@ export default function UserDashboard() {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 10 }}>
-      <PageHeader title="Candidate Dashboard" breadcrumbs={['Lexa', 'Portal', 'Overview']} />
+      <PageHeader title="Candidate Dashboard" breadcrumbs={['Portal', 'Overview']} />
 
       {/* Welcome Section */}
       <div className="lexa-card" style={{ background: 'var(--primary)', border: 'none', position: 'relative', overflow: 'hidden', marginBottom: 16 }}>

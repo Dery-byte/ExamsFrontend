@@ -368,7 +368,7 @@ export default function LoadQuiz() {
         <SummaryModal qId={summaryId} userId={user.id} onClose={() => setSummaryId(null)}/>
       )}
 
-      <PageHeader title="Examination Records" breadcrumbs={['Lexa', 'Portal', 'History']} />
+      <PageHeader title="Examination Records" breadcrumbs={['Portal', 'History']} />
 
       <div className="loadquiz-grid">
         {/* Desktop Sidebar: Course Selection (hidden on mobile) */}

@@ -137,7 +137,7 @@ export default function ViewCategories() {
 
   return (
     <div className="admin-categories-page animate-fade-in" style={{ padding: '0 0 40px', fontFamily: '"Outfit", sans-serif' }}>
-      <PageHeader title="Curriculum" breadcrumbs={['Lexa', 'Admin', 'Registry']} />
+      <PageHeader title="Curriculum" breadcrumbs={['Admin', 'Registry']} />
       
       <div className="registry-compact-header">
          <div className="compact-stats">

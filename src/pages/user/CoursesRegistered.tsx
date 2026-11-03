@@ -42,7 +42,7 @@ export default function CoursesRegistered() {
   const deleteRegCourseById = (rid: number, courseTitle: string) => {
     Swal.fire({
       title: tx('Course Disenrollment'),
-      html: `Are you sure you want to drop <b>${courseTitle}</b>?<br/><br/>This action will remove the module from your current session curriculum.`,
+      html: `Are you sure you want to drop <b>${courseTitle}</b>?<br/><br/>${tx('This action will remove the course from your current session curriculum.')}`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: tx('Yes, Drop Course'),
@@ -80,12 +80,12 @@ export default function CoursesRegistered() {
 
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
-      <PageHeader title={tx("My Courses")} breadcrumbs={['Lexa', 'Portal', tx('My Courses')]} />
+      <PageHeader title={tx("My Courses")} breadcrumbs={['Portal', tx('My Courses')]} />
 
       <div className="lexa-card">
         <div className="lexa-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 15 }}>
           <div>
-            <h5 className="lexa-card-title" style={{ margin: 0 }}>Registered Modules</h5>
+            <h5 className="lexa-card-title" style={{ margin: 0 }}>{tx("Courses")}</h5>
             <p style={{ margin: '4px 0 0', fontSize: 12, color: '#adb5bd' }}>Managing your academic curriculum for the current session</p>
           </div>
           
@@ -125,7 +125,7 @@ export default function CoursesRegistered() {
                 <BookOpen size={45} />
               </div>
               <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>Empty Curriculum</h4>
-              <p style={{ color: '#74788d', fontSize: 15, maxWidth: 450, margin: '0 auto 30px', lineHeight: 1.6 }}>{tx("You haven't enrolled in any academic modules for the current session. Start by browsing the course catalog to build your schedule.")}</p>
+              <p style={{ color: '#74788d', fontSize: 15, maxWidth: 450, margin: '0 auto 30px', lineHeight: 1.6 }}>{tx("You haven't enrolled in any courses for the current session. Start by browsing the course catalog to build your schedule.")}</p>
               <button onClick={() => navigate('/user-dashboard/register')} className="btn-lexa btn-lexa-primary" style={{ borderRadius: 8, padding: '12px 30px' }}>
                 {tx("Explore Course Catalog ")}<ChevronRight size={18} />
               </button>

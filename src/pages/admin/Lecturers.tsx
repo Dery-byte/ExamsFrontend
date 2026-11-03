@@ -161,7 +161,7 @@ export default function Lecturers() {
 
   return (
     <div className="admin-lecturers-page animate-fade-in" style={{ padding: '0 0 40px', fontFamily: '"Outfit", sans-serif' }}>
-      <PageHeader title={tx("Faculty Registry")} breadcrumbs={['Lexa', 'Admin', 'Staffing']} />
+      <PageHeader title={tx("Faculty Registry")} breadcrumbs={['Admin', 'Staffing']} />
       
       {/* COMPACT STATS & SEARCH */}
       <div className="registry-compact-header">

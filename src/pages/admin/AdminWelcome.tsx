@@ -141,7 +141,7 @@ export default function AdminWelcome() {
 
   return (
     <div className="admin-welcome-container animate-fade-in" style={{ padding: '0 0 50px', fontFamily: '"Outfit", "Inter", sans-serif' }}>
-      <PageHeader title="Intelligence Hub" breadcrumbs={['Lexa', 'Admin', 'Overview']} />
+      <PageHeader title="Intelligence Hub" breadcrumbs={['Admin', 'Overview']} />
 
       {/* Stats Row */}
       <div className="stats-grid-compact">

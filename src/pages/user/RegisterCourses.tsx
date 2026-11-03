@@ -111,7 +111,7 @@ export default function RegisterCourses() {
   return (
     <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
       <Toaster position="top-right" />
-      <PageHeader title={tx("Course Registration")} breadcrumbs={['Lexa', 'Portal', 'Enrolment']} />
+      <PageHeader title={tx("Course Registration")} breadcrumbs={['Portal', 'Enrolment']} />
 
       {/* Semester context banner */}
       {(user as any)?.currentLevel && (

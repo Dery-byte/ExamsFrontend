@@ -349,7 +349,7 @@ export default function Instructions() {
   if (loadError || !quiz) {
     return (
       <div className="animate-fade-in">
-        <PageHeader title="Examination Brief" breadcrumbs={['Lexa', 'User', 'Instructions']} />
+        <PageHeader title="Examination Brief" breadcrumbs={['User', 'Instructions']} />
         <div className="lexa-card">
           <div className="lexa-card-body" style={{ textAlign: 'center', padding: '48px 24px' }}>
             <AlertCircle size={40} style={{ color: 'var(--danger)', marginBottom: 12 }} />
@@ -366,7 +366,7 @@ export default function Instructions() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Examination Brief" breadcrumbs={['Lexa', 'User', 'Instructions']} />
+      <PageHeader title="Examination Brief" breadcrumbs={['User', 'Instructions']} />
 
       <div className="instructions-grid">
         {/* Left Column: Details & Rules */}
