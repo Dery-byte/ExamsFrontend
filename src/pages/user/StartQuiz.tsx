@@ -450,7 +450,14 @@ export default function StartQuiz() {
         const comp = pfxs.filter(p => isGroupCompulsory(grp[p]));
         const initSel: Record<string, boolean> = {};
         comp.forEach(p => { initSel[p] = true; });
-        
+        // After a reload, select again the groups the student already wrote answers in: only selected
+        // groups are submitted, so falling back to the first group would leave those answers unmarked
+        const maxGroups = Number((nqArr as any[])[0]?.totalQuestToAnswer) || pfxs.length;
+        pfxs.forEach(p => {
+          if (initSel[p] || Object.keys(initSel).length >= maxGroups) return;
+          if (grp[p].some((q: any) => String(q.givenAnswer ?? '').trim() !== '')) initSel[p] = true;
+        });
+
         if (Object.keys(initSel).length === 0 && pfxs.length > 0) {
           initSel[pfxs[0]] = true;
         }
