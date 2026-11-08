@@ -154,3 +154,10 @@ export async function showQuizLinkDialog(qId: number | string, meta?: QuizLinkMe
   if (result.isConfirmed) await copyQuizLink(qId, meta);
 }
 
+/** sessionStorage key for the course the Assessments page opens on. */
+export const LAST_QUIZ_COURSE_KEY = 'aq.selectedCid';
+
+/** Makes the Assessments page open on this course next time (e.g. from My Courses). */
+export function rememberQuizCourse(cid: number | string): void {
+  try { sessionStorage.setItem(LAST_QUIZ_COURSE_KEY, String(cid)); } catch { /* storage blocked */ }
+}

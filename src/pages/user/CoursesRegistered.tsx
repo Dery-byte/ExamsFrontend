@@ -1,28 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRegCourses, deleteRegCourse } from '../../api/endpoints';
-import Swal from 'sweetalert2';
 import PageHeader from '../../components/PageHeader';
-import { Search, Loader2, BookOpen, Trash2, ChevronRight, Filter, Download, Activity } from 'lucide-react';
-import { tx, isSchoolMode } from '../../utils/terms';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { useAssessments, useFeature } from '../../hooks/useFeatureFlags';
+import { rememberQuizCourse } from '../../utils/quizLink';
+import {
+  Search, BookOpen, Trash2, ChevronRight, Download, X, Plus, ClipboardList, SearchX, AlertTriangle, RotateCcw, Layers, BookMarked,
+} from 'lucide-react';
+import { tx, isSchoolMode, levelName, periodName } from '../../utils/terms';
+import './studentCatalog.css';
+
+/** "Sem 1" / "Term 2" for the compact row meta line. */
+const shortPeriod = (n: unknown) => (n == null || n === '' ? '' : `${isSchoolMode() ? 'Term' : 'Sem'} ${n}`);
+
+const byCode = (a: any, b: any) =>
+  String(a.category?.courseCode ?? '').localeCompare(String(b.category?.courseCode ?? ''), undefined, { numeric: true });
+
+const csvCell = (v: unknown) => {
+  const s = String(v ?? '');
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+interface Group { key: string; level: any; semester: any; label: string; rows: any[] }
 
 export default function CoursesRegistered() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [userRecords, setUserRecords] = useState<any[]>([]);
-  const [isLoading, setIsLoading]     = useState(false);
-  const [isDeleting, setIsDeleting]   = useState(false);
+  const quizzesOn = useAssessments();
+  const registrationOn = useFeature('STUDENT_COURSE_REGISTRATION');
+  const [records, setRecords] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
+  const [dropTarget, setDropTarget] = useState<any>(null);
+  const [dropping, setDropping] = useState(false);
 
   const loadRegisteredCourses = async () => {
     setIsLoading(true);
+    setLoadFailed(false);
     try {
       const data: any[] = await getRegCourses();
       const userId = user?.id;
-      setUserRecords(data.filter((c: any) => c.user?.id === userId));
+      setRecords((Array.isArray(data) ? data : []).filter((r: any) => r.user?.id === userId && r.category));
     } catch (err) {
       console.error('Failed to load registered courses:', err);
+      setLoadFailed(true);
     } finally {
       setIsLoading(false);
     }
@@ -30,190 +55,298 @@ export default function CoursesRegistered() {
 
   useEffect(() => { loadRegisteredCourses(); }, []);
 
-  const getFiltered = () => {
-    const q = filterQuery.trim().toLowerCase();
-    if (!q) return userRecords;
-    return userRecords.filter(r =>
-      r.category?.courseCode?.toLowerCase().includes(q) ||
-      r.category?.title?.toLowerCase().includes(q)
+  const currentLevel = (user as any)?.currentLevel;
+  const currentSemester = (user as any)?.currentSemester;
+
+  const totalUnits = useMemo(
+    () => records.reduce((sum, r) => sum + (Number(r.category?.creditUnits) || 0), 0),
+    [records],
+  );
+
+  const query = filterQuery.trim();
+
+  /** Registrations grouped by level + semester; the student's current period first, then newest first. */
+  const groups: Group[] = useMemo(() => {
+    const q = query.toLowerCase();
+    const rows = !q ? records : records.filter(r =>
+      String(r.category?.courseCode ?? '').toLowerCase().includes(q) ||
+      String(r.category?.title ?? '').toLowerCase().includes(q)
     );
+    const map = new Map<string, Group>();
+    for (const r of rows) {
+      const level = r.category?.level ?? '';
+      const semester = r.category?.semester ?? '';
+      const key = `${level}|${semester}`;
+      if (!map.has(key)) {
+        const label = [isSchoolMode() ? '' : (level !== '' ? levelName(level) : ''), semester !== '' ? periodName(semester) : '']
+          .filter(Boolean).join(' · ') || tx('Other courses');
+        map.set(key, { key, level, semester, label, rows: [] });
+      }
+      map.get(key)!.rows.push(r);
+    }
+    const isCurrent = (g: Group) => String(g.level) === String(currentLevel ?? '') && String(g.semester) === String(currentSemester ?? '');
+    return Array.from(map.values())
+      .map(g => ({ ...g, rows: g.rows.sort(byCode) }))
+      .sort((a, b) =>
+        (Number(isCurrent(b)) - Number(isCurrent(a))) ||
+        ((parseInt(String(b.level)) || 0) - (parseInt(String(a.level)) || 0)) ||
+        ((Number(b.semester) || 0) - (Number(a.semester) || 0)));
+  }, [records, query, currentLevel, currentSemester]);
+
+  const shownCount = groups.reduce((n, g) => n + g.rows.length, 0);
+
+  const contextTitle = isSchoolMode()
+    ? (currentSemester ? periodName(currentSemester) : tx('My courses'))
+    : (currentLevel
+        ? [levelName(currentLevel), currentSemester ? periodName(currentSemester) : ''].filter(Boolean).join(' · ')
+        : tx('My courses'));
+
+  const openAssessments = (r: any) => {
+    rememberQuizCourse(r.category.cid);
+    navigate('/user-dashboard/quizzes');
   };
 
-  const deleteRegCourseById = (rid: number, courseTitle: string) => {
-    Swal.fire({
-      title: tx('Course Disenrollment'),
-      html: `Are you sure you want to drop <b>${courseTitle}</b>?<br/><br/>${tx('This action will remove the course from your current session curriculum.')}`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: tx('Yes, Drop Course'),
-      cancelButtonText: tx('Keep Course'),
-      confirmButtonColor: 'var(--danger)',
-      cancelButtonColor: 'var(--gray-400)',
-      reverseButtons: true,
-      background: '#fff',
-      customClass: { popup: 'swal2-premium-popup' }
-    }).then(r => {
-      if (!r.isConfirmed) return;
-      setIsDeleting(true);
-      deleteRegCourse(rid).then(() => {
-        setUserRecords(ur => ur.filter(c => c.rid !== rid));
-        Swal.fire({
-          title: 'Removed!',
-          text: tx('The course has been successfully removed from your registration.'),
-          icon: 'success',
-          confirmButtonColor: 'var(--primary)',
-          customClass: { popup: 'swal2-premium-popup' }
-        });
-      }).catch(() => {
-        Swal.fire({
-          title: 'Error',
-          text: 'Failed to process disenrollment. Please contact support.',
-          icon: 'error',
-          confirmButtonColor: 'var(--primary)',
-          customClass: { popup: 'swal2-premium-popup' }
-        });
-      }).finally(() => setIsDeleting(false));
-    });
+  const confirmDrop = async () => {
+    const r = dropTarget;
+    if (!r) return;
+    setDropping(true);
+    try {
+      await deleteRegCourse(r.rid);
+      setRecords(prev => prev.filter(x => x.rid !== r.rid));
+      toast.success(`${r.category?.courseCode ?? tx('Course')} dropped`);
+    } catch {
+      toast.error(tx('Could not drop the course. Please try again or contact your department.'));
+    } finally {
+      setDropping(false);
+      setDropTarget(null);
+    }
   };
 
-  const filteredData = getFiltered();
+  const exportCsv = () => {
+    const head = [tx('Course code'), tx('Course title'), ...(isSchoolMode() ? [] : [tx('Level')]), tx('Semester'), tx('Credit units')];
+    const lines = [head.map(csvCell).join(',')];
+    for (const g of groups) {
+      for (const r of g.rows) {
+        const c = r.category ?? {};
+        lines.push([c.courseCode, c.title, ...(isSchoolMode() ? [] : [c.level]), c.semester, c.creditUnits ?? ''].map(csvCell).join(','));
+      }
+    }
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${tx('my-courses')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
-      <PageHeader title={tx("My Courses")} breadcrumbs={['Portal', tx('My Courses')]} />
+    <div className="rc animate-fade-in">
+      <PageHeader title={tx('My Courses')} breadcrumbs={['Portal', tx('My Courses')]} />
 
-      <div className="lexa-card">
-        <div className="lexa-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 15 }}>
-          <div>
-            <h5 className="lexa-card-title" style={{ margin: 0 }}>{tx("Courses")}</h5>
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#adb5bd' }}>Managing your academic curriculum for the current session</p>
-          </div>
-          
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 0 }}>
-              <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }} size={16} />
-              <input 
-                type="text" 
-                placeholder="Search code or title..." 
-                style={{ 
-                  padding: '10px 15px 10px 42px', background: '#fff', border: '1px solid #e1e9f1', 
-                  borderRadius: 8, fontSize: 13, width: '100%', outline: 'none', transition: 'all 0.2s',
-                  boxSizing: 'border-box'
-                }}
-                className="search-input-lexa"
-                value={filterQuery}
-                onChange={e => setFilterQuery(e.target.value)}
-              />
-            </div>
-            <button className="btn-lexa btn-lexa-outline" style={{ width: 42, height: 42, padding: 0, borderRadius: 8, flexShrink: 0 }}>
-              <Download size={18} />
-            </button>
-
+      {/* ── Context strip ── */}
+      <section className="rc-hero" aria-label={tx('Registration summary')}>
+        <div className="rc-hero-main">
+          <div className="rc-hero-icon"><BookOpen size={22} /></div>
+          <div className="rc-hero-text">
+            <span className="rc-eyebrow">{tx('Registered courses')}</span>
+            <h2 className="rc-hero-title">{contextTitle}</h2>
+            <p className="rc-hero-sub">
+              {quizzesOn
+                ? tx('Everything you are registered for. Open a course to see its assessments, or drop one you no longer take.')
+                : tx('Everything you are registered for. Drop a course you no longer take.')}
+            </p>
           </div>
         </div>
-
-        <div className="lexa-card-body" style={{ padding: 0 }}>
-          {isLoading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-              <Loader2 className="spin-ico" size={48} style={{ color: 'var(--brand-text)', marginBottom: 20 }} />
-              <h6 style={{ fontWeight: 700, color: '#495057' }}>Retrieving Curriculum Data</h6>
-              <p style={{ color: '#adb5bd', fontSize: 13 }}>Connecting to academic database...</p>
-            </div>
-          ) : filteredData.length === 0 ? (
-            <div style={{ padding: '100px 20px', textAlign: 'center', background: '#fcfdfe' }}>
-              <div style={{ width: 90, height: 90, borderRadius: '24px', background: 'rgba(var(--brand-rgb), 0.05)', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', transform: 'rotate(-5deg)' }}>
-                <BookOpen size={45} />
-              </div>
-              <h4 style={{ fontWeight: 800, color: '#2a3142', marginBottom: 12 }}>Empty Curriculum</h4>
-              <p style={{ color: '#74788d', fontSize: 15, maxWidth: 450, margin: '0 auto 30px', lineHeight: 1.6 }}>{tx("You haven't enrolled in any courses for the current session. Start by browsing the course catalog to build your schedule.")}</p>
-              <button onClick={() => navigate('/user-dashboard/register')} className="btn-lexa btn-lexa-primary" style={{ borderRadius: 8, padding: '12px 30px' }}>
-                {tx("Explore Course Catalog ")}<ChevronRight size={18} />
-              </button>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="table-lexa">
-                <thead style={{ background: '#fcfdfe' }}>
-                  <tr>
-                    <th style={{ paddingLeft: 24, width: 80, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</th>
-                    <th style={{ width: 150, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tx("Course Code")}</th>
-                    <th style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{tx("Course Name")}</th>
-                    <th style={{ paddingRight: 24, textAlign: 'right', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData.map((course, i) => (
-                    <tr key={course.rid} style={{ transition: 'all 0.2s' }} className="row-hover-lexa">
-                      <td style={{ paddingLeft: 24, color: '#adb5bd', fontWeight: 800, fontSize: 13 }}>{String(i + 1).padStart(2, '0')}</td>
-                      <td>
-                        <span className="lexa-badge badge-soft-primary" style={{ padding: '6px 12px', borderRadius: 6, fontWeight: 800, fontSize: 12 }}>
-                          {course.category?.courseCode}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 800, color: '#2a3142', fontSize: 15, marginBottom: 2 }}>{course.category?.title}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#adb5bd', fontWeight: 600 }}>
-                          {!isSchoolMode() && <>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Activity size={12} className="text-info" /> {course.category?.level} {tx("Level")}</span>
-                          <span style={{ color: '#e1e9f1' }}>|</span>
-                          </>}
-                          <span>Verified Registration</span>
-                        </div>
-                      </td>
-                      <td style={{ paddingRight: 24, textAlign: 'right' }}>
-                        <button 
-                          className="btn-lexa btn-lexa-danger-soft"
-                          style={{ width: 36, height: 36, padding: 0, borderRadius: 8 }}
-                          disabled={isDeleting}
-                          onClick={() => deleteRegCourseById(course.rid, course.category?.title)}
-                          title={tx("Drop Course")}
-                        >
-                          {isDeleting ? <Loader2 className="spin-ico" size={16} /> : <Trash2 size={16} />}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="rc-stats">
+          <div className="rc-stat">
+            <span className="rc-stat-label">{tx('Courses')}</span>
+            <strong className="rc-stat-value">{isLoading ? '—' : records.length}</strong>
+          </div>
+          {totalUnits > 0 && (
+            <div className="rc-stat">
+              <span className="rc-stat-label">{tx('Credit units')}</span>
+              <strong className="rc-stat-value">{totalUnits}</strong>
             </div>
           )}
         </div>
+      </section>
+
+      {/* ── Toolbar ── */}
+      <div className="rc-panel">
+        <div className="rc-bar mc-bar">
+          <div className="rc-bar-text">
+            <h3>{tx('Registered courses')}</h3>
+            <span aria-live="polite">
+              {isLoading
+                ? 'Loading…'
+                : query
+                  ? `${shownCount} of ${records.length} match “${query}”`
+                  : `${records.length} ${tx(records.length === 1 ? 'course' : 'courses')}`}
+            </span>
+          </div>
+          <div className="mc-tools">
+            <div className="rc-search">
+              <Search size={16} className="rc-search-ico" aria-hidden />
+              <input
+                type="search"
+                placeholder={tx('Search by course code or title')}
+                aria-label={tx('Search registered courses')}
+                value={filterQuery}
+                onChange={e => setFilterQuery(e.target.value)}
+                disabled={isLoading || records.length === 0}
+              />
+              {filterQuery && (
+                <button type="button" className="rc-search-clear" onClick={() => setFilterQuery('')} aria-label="Clear search">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div className="mc-tool-btns">
+              <button
+                type="button"
+                className="rc-btn rc-btn--ghost"
+                onClick={exportCsv}
+                disabled={isLoading || shownCount === 0}
+                title={tx('Download this list as a spreadsheet (CSV)')}
+              >
+                <Download size={15} /> <span>Export</span>
+              </button>
+              {registrationOn && (
+                <button type="button" className="rc-btn" onClick={() => navigate('/user-dashboard/register')}>
+                  <Plus size={15} /> <span>{tx('Add courses')}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <style>{`
-        .search-input-lexa:focus {
-          border-color: var(--primary) !important;
-          box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.1) !important;
-        }
-        .btn-lexa-outline {
-          background: transparent;
-          border: 1.5px solid #e1e9f1;
-          color: #74788d;
-        }
-        .btn-lexa-outline:hover {
-          background: #f8f9fa;
-          border-color: #ced4da;
-          color: #495057;
-        }
-        .btn-lexa-danger-soft {
-          background: rgba(236, 69, 97, 0.1);
-          color: var(--danger);
-          border: none;
-        }
-        .btn-lexa-danger-soft:hover {
-          background: var(--danger);
-          color: #fff;
-          box-shadow: 0 4px 11px rgba(236, 69, 97, 0.3);
-        }
-        .row-hover-lexa:hover { background-color: #fcfdfe; }
-        .swal2-premium-popup { border-radius: 16px !important; padding: 40px !important; font-family: 'Inter', sans-serif !important; }
-        .spin-ico { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      {/* ── List ── */}
+      {isLoading ? (
+        <div className="mc-list" aria-busy="true" aria-label={tx('Loading courses')}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="mc-row rc-skel">
+              <div className="rc-skel-line mc-code" style={{ width: 64, height: 22 }} />
+              <div className="mc-main">
+                <div className="rc-skel-line" style={{ width: '55%', height: 14 }} />
+                <div className="rc-skel-line" style={{ width: '35%', height: 11, marginTop: 8 }} />
+              </div>
+              <div className="mc-actions">
+                <div className="rc-skel-line" style={{ width: 120, height: 34, borderRadius: 9 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : loadFailed ? (
+        <div className="rc-empty">
+          <div className="rc-empty-icon rc-empty-icon--warn"><AlertTriangle size={26} /></div>
+          <h4>{tx("Couldn't load your courses")}</h4>
+          <p>Check your connection and try again.</p>
+          <div className="rc-empty-actions">
+            <button type="button" className="rc-btn" onClick={loadRegisteredCourses}><RotateCcw size={14} /> Try again</button>
+          </div>
+        </div>
+      ) : records.length === 0 ? (
+        <div className="rc-empty">
+          <div className="rc-empty-icon rc-empty-icon--muted"><BookOpen size={26} /></div>
+          <h4>{tx('No courses yet')}</h4>
+          <p>
+            {registrationOn
+              ? tx('You have not registered for any courses. Register for this semester’s courses to see them here.')
+              : tx('Courses you are registered for will appear here once your department enrols you.')}
+          </p>
+          {registrationOn && (
+            <div className="rc-empty-actions">
+              <button type="button" className="rc-btn" onClick={() => navigate('/user-dashboard/register')}>
+                {tx('Register courses')} <ChevronRight size={15} />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : shownCount === 0 ? (
+        <div className="rc-empty">
+          <div className="rc-empty-icon rc-empty-icon--muted"><SearchX size={26} /></div>
+          <h4>{tx('No courses match your search')}</h4>
+          <p>Nothing matches “{query}”. Try a different code or title.</p>
+          <div className="rc-empty-actions">
+            <button type="button" className="rc-btn rc-btn--ghost" onClick={() => setFilterQuery('')}>Clear search</button>
+          </div>
+        </div>
+      ) : (
+        <div className="mc-groups">
+          {groups.map(g => {
+            const units = g.rows.reduce((s, r) => s + (Number(r.category?.creditUnits) || 0), 0);
+            return (
+              <section key={g.key} className="mc-list" aria-label={g.label}>
+                {groups.length > 1 && (
+                  <header className="mc-group-head">
+                    <span className="mc-group-title"><Layers size={14} /> {g.label}</span>
+                    <span className="mc-group-meta">
+                      {g.rows.length} {tx(g.rows.length === 1 ? 'course' : 'courses')}{units > 0 ? ` · ${units} units` : ''}
+                    </span>
+                  </header>
+                )}
+                <ul role="list">
+                  {g.rows.map(r => {
+                    const c = r.category ?? {};
+                    const cu = Number(c.creditUnits) || 0;
+                    const meta = [isSchoolMode() ? '' : (c.level != null && c.level !== '' ? levelName(c.level) : ''), shortPeriod(c.semester)]
+                      .filter(Boolean).join(' · ');
+                    return (
+                      <li key={r.rid} className="mc-row">
+                        <span className="rc-code mc-code" title={c.courseCode}>{c.courseCode}</span>
+                        <div className="mc-main">
+                          <div className="mc-title" title={c.title}>{c.title}</div>
+                          <div className="mc-meta">
+                            {meta && <span>{meta}</span>}
+                            {cu > 0 && <span><BookMarked size={12} /> {cu} {cu === 1 ? 'unit' : 'units'}</span>}
+                          </div>
+                        </div>
+                        <div className="mc-actions">
+                          {quizzesOn && (
+                            <button type="button" className="rc-btn rc-btn--ghost mc-assess" onClick={() => openAssessments(r)}>
+                              <ClipboardList size={15} /> Assessments
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="mc-drop"
+                            onClick={() => setDropTarget(r)}
+                            disabled={dropping}
+                            title={tx('Drop course')}
+                            aria-label={`${tx('Drop course')} ${c.courseCode ?? ''}`}
+                          >
+                            <Trash2 size={15} /> <span className="mc-drop-label">Drop</span>
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
+      )}
 
-        @media (max-width: 576px) {
-          .lexa-card-header { flex-direction: column !important; align-items: stretch !important; }
-        }
-      `}</style>
+      {dropTarget && (
+        <ConfirmDialog
+          tone="danger"
+          title={tx('Drop this course?')}
+          confirmLabel="Drop"
+          busyLabel="Dropping"
+          cancelLabel={tx('Keep course')}
+          busy={dropping}
+          onConfirm={confirmDrop}
+          onCancel={() => setDropTarget(null)}
+        >
+          <p><b>{dropTarget.category?.courseCode}</b> · <b>{dropTarget.category?.title}</b></p>
+          <p>{tx('It will be removed from your registered courses.')}</p>
+        </ConfirmDialog>
+      )}
     </div>
   );
 }

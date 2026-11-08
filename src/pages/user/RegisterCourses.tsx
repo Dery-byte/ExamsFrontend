@@ -1,26 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRegCourses, getCoursesForStudent, regCourses } from '../../api/endpoints';
-import Swal from 'sweetalert2';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
-import { Search, Loader2, CheckCircle2, BookOpen, Info, Filter, Plus, ChevronRight, GraduationCap, Calendar } from 'lucide-react';
-import { tx, isSchoolMode, showLevelPicker } from '../../utils/terms';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import './studentCatalog.css';
+import { Search, Loader2, CheckCircle2, BookOpen, Info, Plus, ChevronRight, GraduationCap, X, Layers, BookMarked, SearchX } from 'lucide-react';
+import { tx, isSchoolMode, showLevelPicker, levelName, periodName } from '../../utils/terms';
+
+/** "Sem 1" / "Term 2" for the compact card meta line. */
+const shortPeriod = (n: unknown) => (n == null || n === '' ? '' : `${isSchoolMode() ? 'Term' : 'Sem'} ${n}`);
+
+const byCode = (a: any, b: any) =>
+  String(a.courseCode ?? '').localeCompare(String(b.courseCode ?? ''), undefined, { numeric: true });
 
 export default function RegisterCourses() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
-  const [uniqueLevels, setUniqueLevels] = useState<string[]>([]);
+  const [registeredCount, setRegisteredCount] = useState(0);
   const [selectedLevel, setSelectedLevel] = useState('');
-  const [displayedCourses, setDisplayed] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [enrollingCid, setEnrollingCid] = useState<any>(null);
+  const [confirmCourse, setConfirmCourse] = useState<any>(null);
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setIsLoading(true);
+    setLoadFailed(false);
     try {
       // Use the student-filtered endpoint — returns only courses for the
       // student's current program + level + semester (set by HOD/SuperAdmin)
@@ -36,280 +47,290 @@ export default function RegisterCourses() {
       const regCids = new Set(userReg.map((r: any) => r.category?.cid));
 
       // Only show courses the student has NOT yet registered for
-      const unregistered = cats.filter((cat: any) => !regCids.has(cat.cid));
+      const unregistered = cats.filter((cat: any) => !regCids.has(cat.cid)).sort(byCode);
 
-      const levels = Array.from(new Set(unregistered.map((c: any) => c.level))).sort((a: any, b: any) => {
-        const na = parseInt(String(a)); const nb = parseInt(String(b));
-        return na - nb;
-      }) as string[];
-
-      setUniqueLevels(levels);
+      setRegisteredCount(userReg.length);
       setCategories(unregistered);
-      if (levels.length > 0) setSelectedLevel(levels[0]);
     } catch (err) {
       console.error('Course catalog load error:', err);
+      setLoadFailed(true);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const uniqueLevels = useMemo(() => (
+    Array.from(new Set(categories.map((c: any) => c.level)))
+      .sort((a: any, b: any) => parseInt(String(a)) - parseInt(String(b))) as string[]
+  ), [categories]);
+
+  // Keep a valid level selected as courses get registered (and disappear) or load.
   useEffect(() => {
-    if (!selectedLevel) { setDisplayed([]); return; }
-    const filtered = categories.filter(c => c.level === selectedLevel);
+    if (!uniqueLevels.includes(selectedLevel)) setSelectedLevel(uniqueLevels[0] ?? '');
+  }, [uniqueLevels, selectedLevel]);
+
+  const levelCourses = useMemo(
+    () => categories.filter(c => c.level === selectedLevel),
+    [categories, selectedLevel],
+  );
+
+  const displayedCourses = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      setDisplayed(filtered);
-    } else {
-      setDisplayed(filtered.filter(c =>
-        c.title.toLowerCase().includes(query) ||
-        c.courseCode.toLowerCase().includes(query)
-      ));
-    }
-  }, [selectedLevel, categories, searchQuery]);
+    if (!query) return levelCourses;
+    return levelCourses.filter(c =>
+      String(c.title ?? '').toLowerCase().includes(query) ||
+      String(c.courseCode ?? '').toLowerCase().includes(query)
+    );
+  }, [levelCourses, searchQuery]);
 
-  const onEnrol = async (course: any) => {
-    const result = await Swal.fire({
-      title: tx('Course Registration'),
-      html: tx(`You are about to enrol in <b>${course.courseCode}: ${course.title}</b>.<br/><br/>This module will be added to your academic record for the current semester.`),
-      icon: 'info',
-      showCancelButton: true,
-      confirmButtonText: 'Confirm Enrolment',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: 'var(--primary)',
-      cancelButtonColor: 'var(--gray-400)',
-      reverseButtons: true,
-      background: '#fff',
-      customClass: { popup: 'swal2-premium-popup' }
-    });
+  const availableUnits = useMemo(
+    () => categories.reduce((sum, c) => sum + (Number(c.creditUnits) || 0), 0),
+    [categories],
+  );
 
-    if (!result.isConfirmed) return;
+  const onEnrol = (course: any) => setConfirmCourse(course);
 
+  const confirmEnrol = async () => {
+    const course = confirmCourse;
+    if (!course) return;
     setEnrollingCid(course.cid);
     try {
       await regCourses({ category: { cid: course.cid } });
-      toast.success(`${course.courseCode} registered successfully!`, {
+      toast.success(`${course.courseCode} registered`, {
         icon: '🎓',
-        style: { borderRadius: '8px', background: 'var(--gray-900)', color: '#fff', fontSize: '13px', fontWeight: 600 }
+        style: { borderRadius: '10px', background: 'var(--gray-900, #212529)', color: '#fff', fontSize: '13px', fontWeight: 600 },
       });
       setCategories(prev => prev.filter(c => c.cid !== course.cid));
+      setRegisteredCount(n => n + 1);
     } catch {
       toast.error('Could not complete registration. Please check your connection.');
     } finally {
       setEnrollingCid(null);
+      setConfirmCourse(null);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <Loader2 className="spin-ico" size={40} style={{ color: 'var(--brand-text)', marginBottom: 16 }} />
-        <p style={{ color: '#adb5bd', fontSize: 14, fontWeight: 600 }}>Syncing academic catalog...</p>
-      </div>
-    );
-  }
+  const goToMyCourses = () => navigate('/user-dashboard/courses');
+
+  const currentLevel = (user as any)?.currentLevel;
+  const currentSemester = (user as any)?.currentSemester;
+  const contextTitle = isSchoolMode()
+    ? (currentSemester ? periodName(currentSemester) : tx('Course registration'))
+    : (currentLevel
+        ? [levelName(currentLevel), currentSemester ? periodName(currentSemester) : ''].filter(Boolean).join(' · ')
+        : tx('Course registration'));
+
+  const showTabs = !isLoading && uniqueLevels.length > 0 && showLevelPicker(uniqueLevels.length);
+  const query = searchQuery.trim();
 
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: 40 }}>
-      <Toaster position="top-right" />
-      <PageHeader title={tx("Course Registration")} breadcrumbs={['Portal', 'Enrolment']} />
+    <div className="rc animate-fade-in">
+      <PageHeader title={tx('Course Registration')} breadcrumbs={['Portal', 'Enrolment']} />
 
-      {/* Semester context banner */}
-      {(user as any)?.currentLevel && (
-        <div style={{
-          margin: '0 0 16px',
-          padding: '12px 20px',
-          background: 'linear-gradient(135deg,rgba(var(--accent-rgb), 0.08),rgba(var(--brand-rgb), 0.05))',
-          border: '1px solid rgba(var(--accent-rgb), 0.2)',
-          borderRadius: 12,
-          display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <GraduationCap size={18} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-hover)' }}>
-            {tx('Showing courses for')}&nbsp;
-            {!isSchoolMode() && <strong>{tx("Level ")}{(user as any).currentLevel}</strong>}
-            {(user as any).currentSemester && (
-              <>{!isSchoolMode() && <>&nbsp;· </>}<Calendar size={13} style={{ display:'inline', verticalAlign:'middle' }} />&nbsp;
-              <strong>{tx("Semester ")}{(user as any).currentSemester}</strong></>
-            )}
-            &nbsp;— {isSchoolMode() ? tx('courses for later semesters are hidden.') : 'courses for subsequent levels/semesters are hidden.'}
-          </span>
-        </div>
-      )}
-
-      {/* Control Panel: Level Tabs & Search */}
-      <div className="lexa-card" style={{ overflow: 'hidden' }}>
-        <div style={{ background: '#fff', borderBottom: '1px solid #f1f5f7', display: showLevelPicker(uniqueLevels.length) ? undefined : 'none' }}>
-          <div style={{ display: 'flex', overflowX: 'auto' }}>
-            {uniqueLevels.map(l => (
-              <button
-                key={l}
-                onClick={() => setSelectedLevel(l)}
-                style={{
-                  background: 'transparent',
-                  color: selectedLevel === l ? 'var(--brand-text)' : '#adb5bd',
-                  borderBottom: selectedLevel === l ? '3px solid var(--primary)' : '3px solid transparent',
-                  padding: '18px 25px',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  transition: 'all 0.3s',
-                  borderTop: 'none', borderLeft: 'none', borderRight: 'none',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}
-              >
-                {l} {tx("Level")}</button>
-            ))}
+      {/* ── Context: who this catalog is for + quick numbers ── */}
+      <section className="rc-hero" aria-label={tx('Registration summary')}>
+        <div className="rc-hero-main">
+          <div className="rc-hero-icon"><GraduationCap size={22} /></div>
+          <div className="rc-hero-text">
+            <span className="rc-eyebrow">{tx('Showing courses for')}</span>
+            <h2 className="rc-hero-title">{contextTitle}</h2>
+            <p className="rc-hero-sub">
+              {isSchoolMode()
+                ? tx('Pick the courses you will take. Courses for later semesters are hidden.')
+                : tx('Pick the courses you will take this semester. Courses for later levels and semesters are hidden.')}
+            </p>
           </div>
         </div>
-        
-        <div className="lexa-card-body" style={{ background: '#fcfdfe', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(var(--brand-rgb), 0.1)', color: 'var(--brand-text)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Filter size={14} />
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#495057' }}>Catalog Filter</div>
-              <div style={{ fontSize: 11, color: '#adb5bd' }}>Found {displayedCourses.length} {tx("available courses for this level")}</div>
-            </div>
+        <div className="rc-stats">
+          <div className="rc-stat">
+            <span className="rc-stat-label">Available</span>
+            <strong className="rc-stat-value">{isLoading ? '—' : categories.length}</strong>
           </div>
+          {availableUnits > 0 && (
+            <div className="rc-stat">
+              <span className="rc-stat-label">{tx('Credit units')}</span>
+              <strong className="rc-stat-value">{availableUnits}</strong>
+            </div>
+          )}
+          <button type="button" className="rc-stat rc-stat-link" onClick={goToMyCourses}>
+            <span className="rc-stat-label">Registered</span>
+            <strong className="rc-stat-value">
+              {isLoading ? '—' : registeredCount}
+              <ChevronRight size={15} />
+            </strong>
+          </button>
+        </div>
+      </section>
 
-          <div style={{ position: 'relative', width: '100%', maxWidth: 350 }}>
-            <Search style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }} size={16} />
+      {/* ── Toolbar: level tabs + search ── */}
+      <div className="rc-panel">
+        {showTabs && (
+          <div className="rc-tabs" role="tablist" aria-label={tx('Level')}>
+            {uniqueLevels.map(l => {
+              const count = categories.filter(c => c.level === l).length;
+              const active = selectedLevel === l;
+              return (
+                <button
+                  key={l}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={`rc-tab${active ? ' is-active' : ''}`}
+                  onClick={() => setSelectedLevel(l)}
+                >
+                  {levelName(l)}
+                  <span className="rc-tab-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="rc-bar">
+          <div className="rc-bar-text">
+            <h3>{tx('Available courses')}</h3>
+            <span aria-live="polite">
+              {isLoading
+                ? 'Loading…'
+                : query
+                  ? `${displayedCourses.length} of ${levelCourses.length} match “${query}”`
+                  : `${displayedCourses.length} ${tx(displayedCourses.length === 1 ? 'course' : 'courses')} ${tx('open to you')}`}
+            </span>
+          </div>
+          <div className="rc-search">
+            <Search size={16} className="rc-search-ico" aria-hidden />
             <input
-              type="text"
-              placeholder={tx("Search by course code or title...")}
-              style={{
-                borderRadius: 8, padding: '10px 15px 10px 42px', fontSize: 14,
-                background: '#fff', border: '1px solid #e1e9f1', width: '100%', outline: 'none',
-                transition: 'all 0.2s',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-              }}
+              type="search"
+              placeholder={tx('Search by course code or title')}
+              aria-label={tx('Search courses')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="search-input-lexa"
+              disabled={isLoading}
             />
+            {searchQuery && (
+              <button type="button" className="rc-search-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {displayedCourses.length === 0 ? (
-        <div className="lexa-card" style={{ padding: '80px 20px', textAlign: 'center' }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(40, 187, 227, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-            <CheckCircle2 size={40} />
-          </div>
-          <h4 style={{ fontWeight: 800, color: '#495057', marginBottom: 12 }}>Catalog Exhausted</h4>
-          <p style={{ color: '#adb5bd', fontSize: 15, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
-            {isSchoolMode()
-              ? tx('Excellent! It seems you have already registered for every course open to you, or none match your search.')
-              : <>Excellent! It seems you've already enrolled in all available modules for the <strong>{selectedLevel}</strong> {tx("level, or no matching courses were found for your search.")}</>}</p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 30 }}>
-            <button onClick={() => setSearchQuery('')} className="btn-lexa btn-lexa-outline">
-              Clear Search
-            </button>
-            <button onClick={() => window.location.href = '/user-dashboard/courses'} className="btn-lexa btn-lexa-primary">
-              {tx("View Registered Courses")}</button>
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
-          {displayedCourses.map((c) => (
-            <div key={c.cid} className="lexa-card course-card-premium" style={{ display: 'flex', flexDirection: 'column', height: '100%', border: '1px solid #f1f5f7' }}>
-              <div className="lexa-card-body" style={{ flex: 1, padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <span className="lexa-badge badge-soft-primary" style={{ padding: '4px 10px', fontSize: 12, borderRadius: 4, letterSpacing: '0.02em' }}>
-                    {c.courseCode}
-                  </span>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#adb5bd', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <BookOpen size={12} /> {c.level}
-                  </div>
-                </div>
-                
-                <h5 style={{ fontSize: 17, fontWeight: 800, color: '#2a3142', marginBottom: 12, lineHeight: 1.4, height: '48px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                  {c.title}
-                </h5>
-                
-                <p style={{ fontSize: 13, color: '#74788d', lineHeight: 1.7, marginBottom: 0, height: '65px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
-                  {c.description || 'This module provides a comprehensive overview of core academic principles and their practical applications in modern professional environments.'}
-                </p>
-              </div>
-
-              <div style={{ padding: '16px 24px', background: '#fcfdfe', borderTop: '1px solid #f1f5f7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 6, background: '#fff', border: '1px solid #e1e9f1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand-text)' }}>
-                    <GraduationCap size={16} />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#495057' }}>Enrol Now</span>
-                </div>
-                <button
-                  onClick={() => onEnrol(c)}
-                  disabled={enrollingCid !== null}
-                  className="btn-lexa btn-lexa-primary"
-                  style={{ padding: '8px 20px', borderRadius: 6, minWidth: 100 }}
-                >
-                  {enrollingCid === c.cid ? <Loader2 className="spin-ico" size={16} /> : <><Plus size={16} /> Register</>}
-                </button>
+      {/* ── Catalog ── */}
+      {isLoading ? (
+        <div className="rc-grid" aria-busy="true" aria-label={tx('Loading courses')}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rc-card rc-skel">
+              <div className="rc-skel-line" style={{ width: 70, height: 20 }} />
+              <div className="rc-skel-line" style={{ width: '80%', height: 16, marginTop: 14 }} />
+              <div className="rc-skel-line" style={{ width: '95%', height: 12, marginTop: 10 }} />
+              <div className="rc-skel-line" style={{ width: '60%', height: 12, marginTop: 6 }} />
+              <div className="rc-skel-foot">
+                <div className="rc-skel-line" style={{ width: 80, height: 12 }} />
+                <div className="rc-skel-line" style={{ width: 92, height: 32, borderRadius: 9 }} />
               </div>
             </div>
           ))}
         </div>
+      ) : loadFailed ? (
+        <div className="rc-empty">
+          <div className="rc-empty-icon rc-empty-icon--warn"><Info size={26} /></div>
+          <h4>{tx('Could not load the course catalog')}</h4>
+          <p>Check your connection and try again.</p>
+          <div className="rc-empty-actions">
+            <button type="button" className="rc-btn" onClick={loadData}>Try again</button>
+          </div>
+        </div>
+      ) : categories.length === 0 ? (
+        <div className="rc-empty">
+          <div className="rc-empty-icon"><CheckCircle2 size={28} /></div>
+          <h4>You're all set</h4>
+          <p>{tx('You have registered for every course open to you right now. New courses appear here when your department adds them.')}</p>
+          <div className="rc-empty-actions">
+            <button type="button" className="rc-btn" onClick={goToMyCourses}>
+              {tx('View my courses')} <ChevronRight size={15} />
+            </button>
+          </div>
+        </div>
+      ) : displayedCourses.length === 0 ? (
+        <div className="rc-empty">
+          <div className="rc-empty-icon rc-empty-icon--muted"><SearchX size={26} /></div>
+          <h4>{tx('No courses match your search')}</h4>
+          <p>Nothing matches “{query}”{showTabs ? <> in {levelName(selectedLevel)}</> : null}. Try a different code or title.</p>
+          <div className="rc-empty-actions">
+            <button type="button" className="rc-btn rc-btn--ghost" onClick={() => setSearchQuery('')}>Clear search</button>
+          </div>
+        </div>
+      ) : (
+        <ul className="rc-grid" role="list">
+          {displayedCourses.map(c => {
+            const units = Number(c.creditUnits) || 0;
+            const busy = enrollingCid === c.cid;
+            const meta = [isSchoolMode() ? '' : levelName(c.level), shortPeriod(c.semester)].filter(Boolean).join(' · ');
+            return (
+              <li key={c.cid} className="rc-card">
+                <div className="rc-card-top">
+                  <span className="rc-code">{c.courseCode}</span>
+                  {units > 0 && (
+                    <span className="rc-units" title={tx(`${units} credit unit${units === 1 ? '' : 's'}`)}>
+                      <BookMarked size={12} /> {units} {units === 1 ? 'unit' : 'units'}
+                    </span>
+                  )}
+                </div>
+                <h4 className="rc-title" title={c.title}>{c.title}</h4>
+                {c.description?.trim() && <p className="rc-desc" title={c.description}>{c.description}</p>}
+                <div className="rc-card-foot">
+                  <span className="rc-meta">
+                    {meta && <><Layers size={13} /> {meta}</>}
+                  </span>
+                  <button
+                    type="button"
+                    className="rc-btn"
+                    onClick={() => onEnrol(c)}
+                    disabled={enrollingCid !== null}
+                    aria-label={`Register ${c.courseCode} ${c.title}`}
+                  >
+                    {busy ? <><Loader2 className="rc-spin" size={15} /> Registering</> : <><Plus size={15} /> Register</>}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
-      {/* Modern Info Footer */}
-      <div className="lexa-card" style={{ marginTop: 30, background: 'linear-gradient(to right, #ffffff, #fcfdfe)', border: '1px solid #f1f5f7' }}>
-        <div className="lexa-card-body" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20, padding: '20px 30px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-            <div style={{ width: 45, height: 45, borderRadius: '12px', background: 'rgba(56, 164, 248, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Info size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#2a3142', marginBottom: 2 }}>Academic Enrolment Notice</div>
-              <div style={{ fontSize: 12, color: '#74788d' }}>{tx("Course registration is subject to credit load limits and prerequisite verification by your department coordinator.")}</div>
-            </div>
-          </div>
-          <button 
-            onClick={() => window.location.href = '/user-dashboard/courses'} 
-            className="btn-lexa btn-lexa-outline"
-            style={{ borderRadius: 8, padding: '10px 20px' }}
+      {/* ── Confirm dialog (same compact style as the quiz "is ready" prompt) ── */}
+      {confirmCourse && (() => {
+        const units = Number(confirmCourse.creditUnits) || 0;
+        return (
+          <ConfirmDialog
+            title={tx('Register this course?')}
+            confirmLabel="Register"
+            busyLabel="Registering"
+            busy={enrollingCid !== null}
+            onConfirm={confirmEnrol}
+            onCancel={() => setConfirmCourse(null)}
           >
-            {tx("My Registered Courses ")}<ChevronRight size={16} />
-          </button>
+            <p>
+              <b>{confirmCourse.courseCode}</b> · <b>{confirmCourse.title}</b>
+              {units > 0 && <> · {units} {units === 1 ? 'unit' : 'units'}</>}
+            </p>
+            <p>{tx('It will be added to your courses for the current semester.')}</p>
+          </ConfirmDialog>
+        );
+      })()}
+
+      {/* ── Notice ── */}
+      <div className="rc-notice">
+        <div className="rc-notice-icon"><Info size={18} /></div>
+        <div className="rc-notice-text">
+          <strong>{tx('Before you register')}</strong>
+          <span>{tx('Course registration is subject to credit load limits and prerequisite verification by your department coordinator.')}</span>
         </div>
+        <button type="button" className="rc-btn rc-btn--ghost" onClick={goToMyCourses}>
+          <BookOpen size={15} /> {tx('My registered courses')}
+        </button>
       </div>
 
-      <style>{`
-        .course-card-premium {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .course-card-premium:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 24px rgba(18, 38, 63, 0.08) !important;
-          border-color: var(--primary) !important;
-        }
-        .search-input-lexa:focus {
-          border-color: var(--primary) !important;
-          box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.1) !important;
-        }
-        .btn-lexa-outline {
-          background: transparent;
-          border: 1.5px solid #e1e9f1;
-          color: #74788d;
-        }
-        .btn-lexa-outline:hover {
-          background: #f8f9fa;
-          border-color: #ced4da;
-          color: #495057;
-        }
-        .swal2-premium-popup { border-radius: 16px !important; padding: 40px !important; font-family: 'Inter', sans-serif !important; }
-        .spin-ico { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        
-        @media (max-width: 768px) {
-          .lexa-card-body { flex-direction: column; align-items: stretch !important; }
-          .search-input-lexa { max-width: 100% !important; }
-        }
-      `}</style>
     </div>
   );
 }

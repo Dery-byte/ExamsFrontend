@@ -42,6 +42,8 @@ export interface AppModalProps {
   /** Footer content; defaults to a single Close button. */
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  /** false: clicking the backdrop does nothing; only the close controls dismiss. Default true. */
+  closeOnBackdrop?: boolean;
 }
 
 /**
@@ -50,7 +52,7 @@ export interface AppModalProps {
  * Handles scroll lock, Escape, backdrop click, focus trap and focus restore.
  * Becomes a bottom sheet on phones.
  */
-export default function AppModal({ title, subtitle, meta, onClose, children, footer, size = 'md' }: AppModalProps) {
+export default function AppModal({ title, subtitle, meta, onClose, children, footer, size = 'md', closeOnBackdrop = true }: AppModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const pressedOnBackdrop = useRef(false);
@@ -93,7 +95,7 @@ export default function AppModal({ title, subtitle, meta, onClose, children, foo
       // Close only when the press both starts and ends on the backdrop, so a text drag that ends outside doesn't dismiss.
       onMouseDown={e => { pressedOnBackdrop.current = e.target === e.currentTarget; }}
       onClick={e => {
-        if (pressedOnBackdrop.current && e.target === e.currentTarget) onClose();
+        if (closeOnBackdrop && pressedOnBackdrop.current && e.target === e.currentTarget) onClose();
         pressedOnBackdrop.current = false;
       }}
     >
