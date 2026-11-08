@@ -18,7 +18,7 @@ import { useQuizProtection } from '../../hooks/useQuizProtection';
 import { useFeature } from '../../hooks/useFeatureFlags';
 import QuestionImage from '../../components/ui/QuestionImage';
 import { theoryGroupKey, compareTheoryGroups } from '../../utils/theoryGroups';
-import { ANSWER_BOX_ATTR, BLOCKED_INPUT_TYPES, addsTooMuchAtOnce, isAnswerBox, noSuggestionProps } from '../../utils/typingGuard';
+import { ANSWER_BOX_ATTR, addsTooMuchAtOnce, answerBoxKey, installTypingGuard, isAnswerBox, noSuggestionProps } from '../../utils/typingGuard';
 import Swal from 'sweetalert2';
 import {
   Clock,
@@ -264,52 +264,38 @@ export default function StartQuiz() {
   const allowPaste = quizConfig?.allowPaste === true;
   const allowPasteRef = useRef(allowPaste);
   allowPasteRef.current = allowPaste;
-  const [pasteNotice, setPasteNotice] = useState(false);
-  const pasteNoticeAt = useRef(0);
-  const pasteNoticeTimer = useRef<ReturnType<typeof setTimeout>>();
-  const noteBlockedInsert = useCallback(() => {
-    const now = Date.now();
-    if (now - pasteNoticeAt.current < 4000) return;
-    pasteNoticeAt.current = now;
-    setPasteNotice(true);
-    if (pasteNoticeTimer.current) clearTimeout(pasteNoticeTimer.current);
-    pasteNoticeTimer.current = setTimeout(() => setPasteNotice(false), 3500);
+  // The message shows under the box that was blocked (a top banner can sit out of view behind the
+  // phone keyboard). Value = that box's data-answer-box key.
+  const [blockedBox, setBlockedBox] = useState<string | null>(null);
+  const blockedBoxTimer = useRef<ReturnType<typeof setTimeout>>();
+  const noteBlockedInsert = useCallback((key: string | null) => {
+    if (!key) return;
+    setBlockedBox(key);
+    if (blockedBoxTimer.current) clearTimeout(blockedBoxTimer.current);
+    blockedBoxTimer.current = setTimeout(() => setBlockedBox(null), 3500);
   }, []);
-  useEffect(() => () => { if (pasteNoticeTimer.current) clearTimeout(pasteNoticeTimer.current); }, []);
+  useEffect(() => () => { if (blockedBoxTimer.current) clearTimeout(blockedBoxTimer.current); }, []);
 
-  // First line of defence: refuse paste/drop/suggestion inserts the browser labels as such. Keyboards
-  // that put suggestions in as plain typed text are caught after the fact by rejectsInsert below.
-  // (No length rule here: Android reports each composing keystroke with the whole word so far.)
-  useEffect(() => {
-    const onBeforeInput = (e: Event) => {
-      if (allowPasteRef.current || !isAnswerBox(e.target)) return;
-      const ie = e as InputEvent;
-      if (BLOCKED_INPUT_TYPES.has(ie.inputType)) {
-        if (ie.cancelable) e.preventDefault();
-        noteBlockedInsert();
-      }
-    };
-    const onDrop = (e: DragEvent) => {
-      if (allowPasteRef.current || !isAnswerBox(e.target)) return;
-      e.preventDefault();
-      noteBlockedInsert();
-    };
-    document.addEventListener('beforeinput', onBeforeInput, true);
-    document.addEventListener('drop', onDrop, true);
-    return () => {
-      document.removeEventListener('beforeinput', onBeforeInput, true);
-      document.removeEventListener('drop', onDrop, true);
-    };
-  }, [noteBlockedInsert]);
+  // Main guard: undoes paste, drop and keyboard-suggestion inserts at document level, before React
+  // sees them (see installTypingGuard). rejectsInsert below is a second check inside onChange.
+  useEffect(
+    () => installTypingGuard(() => !allowPasteRef.current, f => noteBlockedInsert(answerBoxKey(f))),
+    [noteBlockedInsert],
+  );
 
   /** Backstop: true (and the change is dropped) when one change adds more than a keystroke can. */
-  const rejectsInsert = (prev: string, next: string): boolean => {
+  const rejectsInsert = (key: string, prev: string, next: string): boolean => {
     if (allowPasteRef.current || !addsTooMuchAtOnce(prev, next)) return false;
-    noteBlockedInsert();
+    noteBlockedInsert(key);
     return true;
   };
   // Typing-only boxes ask the keyboard to hide its suggestion bar too
-  const answerBoxProps = { [ANSWER_BOX_ATTR]: '', ...(allowPaste ? {} : noSuggestionProps) };
+  const answerBoxProps = (key: string) => ({ [ANSWER_BOX_ATTR]: key, ...(allowPaste ? {} : noSuggestionProps) });
+  const blockedMessage = (key: string) => blockedBox === key && (
+    <div role="status" aria-live="polite" style={{ marginTop: 6, padding: '6px 10px', borderRadius: 4, background: 'rgba(236, 69, 97, 0.1)', color: '#ec4561', fontSize: 12, fontWeight: 600 }}>
+      Pasting and keyboard suggestions are turned off for this quiz.
+    </div>
+  );
 
   useEffect(() => {
     history.pushState(null, '', location.href);
@@ -834,11 +820,6 @@ export default function StartQuiz() {
 
   return (
     <div className={`quiz-shell${isLight ? '' : ' quiz-dark'}`} style={{ ...shellVars, background: theme.bg, color: theme.text, transition: 'all 0.3s', fontFamily: "'Inter', sans-serif" }}>
-      {pasteNotice && (
-        <div role="status" aria-live="polite" style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 1000000, pointerEvents: 'none', maxWidth: 'calc(100vw - 32px)', boxSizing: 'border-box', padding: '10px 16px', borderRadius: 6, background: '#ec4561', color: '#fff', fontSize: 13, fontWeight: 600, boxShadow: '0 4px 14px rgba(0,0,0,0.18)', textAlign: 'center' }}>
-          Pasting and keyboard suggestions are turned off for this quiz.
-        </div>
-      )}
       {needsTap && (
         <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(15, 20, 30, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
           <div className="lexa-card" style={{ background: theme.card, maxWidth: 380, width: '100%', textAlign: 'center', margin: 0 }}>
@@ -955,7 +936,7 @@ export default function StartQuiz() {
           onPaste={e => {
             if (allowPaste && isAnswerBox(e.target)) return;
             e.preventDefault();
-            if (isAnswerBox(e.target)) noteBlockedInsert();
+            noteBlockedInsert(answerBoxKey(e.target));
           }}
         >
           {quizType === 'BOTH' && (
@@ -1056,14 +1037,15 @@ export default function StartQuiz() {
                             inputMode={q.questionType === 'NUMERIC' ? 'decimal' : 'text'}
                             autoComplete="off"
                             spellCheck={false}
-                            {...answerBoxProps}
+                            {...answerBoxProps(`typed-${q.quesId}`)}
                             value={q.givenAnswer?.[0] ?? ''}
-                            onChange={e => { if (!rejectsInsert(q.givenAnswer?.[0] ?? '', e.target.value)) setTypedAnswer(q, e.target.value); }}
+                            onChange={e => { if (!rejectsInsert(`typed-${q.quesId}`, q.givenAnswer?.[0] ?? '', e.target.value)) setTypedAnswer(q, e.target.value); }}
                             onBlur={e => saveTypedAnswer(q.quesId, e.target.value)}
                             placeholder={q.questionType === 'NUMERIC' ? 'e.g. 42.5' : 'Your answer'}
                             style={{ width: '100%', maxWidth: 420, boxSizing: 'border-box', padding: '11px 14px', fontSize: 15, borderRadius: 6,
                               border: `1.5px solid ${(q.givenAnswer?.[0] ?? '') ? 'var(--brand)' : theme.border}`, background: theme.card, color: theme.title, outline: 'none' }}
                           />
+                          {blockedMessage(`typed-${q.quesId}`)}
                         </div>
                       ) : (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -1116,13 +1098,14 @@ export default function StartQuiz() {
                       />
                       <textarea
                         rows={5}
-                        {...answerBoxProps}
+                        {...answerBoxProps(`theory-${q.quesNo}`)}
                         value={q.givenAnswer || ''}
-                        onChange={e => { if (!rejectsInsert(q.givenAnswer || '', e.target.value)) updateTheoryAnswer(q.quesNo, e.target.value); }}
+                        onChange={e => { if (!rejectsInsert(`theory-${q.quesNo}`, q.givenAnswer || '', e.target.value)) updateTheoryAnswer(q.quesNo, e.target.value); }}
                         onBlur={() => saveTheory()}
                         placeholder="Type your response here..."
                         style={{ width: '100%', padding: '15px', borderRadius: 4, border: `1px solid ${theme.border}`, background: isLight ? '#fcfdfe' : '#22262b', color: theme.text, fontSize: 14, outline: 'none', transition: 'all 0.2s', resize: 'vertical', boxSizing: 'border-box' }}
                       />
+                      {blockedMessage(`theory-${q.quesNo}`)}
                     </div>
                   </div>
                 ))}
