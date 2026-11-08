@@ -18,7 +18,7 @@ import {
   ShieldCheck, Clock, Calendar, Layers, ChevronRight, CheckCircle,
   Smartphone, Terminal, ShieldAlert, Zap, BookOpen, Activity,
   List, FileText, LayoutGrid, Award, Hash, Timer, Tag, Key, Info,
-  Monitor, Bot, Link2,
+  Monitor, Bot, Link2, ClipboardPaste
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -430,6 +430,7 @@ function QuizEditModal({ qId, onClose, onSave, categories }: any) {
                 <Toggle label="Watermark"      k="enableWatermark"          icon={Layers}     desc={tx("Visible student ID overlay")} />
                 <Toggle label="Media Shield"   k="enableScreenshotBlocking" icon={Smartphone} desc="Block screen captures" />
                 <Toggle label="DevTools Block" k="enableDevToolsBlocking"   icon={Terminal}   desc="Disable browser console" />
+                <Toggle label="Allow Paste"    k="allowPaste"               icon={ClipboardPaste} desc="Paste & keyboard suggestions in answers" />
               </div>
 
               {/* Breach Policy */}

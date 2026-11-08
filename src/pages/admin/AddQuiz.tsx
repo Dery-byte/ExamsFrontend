@@ -16,7 +16,7 @@ import {
   ShieldAlert, Zap, Eye, EyeOff, Save, Calendar, Clock, Layers,
   CheckCircle, ShieldCheck, Monitor, Smartphone, List, FileText,
   Loader2, ArrowLeft, Terminal, Award, Key, Timer, LayoutGrid,
-  ShieldEllipsis, ChevronRight, Tag, Hash, Info, Activity, BookOpen, Bot
+  ShieldEllipsis, ChevronRight, Tag, Hash, Info, Activity, BookOpen, Bot, ClipboardPaste
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 
@@ -32,7 +32,7 @@ const defaultQuiz = () => ({
   startTime: '', quizDate: '', attempted: false, active: true, category: { cid: '' }, quizType: '',
   violationAction: 'NONE', delaySeconds: 0, autoSubmitCountdownSeconds: 5, maxViolations: 3,
   delayMultiplier: 1.5, enableFullscreenLock: true, enableWatermark: true, emailReportOnReview: false,
-  enableScreenshotBlocking: true, enableDevToolsBlocking: true, llmProvider: 'GPT',
+  enableScreenshotBlocking: true, enableDevToolsBlocking: true, allowPaste: false, llmProvider: 'GPT',
   programIds: [] as number[],
   indexRangeStart: '',
   indexRangeEnd: '',
@@ -443,6 +443,7 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
             <Toggle label="Watermark" k="enableWatermark" icon={Layers} desc={tx("Visible student ID overlay")} />
             <Toggle label="Media Shield" k="enableScreenshotBlocking" icon={Smartphone} desc="Block screen captures" />
             <Toggle label="DevTools Block" k="enableDevToolsBlocking" icon={Terminal} desc="Disable browser console" />
+            <Toggle label="Allow Paste" k="allowPaste" icon={ClipboardPaste} desc="Paste & keyboard suggestions in answers" />
           </div>
 
           {/* Breach Policy */}
