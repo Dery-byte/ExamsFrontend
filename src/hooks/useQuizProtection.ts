@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { queueViolation, queueViolationDelay } from '../utils/saveQueue';
+import { isAnswerBox } from '../utils/typingGuard';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type ViolationAction =
@@ -41,6 +42,8 @@ export interface QuizProtectionConfig {
   soundEnabled?: boolean;
   /** Super Admin setting: the lock-out stops while the student is away and runs on when they return. */
   _delayPausesWhileAway?: boolean;
+  /** Quiz's "Allow Paste": answer boxes keep their right-click / long-press menu (Paste, Copy). */
+  allowAnswerMenu?: boolean;
   onAutoSubmit: () => void;
 }
 
@@ -928,7 +931,11 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     }
 
     // ── Context menu ──
-    const ctx = (e: MouseEvent) => { e.preventDefault(); e.stopPropagation(); };
+    const ctx = (e: MouseEvent) => {
+      // With Allow Paste on, answer boxes keep their menu so students can use Paste/Copy there
+      if (cfgRef.current.allowAnswerMenu && isAnswerBox(e.target)) return;
+      e.preventDefault(); e.stopPropagation();
+    };
     document.addEventListener('contextmenu', ctx, true);
     add(() => document.removeEventListener('contextmenu', ctx, true));
 

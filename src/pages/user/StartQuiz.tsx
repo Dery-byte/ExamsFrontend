@@ -248,6 +248,7 @@ export default function StartQuiz() {
     _savedViolationCount: quizConfig._savedViolationCount ?? 0,
     _delayPausesWhileAway: quizConfig._delayPausesWhileAway ?? true,
     soundEnabled: examSounds,
+    allowAnswerMenu: quizConfig.allowPaste === true,
   } : {
     quizId: realId, violationAction: 'NONE' as const,
     maxViolations: 0, delaySeconds: 0, delayMultiplier: 3,
