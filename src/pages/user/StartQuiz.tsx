@@ -185,9 +185,6 @@ export default function StartQuiz() {
   const realId = qid ? (decodeParam(qid) ?? '') : '';
 
   const [loading, setLoading] = useState(true);
-  // Browsers only show the "Leave site?" box (and allow fullscreen) once the student has clicked the
-  // page. A new exam window or a reload has no click yet, so it opens with one "Continue" tap.
-  const [needsTap, setNeedsTap] = useState(() => !(navigator as any).userActivation?.hasBeenActive);
   const [submitting, setSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
   const [submitLogs, setSubmitLogs] = useState<Array<{ msg: string; type: 'info'|'ok'|'warn'|'err' }>>([]);
@@ -821,29 +818,6 @@ export default function StartQuiz() {
 
   return (
     <div className={`quiz-shell${isLight ? '' : ' quiz-dark'}`} style={{ ...shellVars, background: theme.bg, color: theme.text, transition: 'all 0.3s', fontFamily: "'Inter', sans-serif" }}>
-      {needsTap && (
-        <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(15, 20, 30, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div className="lexa-card" style={{ background: theme.card, maxWidth: 380, width: '100%', textAlign: 'center', margin: 0 }}>
-            <div className="lexa-card-body" style={{ padding: 28 }}>
-              <h5 style={{ fontWeight: 700, color: theme.title, margin: '0 0 8px' }}>{quiz?.title || 'Your quiz'} is ready</h5>
-              <p style={{ fontSize: 13, color: theme.muted, margin: '0 0 20px' }}>The timer is already running.</p>
-              <button
-                autoFocus
-                className="btn-lexa btn-lexa-primary"
-                style={{ width: '100%', justifyContent: 'center', padding: '12px 0' }}
-                onClick={() => {
-                  setNeedsTap(false);
-                  if (quizConfig?.enableFullscreenLock && !document.fullscreenElement) {
-                    document.documentElement.requestFullscreen?.().catch(() => { });
-                  }
-                }}
-              >
-                Continue to the quiz
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {/* ── HEADER ── */}
       <header className="mobile-sticky-header" style={{
         position: 'relative', zIndex: 100, background: theme.card, padding: '10px 30px',

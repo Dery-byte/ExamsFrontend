@@ -1019,6 +1019,13 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
         add(() => document.removeEventListener(ev, fsChange));
       });
       fsIv.current = setInterval(() => { if (s.fsActive&&!isFS()&&!s.autoSubmitDone&&!s.isDelayActive) enterFS(); }, 2000);
+      // Browsers refuse fullscreen until the student taps, clicks or presses a key (a new exam window
+      // or a reload has had none yet), so (re)enter it on their next one, e.g. picking an answer
+      const gestureFS = () => { if (s.fsActive && !isFS() && !s.autoSubmitDone && !s.isDelayActive) enterFS(); };
+      ['click', 'keydown', 'touchend'].forEach(ev => {
+        document.addEventListener(ev, gestureFS, true);
+        add(() => document.removeEventListener(ev, gestureFS, true));
+      });
       s.fsActive = true;
     }
 

@@ -46,6 +46,9 @@ export default function Instructions() {
   const realId = qid ? decodeParam(qid) : null;
 
   const [quiz, setQuiz]                           = useState<any>(null);
+  // Set when the browser blocked the exam window: the student taps once more to open it
+  const [openTap, setOpenTap]                     = useState<{ url: string; features: string } | null>(null);
+  const [openTapError, setOpenTapError]           = useState('');
   const [isLoading, setIsLoading]                 = useState(true);
   // The caller's own attempt position (limit / used / remaining) — replaces downloading every report.
   const [attempts, setAttempts]                 = useState<any>(null);
@@ -228,6 +231,28 @@ export default function Instructions() {
     return hr > 0 ? `${hr} hr ${mm} min` : `${mm} minutes`;
   };
 
+  // Called as soon as we have a confirmed open exam window.
+  const registerWindow = (w: Window) => {
+    _activeQuizWindow = w;                          // survives SPA navigation
+    sessionStorage.setItem(EXAM_SESSION_KEY, '1'); // survives page refresh
+    setQuizOpen(true);
+    w.focus();
+  };
+
+  // "Continue to Exam" in the one-more-step card. window.open runs right inside the tap, which
+  // browsers that blocked the first attempt (Safari in particular) accept.
+  const openExamWindow = () => {
+    if (!openTap) return;
+    const w = window.open(openTap.url, 'QuizWindow', openTap.features);
+    if (!w || w.closed) {
+      setOpenTapError('Pop-ups are still blocked. Allow pop-ups for this site (on iPhone: Settings → Safari → Block Pop-ups off), then tap Continue to Exam again.');
+      return;
+    }
+    setOpenTap(null);
+    setOpenTapError('');
+    registerWindow(w);
+  };
+
   const startQuiz = () => {
     if (!quiz) return;
 
@@ -241,14 +266,6 @@ export default function Instructions() {
 
     const fullUrl  = `${window.location.origin}${startQuizPath(realId!)}`;
     const features = `width=${screen.width},height=${screen.height},top=0,left=0,fullscreen=yes,toolbar=no,location=no,menubar=no,scrollbars=yes,resizable=yes`;
-
-    // Helper — called as soon as we have a confirmed open window handle.
-    const registerWindow = (w: Window) => {
-      _activeQuizWindow = w;                          // survives SPA navigation
-      sessionStorage.setItem(EXAM_SESSION_KEY, '1'); // survives page refresh
-      setQuizOpen(true);
-      w.focus();
-    };
 
     // Step 1 — password prompt. No window opened yet.
     Swal.fire({
@@ -303,36 +320,9 @@ export default function Instructions() {
         });
       } else {
         // ── Blocked (Safari / WebKit) — need one explicit user tap ────────────
-        Swal.fire({
-          title: 'One more step',
-          html: `
-            <p style="color:#6c757d;font-size:14px;margin:0 0 8px">
-              Your browser requires explicit permission to open the exam window.
-            </p>
-            <p style="color:#adb5bd;font-size:12px;margin:0">
-              Tap <strong>Continue to Exam</strong> and then tap
-              <em>Allow</em> if Safari asks for confirmation.
-            </p>`,
-          icon: 'info',
-          confirmButtonText: 'Continue to Exam',
-          confirmButtonColor: 'var(--primary)',
-          showCancelButton: false,
-          allowOutsideClick: false,
-          customClass: { popup: 'swal2-premium-popup' },
-          // preConfirm fires synchronously on the button-click DOM event —
-          // Safari sees this as a fresh user gesture and allows window.open().
-          preConfirm: () => {
-            const w = window.open(fullUrl, 'QuizWindow', features);
-            if (!w || w.closed) {
-              Swal.showValidationMessage(
-                'Pop-ups are still blocked. In Safari go to Settings → Safari → Block Pop-ups and turn it off, then try again.'
-              );
-              return false;
-            }
-            registerWindow(w);
-            return true;
-          }
-        });
+        // Small card (see openTap below); its button opens the window inside the tap itself.
+        setOpenTapError('');
+        setOpenTap({ url: fullUrl, features });
       }
     });
   };
@@ -366,6 +356,27 @@ export default function Instructions() {
 
   return (
     <div className="animate-fade-in">
+      {openTap && (
+        <div role="dialog" aria-modal="true" aria-labelledby="open-exam-title" style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(15, 20, 30, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div className="lexa-card" style={{ maxWidth: 380, width: '100%', textAlign: 'center', margin: 0 }}>
+            <div className="lexa-card-body" style={{ padding: 28 }}>
+              <h5 id="open-exam-title" style={{ fontWeight: 700, color: 'var(--gray-900)', margin: '0 0 8px' }}>One more step</h5>
+              <p style={{ fontSize: 13, color: 'var(--gray-600)', margin: '0 0 20px' }}>Your browser needs one more tap to open the exam window.</p>
+              {openTapError && (
+                <p role="alert" style={{ fontSize: 12, fontWeight: 600, color: '#ec4561', margin: '-8px 0 16px' }}>{openTapError}</p>
+              )}
+              <button
+                autoFocus
+                className="btn-lexa btn-lexa-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px 0' }}
+                onClick={openExamWindow}
+              >
+                Continue to Exam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <PageHeader title="Examination Brief" breadcrumbs={['User', 'Instructions']} />
 
       <div className="instructions-grid">
