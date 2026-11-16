@@ -9,6 +9,7 @@ import {
 } from '../../api/endpoints';
 import { downloadWorkbook, readRows, slug } from '../../utils/spreadsheet';
 import { defaultLevels, isSchoolMode, periodName, periodsPerLevel, tx, oneYear } from '../../utils/terms';
+import PasswordResetPanel from './PasswordResetPanel';
 import { useBoarding } from '../../hooks/useFeatureFlags';
 
 /** Schools: classes (one year each) instead of programmes and levels, sections instead of departments. */
@@ -68,9 +69,9 @@ function studentTemplate(b: { mode: 'DAY' | 'BOARDING' | 'BOTH'; word: string })
   };
 }
 
-type Tab = 'import' | 'enroll' | 'export';
+type Tab = 'import' | 'enroll' | 'export' | 'reset';
 
-/** Super Admin / HOD: bulk import, bulk enrolment and results export. */
+/** Super Admin / HOD: bulk import, bulk enrolment, results export and password resets. */
 export default function DataTools() {
   const [tab, setTab] = useState<Tab>('import');
   const { user } = useAuth() as any;
@@ -86,13 +87,14 @@ export default function DataTools() {
     <div style={{ paddingBottom: 40 }}>
       <PageHeader title="Data Tools" breadcrumbs={['Administration', 'Data Tools']} />
       <div role="tablist" className="dt-tabs">
-        {([['import', 'Bulk import', Upload], ['enroll', 'Bulk enrolment', BookPlus], ['export', 'Export results', FileDown]] as const).map(([k, l, Icon]) => (
+        {([['import', 'Bulk import', Upload], ['enroll', 'Bulk enrolment', BookPlus], ['export', 'Export results', FileDown], ['reset', 'Reset passwords', KeyRound]] as const).map(([k, l, Icon]) => (
           <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'is-active' : ''} onClick={() => setTab(k)}><Icon size={15} /> {l}</button>
         ))}
       </div>
-      {tab === 'import' && <ImportPanel isSuper={isSuper} />}
+      {tab === 'import' && <ImportPanel isSuper={isSuper} onOpenReset={() => setTab('reset')} />}
       {tab === 'enroll' && <EnrollPanel programs={programs} />}
       {tab === 'export' && <ExportPanel programs={programs} />}
+      {tab === 'reset' && <PasswordResetPanel programs={programs} isSuper={isSuper} />}
 
       <style>{`
         .dt-tabs { display: flex; gap: 4px; border-bottom: 1px solid #e2e8f0; margin-bottom: 16px; flex-wrap: wrap; }
@@ -116,6 +118,7 @@ export default function DataTools() {
         .dt-stats { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
         .dt-stat { background: #f8fafc; border: 1px solid #eef0f4; border-radius: 10px; padding: 8px 14px; font-size: 12px; color: #64748b; }
         .dt-stat b { display: block; font-size: 20px; color: #1e293b; }
+        .dt-linkbtn { border: none; background: none; padding: 0; font: inherit; color: var(--brand-text); font-weight: 700; text-decoration: underline; cursor: pointer; }
         .dt-warn { display: flex; gap: 8px; align-items: flex-start; background: #fff7e6; border: 1px solid #fde8b8; color: #7a4d00; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-top: 12px; }
       `}</style>
     </div>
@@ -124,7 +127,7 @@ export default function DataTools() {
 
 /* ── Import ─────────────────────────────────────────────────────────── */
 
-function ImportPanel({ isSuper }: { isSuper: boolean }) {
+function ImportPanel({ isSuper, onOpenReset }: { isSuper: boolean; onOpenReset: () => void }) {
   const [type, setType] = useState<ImportType>('students');
   const [fileName, setFileName] = useState('');
   const [rows, setRows] = useState<Record<string, string>[]>([]);
@@ -174,13 +177,37 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
       const res = await importRows(type, rows, true, isPeople && notify);
       setResult(res);
       toast.success(`${res.created} ${tpl.label.toLowerCase()} imported`);
-    } catch (e: any) { toast.error(e?.response?.data?.message ?? 'Import failed'); }
+      // The new passwords exist only in this answer: save them at once rather than rely on a button
+      if (res.credentials?.length) {
+        downloadCredentials(res);
+        Swal.fire({
+          icon: 'success', title: `${res.created} ${tpl.label.toLowerCase()} imported`,
+          html: `The login details of the ${res.credentials.length} new account(s) were downloaded as an Excel file. `
+            + 'Keep it safe: the passwords cannot be shown again.'
+            + (res.emailed ? `<br/><br/>${res.emailed} were also emailed. Anyone with a wrong email address will not get theirs, so give them the details from the file.` : ''),
+          confirmButtonText: 'OK', confirmButtonColor: 'var(--brand)',
+        });
+      }
+    } catch (e: any) {
+      const status = e?.response?.status;
+      if (isPeople && (!e?.response || status >= 502)) {
+        // The server stopped answering (a slow, large import behind a proxy): it may still have created the accounts
+        const r = await Swal.fire({
+          icon: 'warning', title: 'The import took too long to answer',
+          html: 'The server may still have created some or all of the accounts, but their passwords could not be shown here.'
+            + '<br/><br/>Check the list in <b>Reset passwords</b>: give the imported people new passwords there and download them. '
+            + 'Do not import the same file again; rows that already have accounts will be refused.',
+          showCancelButton: true, confirmButtonText: 'Open Reset passwords', cancelButtonText: 'Close', confirmButtonColor: 'var(--brand)',
+        });
+        if (r.isConfirmed) onOpenReset();
+      } else toast.error(e?.response?.data?.message ?? 'Import failed');
+    }
     finally { setBusy(false); }
   };
 
-  const downloadCredentials = () => downloadWorkbook(`${type}-login-details`, [{
+  const downloadCredentials = (res: any = result) => downloadWorkbook(`${type}-login-details`, [{
     name: 'Login details',
-    rows: result.credentials.map((c: any) => ({ Name: c.name, 'Login ID': c.username, Email: c.email, 'Temporary password': c.password })),
+    rows: res.credentials.map((c: any) => ({ Name: c.name, 'Login ID': c.username, Email: c.email ?? '', 'Temporary password': c.password })),
   }]);
 
   const problems = useMemo(() => (result?.rows ?? []).filter((r: any) => !r.ok), [result]);
@@ -269,9 +296,21 @@ function ImportPanel({ isSuper }: { isSuper: boolean }) {
                 <div>
                   <b>{result.credentials.length} temporary password(s) were generated.</b> Download them now — they are not stored anywhere readable and can't be shown again.
                   {result.emailed > 0 ? ' Each person has also been emailed their own login details; keep this file as a backup in case an email does not arrive.' : ' Ask each person to change their password after first sign-in.'}
-                  <div style={{ marginTop: 8 }}><button className="dt-btn" onClick={downloadCredentials}><Download size={14} /> Download login details</button></div>
+                  <div style={{ marginTop: 8 }}><button className="dt-btn" onClick={() => downloadCredentials()}><Download size={14} /> Download login details again</button></div>
                 </div>
               </div>
+            )}
+            {result.committed && result.passwordsFromFile > 0 && (
+              <div className="dt-warn">
+                <KeyRound size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <b>{result.passwordsFromFile} account(s) use the password from your file</b>, so those passwords are in your own file and are not listed here.
+                  {' '}Lost them? <button className="dt-linkbtn" onClick={onOpenReset}>Give new passwords in Reset passwords</button>.
+                </div>
+              </div>
+            )}
+            {result.committed && result.created > 0 && (
+              <p className="dt-note">Need new passwords later (lost file, wrong email)? Use the <button className="dt-linkbtn" onClick={onOpenReset}>Reset passwords</button> tab.</p>
             )}
           </>
         )}

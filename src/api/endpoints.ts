@@ -729,6 +729,15 @@ export const downloadTranscriptPdf = async (studentId?: number) => {
 export type ImportType = 'students' | 'lecturers' | 'courses';
 export const importRows = (type: ImportType, rows: Record<string, string>[], commit: boolean, notify = true) =>
   client.post(`${apiRoot()}/admin-tools/import/${type}`, { rows }, { params: { commit, notify } }).then(r => r.data);
+export type ResetWho = 'students' | 'lecturers';
+/** Students or lecturers the admin may give new passwords (HODs: own department only). */
+export const getResetCandidates = (who: ResetWho, filters: { programId?: number | ''; level?: number | ''; departmentId?: number | '' }) =>
+  client.get(`${apiRoot()}/admin-tools/password-reset/accounts`, {
+    params: { who, programId: filters.programId || undefined, level: filters.level || undefined, departmentId: filters.departmentId || undefined },
+  }).then(r => r.data);
+/** New temporary passwords for these accounts (at most 200 per call), returned once. */
+export const resetPasswords = (ids: number[], notify: boolean) =>
+  client.post(`${apiRoot()}/admin-tools/password-reset`, { ids, notify }).then(r => r.data);
 export const bulkEnroll = (data: { programId: number; level: number; semester?: number | null }, commit: boolean) =>
   client.post(`${apiRoot()}/admin-tools/bulk-enroll`, data, { params: { commit } }).then(r => r.data);
 export const getResultsSummary = (programId: number, level?: number | '') =>
