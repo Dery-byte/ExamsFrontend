@@ -3,7 +3,8 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import NotificationBell from '../NotificationBell';
-import { useFeatureFlags, useAssessments } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments, useMaterials } from '../../hooks/useFeatureFlags';
+import { FolderOpen } from 'lucide-react';
 import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { 
   LayoutDashboard, 
@@ -34,6 +35,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
   const { term, institution } = useInstitution();
   const { marksSheetStudent, feesStudent, features } = useFeatureFlags();
   const quizzesOn = useAssessments();   // the developer's Assessments switch
+  const materialsOn = useMaterials();   // developer module + Super Admin / department feature
   const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
   const menuGroups = [
@@ -43,6 +45,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
         { to: '/user-dashboard/user-dashboard', label: 'Dashboard',       icon: LayoutDashboard },
         ...(on('STUDENT_COURSE_REGISTRATION') ? [{ to: '/user-dashboard/register', label: tx('Register Course'), icon: GraduationCap }] : []),
         { to: '/user-dashboard/courses',         label: tx('My Courses'),   icon: BookOpen         },
+        ...(materialsOn ? [{ to: '/user-dashboard/materials', label: tx('Notes & Assignments'), icon: FolderOpen }] : []),
         ...(on('ATTENDANCE') ? [{ to: '/user-dashboard/attendance', label: 'Attendance', icon: UserCheck }] : []),
         ...(feesStudent === true ? [{ to: '/user-dashboard/fees', label: 'School Fees', icon: Wallet }] : []),
         // Shown whenever the wallet is on, even while the School Fees page is hidden (paying fees from it then waits);

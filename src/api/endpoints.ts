@@ -498,7 +498,7 @@ export const setReportEmailSetting = (enabled: boolean): Promise<boolean> =>
 export type FeatureKey =
   | 'STUDENT_SELF_SIGNUP' | 'HOD_ANALYTICS' | 'HOD_DATA_TOOLS' | 'HOD_PROMOTION' | 'HOD_ANNOUNCEMENTS'
   | 'STUDENT_COURSE_REGISTRATION' | 'REMARK_REQUESTS' | 'STUDENT_TIMETABLE' | 'STUDENT_TRANSCRIPT' | 'STUDENT_REPORT_CARD' | 'QUESTION_BANK'
-  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION' | 'HOD_REPORTS' | 'LECTURER_REPORTS' | 'EXAM_SOUNDS' | 'ATTENDANCE' | 'STUDENT_WALLET';
+  | 'FORCE_PASSWORD_CHANGE' | 'DOCUMENT_VERIFICATION' | 'HOD_REPORTS' | 'LECTURER_REPORTS' | 'EXAM_SOUNDS' | 'ATTENDANCE' | 'STUDENT_WALLET' | 'COURSE_MATERIALS';
 
 export interface FeatureFlags {
   marksSheetAdmin: boolean; marksSheetLecturer: boolean; marksSheetStudent: boolean;
@@ -508,6 +508,8 @@ export interface FeatureFlags {
   auditLogSuperAdmin?: boolean;
   /** Developer switch: the whole Assessments (quiz) module; false hides it from every user. */
   assessments?: boolean;
+  /** Developer switch: Course Materials (weekly notes and assignments); false hides it from every user. */
+  materials?: boolean;
   /** Each feature's state for the signed-in user (system switch + their department's choice). */
   features?: Partial<Record<FeatureKey, boolean>>;
   /**
@@ -854,6 +856,9 @@ export interface DeveloperModules {
   assessments: boolean; residency: 'DAY' | 'BOARDING' | 'BOTH';
   /** Whether the Super Admin / the bursar may pay students' fees and bills from their wallets (cashiers never may). */
   walletSpendSuperAdmin: boolean; walletSpendBursar: boolean;
+  /** Course notes and assignments (starts off), its largest file (MB), total storage (GB), what's used and where. */
+  materials?: boolean; materialsMaxFileMb?: number; materialsQuotaGb?: number;
+  materialsUsedBytes?: number; materialsFolder?: string;
 }
 export const getModules = (): Promise<DeveloperModules> =>
   client.get(`${developerRootUrl()}/modules`).then(r => r.data);

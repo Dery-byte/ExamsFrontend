@@ -22,6 +22,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import PageHeader from '../../components/PageHeader';
 import FeesSummaryCard from './fees/FeesSummaryCard';
 import MyRoomCard from './boarding/MyRoomCard';
+import MaterialsCard from './materials/MaterialsCard';
 import CheckInPanel from './attendance/CheckInPanel';
 import { useAssessments, useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { tx } from '../../utils/terms';
@@ -165,6 +166,9 @@ export default function UserDashboard() {
 
       {/* Boarders: where they sleep */}
       <MyRoomCard />
+
+      {/* New notes this week and assignments due soon (course materials) */}
+      <MaterialsCard />
 
       {/* Stats Row */}
       <div className="dashboard-stats-grid">

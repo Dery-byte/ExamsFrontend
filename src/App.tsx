@@ -59,6 +59,12 @@ import Transcript from './pages/user/Transcript';
 import DataTools from './pages/shared/DataTools';
 import FeatureControls from './pages/shared/FeatureControls';
 import AttendanceHome from './pages/shared/attendance/AttendanceHome';
+import MaterialsGate from './components/common/MaterialsGate';
+import MaterialsHome from './pages/shared/materials/MaterialsHome';
+import MaterialsCoursePage from './pages/shared/materials/CoursePage';
+import AssignmentPage from './pages/shared/materials/AssignmentPage';
+import StudentMaterials from './pages/user/materials/StudentMaterials';
+import StudentCourseMaterials from './pages/user/materials/StudentCourseMaterials';
 import AttendanceSessionPage from './pages/shared/attendance/SessionPage';
 import ProjectorScreen from './pages/shared/attendance/ProjectorScreen';
 import { HelperScannerPage, StaffScannerPage } from './pages/shared/attendance/ScannerPages';
@@ -199,6 +205,9 @@ export default function App() {
           <Route path="timetable" element={<AssessmentsGate><Timetable /></AssessmentsGate>} />
           <Route path="attendance" element={<AttendanceHome />} />
           <Route path="attendance/session/:id" element={<AttendanceSessionPage />} />
+          <Route path="materials" element={<MaterialsGate><MaterialsHome /></MaterialsGate>} />
+          <Route path="materials/assignment/:id" element={<MaterialsGate><AssignmentPage /></MaterialsGate>} />
+          <Route path="materials/:courseId" element={<MaterialsGate><MaterialsCoursePage /></MaterialsGate>} />
           <Route path="boarding" element={<BoardingGate><BoardingHome /></BoardingGate>} />
           <Route path="boarding/:id" element={<BoardingGate><HostelPage /></BoardingGate>} />
           <Route path="boarding/reports" element={<BoardingGate><ReportsHub /></BoardingGate>} />
@@ -233,6 +242,9 @@ export default function App() {
           {/* Not gated: the HOD sets the rules (and the department switch) from here */}
           <Route path="attendance" element={<AttendanceHome />} />
           <Route path="attendance/session/:id" element={<AttendanceSessionPage />} />
+          <Route path="materials" element={<MaterialsGate><MaterialsHome /></MaterialsGate>} />
+          <Route path="materials/assignment/:id" element={<MaterialsGate><AssignmentPage /></MaterialsGate>} />
+          <Route path="materials/:courseId" element={<MaterialsGate><MaterialsCoursePage /></MaterialsGate>} />
           <Route path="boarding" element={<BoardingGate><BoardingHome /></BoardingGate>} />
           <Route path="boarding/:id" element={<BoardingGate><HostelPage /></BoardingGate>} />
           <Route path="boarding/reports" element={<BoardingGate><ReportsHub /></BoardingGate>} />
@@ -267,6 +279,9 @@ export default function App() {
           <Route path="timetable" element={<AssessmentsGate><Timetable /></AssessmentsGate>} />
           <Route path="attendance" element={<FeatureGate feature="ATTENDANCE" redirectTo="/lect"><AttendanceHome /></FeatureGate>} />
           <Route path="attendance/session/:id" element={<FeatureGate feature="ATTENDANCE" redirectTo="/lect"><AttendanceSessionPage /></FeatureGate>} />
+          <Route path="materials" element={<MaterialsGate><MaterialsHome /></MaterialsGate>} />
+          <Route path="materials/assignment/:id" element={<MaterialsGate><AssignmentPage /></MaterialsGate>} />
+          <Route path="materials/:courseId" element={<MaterialsGate><MaterialsCoursePage /></MaterialsGate>} />
           <Route path="boarding" element={<BoardingGate><BoardingHome /></BoardingGate>} />
           <Route path="boarding/:id" element={<BoardingGate><HostelPage /></BoardingGate>} />
           <Route path="boarding/reports" element={<BoardingGate><ReportsHub /></BoardingGate>} />
@@ -326,6 +341,8 @@ export default function App() {
           <Route path="register" element={<FeatureGate feature="STUDENT_COURSE_REGISTRATION" redirectTo="/user-dashboard"><RegisterCourses /></FeatureGate>} />
           <Route path="courses" element={<CoursesRegistered />} />
           <Route path="attendance" element={<FeatureGate feature="ATTENDANCE" redirectTo="/user-dashboard"><StudentAttendance /></FeatureGate>} />
+          <Route path="materials" element={<MaterialsGate><StudentMaterials /></MaterialsGate>} />
+          <Route path="materials/:courseId" element={<MaterialsGate><StudentCourseMaterials /></MaterialsGate>} />
           <Route path="quizzes" element={<AssessmentsGate><AvailableQuizzes /></AssessmentsGate>} />
           <Route path="history" element={<AssessmentsGate><LoadQuiz /></AssessmentsGate>} />
           <Route path="report-cards" element={<FeatureGate flag="marksSheetStudent" feature="STUDENT_REPORT_CARD" redirectTo="/user-dashboard"><SemesterReportCard /></FeatureGate>} />

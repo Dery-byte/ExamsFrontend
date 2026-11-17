@@ -4,7 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
-import { useFeatureFlags, useAssessments, useBoarding } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments, useBoarding, useMaterials } from '../../hooks/useFeatureFlags';
+import { FolderOpen } from 'lucide-react';
 import { hideQuizItems } from '../../utils/assessmentsNav';
 import { 
   Home, 
@@ -35,10 +36,12 @@ export default function LecturerLayout() {
   const { marksSheetLecturer, features } = useFeatureFlags();
   const boarding = useBoarding();
   const quizzesOn = useAssessments();   // the developer's Assessments switch
+  const materialsOn = useMaterials();   // developer module + Super Admin / department feature
 
   const navItems = [
     { to: '/lect', exact: true, icon: <Home size={20} />, title: 'Dashboard' },
     { to: '/lect/courses', icon: <Grid size={20} />, title: tx('Courses') },
+    ...(materialsOn ? [{ to: '/lect/materials', icon: <FolderOpen size={20} />, title: tx('Notes & Assignments') }] : []),
     { to: '/lect/quizes', icon: <FileText size={20} />, title: 'Quizzes' },
     { to: '/lect/announcements', icon: <Megaphone size={20} />, title: 'Announcements' },
     { to: '/lect/profile', icon: <Users size={20} />, title: 'Profile' },

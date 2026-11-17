@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { CalendarRange, Scale, Plus, Trash2, Loader2, CheckCircle2, Star, RefreshCw, GraduationCap, BookmarkPlus } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
+import TermDatesCard from './TermDatesCard';
 import {
   createSession, deleteSession, getGradingPreset, getGradingSettings, getSessions, makeSessionCurrent,
   recalculateGrades, saveGradingSettings, saveGradingPreset, deleteGradingPreset,
@@ -22,6 +23,7 @@ export default function AcademicSettings() {
     <div className="as" style={{ paddingBottom: 40 }}>
       <PageHeader title="Sessions & Grading" breadcrumbs={['Super Admin', 'Sessions & Grading']} />
       <SessionsCard />
+      <TermDatesCard />
       <GradingCard />
       <style>{ACADEMIC_CSS}</style>
     </div>

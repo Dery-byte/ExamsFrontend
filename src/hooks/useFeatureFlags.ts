@@ -3,6 +3,15 @@ import { getFeatureFlags, type FeatureFlags, type FeatureKey } from '../api/endp
 
 const DEFAULT_FLAGS: FeatureFlags = { marksSheetAdmin: true, marksSheetLecturer: true, marksSheetStudent: true, feesStudent: false, assessments: true, features: {} };
 
+/**
+ * Course notes and assignments for the signed-in user: the developer's module, then the Super Admin's
+ * feature and their department's choice. Off while the flags load (it starts off everywhere).
+ */
+export function useMaterials(): boolean {
+  const f = useFeatureFlags();
+  return f.materials === true && f.features?.COURSE_MATERIALS !== false;
+}
+
 /** The developer's Assessments switch (the whole quiz module); on while the flags load. */
 export function useAssessments(): boolean {
   return useFeatureFlags().assessments !== false;

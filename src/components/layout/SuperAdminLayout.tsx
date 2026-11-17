@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import { useFeatureFlags, useAssessments, useBoarding } from '../../hooks/useFeatureFlags';
+import { FolderOpen } from 'lucide-react';
 import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
@@ -16,7 +17,7 @@ const DESKTOP_QUERY = '(min-width: 1024px)';
 export default function SuperAdminLayout() {
   const { user, logout, timeDisplay } = useAuth();
   const { term, institution } = useInstitution();
-  const { auditLogSuperAdmin } = useFeatureFlags();
+  const { auditLogSuperAdmin, materials: materialsOn } = useFeatureFlags();   // the Super Admin sees materials whenever the developer's module is on
   const quizzesOn = useAssessments();   // the developer's Assessments switch
   const boarding = useBoarding();       // the developer's day / boarding setting
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -86,6 +87,7 @@ export default function SuperAdminLayout() {
         { to: '/super-admin/quiz-review', icon: <Eye size={20} />, label: 'Quiz Review Panel' },
         { to: '/super-admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' },
         { to: '/super-admin/attendance', icon: <UserCheck size={20} />, label: 'Class Attendance' },
+        ...(materialsOn === true ? [{ to: '/super-admin/materials', icon: <FolderOpen size={20} />, label: tx('Notes & Assignments') }] : []),
         { to: '/super-admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
         { to: '/super-admin/remarks', icon: <MessageSquareWarning size={20} />, label: 'Re-mark Requests' },
       ]

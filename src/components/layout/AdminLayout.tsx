@@ -4,7 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useInstitution } from '../../hooks/useInstitution';
 import { isSchoolMode } from '../../utils/terms';
 import NotificationBell from '../NotificationBell';
-import { useFeatureFlags, useAssessments, useBoarding } from '../../hooks/useFeatureFlags';
+import { useFeatureFlags, useAssessments, useBoarding, useMaterials } from '../../hooks/useFeatureFlags';
+import { FolderOpen } from 'lucide-react';
 import { hideQuizGroups } from '../../utils/assessmentsNav';
 import { 
   LayoutDashboard, 
@@ -51,6 +52,7 @@ export default function AdminLayout() {
   const { marksSheetAdmin, features } = useFeatureFlags();
   const boarding = useBoarding();
   const quizzesOn = useAssessments();   // the developer's Assessments switch
+  const materialsOn = useMaterials();   // developer module + Super Admin / department feature
   const on = (k: keyof NonNullable<typeof features>) => features?.[k] !== false;
 
   useEffect(() => {
@@ -83,6 +85,7 @@ export default function AdminLayout() {
         { to: '/admin/add-quiz', icon: <FilePlus size={20} />, label: 'Add Quiz' },
         ...(on('QUESTION_BANK') ? [{ to: '/admin/question-bank', icon: <Library size={20} />, label: 'Question Bank' }] : []),
         ...(on('ATTENDANCE') ? [{ to: '/admin/attendance', icon: <UserCheck size={20} />, label: 'Class Attendance' }] : []),
+        ...(materialsOn ? [{ to: '/admin/materials', icon: <FolderOpen size={20} />, label: tx('Notes & Assignments') }] : []),
         { to: '/admin/timetable', icon: <CalendarDays size={20} />, label: 'Exam Timetable' },
         ...(marksSheetAdmin ? [{ to: '/admin/marks-sheets', icon: <BookOpen size={20} />, label: 'Marks Sheets' }] : []),
         ...(marksSheetAdmin && isSchoolMode() ? [{ to: '/admin/term-remarks', icon: <ClipboardPen size={20} />, label: 'Report Remarks' }] : []),

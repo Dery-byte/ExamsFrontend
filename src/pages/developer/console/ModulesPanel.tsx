@@ -1,9 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { BedDouble, ClipboardCheck, Home, Landmark, Loader2, Info, ShieldCheck, Users } from 'lucide-react';
+import { BedDouble, BookOpen, ClipboardCheck, Home, Landmark, Loader2, Info, ShieldCheck, Users } from 'lucide-react';
 import { getModules, setModules, type DeveloperModules } from '../../../api/endpoints';
-import { PanelHeader, PanelLoading, PanelError, apiMessage } from './ui';
+import { PanelHeader, PanelLoading, PanelError, Meter, apiMessage } from './ui';
 
 type Residency = DeveloperModules['residency'];
 
@@ -28,7 +28,11 @@ const RESIDENCY: { value: Residency; label: string; icon: ReactNode; description
 ];
 
 type WalletKey = 'walletSpendSuperAdmin' | 'walletSpendBursar';
-type Saving = 'assessments' | 'residency' | WalletKey;
+type Saving = 'assessments' | 'residency' | 'materials' | 'materialsLimits' | WalletKey;
+
+const gb = (bytes: number) => bytes / (1024 * 1024 * 1024);
+const sizeLabel = (bytes: number) => bytes >= 1024 ** 3 ? `${gb(bytes).toFixed(1)} GB`
+  : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(0)} MB` : `${Math.round(bytes / 1024)} KB`;
 
 /** Who besides the student may use a student's wallet money on their fees and bills. */
 const WALLET_SPENDERS: { key: WalletKey; who: string; icon: ReactNode; on: string; off: string }[] = [
@@ -72,6 +76,39 @@ export default function ModulesPanel() {
     finally { setSaving(null); }
   };
 
+  const materialsOn = q.data?.materials === true;
+  const materialsSupported = typeof q.data?.materials === 'boolean';
+  const [maxMb, setMaxMb] = useState('');
+  const [quota, setQuota] = useState('');
+  const usedBytes = q.data?.materialsUsedBytes ?? 0;
+  const quotaGb = q.data?.materialsQuotaGb ?? 20;
+  const usedPercent = quotaGb > 0 ? (gb(usedBytes) / quotaGb) * 100 : 0;
+
+  const toggleMaterials = () => {
+    if (!materialsOn && !window.confirm('Switch Course Materials on? The Super Admin can then turn it on or off under Feature Controls '
+      + '(and HODs per department), and lecturers can post weekly notes, links and assignments for their students.')) return;
+    if (materialsOn && !window.confirm('Switch Course Materials off? Notes, assignments and handed-in work disappear for every user and the server '
+      + 'refuses every request (download links too). Nothing is deleted; switching it on brings everything back.')) return;
+    save('materials', { materials: !materialsOn }, r => r.materials ? 'Course materials are on' : 'Course materials are off for everyone');
+  };
+
+  const saveLimits = (e: FormEvent) => {
+    e.preventDefault();
+    const data: Partial<DeveloperModules> = {};
+    const mb = Number(maxMb), g = Number(quota);
+    if (maxMb.trim()) {
+      if (!Number.isInteger(mb) || mb < 1 || mb > 100) { toast.error('The largest file must be a whole number from 1 to 100 MB'); return; }
+      data.materialsMaxFileMb = mb;
+    }
+    if (quota.trim()) {
+      if (!Number.isInteger(g) || g < 1 || g > 10000) { toast.error('Storage must be a whole number from 1 to 10000 GB'); return; }
+      data.materialsQuotaGb = g;
+    }
+    if (!Object.keys(data).length) { toast('Nothing to change'); return; }
+    save('materialsLimits', data, r => `Largest file ${r.materialsMaxFileMb} MB · storage ${r.materialsQuotaGb} GB`);
+    setMaxMb(''); setQuota('');
+  };
+
   const toggle = () => {
     if (on && !window.confirm('Switch Assessments off? Quizzes, questions, results, the question bank, the exam timetable, '
       + 're-marks and quiz reports disappear for every user until you switch it back on. Nothing is deleted.')) return;
@@ -108,6 +145,55 @@ export default function ModulesPanel() {
                 <span className="dd-switch-knob">{saving === 'assessments' && <Loader2 size={11} className="dd-spin" />}</span>
               </button>
             </div>
+
+            <h3 className="dd-section-title dd-section-gap" id="dd-mod-materials-h">Course notes and assignments</h3>
+            <p className="dd-section-sub">Lecturers post notes, links and assignments week by week; students download them, hand in work online and get marks (with optional AI-suggested marking). Starts off.</p>
+            {!materialsSupported && (
+              <p className="dd-note" role="status" style={{ marginTop: 0, marginBottom: 12, color: 'var(--dd-warn, #b45309)' }}><Info size={14} />
+                The server this console is connected to doesn’t have course materials yet. Deploy the latest backend, then reload this page.</p>
+            )}
+            <div className="dd-card dd-rows">
+              <div className="dd-access">
+                <span className={`dd-access-icon${materialsOn ? ' is-on' : ''}`} aria-hidden><BookOpen size={18} /></span>
+                <div className="dd-access-text">
+                  <strong id="dd-mod-materials">Course materials</strong>
+                  <span>{materialsOn
+                    ? 'On: the Super Admin decides under Feature Controls (HODs per department), and lecturers choose what their students see.'
+                    : 'Off: nobody sees notes, assignments or handed-in work, and the server refuses every request. Files are kept.'}</span>
+                </div>
+                <button type="button" role="switch" aria-checked={materialsOn} aria-labelledby="dd-mod-materials"
+                  className={`dd-switch${materialsOn ? ' is-on' : ''}`} onClick={toggleMaterials} disabled={saving !== null || !materialsSupported}>
+                  <span className="dd-switch-knob">{saving === 'materials' && <Loader2 size={11} className="dd-spin" />}</span>
+                </button>
+              </div>
+              {materialsSupported && (
+                <div className="dd-access" style={{ display: 'block' }}>
+                  <div className="dd-access-text" style={{ marginBottom: 8 }}>
+                    <strong>Storage</strong>
+                    <span>{sizeLabel(usedBytes)} of {quotaGb} GB used · largest file {q.data?.materialsMaxFileMb ?? 25} MB</span>
+                  </div>
+                  <Meter percent={usedPercent} tone={usedPercent >= 90 ? 'bad' : usedPercent >= 75 ? 'warn' : 'ok'} />
+                  <form onSubmit={saveLimits} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end', marginTop: 12 }}>
+                    <label style={{ display: 'grid', gap: 4, fontSize: 13, flex: '1 1 140px' }}>
+                      Largest file (MB)
+                      <input className="dd-select" type="number" min={1} max={100} inputMode="numeric"
+                        placeholder={String(q.data?.materialsMaxFileMb ?? 25)} value={maxMb} onChange={e => setMaxMb(e.target.value)} />
+                    </label>
+                    <label style={{ display: 'grid', gap: 4, fontSize: 13, flex: '1 1 140px' }}>
+                      Total storage (GB)
+                      <input className="dd-select" type="number" min={1} max={10000} inputMode="numeric"
+                        placeholder={String(quotaGb)} value={quota} onChange={e => setQuota(e.target.value)} />
+                    </label>
+                    <button type="submit" className="dd-btn dd-btn-primary" disabled={saving !== null}>
+                      {saving === 'materialsLimits' && <Loader2 size={13} className="dd-spin" />} Save limits
+                    </button>
+                  </form>
+                  {q.data?.materialsFolder && <p className="dd-muted-sm" style={{ marginTop: 10, overflowWrap: 'anywhere' }}>
+                    Files are kept in <code>{q.data.materialsFolder}</code> on the server. Include this folder in backups.</p>}
+                </div>
+              )}
+            </div>
+            <p className="dd-note"><Info size={14} /> The web server in front of the backend (e.g. Nginx <code>client_max_body_size</code>) must allow uploads at least this large.</p>
 
             <h3 className="dd-section-title dd-section-gap" id="dd-mod-residency">Day and boarding</h3>
             <p className="dd-section-sub">How this institution houses its students. Boarding adds hostels (houses / halls), blocks, floors, rooms and beds, and shows where each boarder sleeps.</p>
