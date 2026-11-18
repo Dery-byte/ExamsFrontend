@@ -338,7 +338,7 @@ export const getOpenToEveryoneCourses = () => client.get('/categories/open-to-ev
 import axios from 'axios';
 const SA_BASE = (import.meta as any).env?.VITE_API_URL
   ? (import.meta as any).env.VITE_API_URL.replace('/auth', '/super-admin')
-  : 'https://examsbackend.onrender.com/api/v1/super-admin';
+  : 'https://examsbackendfrantfurt.onrender.com/api/v1/super-admin';
 
 const saClient = axios.create({ baseURL: SA_BASE, headers: { 'Content-Type': 'application/json' } });
 saClient.interceptors.request.use((cfg: any) => {
