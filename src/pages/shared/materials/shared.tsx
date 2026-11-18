@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import { ClipboardList, Download, Eye, FileText, Link2, Loader2, MoreVertical, Plus, UploadCloud } from 'lucide-react';
 import { tx } from '../../../utils/terms';
@@ -89,24 +90,60 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
   );
 }
 
+/**
+ * A ⋮ menu. The list is drawn on top of the page (in <body>), placed by its button, so cards with
+ * rounded clipped corners and scrolling tables can't hide it. It opens upwards when there is no room
+ * below, stays inside the screen, and closes on a click outside, Escape, scrolling or resizing.
+ */
 export function Menu({ label, children }: { label: string; children: (close: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+
+  // Place it once it has a size: under the button, right edges lined up; above when it won't fit below
+  useLayoutEffect(() => {
+    if (!open || !btn.current || !list.current) return;
+    const b = btn.current.getBoundingClientRect();
+    const m = list.current.getBoundingClientRect();
+    const gap = 4, edge = 8;
+    let top = b.bottom + gap;
+    if (top + m.height > window.innerHeight - edge && b.top - gap - m.height > edge) top = b.top - gap - m.height;
+    const left = Math.min(Math.max(edge, b.right - m.width), window.innerWidth - m.width - edge);
+    setPos({ top, left });
+  }, [open]);
+
   useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent | TouchEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    if (!open) { setPos(null); return; }
+    // Resizing reports the window itself, which isn't a page element
+    const inside = (t: EventTarget | null) => t instanceof Node && !!(btn.current?.contains(t) || list.current?.contains(t));
+    const onDown = (e: MouseEvent | TouchEvent) => { if (!inside(e.target)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); btn.current?.focus(); } };
+    const onMove = (e: Event) => { if (!inside(e.target)) setOpen(false); };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('touchstart', onDown);
     document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('touchstart', onDown); document.removeEventListener('keydown', onKey); };
+    window.addEventListener('scroll', onMove, true);
+    window.addEventListener('resize', onMove);
+    return () => {
+      document.removeEventListener('mousedown', onDown); document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onMove, true); window.removeEventListener('resize', onMove);
+    };
   }, [open]);
+
   return (
-    <div className="cm-menu-wrap" ref={ref}>
-      <button type="button" className="cm-icon-btn" aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
+    <div className="cm-menu-wrap">
+      <button type="button" ref={btn} className="cm-icon-btn" aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
         <MoreVertical size={17} />
       </button>
-      {open && <div className="cm-menu" role="menu">{children(() => setOpen(false))}</div>}
+      {open && createPortal(
+        <div ref={list} className="cm-menu" role="menu"
+          style={{ position: 'fixed', top: pos?.top ?? -9999, left: pos?.left ?? -9999, right: 'auto', visibility: pos ? 'visible' : 'hidden' }}>
+          {children(() => setOpen(false))}
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
