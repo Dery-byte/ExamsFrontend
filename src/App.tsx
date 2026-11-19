@@ -10,6 +10,7 @@ import { useInstitution } from './hooks/useInstitution';
 import { syncMode } from './utils/terms';
 import { Toaster } from 'react-hot-toast';
 import BrandingSync from './components/common/BrandingSync';
+import ConnectionBanner from './components/common/ConnectionBanner';
 
 // Layouts
 import AdminLayout from './components/layout/AdminLayout';
@@ -159,6 +160,7 @@ export default function App() {
       />
       <ModeSync />
       <BrandingSync />
+      <ConnectionBanner />
       <ErrorBoundary resetKey={location.pathname}>
       <Routes>
         {/* Developer: email code sign-in, system mode, health */}

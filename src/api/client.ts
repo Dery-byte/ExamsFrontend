@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { tx } from '../utils/terms';
+import { trackConnection } from '../utils/connection';
 
 export const BASE_URL: string =
   (import.meta as any).env?.VITE_API_URL ?? 'https://examsbackendfrantfurt.onrender.com/api/v1/auth';
@@ -8,6 +9,10 @@ const client = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
+
+// The small "connection unstable" notice learns from these requests (and the plain axios used for attendance scans)
+trackConnection(client, `${BASE_URL}/institution`);
+trackConnection(axios);
 
 // Attach JWT on every request (mirrors Angular AuthInterceptor)
 client.interceptors.request.use((config: InternalAxiosRequestConfig) => {

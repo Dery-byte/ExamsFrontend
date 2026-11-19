@@ -1251,3 +1251,26 @@ body {
 .delete-lock-note { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: 12px; background: rgba(241, 180, 76, .12); border: 1px solid rgba(241, 180, 76, .45); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .delete-lock-note svg { flex-shrink: 0; margin-top: 2px; color: var(--warning); }
 @media (max-width: 640px) { .delete-lock-note { padding: 10px 12px; font-size: 12.5px; } }
+
+/* Connection notice (ConnectionBanner): a small see-through pill at the top while the internet is unstable.
+   Neutral dark glass with white text, so it reads on any institution theme and on the exam's light or dark mode.
+   It never takes clicks. */
+.conn-banner {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 2147483646; pointer-events: none;   /* above the exam's suspension overlays, still readable there */
+  display: flex; align-items: center; gap: 8px;
+  width: max-content; max-width: calc(100vw - 32px);
+  padding: 6px 14px; border-radius: 14px;
+  background: rgba(17, 24, 39, .62); color: #fff;
+  border: 1px solid rgba(255, 255, 255, .16);   /* keeps the pill visible on dark pages */
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font-size: 12.5px; line-height: 1.4; font-weight: 500;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
+  animation: conn-banner-in .25s ease-out;
+}
+.conn-banner-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #f59e0b; }
+.conn-banner.offline .conn-banner-dot { background: #ef4444; }
+.conn-banner.restored .conn-banner-dot { background: #10b981; }
+@keyframes conn-banner-in { from { opacity: 0; transform: translate(-50%, -6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (max-width: 640px) { .conn-banner { top: 6px; font-size: 12px; padding: 5px 12px; } }
+@media (prefers-reduced-motion: reduce) { .conn-banner { animation: none; } }

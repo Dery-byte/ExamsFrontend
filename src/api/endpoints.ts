@@ -336,11 +336,13 @@ export const getOpenToEveryoneCourses = () => client.get('/categories/open-to-ev
 
 // ── Super Admin endpoints (different base path: /api/v1/super-admin) ────────
 import axios from 'axios';
+import { trackConnection } from '../utils/connection';
 const SA_BASE = (import.meta as any).env?.VITE_API_URL
   ? (import.meta as any).env.VITE_API_URL.replace('/auth', '/super-admin')
   : 'https://examsbackendfrantfurt.onrender.com/api/v1/super-admin';
 
 const saClient = axios.create({ baseURL: SA_BASE, headers: { 'Content-Type': 'application/json' } });
+trackConnection(saClient);
 saClient.interceptors.request.use((cfg: any) => {
   const token = localStorage.getItem('access_token');
   if (token) cfg.headers.Authorization = `Bearer ${token}`;
