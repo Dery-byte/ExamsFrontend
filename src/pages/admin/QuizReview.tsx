@@ -23,6 +23,13 @@ import { tx } from '../../utils/terms';
 import StudentListTools from '../../components/ui/StudentListTools';
 import { searchAndSortStudents, type StudentSort } from '../../utils/studentListSort';
 
+/**
+ * A student's full name. The server sends firstname/lastname; some older replies used
+ * firstName/lastName, so both are read. Empty when neither is set.
+ */
+const fullName = (u: any): string =>
+  [u?.firstname ?? u?.firstName, u?.lastname ?? u?.lastName].filter(Boolean).join(' ').trim();
+
 const RESPONSIVE_CSS = `
 @keyframes rSpin { to { transform: rotate(360deg); } }
 
@@ -428,7 +435,7 @@ function ReviewModal({ student, quiz, onClose }: { student: any; quiz: any; onCl
               <span style={{ color: '#fff', fontWeight: 800, fontSize: 16 }}>Quiz Review</span>
             </div>
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.6)', fontSize: 13, overflowWrap: 'anywhere' }}>
-              {quiz.title} &nbsp;·&nbsp; {student.user?.firstName} {student.user?.lastName}
+              {quiz.title} &nbsp;·&nbsp; {fullName(student.user) || student.user?.username}
             </p>
           </div>
           <div className="qr-modal-header-right">
@@ -925,7 +932,7 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
   // Search by name or index number, and sort, within this quiz's submissions ('' = as listed)
   const [studentSearch, setStudentSearch] = useState('');
   const [studentSort, setStudentSort] = useState<StudentSort | ''>('');
-  const studentName = (r: any) => `${r.user?.firstName || ''} ${r.user?.lastName || ''}`.trim() || r.user?.username || 'Unknown';
+  const studentName = (r: any) => fullName(r.user) || r.user?.username || 'Unknown';
   const visibleReports = searchAndSortStudents(reports as any[], studentSearch, studentSort, studentName, r => r.user?.username ?? '');
 
   // Every attempt of every student for this quiz (one request), grouped by student.
@@ -1081,9 +1088,9 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                             </div>
                             <div style={{ textAlign: 'left' }}>
                               <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>{name}</div>
-                              {/* Index number first (what staff search and sort by), then the email */}
-                              {r.user?.username && <div style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>{r.user.username}</div>}
-                              {r.user?.email && r.user.email !== r.user?.username && <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.user.email}</div>}
+                              {/* Index number (what staff search and sort by), then the email; never the same text twice */}
+                              {r.user?.username && r.user.username !== name && <div style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>{r.user.username}</div>}
+                              {r.user?.email && r.user.email !== r.user?.username && r.user.email !== name && <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.user.email}</div>}
                             </div>
                           </div>
                         </td>
