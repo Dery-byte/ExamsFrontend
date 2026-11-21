@@ -595,8 +595,13 @@ export default function LectViewQuizzes() {
                   {q.quizDate && <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#74788d', fontWeight: 500 }}><Calendar size={12} /> {q.quizDate}</div>}
                   {q.startTime && <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#74788d', fontWeight: 500 }}><Clock size={12} /> {q.startTime}</div>}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <Link to={`/lect/view-questions/${q.qId}/${encodeURIComponent(q.title)}`} style={{ fontSize: '12px', fontWeight: 700, color: accent, textDecoration: 'none', padding: '5px 12px', borderRadius: '20px', border: `1.5px solid color-mix(in srgb, ${accent} 12.5%, transparent)`, background: `color-mix(in srgb, ${accent} 6.3%, transparent)`, transition: '0.2s' }}>Questions</Link>
+                  {/* Straight to the violations report (and the Reset violations button) during the exam */}
+                  <Link to={`/lect/proctoring/${q.qId}`} title={tx("Proctoring report: students' violations, with reset")}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: '#475569', textDecoration: 'none', padding: '5px 12px', borderRadius: '20px', border: '1.5px solid #e2e8f0', background: '#f8fafc', transition: '0.2s' }}>
+                    <ShieldAlert size={12} /> Proctoring
+                  </Link>
                   <select style={{ fontSize: '11px', fontWeight: 700, color: '#495057', border: '1px solid #e9ecef', borderRadius: '6px', padding: '5px 8px', background: '#f8f9fa', cursor: 'pointer', outline: 'none' }}
                     value={statusMap[q.qId] ?? q.status ?? ''} onChange={e => setStatusMap(m => ({ ...m, [q.qId]: e.target.value }))}>
                     <option value="CLOSED">CLOSE</option>

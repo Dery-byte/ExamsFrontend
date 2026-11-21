@@ -20,6 +20,8 @@ import {
   CheckSquare, AlertTriangle, RotateCcw, ListChecks, PenLine, Search
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import StudentListTools from '../../components/ui/StudentListTools';
+import { searchAndSortStudents, type StudentSort } from '../../utils/studentListSort';
 
 const RESPONSIVE_CSS = `
 @keyframes rSpin { to { transform: rotate(360deg); } }
@@ -920,6 +922,11 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
   const queryClient = useQueryClient();
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+  // Search by name or index number, and sort, within this quiz's submissions ('' = as listed)
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentSort, setStudentSort] = useState<StudentSort | ''>('');
+  const studentName = (r: any) => `${r.user?.firstName || ''} ${r.user?.lastName || ''}`.trim() || r.user?.username || 'Unknown';
+  const visibleReports = searchAndSortStudents(reports as any[], studentSearch, studentSort, studentName, r => r.user?.username ?? '');
 
   // Every attempt of every student for this quiz (one request), grouped by student.
   const { data: attemptRows = [] } = useQuery<any[]>({
@@ -1041,6 +1048,13 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                 )}
               </div>
 
+              {/* ── Search and sort the students ── */}
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
+                <StudentListTools id={`qr-students-${quiz.qId}`} search={studentSearch} onSearch={setStudentSearch}
+                  sort={studentSort} onSort={setStudentSort} shown={visibleReports.length} total={reports.length}
+                  firstOption="As listed" />
+              </div>
+
               <table className="resp-table">
                 <thead>
                   <tr>
@@ -1050,8 +1064,13 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map((r: any, i: number) => {
-                    const name = `${r.user?.firstName || ''} ${r.user?.lastName || ''}`.trim() || r.user?.username || 'Unknown';
+                  {visibleReports.length === 0 && (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 28, color: '#94a3b8', fontSize: 13 }}>
+                      No {tx('student')} matches “{studentSearch.trim()}”.
+                    </td></tr>
+                  )}
+                  {visibleReports.map((r: any, i: number) => {
+                    const name = studentName(r);
                     const date = r.submissionDate ? new Date(r.submissionDate).toLocaleDateString() : '—';
                     return (
                       <tr key={r.id || i}>
@@ -1062,7 +1081,9 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                             </div>
                             <div style={{ textAlign: 'left' }}>
                               <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>{name}</div>
-                              <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.user?.email || r.user?.username || ''}</div>
+                              {/* Index number first (what staff search and sort by), then the email */}
+                              {r.user?.username && <div style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>{r.user.username}</div>}
+                              {r.user?.email && r.user.email !== r.user?.username && <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.user.email}</div>}
                             </div>
                           </div>
                         </td>

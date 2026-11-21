@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useStaffBase } from '../../hooks/useStaffBase';
-import { Settings, Trash2, List, Zap, Loader2, Layers, Trophy, Clock, CheckCircle2, Link2 } from 'lucide-react';
+import { Settings, Trash2, List, Zap, Loader2, Layers, Trophy, Clock, CheckCircle2, Link2, ShieldAlert } from 'lucide-react';
 import { copyQuizLink } from '../../utils/quizLink';
 import './AssessmentCard.css';
 import { tx } from '../../utils/terms';
@@ -74,6 +74,11 @@ export default function AssessmentCard({
           >
             <Link2 size={16} />
           </button>
+          {/* Straight to the violations report (and the Reset violations button) during the exam */}
+          <Link className="icon-btn" to={`${staffBase}/proctoring/${qId}`}
+            title="Proctoring report" aria-label="Proctoring report">
+            <ShieldAlert size={16} />
+          </Link>
           <div className="card-top-right">
             <button className="icon-btn" onClick={() => onEdit(qId)} title="Settings">
               <Settings size={16} />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getUniqueCategoriesForLecturer, getReportByQuizId, loadQuizzesForUser, getCategoriesForUser } from '../../api/endpoints';
 import * as XLSX from 'xlsx';
@@ -9,7 +10,7 @@ import {
 } from 'recharts';
 import {
   BarChart2, TrendingUp, Users, Database, Loader2, BookOpen,
-  Download, Activity, Target, LineChart as LineChartIcon,
+  Download, Activity, Target, LineChart as LineChartIcon, ShieldAlert,
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import { useAssessments } from '../../hooks/useFeatureFlags';
@@ -212,6 +213,12 @@ export default function LectWelcome() {
                 <option value="">{selCatId ? 'Select Quiz' : tx('Course Pending...')}</option>
                 {quizOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+              {/* The chosen quiz's violations report (and the Reset violations button) */}
+              {selQuizId != null && (
+                <Link to={`/lect/proctoring/${selQuizId}`} className="lect-proctor-link" title={tx("Proctoring report: students' violations, with reset")}>
+                  <ShieldAlert size={16} /> Proctoring
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -410,6 +417,8 @@ export default function LectWelcome() {
         /* Premium selects */
         .lect-h-controls     { display: flex; align-items: center; }
         .lect-select-wrapper { display: flex; gap: 16px; }
+        .lect-proctor-link   { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; min-height: 42px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; font-weight: 700; font-size: 13px; text-decoration: none; white-space: nowrap; }
+        .lect-proctor-link:hover { border-color: var(--brand); color: var(--brand-text); }
         .lect-premium-select {
           height: 52px; padding: 0 22px; border-radius: 14px;
           border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 700;

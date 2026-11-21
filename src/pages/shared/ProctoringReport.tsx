@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
 import { getProctoringReport, getProctoringTimeline, resetStudentViolations } from '../../api/endpoints';
 import { tx } from '../../utils/terms';
+import StudentListTools from '../../components/ui/StudentListTools';
+import { searchAndSortStudents, type StudentSort } from '../../utils/studentListSort';
 
 const TYPE_LABEL: Record<string, string> = {
   'visibility-hidden': 'Switched tab / minimised', 'focus-lost': 'Left the exam window', 'fullscreen-exit': 'Exited full screen',
@@ -28,6 +30,9 @@ export default function ProctoringReport() {
   const { qId } = useParams();
   const navigate = useNavigate();
   const [open, setOpen] = useState<number | null>(null);
+  // Search by name or index number; '' keeps the report's own order (most violations first)
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<StudentSort | ''>('');
   const [resetting, setResetting] = useState<any | null>(null);
   const qc = useQueryClient();
 
@@ -44,6 +49,7 @@ export default function ProctoringReport() {
 
   const rows: any[] = data.students ?? [];
   const canReset = data.canResetViolations === true;
+  const visible = searchAndSortStudents(rows, search, sort, r => r.name ?? '', r => r.username ?? '');
   const counts = { CLEAN: 0, WATCH: 0, SERIOUS: 0 } as Record<string, number>;
   rows.forEach(r => { counts[r.flag] = (counts[r.flag] ?? 0) + 1; });
 
@@ -66,6 +72,12 @@ export default function ProctoringReport() {
       )}
 
       <div className="pr-card">
+        {rows.length > 0 && (
+          <div className="pr-tools">
+            <StudentListTools id="pr-students" search={search} onSearch={setSearch} sort={sort} onSort={setSort}
+              shown={visible.length} total={rows.length} firstOption="Most violations first" />
+          </div>
+        )}
         <div style={{ overflowX: 'auto' }}>
           <table className="pr-table">
             <thead>
@@ -74,7 +86,9 @@ export default function ProctoringReport() {
             <tbody>
               {rows.length === 0 ? (
                 <tr><td colSpan={canReset ? 7 : 6} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No attempts yet.</td></tr>
-              ) : rows.map(r => {
+              ) : visible.length === 0 ? (
+                <tr><td colSpan={canReset ? 7 : 6} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No {tx('student')} matches “{search.trim()}”.</td></tr>
+              ) : visible.map(r => {
                 const f = FLAG[r.flag] ?? FLAG.CLEAN;
                 const top = Object.entries(r.byType as Record<string, number>).filter(([t]) => t !== 'auto-submit').sort((a, b) => b[1] - a[1])[0];
                 const expanded = open === r.studentId;
@@ -143,6 +157,7 @@ export default function ProctoringReport() {
       )}
 
       <style>{`
+        .pr-tools { padding: 14px 14px 12px; border-bottom: 1px solid #eef0f4; }
         .pr-reset-note { font-size: 11px; font-weight: 500; color: #64748b; margin-top: 2px; white-space: nowrap; }
         .pr-reset-btn { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 7px; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
         .pr-reset-btn:hover { border-color: var(--brand); color: var(--brand-text); }
