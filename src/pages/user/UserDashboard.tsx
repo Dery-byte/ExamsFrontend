@@ -99,6 +99,7 @@ export default function UserDashboard() {
 
         let totalPoints = 0;
         (rpts as any[]).forEach(r => {
+          if (r.withheld) return;   // withheld by staff: no marks to count
           totalPoints += (parseFloat(r.marks || 0) + parseFloat(r.marksB || 0));
         });
 
@@ -118,7 +119,7 @@ export default function UserDashboard() {
   }, [user, quizzesOn]);
 
   const chartData = reports
-    .filter(r => r.isReviewed)
+    .filter(r => r.isReviewed && !r.withheld)
     .map(r => ({
       name: r.quiz?.title?.substring(0, 8) || 'Quiz',
       score: parseFloat(r.marks || 0) + parseFloat(r.marksB || 0)
@@ -305,7 +306,11 @@ export default function UserDashboard() {
                         <span className="lexa-badge badge-soft-primary" style={{ fontWeight: 800 }}>{r.quiz?.category?.courseCode || 'GEN'}</span>
                       </td>
                       <td style={{ padding: '10px 16px' }}>
-                        {r.isReviewed ? (
+                        {r.withheld ? (
+                          <span title={r.withheldMessage} style={{ padding: '4px 10px', fontSize: 10, borderRadius: 4, fontWeight: 800, background: 'rgba(185,28,28,0.1)', color: '#b91c1c', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            Result withheld
+                          </span>
+                        ) : r.isReviewed ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{ flex: 1, height: 6, background: '#f1f5f7', borderRadius: 3, maxWidth: 100, overflow: 'hidden' }}>
                               <div style={{ width: `${percent}%`, height: '100%', background: percent > 50 ? 'var(--success)' : 'var(--danger)', borderRadius: 3 }}></div>
@@ -318,7 +323,11 @@ export default function UserDashboard() {
                         )}
                       </td>
                       <td style={{ padding: '10px 16px' }}>
-                        {r.isReviewed ? (
+                        {r.withheld ? (
+                          <span title={r.withheldMessage} style={{ padding: '4px 10px', fontSize: 10, borderRadius: 4, fontWeight: 800, background: 'rgba(185,28,28,0.1)', color: '#b91c1c', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            Contact your lecturer
+                          </span>
+                        ) : r.isReviewed ? (
                           <span
                             className="lexa-badge badge-soft-success"
                             style={{ padding: '4px 10px', fontSize: 10, borderRadius: 4, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}

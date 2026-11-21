@@ -669,6 +669,27 @@ export const drawBankIntoQuiz = (quizId: number, data: { topic?: string; difficu
 /** Fire-and-forget: log one proctoring event from the exam page. */
 export const recordProctoringEvent = (quizId: number | string, type: string, violationNumber?: number, resetNo = 0) =>
   client.post(`${apiRoot()}/proctoring/events`, { quizId: Number(quizId), type, violationNumber, resetNo }).then(r => r.data);
+/**
+ * Staff, Quiz Review: whether they may withhold results, the quiz's withheld results by student id
+ * ({ reason, by, at }), each student's current violation count, and the time allowed in seconds.
+ */
+export const getResultReviewInfo = (quizId: number | string): Promise<{
+  canWithhold: boolean;
+  withheld: Record<string, { reason: string; by?: string; at?: string }>;
+  violations: Record<string, number>;
+  allowedSeconds: number;
+}> => client.get(`${apiRoot()}/results/quiz/${quizId}/review-info`).then(r => r.data);
+/** Staff: hold back one student's result for the quiz (the reason is never shown to the student). */
+export const withholdResult = (quizId: number | string, studentId: number, reason: string) =>
+  client.post(`${apiRoot()}/results/quiz/${quizId}/student/${studentId}/withhold`, { reason }).then(r => r.data);
+/** Staff: release a withheld result (the waiting result email and notice go out if it was reviewed). */
+export const releaseResult = (quizId: number | string, studentId: number) =>
+  client.post(`${apiRoot()}/results/quiz/${quizId}/student/${studentId}/release`).then(r => r.data);
+
+/** Staff: a student locked out after 10 wrong access codes may enter the code again (a fresh 10 tries). */
+export const allowCodeAttempts = (quizId: number | string, studentId: number) =>
+  client.post(`${apiRoot()}/proctoring/quiz/${quizId}/student/${studentId}/allow-code`).then(r => r.data);
+
 /** Staff: set a student's violation count back to 0, or down to `count`, while they sit the quiz (reason required). */
 export const resetStudentViolations = (quizId: number | string, studentId: number, reason: string, count = 0) =>
   client.post(`${apiRoot()}/proctoring/quiz/${quizId}/student/${studentId}/reset-violations`, { reason, count }).then(r => r.data);

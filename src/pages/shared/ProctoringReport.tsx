@@ -1,10 +1,11 @@
 import { Fragment, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ShieldCheck, ShieldAlert, AlertTriangle, ChevronDown, ChevronRight, Loader2, Info, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, ShieldAlert, AlertTriangle, ChevronDown, ChevronRight, Loader2, Info, RotateCcw, EyeOff, Eye, Lock, Unlock } from 'lucide-react';
+import WithholdResultDialog from '../../components/ui/WithholdResultDialog';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
-import { getProctoringReport, getProctoringTimeline, resetStudentViolations } from '../../api/endpoints';
+import { getProctoringReport, getProctoringTimeline, resetStudentViolations, allowCodeAttempts } from '../../api/endpoints';
 import { tx } from '../../utils/terms';
 import StudentListTools from '../../components/ui/StudentListTools';
 import { searchAndSortStudents, type StudentSort } from '../../utils/studentListSort';
@@ -34,6 +35,7 @@ export default function ProctoringReport() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<StudentSort | ''>('');
   const [resetting, setResetting] = useState<any | null>(null);
+  const [withholding, setWithholding] = useState<{ mode: 'withhold' | 'release'; row: any } | null>(null);
   const qc = useQueryClient();
 
   const { data, isLoading, isError, error } = useQuery({
@@ -49,6 +51,10 @@ export default function ProctoringReport() {
 
   const rows: any[] = data.students ?? [];
   const canReset = data.canResetViolations === true;
+  const canWithhold = data.canWithholdResults === true;
+  // The last column holds Reset violations and Withhold / Release result
+  const actions = canReset || canWithhold;
+  const cols = actions ? 7 : 6;
   const visible = searchAndSortStudents(rows, search, sort, r => r.name ?? '', r => r.username ?? '');
   const counts = { CLEAN: 0, WATCH: 0, SERIOUS: 0 } as Record<string, number>;
   rows.forEach(r => { counts[r.flag] = (counts[r.flag] ?? 0) + 1; });
@@ -71,6 +77,11 @@ export default function ProctoringReport() {
         <p className="pr-note"><Info size={14} /> Violation handling is off for this quiz, so the exam page does not record events for it.</p>
       )}
 
+      {/* Students who entered a wrong access code 10 times: they can't start until allowed again */}
+      {(data.codeLocks ?? []).length > 0 && (
+        <CodeLocks quizId={qId!} locks={data.codeLocks} onChanged={() => qc.invalidateQueries({ queryKey: ['proctoring', qId] })} />
+      )}
+
       <div className="pr-card">
         {rows.length > 0 && (
           <div className="pr-tools">
@@ -81,13 +92,13 @@ export default function ProctoringReport() {
         <div style={{ overflowX: 'auto' }}>
           <table className="pr-table">
             <thead>
-              <tr><th style={{ width: 28 }} /><th>{tx("Student")}</th><th className="r">Violations</th><th>Most common</th><th>Status</th><th>Submitted</th>{canReset && <th />}</tr>
+              <tr><th style={{ width: 28 }} /><th>{tx("Student")}</th><th className="r">Violations</th><th>Most common</th><th>Status</th><th>Submitted</th>{actions && <th />}</tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={canReset ? 7 : 6} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No attempts yet.</td></tr>
+                <tr><td colSpan={cols} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No attempts yet.</td></tr>
               ) : visible.length === 0 ? (
-                <tr><td colSpan={canReset ? 7 : 6} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No {tx('student')} matches “{search.trim()}”.</td></tr>
+                <tr><td colSpan={cols} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No {tx('student')} matches “{search.trim()}”.</td></tr>
               ) : visible.map(r => {
                 const f = FLAG[r.flag] ?? FLAG.CLEAN;
                 const top = Object.entries(r.byType as Record<string, number>).filter(([t]) => t !== 'auto-submit').sort((a, b) => b[1] - a[1])[0];
@@ -100,7 +111,8 @@ export default function ProctoringReport() {
                       <td>{hasEvents && (expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />)}</td>
                       <td>
                         <div style={{ fontWeight: 700, color: '#1e293b' }}>{r.name}</div>
-                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.username}</div>
+                        {/* The name falls back to the index number when none is on record: never show it twice */}
+                        {r.username && r.username !== r.name && <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.username}</div>}
                       </td>
                       <td className="r" style={{ fontWeight: 800, color: '#1e293b' }}>
                         {r.violations}{data.maxViolations ? <span style={{ color: '#94a3b8', fontWeight: 500 }}> / {data.maxViolations}</span> : null}
@@ -115,20 +127,35 @@ export default function ProctoringReport() {
                       <td>
                         <span className="pr-flag" style={{ background: f.bg, color: f.fg }}><f.Icon size={12} /> {f.text}</span>
                         {r.autoSubmitted && <span className="pr-flag" style={{ background: '#f1f5f9', color: '#334155', marginLeft: 4 }}>Auto-submitted</span>}
+                        {r.withheld && <span className="pr-flag" title={r.withheldReason ? `Withheld: ${r.withheldReason}` : undefined}
+                          style={{ background: '#fdeeee', color: '#9f1f1f', marginLeft: 4 }}><EyeOff size={12} /> Result withheld</span>}
                       </td>
                       <td style={{ color: r.submitted ? '#0b7a0b' : '#94a3b8', fontWeight: 600 }}>{r.submitted ? 'Yes' : 'No'}</td>
-                      {canReset && (
+                      {actions && (
                         <td className="r">
-                          {r.inProgress && r.violations > 0 && (
-                            <button type="button" className="pr-reset-btn" onClick={ev => { ev.stopPropagation(); setResetting(r); }}>
-                              <RotateCcw size={13} /> Reset violations
-                            </button>
-                          )}
+                          <div className="pr-actions">
+                            {canReset && r.inProgress && r.violations > 0 && (
+                              <button type="button" className="pr-reset-btn" onClick={ev => { ev.stopPropagation(); setResetting(r); }}>
+                                <RotateCcw size={13} /> Reset violations
+                              </button>
+                            )}
+                            {canWithhold && (r.withheld ? (
+                              <button type="button" className="pr-reset-btn pr-release" title="Let the student see this result again"
+                                onClick={ev => { ev.stopPropagation(); setWithholding({ mode: 'release', row: r }); }}>
+                                <Eye size={13} /> Release result
+                              </button>
+                            ) : (
+                              <button type="button" className="pr-reset-btn pr-withhold" title="Hold back this student's result while others are released"
+                                onClick={ev => { ev.stopPropagation(); setWithholding({ mode: 'withhold', row: r }); }}>
+                                <EyeOff size={13} /> Withhold result
+                              </button>
+                            ))}
+                          </div>
                         </td>
                       )}
                     </tr>
                     {expanded && (
-                      <tr><td colSpan={canReset ? 7 : 6} style={{ background: '#fafbff', padding: '4px 16px 14px 44px' }}>
+                      <tr><td colSpan={cols} style={{ background: '#fafbff', padding: '4px 16px 14px 44px' }}>
                         <Timeline quizId={qId!} studentId={r.studentId} />
                       </td></tr>
                     )}
@@ -139,6 +166,21 @@ export default function ProctoringReport() {
           </table>
         </div>
       </div>
+
+      {withholding && (
+        <WithholdResultDialog
+          mode={withholding.mode}
+          quizId={qId!}
+          student={{ id: withholding.row.studentId, name: withholding.row.name, index: withholding.row.username }}
+          currentReason={withholding.row.withheldReason}
+          onClose={() => setWithholding(null)}
+          onDone={() => {
+            setWithholding(null);
+            qc.invalidateQueries({ queryKey: ['proctoring', qId] });
+            qc.invalidateQueries({ queryKey: ['result-review-info'] });
+          }}
+        />
+      )}
 
       {resetting && (
         <ResetDialog
@@ -161,6 +203,11 @@ export default function ProctoringReport() {
         .pr-reset-note { font-size: 11px; font-weight: 500; color: #64748b; margin-top: 2px; white-space: nowrap; }
         .pr-reset-btn { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 7px; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
         .pr-reset-btn:hover { border-color: var(--brand); color: var(--brand-text); }
+        .pr-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+        .pr-withhold { color: #b91c1c; border-color: #fecaca; }
+        .pr-withhold:hover { border-color: #b91c1c; color: #991b1b; }
+        .pr-release { color: #15803d; border-color: #bbf7d0; }
+        .pr-release:hover { border-color: #16a34a; color: #166534; }
         .pr-modal-bg { position: fixed; inset: 0; z-index: 1000; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
         .pr-modal { background: #fff; border-radius: 14px; width: 100%; max-width: 440px; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); box-sizing: border-box; }
         .pr-modal h3 { margin: 0 0 6px; font-size: 17px; color: #1e293b; }
@@ -325,6 +372,60 @@ function ResetDialog({ quizId, student, maxViolations, violationAction, delaySec
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Students locked out of the access code (10 wrong codes), each with a button to let them try again. */
+function CodeLocks({ quizId, locks, onChanged }: { quizId: string; locks: any[]; onChanged: () => void }) {
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  const allow = async (l: any) => {
+    setBusyId(l.studentId);
+    try {
+      await allowCodeAttempts(quizId, l.studentId);
+      toast.success(`${l.name} can enter the access code again.`);
+      onChanged();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not allow code attempts again.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="pr-locks" role="region" aria-label="Access code locked">
+      <div className="pr-locks-head">
+        <Lock size={15} aria-hidden="true" />
+        <b>Access code locked ({locks.length})</b>
+        <span>These {tx('students')} entered a wrong access code {10} times and can't start the quiz until you let them try again.</span>
+      </div>
+      <ul>
+        {locks.map(l => (
+          <li key={l.studentId}>
+            <div className="pr-locks-who">
+              <div className="pr-locks-name">{l.name}</div>
+              <div className="pr-locks-meta">
+                {l.username && l.username !== l.name && <>{l.username} · </>}
+                {l.wrongCount} wrong codes{l.lockedAt && <> · locked {fmtTime(l.lockedAt)}</>}
+              </div>
+            </div>
+            <button type="button" className="pr-reset-btn pr-release" disabled={busyId === l.studentId} onClick={() => allow(l)}>
+              {busyId === l.studentId ? <Loader2 size={13} className="pr-spin" /> : <Unlock size={13} />} Allow code attempts again
+            </button>
+          </li>
+        ))}
+      </ul>
+      <style>{`
+        .pr-locks { background: #fff; border: 1.5px solid #fecaca; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
+        .pr-locks-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; color: #991b1b; font-size: 13px; }
+        .pr-locks-head span { flex-basis: 100%; color: #64748b; font-size: 12px; }
+        .pr-locks ul { list-style: none; margin: 10px 0 0; padding: 0; }
+        .pr-locks li { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px dashed #f1f5f9; }
+        .pr-locks-name { font-weight: 700; color: #1e293b; font-size: 13px; }
+        .pr-locks-meta { font-size: 11.5px; color: #94a3b8; }
+        .pr-locks-who { min-width: 0; }
+      `}</style>
     </div>
   );
 }

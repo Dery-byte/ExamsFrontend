@@ -17,8 +17,13 @@ import {
   AlertCircle,
   Loader2,
   GraduationCap,
-  Hash
+  Hash,
+  Timer
 } from 'lucide-react';
+import { useCountdown, fmtCountdown, retryAfterSecondsOf } from '../../hooks/useCountdown';
+
+/** The server counts failed sign-ins over 5 minutes, so nobody waits longer than this. */
+const MAX_SIGN_IN_WAIT_SECONDS = 5 * 60;
 import { tx } from '../../utils/terms';
 
 const PHRASES = [
@@ -51,6 +56,9 @@ export default function Login() {
   const [hidePass, setHidePass] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Too many sign-in attempts: counts down (minutes and seconds) until the student may try again
+  const signInWait = useCountdown();
+  const waitingToSignIn = signInWait.remaining > 0;
   const [typed, setTyped] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [channel, setChannel] = useState<RecoveryChannel>('phone');
@@ -98,11 +106,14 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (waitingToSignIn) return;
     setError('');
     setLoading(true);
     try { await login(username, password, redirectTo); }
     catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Invalid credentials. Please try again.');
+      const seconds = retryAfterSecondsOf(err, MAX_SIGN_IN_WAIT_SECONDS);
+      if (seconds != null) signInWait.start(seconds);   // the countdown replaces the message
+      else setError(err?.response?.data?.message ?? 'Invalid credentials. Please try again.');
       setLoading(false);
     }
   };
@@ -325,7 +336,19 @@ export default function Login() {
               </div>
             )}
 
-            {error && (
+            {waitingToSignIn ? (
+              <div role="status" aria-live="polite" style={{
+                display: 'flex', gap: 12, padding: '14px 16px',
+                background: '#fff7ed', color: '#9a3412', border: '1px solid #fed7aa',
+                borderRadius: '14px', marginBottom: 24, fontSize: 14, fontWeight: 600, alignItems: 'center'
+              }}>
+                <Timer size={18} style={{ flexShrink: 0 }} />
+                <span>
+                  Too many sign-in attempts. Try again in{' '}
+                  <b style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15 }}>{fmtCountdown(signInWait.remaining)}</b>
+                </span>
+              </div>
+            ) : error && (
               <div style={{
                 display: 'flex', gap: 12, padding: '14px 16px',
                 background: 'var(--danger-bg)', color: 'var(--danger)',
@@ -399,9 +422,11 @@ export default function Login() {
                 type="submit"
                 className={`btn btn-primary${loading ? ' btn-loading' : ''}`}
                 style={{ width: '100%', padding: '16px', fontSize: 16, borderRadius: '16px', marginTop: 4 }}
-                disabled={loading}
+                disabled={loading || waitingToSignIn}
               >
-                {loading ? <Loader2 className="spin-ico" size={20} /> : <><ShieldCheck size={20} style={{ marginRight: 10 }} /> Sign In</>}
+                {loading ? <Loader2 className="spin-ico" size={20} />
+                  : waitingToSignIn ? <><Timer size={20} style={{ marginRight: 10 }} /> Try again in {fmtCountdown(signInWait.remaining)}</>
+                  : <><ShieldCheck size={20} style={{ marginRight: 10 }} /> Sign In</>}
               </button>
             </form>
 

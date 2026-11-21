@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { saGetSystemSettings, saUpdateSystemSettings, saGetPrograms, saToggleProgram } from '../../api/endpoints';
-import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks, FileCheck2, AlertTriangle, Hourglass, RotateCcw } from 'lucide-react';
+import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks, FileCheck2, AlertTriangle, Hourglass, RotateCcw, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -177,6 +177,22 @@ export default function SuperAdminConfiguration() {
   };
 
   /** Who may reset a student's violations from the proctoring report (the Super Admin always may). */
+  /** Who may withhold one student's quiz result while others are released (the Super Admin always may). */
+  const handleToggleResultWithhold = async (key: 'RESULT_WITHHOLD_ADMIN' | 'RESULT_WITHHOLD_LECTURER') => {
+    const next = !isSet(key, true);
+    setSavingKey(key);
+    try {
+      await saUpdateSystemSettings({ [key]: next.toString() });
+      setSettings(prev => ({ ...prev, [key]: next.toString() }));
+      const who = key === 'RESULT_WITHHOLD_ADMIN' ? tx('HODs') : tx('Lecturers');
+      toast.success(next ? `${who} can now withhold a student's result` : `${who} can no longer withhold results`);
+    } catch {
+      toast.error('Failed to update setting');
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
   const handleToggleViolationReset = async (key: 'VIOLATION_RESET_ADMIN' | 'VIOLATION_RESET_LECTURER') => {
     const next = !isSet(key, true);
     setSavingKey(key);
@@ -278,6 +294,16 @@ export default function SuperAdminConfiguration() {
           sub={tx("On: the lecturer of the course can reset a student's violation count for their own quizzes in the same way, with a reason.")}>
           <Switch on={isSet('VIOLATION_RESET_LECTURER', true)} busy={savingKey === 'VIOLATION_RESET_LECTURER'} disabled={locked}
             onClick={() => handleToggleViolationReset('VIOLATION_RESET_LECTURER')} label={tx("Lecturers can reset a student's violations")} />
+        </SettingRow>
+        <SettingRow icon={<EyeOff size={22} />} color="#f87171" title={tx("HODs can withhold a student's result")}
+          sub={tx("On: an HOD can hold back one student's quiz result (for example after violations or an unusually long time taken) while other students' results are out, with a reason, from Quiz Review or the proctoring report. The student sees \"withheld, contact your lecturer\" instead of their marks until it is released. You can always do this yourself; every withhold and release is recorded in the audit log.")}>
+          <Switch on={isSet('RESULT_WITHHOLD_ADMIN', true)} busy={savingKey === 'RESULT_WITHHOLD_ADMIN'} disabled={locked}
+            onClick={() => handleToggleResultWithhold('RESULT_WITHHOLD_ADMIN')} label={tx("HODs can withhold a student's result")} />
+        </SettingRow>
+        <SettingRow icon={<EyeOff size={22} />} color="#fb923c" title={tx("Lecturers can withhold a student's result")}
+          sub={tx("On: the lecturer of the course can withhold and release a student's result for their own quizzes in the same way, with a reason.")}>
+          <Switch on={isSet('RESULT_WITHHOLD_LECTURER', true)} busy={savingKey === 'RESULT_WITHHOLD_LECTURER'} disabled={locked}
+            onClick={() => handleToggleResultWithhold('RESULT_WITHHOLD_LECTURER')} label={tx("Lecturers can withhold a student's result")} />
         </SettingRow>
       </section>
 

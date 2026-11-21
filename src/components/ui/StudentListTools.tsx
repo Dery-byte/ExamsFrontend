@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Search, X, ArrowUpDown } from 'lucide-react';
 import { STUDENT_SORT_OPTIONS, type StudentSort } from '../../utils/studentListSort';
 import { tx } from '../../utils/terms';
@@ -7,7 +8,7 @@ import { tx } from '../../utils/terms';
  * N of M" count while a search is on. `firstOption` is the list's own order, shown first.
  */
 export default function StudentListTools({
-  id, search, onSearch, sort, onSort, shown, total, firstOption,
+  id, search, onSearch, sort, onSort, shown, total, firstOption, children,
 }: {
   /** Unique per list on the page (Quiz Review has one list per quiz). */
   id: string;
@@ -19,6 +20,8 @@ export default function StudentListTools({
   total: number;
   /** Label of the list's own order (value ''); leave out when the list has none. */
   firstOption?: string;
+  /** Extra filters shown after the sort list (e.g. "Withheld only"). */
+  children?: ReactNode;
 }) {
   return (
     <div className="slt" onClick={e => e.stopPropagation()}>
@@ -46,7 +49,8 @@ export default function StudentListTools({
           {STUDENT_SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
-      {search.trim() && (
+      {children && <div className="slt-extra">{children}</div>}
+      {shown !== total && (
         <div className="slt-count" role="status" aria-live="polite">
           {shown === 0 ? 'No match' : `Showing ${shown} of ${total}`}
         </div>
@@ -66,6 +70,9 @@ export default function StudentListTools({
         .slt-clear:hover { background: #f1f5f9; color: #475569; }
         .slt-select { cursor: pointer; }
         .slt-count { flex-basis: 100%; font-size: 12px; font-weight: 600; color: #64748b; }
+        .slt-extra { display: flex; align-items: center; gap: 10px; min-height: 38px; }
+        .slt-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; white-space: nowrap; }
+        .slt-check input { width: 16px; height: 16px; accent-color: var(--brand); cursor: pointer; }
         @media (max-width: 576px) { .slt-sort { flex-basis: 100%; } .slt-input { font-size: 16px; } }
       `}</style>
     </div>

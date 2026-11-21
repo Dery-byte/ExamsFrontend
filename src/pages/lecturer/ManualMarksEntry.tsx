@@ -166,8 +166,10 @@ const ManualMarksEntry = () => {
 
         setSyncingStudent(studentId);
         try {
-            await syncMarksForStudent(selectedSheetId, studentId, targetSectionId);
-            toast.success("Marks fetched successfully!");
+            const res: any = await syncMarksForStudent(selectedSheetId, studentId, targetSectionId);
+            // A withheld quiz result is not copied: its column is left blank until it is released
+            if (res?.withheld > 0) toast(res.message, { icon: '⚠️', duration: 6000 });
+            else toast.success("Marks fetched successfully!");
             await loadSheet(selectedSheetId);
         } catch (error) {
             toast.error("Failed to fetch marks");
@@ -195,8 +197,9 @@ const ManualMarksEntry = () => {
 
         setBulkSyncing(true);
         try {
-            await syncMarksBulk(selectedSheetId, targetSectionId);
-            toast.success("Bulk fetch completed successfully!");
+            const res: any = await syncMarksBulk(selectedSheetId, targetSectionId);
+            if (res?.withheld > 0) toast(res.message, { icon: '⚠️', duration: 6000 });
+            else toast.success("Bulk fetch completed successfully!");
             await loadSheet(selectedSheetId);
         } catch (error) {
             toast.error("Failed to perform bulk fetch");

@@ -17,7 +17,7 @@ export default function RemarkControl({ report }: { report: any }) {
 
   const { data: mine = [] } = useQuery({ queryKey: ['remarks', 'mine'], queryFn: getMyRemarks, staleTime: 60_000 });
   const requestsOpen = useFeature('REMARK_REQUESTS');
-  if (!report?.id || !report?.isReviewed) return null;
+  if (!report?.id || !report?.isReviewed || report?.withheld) return null;
   const existing = (mine as any[]).find(r => r.reportId === report.id);
 
   const submit = async () => {

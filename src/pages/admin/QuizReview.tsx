@@ -4,8 +4,12 @@ import { createPortal } from 'react-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   loadQuizzes, getReportByQuizId, getTheoryQuestions,
-  addSectionBMarks, getMyCoursesWithQuizzes, getQuizAttempts, getStudentResultsDetails, getTakenQuizIds
+  addSectionBMarks, getMyCoursesWithQuizzes, getQuizAttempts, getStudentResultsDetails, getTakenQuizIds,
+  getResultReviewInfo
 } from '../../api/endpoints';
+import { Link, useLocation } from 'react-router-dom';
+import WithholdResultDialog from '../../components/ui/WithholdResultDialog';
+import { minutesUsed, fmtMinutes, OVER_TIME_GRACE_MINUTES, TIME_USED_HELP } from '../../utils/timeUsed';
 import { useAuth } from '../../contexts/AuthContext';
 import client from '../../api/client';
 import QuestionImage from '../../components/ui/QuestionImage';
@@ -17,7 +21,7 @@ import QuizReportLinks from '../../components/examops/QuizReportLinks';
 import {
   ChevronDown, ChevronRight, X, Loader2, FileText,
   MessageSquare, Star, Users, BookOpen, CheckCircle, Award, Eye,
-  CheckSquare, AlertTriangle, RotateCcw, ListChecks, PenLine, Search
+  CheckSquare, AlertTriangle, RotateCcw, ListChecks, PenLine, Search, EyeOff, Eye as EyeOpen, ShieldAlert, Clock
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import StudentListTools from '../../components/ui/StudentListTools';
@@ -933,7 +937,25 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
   const [studentSearch, setStudentSearch] = useState('');
   const [studentSort, setStudentSort] = useState<StudentSort | ''>('');
   const studentName = (r: any) => fullName(r.user) || r.user?.username || 'Unknown';
-  const visibleReports = searchAndSortStudents(reports as any[], studentSearch, studentSort, studentName, r => r.user?.username ?? '');
+
+  // Withheld results, violation counts and the time allowed (staff only; loaded when the quiz is opened)
+  const { data: reviewInfo } = useQuery({
+    queryKey: ['result-review-info', quiz.qId],
+    queryFn: () => getResultReviewInfo(quiz.qId),
+    enabled: expanded,
+    retry: false,
+  });
+  const withheldOf = (r: any) => reviewInfo?.withheld?.[String(r.user?.id)];
+  const [withheldOnly, setWithheldOnly] = useState(false);
+  const [withholdTarget, setWithholdTarget] = useState<{ mode: 'withhold' | 'release'; id: number; name: string; index?: string; reason?: string } | null>(null);
+  const withheldCount = (reports as any[]).filter(r => withheldOf(r)).length;
+  const visibleReports = searchAndSortStudents(
+    (reports as any[]).filter(r => !withheldOnly || withheldOf(r)),
+    studentSearch, studentSort, studentName, r => r.user?.username ?? '');
+  // The proctoring report in the same staff area (lecturer, HOD or Super Admin)
+  const path = useLocation().pathname;
+  const staffBase = path.startsWith('/lect') ? '/lect' : path.startsWith('/super-admin') ? '/super-admin' : '/admin';
+  const allowedMinutes = reviewInfo?.allowedSeconds ? reviewInfo.allowedSeconds / 60 : null;
 
   // Every attempt of every student for this quiz (one request), grouped by student.
   const { data: attemptRows = [] } = useQuery<any[]>({
@@ -1059,26 +1081,37 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
               <div style={{ padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
                 <StudentListTools id={`qr-students-${quiz.qId}`} search={studentSearch} onSearch={setStudentSearch}
                   sort={studentSort} onSort={setStudentSort} shown={visibleReports.length} total={reports.length}
-                  firstOption="As listed" />
+                  firstOption="As listed">
+                  {withheldCount > 0 && (
+                    <label className="slt-check">
+                      <input type="checkbox" checked={withheldOnly} onChange={e => setWithheldOnly(e.target.checked)} />
+                      Withheld only ({withheldCount})
+                    </label>
+                  )}
+                </StudentListTools>
               </div>
 
               <table className="resp-table">
                 <thead>
                   <tr>
-                    {['Student', 'Submission', 'Sec A', 'Sec B', 'Grade', 'Attempts', 'Action'].map(h => (
+                    {['Student', 'Submission', 'Sec A', 'Sec B', 'Grade', 'Violations', 'Attempts', 'Action'].map(h => (
                       <th key={h}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {visibleReports.length === 0 && (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 28, color: '#94a3b8', fontSize: 13 }}>
-                      No {tx('student')} matches “{studentSearch.trim()}”.
+                    <tr><td colSpan={8} style={{ textAlign: 'center', padding: 28, color: '#94a3b8', fontSize: 13 }}>
+                      {studentSearch.trim() ? <>No {tx('student')} matches “{studentSearch.trim()}”.</> : <>No withheld results.</>}
                     </td></tr>
                   )}
                   {visibleReports.map((r: any, i: number) => {
                     const name = studentName(r);
                     const date = r.submissionDate ? new Date(r.submissionDate).toLocaleDateString() : '—';
+                    const held = withheldOf(r);
+                    const used = minutesUsed(attemptsByStudent.get(r.user?.id) ?? []);
+                    const overTime = used != null && allowedMinutes != null && used > allowedMinutes + OVER_TIME_GRACE_MINUTES;
+                    const violations = Number(reviewInfo?.violations?.[String(r.user?.id)] ?? 0);
                     return (
                       <tr key={r.id || i}>
                         <td data-label="Student">
@@ -1095,7 +1128,17 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                           </div>
                         </td>
                         <td data-label="Submission">
-                          <div className="resp-td-content" style={{ fontSize: 13, color: '#64748b' }}>{date}</div>
+                          <div className="resp-td-content" style={{ fontSize: 13, color: '#64748b' }}>
+                            <div>{date}</div>
+                            {/* Time used (start to finish) against the time allowed; over it is flagged */}
+                            {used != null && (
+                              <div title={TIME_USED_HELP} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 3, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+                                color: overTime ? '#b91c1c' : '#475569', cursor: 'help' }}>
+                                {overTime ? <AlertTriangle size={12} /> : <Clock size={12} />}
+                                {fmtMinutes(used)}{allowedMinutes != null && <span style={{ fontWeight: 500, color: '#94a3b8' }}> of {fmtMinutes(allowedMinutes)}</span>}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td data-label="Sec A">
                           <div className="resp-td-content">
@@ -1116,6 +1159,24 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#16a34a', fontWeight: 700 }}>
                                 <CheckCircle size={10} /> REVIEWED
                               </div>
+                            )}
+                            {held && (
+                              <div title={`Withheld by ${held.by ?? 'staff'}: ${held.reason}`}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#b91c1c', fontWeight: 800, background: '#fdeeee', padding: '2px 8px', borderRadius: 20, cursor: 'help' }}>
+                                <EyeOff size={10} /> WITHHELD
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td data-label="Violations">
+                          <div className="resp-td-content">
+                            {violations > 0 ? (
+                              <Link to={`${staffBase}/proctoring/${quiz.qId}`} title="Open the proctoring report"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 800, fontSize: 13, color: '#b45309', textDecoration: 'none' }}>
+                                <ShieldAlert size={13} /> {violations}
+                              </Link>
+                            ) : (
+                              <span style={{ fontSize: 13, color: '#94a3b8' }}>0</span>
                             )}
                           </div>
                         </td>
@@ -1147,6 +1208,23 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
                             >
                               <Award size={13} /> Review
                             </button>
+                            {reviewInfo?.canWithhold && (held ? (
+                              <button
+                                onClick={() => setWithholdTarget({ mode: 'release', id: r.user?.id, name, index: r.user?.username, reason: held.reason })}
+                                title="Let the student see this result again"
+                                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px solid #16a34a', borderRadius: 8, background: '#fff', color: '#15803d', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                <EyeOpen size={13} /> Release
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setWithholdTarget({ mode: 'withhold', id: r.user?.id, name, index: r.user?.username })}
+                                title="Hold back this student's result while others are released"
+                                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1.5px solid #fecaca', borderRadius: 8, background: '#fff', color: '#b91c1c', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                <EyeOff size={13} /> Withhold
+                              </button>
+                            ))}
                           </div>
                         </td>
                       </tr>
@@ -1157,6 +1235,21 @@ function QuizRow({ quiz, expanded, onToggle, onReview }: { quiz: any; expanded: 
             </>
           )}
         </div>
+      )}
+
+      {withholdTarget && (
+        <WithholdResultDialog
+          mode={withholdTarget.mode}
+          quizId={quiz.qId}
+          student={{ id: withholdTarget.id, name: withholdTarget.name, index: withholdTarget.index }}
+          currentReason={withholdTarget.reason}
+          onClose={() => setWithholdTarget(null)}
+          onDone={() => {
+            setWithholdTarget(null);
+            queryClient.invalidateQueries({ queryKey: ['result-review-info', quiz.qId] });
+            queryClient.invalidateQueries({ queryKey: ['proctoring', String(quiz.qId)] });
+          }}
+        />
       )}
 
       {attemptsTarget && (

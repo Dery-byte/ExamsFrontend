@@ -5,7 +5,7 @@ import QuestionImage from '../../components/ui/QuestionImage';
 import { useInstitution } from '../../hooks/useInstitution';
 import { theoryGroupKey } from '../../utils/theoryGroups';
 import { getReport, getQuestionsForText, getTheoryReport, getResultsDetails, getNumberOfTheoryToAnswer } from '../../api/endpoints';
-import { Printer, ArrowLeft, Download, CheckCircle, XCircle, Info, Award, User, Clock, Calendar, FileText, ChevronRight, Loader2 } from 'lucide-react';
+import { Printer, ArrowLeft, Download, CheckCircle, XCircle, Info, Award, User, Clock, Calendar, FileText, ChevronRight, Loader2, EyeOff } from 'lucide-react';
 
 /* ─── helpers ───────────────────────────────────────────────────────────── */
 const fmtDur = (m: number) => { const h = Math.floor(m / 60); const mm = m % 60; return h > 0 ? `${h}hr ${mm}min` : `${mm} min`; };
@@ -98,6 +98,25 @@ export default function PrintQuiz() {
         .spin-ico { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
+    </div>
+  );
+
+  // Staff are withholding this result: no printout (the server also refuses the answers)
+  const withheld = report.find((r: any) => r.withheld);
+  if (withheld) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8f9fa', padding: 16 }}>
+      <div role="status" style={{ maxWidth: 420, width: '100%', background: '#fff', border: '1px solid #fecaca', borderRadius: 14, padding: 24, textAlign: 'center', boxShadow: '0 8px 30px rgba(0,0,0,0.06)' }}>
+        <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(185,28,28,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+          <EyeOff size={26} color="#b91c1c" />
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#991b1b', marginBottom: 6 }}>Result withheld</div>
+        <div style={{ fontSize: 14, color: '#475569', lineHeight: 1.6 }}>
+          {withheld.withheldMessage || 'Your result for this quiz is being withheld. Please contact your lecturer.'}
+        </div>
+        <button type="button" onClick={() => window.history.back()} style={{ marginTop: 18, height: 38, padding: '0 16px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <ArrowLeft size={15} /> Back
+        </button>
+      </div>
     </div>
   );
 

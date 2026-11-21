@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus, unlockQuiz } from '../../api/endpoints';
+import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus } from '../../api/endpoints';
 import { decodeParam, startQuizPath } from '../../utils/quizLink';
 import Swal from 'sweetalert2';
-import { addPasswordEye } from '../../utils/passwordEye';
+import AccessCodeDialog from '../../components/ui/AccessCodeDialog';
+import { createPortal } from 'react-dom';
 import PageHeader from '../../components/PageHeader';
 import { 
   ShieldCheck, 
@@ -49,6 +50,8 @@ export default function Instructions() {
   const [quiz, setQuiz]                           = useState<any>(null);
   // Set when the browser blocked the exam window: the student taps once more to open it
   const [openTap, setOpenTap]                     = useState<{ url: string; features: string } | null>(null);
+  // The access-code dialog, with the exam window to open once the code is accepted
+  const [codePrompt, setCodePrompt]               = useState<{ url: string; features: string } | null>(null);
   const [openTapError, setOpenTapError]           = useState('');
   const [isLoading, setIsLoading]                 = useState(true);
   // The caller's own attempt position (limit / used / remaining) — replaces downloading every report.
@@ -268,67 +271,40 @@ export default function Instructions() {
     const fullUrl  = `${window.location.origin}${startQuizPath(realId!)}`;
     const features = `width=${screen.width},height=${screen.height},top=0,left=0,fullscreen=yes,toolbar=no,location=no,menubar=no,scrollbars=yes,resizable=yes`;
 
-    // Step 1 — password prompt. No window opened yet.
-    Swal.fire({
-      title: 'Security Verification',
-      text: 'Please enter the access code provided by your instructor.',
-      input: 'password',
-      inputPlaceholder: 'Enter access code...',
-      inputAttributes: { autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false' },
-      // Eye button to see the code being typed
-      didOpen: () => addPasswordEye(Swal.getInput(), 'access code'),
-      showCancelButton: true,
-      confirmButtonText: 'Unlock & Begin',
-      cancelButtonText: 'Cancel',
-      confirmButtonColor: 'var(--primary)',
-      cancelButtonColor: 'var(--gray-400)',
-      reverseButtons: true,
-      background: '#fff',
-      customClass: { popup: 'swal2-premium-popup' },
-      // The code is checked by the server — students never receive the real password
-      showLoaderOnConfirm: true,
-      preConfirm: async (value) => {
-        if (!value) { Swal.showValidationMessage('Access code is required'); return false; }
-        try {
-          await unlockQuiz(realId!, value);
-          return value;
-        } catch (e: any) {
-          Swal.showValidationMessage(e?.response?.data?.message ?? 'Could not verify the access code. Please try again.');
-          return false;
-        }
-      }
-    }).then(result => {
-      if (!result.isConfirmed) return;
+    // Step 1 — access-code dialog (AccessCodeDialog). No window opened yet; the server checks the
+    // code (students never receive the real one) and onCodeAccepted opens the window.
+    setCodePrompt({ url: fullUrl, features });
+  };
 
-      // Step 2 — correct password.
-      //
-      // Chrome / Firefox / Edge carry the user-activation token through async
-      // .then() chains, so window.open() works here directly — no extra click.
-      //
-      // Safari (WebKit) does NOT carry activation across async boundaries and
-      // returns null. We detect that and show a minimal one-tap fallback whose
-      // preConfirm calls window.open() synchronously inside the button-click
-      // event, which Safari permits. ✅
-      const quizWindow = window.open(fullUrl, 'QuizWindow', features);
+  /** Step 2 — the code was accepted: open the exam window (still within the student's tap). */
+  const onCodeAccepted = () => {
+    if (!codePrompt) return;
+    const { url: fullUrl, features } = codePrompt;
+    setCodePrompt(null);
 
-      if (quizWindow && !quizWindow.closed) {
-        // ── Opened immediately (Chrome, Firefox, Edge, etc.) ──────────────────
-        registerWindow(quizWindow);
-        Swal.fire({
-          title: 'Authorization Successful',
-          text: 'The examination session is now being initialized.',
-          icon: 'success',
-          timer: 1500,
-          showConfirmButton: false,
-          customClass: { popup: 'swal2-premium-popup' }
-        });
-      } else {
-        // ── Blocked (Safari / WebKit) — need one explicit user tap ────────────
-        // Small card (see openTap below); its button opens the window inside the tap itself.
-        setOpenTapError('');
-        setOpenTap({ url: fullUrl, features });
-      }
-    });
+    // Chrome / Firefox / Edge carry the tap on "Unlock & begin" through the code check, so
+    // window.open() works here directly — no extra click.
+    //
+    // Safari (WebKit) does NOT carry it across the wait and returns null. We detect that and show
+    // the small one-tap card (openTap below), whose button opens the window inside the tap itself.
+    const quizWindow = window.open(fullUrl, 'QuizWindow', features);
+
+    if (quizWindow && !quizWindow.closed) {
+      // ── Opened immediately (Chrome, Firefox, Edge, etc.) ──────────────────
+      registerWindow(quizWindow);
+      Swal.fire({
+        title: 'Authorization Successful',
+        text: 'The examination session is now being initialized.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        customClass: { popup: 'swal2-premium-popup' }
+      });
+    } else {
+      // ── Blocked (Safari / WebKit) — need one explicit user tap ────────────
+      setOpenTapError('');
+      setOpenTap({ url: fullUrl, features });
+    }
   };
 
   if (isLoading) {
@@ -360,8 +336,18 @@ export default function Instructions() {
 
   return (
     <div className="animate-fade-in">
-      {openTap && (
-        <div role="dialog" aria-modal="true" aria-labelledby="open-exam-title" style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(15, 20, 30, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      {codePrompt && (
+        <AccessCodeDialog
+          quizId={realId!}
+          quizTitle={quiz?.title}
+          courseLabel={quiz?.category?.courseCode || quiz?.category?.title}
+          onCancel={() => setCodePrompt(null)}
+          onUnlocked={onCodeAccepted}
+        />
+      )}
+      {/* On <body>, like the access-code dialog: the animated page wrapper would pin the overlay to itself */}
+      {openTap && createPortal(
+        <div role="dialog" aria-modal="true" aria-labelledby="open-exam-title" style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(15, 20, 30, 0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
           <div className="lexa-card" style={{ maxWidth: 380, width: '100%', textAlign: 'center', margin: 0 }}>
             <div className="lexa-card-body" style={{ padding: 28 }}>
               <h5 id="open-exam-title" style={{ fontWeight: 700, color: 'var(--gray-900)', margin: '0 0 8px' }}>One more step</h5>
@@ -379,7 +365,8 @@ export default function Instructions() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
       <PageHeader title="Examination Brief" breadcrumbs={['User', 'Instructions']} />
 

@@ -14,7 +14,8 @@ import {
   ArrowUpRight,
   Clock,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  EyeOff
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
 import { toNum, fmtNum, pct, gradeTone } from '../../utils/scores';
@@ -64,6 +65,23 @@ function BreakdownRow({ label, hint, got, max, total }: {
       <div className="am-bar" role="progressbar" aria-label={`${label} score`}
         aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, p)}>
         <div className="am-bar-fill" style={{ width: `${Math.min(100, p)}%`, background: tone.solid }} />
+      </div>
+    </div>
+  );
+}
+
+/** In place of a result staff are withholding (the server sends no marks for it). */
+function WithheldNotice({ message, compact }: { message?: string; compact?: boolean }) {
+  return (
+    <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
+      <div style={{ width: compact ? 36 : 40, height: compact ? 36 : 40, borderRadius: 10, background: 'rgba(185,28,28,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <EyeOff size={compact ? 18 : 20} color="#b91c1c" />
+      </div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#991b1b' }}>Result withheld</div>
+        <div style={{ fontSize: 11, color: '#b91c1c', fontWeight: 600, marginTop: 2 }}>
+          {message || 'Your result for this quiz is being withheld. Please contact your lecturer.'}
+        </div>
       </div>
     </div>
   );
@@ -121,6 +139,14 @@ function SummaryModal({ qId, onClose, userId }: { qId: number; onClose: () => vo
       ) : (
         <div className="am-reports">
           {data.map((r: any, i: number) => {
+            if (r.withheld) {
+              return (
+                <section key={r.id ?? i} className="am-report">
+                  {data.length > 1 && <div className="am-attempt">Attempt {i + 1}</div>}
+                  <WithheldNotice message={r.withheldMessage} />
+                </section>
+              );
+            }
             const type  = r.quiz?.quizType ?? '';
             const showObj = type !== 'THEORY';
             const showTh  = type !== 'OBJ';
@@ -172,6 +198,9 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
 }) {
   if (!q) return null;
   const closed  = q?.status === 'CLOSED';
+  // Staff are holding this result back: no marks, analytics, slip or re-mark until they release it
+  const withheld = report?.withheld === true;
+  const reviewed = !!report?.isReviewed && !withheld;
   const total   = parseFloat(report?.marks || 0) + parseFloat(report?.marksB || 0);
   const max     = parseFloat(report?.quiz?.maxMarks || 0) + parseFloat(report?.maxScoreSectionB || 0);
   const p       = report ? pct(total, max) : 0;
@@ -195,8 +224,10 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
           {q?.category?.courseCode || 'N/A'} • {q?.category?.title || 'Uncategorized'}
         </div>
 
-        <div style={{ marginTop: 24, padding: '18px', background: report?.isReviewed ? '#fcfdfe' : '#fffbeb', border: `1px solid ${report?.isReviewed ? '#f1f5f7' : '#fde68a'}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 72 }}>
-          {report?.isReviewed ? (
+        <div style={{ marginTop: 24, padding: '18px', background: withheld ? '#fef2f2' : reviewed ? '#fcfdfe' : '#fffbeb', border: `1px solid ${withheld ? '#fecaca' : reviewed ? '#f1f5f7' : '#fde68a'}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 72 }}>
+          {withheld ? (
+            <WithheldNotice message={report?.withheldMessage} />
+          ) : reviewed ? (
             <>
               <div>
                 <div style={{ fontSize: 10, fontWeight: 800, color: '#adb5bd', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Score Attained</div>
@@ -225,20 +256,20 @@ function QuizCard({ q, idx, report, onSummary, onDownload, isDownloading }: {
 
       <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f7', background: '#fcfdfe', display: 'flex', gap: 12 }}>
         <button 
-          onClick={report?.isReviewed ? onSummary : undefined}
-          disabled={!report?.isReviewed}
-          title={!report?.isReviewed ? tx('Analytics available after lecturer review') : 'View performance analytics'}
+          onClick={reviewed ? onSummary : undefined}
+          disabled={!reviewed}
+          title={withheld ? 'Your result is withheld' : !reviewed ? tx('Analytics available after lecturer review') : 'View performance analytics'}
           className="btn-lexa btn-lexa-outline"
-          style={{ flex: 1, padding: '10px', fontSize: 13, borderRadius: 8, opacity: report?.isReviewed ? 1 : 0.45, cursor: report?.isReviewed ? 'pointer' : 'not-allowed' }}
+          style={{ flex: 1, padding: '10px', fontSize: 13, borderRadius: 8, opacity: reviewed ? 1 : 0.45, cursor: reviewed ? 'pointer' : 'not-allowed' }}
         >
           Analytics
         </button>
         <button 
-          onClick={closed && report?.isReviewed && !isDownloading ? onDownload : undefined} 
-          disabled={!closed || !report?.isReviewed || isDownloading}
-          className={`btn-lexa ${closed && report?.isReviewed ? 'btn-lexa-primary' : ''}`}
-          style={{ flex: 1, padding: '10px', fontSize: 13, opacity: (closed && report?.isReviewed) ? 1 : 0.5, justifyContent: 'center', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
-          title={!report?.isReviewed ? tx('Result Slip available after lecturer review') : ''}
+          onClick={closed && reviewed && !isDownloading ? onDownload : undefined} 
+          disabled={!closed || !reviewed || isDownloading}
+          className={`btn-lexa ${closed && reviewed ? 'btn-lexa-primary' : ''}`}
+          style={{ flex: 1, padding: '10px', fontSize: 13, opacity: (closed && reviewed) ? 1 : 0.5, justifyContent: 'center', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}
+          title={withheld ? 'Your result is withheld' : !reviewed ? tx('Result Slip available after lecturer review') : ''}
         >
           {isDownloading
             ? <><Loader2 size={15} className="spin-ico" /> Generating...</>
@@ -277,7 +308,10 @@ export default function LoadQuiz() {
         detail = data instanceof Blob ? await data.text() : (typeof data === 'string' ? data : '');
       } catch { /* ignore */ }
       console.error('PDF request failed', err?.response?.status, detail || err?.message, err);
-      alert('Could not generate the result slip. Please try again.' + (detail ? ' ' + detail : ''));
+      // A JSON reply (e.g. the result is withheld) carries a message meant for the student
+      let message = '';
+      try { message = JSON.parse(detail)?.message ?? ''; } catch { /* not JSON */ }
+      alert(message || ('Could not generate the result slip. Please try again.' + (detail ? ' ' + detail : '')));
       setDownloadingId(null);
       return;
     }

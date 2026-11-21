@@ -121,7 +121,11 @@ function AttemptHistoryModal({ quiz, userId, onClose }: { quiz: any; userId: num
                   </div>
                 </div>
                 <div className="ah-score">
-                  {r.isReviewed ? (
+                  {r.withheld ? (
+                    <span className="ah-pending" title={r.withheldMessage} style={{ color: '#b91c1c' }}>
+                      Result withheld
+                    </span>
+                  ) : r.isReviewed ? (
                     <>
                       <div className="ah-score-value">
                         <strong>{fmtNum(total)}</strong>
