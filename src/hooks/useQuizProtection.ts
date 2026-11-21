@@ -14,8 +14,9 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { queueViolation, queueViolationDelay } from '../utils/saveQueue';
+import { queueViolation, queueViolationDelay, onServerViolationState, type ServerViolationState } from '../utils/saveQueue';
 import { isAnswerBox } from '../utils/typingGuard';
+import { isTextField, isTouchDevice } from './useKeyboardSafeInputs';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type ViolationAction =
@@ -36,6 +37,8 @@ export interface QuizProtectionConfig {
   enableScreenshotBlocking: boolean;
   enableDevToolsBlocking: boolean;
   username: string;
+  /** Student's name, shown with the username in the watermark. */
+  studentName?: string;
    _savedViolationCount?: number;
   _pendingViolationDelay?: number;
   /** Super Admin switch (Feature Controls): violation tone and countdown beeps. Off = silent; default on. */
@@ -44,8 +47,30 @@ export interface QuizProtectionConfig {
   _delayPausesWhileAway?: boolean;
   /** Quiz's "Allow Paste": answer boxes keep their right-click / long-press menu (Paste, Copy). */
   allowAnswerMenu?: boolean;
+  /** The server's staff-reset number at load: raised each time staff reset the student's violations. */
+  _violationResetNo?: number;
+  /** Asks the server for the count and reset number (during a lock-out and before an auto-submit). */
+  checkViolationState?: () => Promise<ServerViolationState | null>;
   onAutoSubmit: () => void;
 }
+
+// ── Held violations ───────────────────────────────────────────────────────────
+// A lost focus, hidden page or full-screen exit is held for a moment before it counts:
+//  - a refresh hides the page (and the "Leave site?" box can take focus) on its way out; the page is
+//    gone before the hold ends, so a refresh never counts
+//  - on phones, closing the keyboard (iPhones with some keyboards in particular) can take focus off
+//    the page for a moment; when focus comes straight back right after a keyboard change, it doesn't count
+/** Desktop: long enough for a refresh to unload the page first. */
+const HOLD_MS = 400;
+/** Phones and tablets: long enough for focus to come back after the keyboard closes. */
+const TOUCH_HOLD_MS = 1500;
+/** A focus loss this close to a keyboard opening or closing may be the keyboard's doing. */
+const KEYBOARD_NEAR_MS = 1000;
+/** After beforeunload, a lost focus is the browser's "Leave site?" box, not the student leaving. */
+const UNLOAD_GRACE_MS = 3000;
+
+/** A held hidden-page violation is also kept here, so a tab the phone closed in the background still counts it on return. */
+const heldKey = (quizId: string) => `qps-held:${quizId}`;
 
 // ── CSS injected once ─────────────────────────────────────────────────────────
 const injectStyles = () => {
@@ -217,6 +242,38 @@ const exitFS = () => {
   const d = document as any;
   try { ignoreRefusal((d.exitFullscreen || d.webkitExitFullscreen || d.mozCancelFullScreen || d.msExitFullscreen)?.call(d)); } catch {}
 };
+// ── Watermark ─────────────────────────────────────────────────────────────────
+// The lecturer's "Watermark" switch: the student's ID, name and the date, faint and tiled across the
+// whole exam page, so a photo or screen recording of a question shows whose exam it came from.
+const WATERMARK_ID = 'qps-watermark';
+const xmlEscape = (t: string) => t.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]!));
+
+/** One tile of the pattern: two lines of text at an angle. Mid grey reads on light and dark pages. */
+const watermarkTile = (line1: string, line2: string) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">`
+    + `<g transform="rotate(-28 160 100)" fill="rgb(128,128,128)" fill-opacity="0.16" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" text-anchor="middle">`
+    + `<text x="160" y="96" font-size="17" font-weight="700">${xmlEscape(line1)}</text>`
+    + `<text x="160" y="118" font-size="12">${xmlEscape(line2)}</text>`
+    + `</g></svg>`;
+  return `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+};
+
+const placeWatermark = (background: string) => {
+  let el = document.getElementById(WATERMARK_ID);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = WATERMARK_ID;
+    el.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(el);
+  }
+  // Above the exam page, below the lock-out screens (1000003) and toasts (1000000); never catches a tap
+  el.style.cssText = [
+    'position:fixed', 'inset:0', 'pointer-events:none', 'z-index:999990',
+    `background-image:${background}`, 'background-repeat:repeat', 'background-size:320px 200px',
+    'user-select:none', '-webkit-user-select:none', 'print-color-adjust:exact', '-webkit-print-color-adjust:exact',
+  ].join(';');
+};
+
 const isFS = () => !!(
   document.fullscreenElement || (document as any).webkitFullscreenElement ||
   (document as any).mozFullScreenElement || (document as any).msFullscreenElement
@@ -640,12 +697,20 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     isProcessing:      false,
     fsActive:          false,
     wakeLock:          null as any,
+    /** Staff-reset number this page knows; sent with every violation and lock-out save. */
+    resetNo:           0,
+    /** onAutoSubmit has been called: from then on a reset can no longer stop the submission. */
+    asFired:           false,
+    /** The violation state loaded with the quiz is in place; server replies before that are ignored. */
+    stateLoaded:       false,
   });
   const delayIv  = useRef<ReturnType<typeof setInterval>|null>(null);
   const asIv     = useRef<ReturnType<typeof setInterval>|null>(null);
   const fsIv     = useRef<ReturnType<typeof setInterval>|null>(null);
   const focusIv  = useRef<ReturnType<typeof setInterval>|null>(null);
   const cleanups = useRef<Array<()=>void>>([]);
+  /** hold() from the listener setup, for the full-screen lock set up separately below. */
+  const holdRef  = useRef<(type: string) => void>(() => {});
   const cfgRef   = useRef(cfg);   // always-fresh config reference
   cfgRef.current = cfg;
 
@@ -668,7 +733,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
    */
   const saveDelayLeft = (seconds: number) => {
     const c = cfgRef.current;
-    queueViolationDelay(c.quizId, seconds, !!c._delayPausesWhileAway);
+    queueViolationDelay(c.quizId, seconds, !!c._delayPausesWhileAway, st.current.resetNo);
   };
   /** Each second of a running lock-out: a paused-while-away one is saved every 5 s. */
   const delayTicked = (t: number) => {
@@ -724,12 +789,51 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     }, 1000);
   }, [endDelay]);
 
+  /**
+   * The server's count and reset number, from a save's reply or a check. When staff have reset the
+   * violations (a newer reset number) the page takes the server's count, ends any lock-out and stops
+   * an auto-submit countdown that has not submitted yet.
+   */
+  const applyServerState = useCallback((state: ServerViolationState | null | undefined) => {
+    const s = st.current;
+    // Until the loaded state is in, a reply would look like a reset to a student reset earlier
+    if (!s.stateLoaded || !state || !Number.isFinite(state.resetNo) || state.resetNo <= s.resetNo) return;
+    s.resetNo = state.resetNo;
+    s.totalViolations = Math.max(0, Number(state.count) || 0);
+    if (s.asFired) return;   // already submitting
+    const wasLocked = s.isDelayActive || s.autoSubmitDone;
+    if (delayIv.current) { clearInterval(delayIv.current); delayIv.current = null; }
+    if (asIv.current)    { clearInterval(asIv.current);    asIv.current = null; }
+    s.isDelayActive = false;
+    s.delayRemaining = 0;
+    s.curDelayDuration = 0;
+    s.autoSubmitDone = false;
+    removeOv();
+    showToast(s.totalViolations > 0
+      ? `Your violation count was changed to ${s.totalViolations}. You can carry on.`
+      : 'Your violations have been reset. You can carry on.');
+    if (wasLocked) {
+      window.focus();
+      if (cfgRef.current.enableFullscreenLock) setTimeout(enterFS, 300);
+    }
+  }, []);
+
+  /** Asks the server whether staff have reset the violations (offline or slow: nothing changes). */
+  const checkForReset = useCallback(() => {
+    const check = cfgRef.current.checkViolationState;
+    if (!check) return;
+    check().then(applyServerState).catch(() => {});
+  }, [applyServerState]);
+
   const initiateAutoSubmit = useCallback((type: string) => {
     const c = cfgRef.current;
     if (st.current.autoSubmitDone) return;
     st.current.autoSubmitDone = true;
-    queueViolation(c.quizId, 'auto-submit');
+    queueViolation(c.quizId, 'auto-submit', undefined, st.current.resetNo);
     if (delayIv.current) { clearInterval(delayIv.current); delayIv.current = null; }
+    // Staff may have reset the violations since this page last heard from the server: the
+    // countdown stops if so
+    checkForReset();
 
     const max = c.autoSubmitCountdownSeconds;
     let cd = max;
@@ -742,10 +846,11 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
       if (cd <= 3 && cd > 0) play(880, 0.2, 0.2);
       if (cd <= 0) {
         if (asIv.current) { clearInterval(asIv.current); asIv.current = null; }
+        st.current.asFired = true;
         cfgRef.current.onAutoSubmit();
       }
     }, 1000);
-  }, []);
+  }, [checkForReset]);
 
   const handleViolation = useCallback((type: string) => {
     const c = cfgRef.current;
@@ -756,7 +861,7 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     s.isProcessing = true;
     s.totalViolations++;
     // Timestamped event for the staff proctoring report; the server also stores the count from it
-    queueViolation(c.quizId, type, s.totalViolations);
+    queueViolation(c.quizId, type, s.totalViolations, s.resetNo);
 
     const remaining = c.maxViolations - s.totalViolations;
 
@@ -801,10 +906,23 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
   // Mirrors Angular: quizProtection.loadDelayFromBackend(qid) + loadViolationCountFromBackend(qid)
   const pendingDelayVal = (cfg as any)._pendingViolationDelay ?? 0;
   const savedCountVal   = (cfg as any)._savedViolationCount   ?? 0;
+  const resetNoVal      = cfg._violationResetNo ?? 0;
 
   useEffect(() => {
     if (!cfg.quizId || cfg.violationAction === 'NONE') return;
     const s = st.current;
+
+    // The staff-reset number first: the count below is the one since that reset
+    if (resetNoVal > s.resetNo) s.resetNo = resetNoVal;
+    s.stateLoaded = true;
+
+    // A hidden-page violation held when this tab was closed in the background (not by a refresh,
+    // which clears it) counts now
+    let heldOnLoad: string | null = null;
+    try {
+      heldOnLoad = sessionStorage.getItem(heldKey(cfg.quizId));
+      if (heldOnLoad) sessionStorage.removeItem(heldKey(cfg.quizId));
+    } catch { /* storage blocked */ }
 
     // Restore violation count first (saved on the server, so it follows the student to any device)
     if (savedCountVal > s.totalViolations) s.totalViolations = savedCountVal;
@@ -844,8 +962,10 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
         }
       }, 1000);
     }
+
+    if (heldOnLoad && !s.isDelayActive && !s.autoSubmitDone) handleViolation(heldOnLoad);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingDelayVal, savedCountVal, cfg.quizId, cfg.violationAction]);
+  }, [pendingDelayVal, savedCountVal, resetNoVal, cfg.quizId, cfg.violationAction]);
 
 
 
@@ -900,35 +1020,8 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     // Note: violation count and delay restore are handled in a separate effect
     // that fires when quizConfig is actually loaded (not on dummy-config mount)
 
-    // ── Screenshot blocking ──
-    if (cfg.enableScreenshotBlocking) {
-      const ssDown = (e: KeyboardEvent) => {
-        let blocked = false;
-        if (e.key === 'PrintScreen') blocked = true;
-        if (e.metaKey && e.shiftKey && ['3','4','5'].includes(e.key)) blocked = true;
-        if (e.metaKey && e.shiftKey && e.key.toLowerCase()==='s') blocked = true;
-        if (e.altKey && e.key === 'PrintScreen') blocked = true;
-        if (blocked) { e.preventDefault(); e.stopImmediatePropagation(); navigator.clipboard?.writeText('').catch(()=>{}); handleViolation('screenshot-attempt'); }
-      };
-      const ssUp = (e: KeyboardEvent) => { if (e.key==='PrintScreen') { navigator.clipboard?.writeText('').catch(()=>{}); handleViolation('screenshot-attempt'); } };
-      document.addEventListener('keydown', ssDown, true);
-      window.addEventListener('keyup', ssUp, true);
-      add(() => { document.removeEventListener('keydown', ssDown, true); window.removeEventListener('keyup', ssUp, true); });
-    }
-
-    // ── DevTools blocking ──
-    if (cfg.enableDevToolsBlocking) {
-      const dt = (e: KeyboardEvent) => {
-        let blocked = false;
-        if (e.key==='F12') blocked=true;
-        if ((e.ctrlKey||e.metaKey)&&e.shiftKey&&['i','c','j'].includes(e.key.toLowerCase())) blocked=true;
-        if ((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='u') blocked=true;
-        if (e.metaKey&&e.altKey&&['i','j','c'].includes(e.key.toLowerCase())) blocked=true;
-        if (blocked) { e.preventDefault(); e.stopImmediatePropagation(); handleViolation('devtools-block'); }
-      };
-      document.addEventListener('keydown', dt, true);
-      add(() => document.removeEventListener('keydown', dt, true));
-    }
+    // Screenshot blocking, dev-tools blocking and the full-screen lock are the lecturer's switches:
+    // they are set up in their own effect below, once the quiz's settings have arrived
 
     // ── Context menu ──
     const ctx = (e: MouseEvent) => {
@@ -954,17 +1047,96 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
     document.addEventListener('click', tabC, true);
     add(() => { document.removeEventListener('keydown', tabK, true); document.removeEventListener('click', tabC, true); });
 
+    // ── Held violations (see HOLD_MS) ──
+    const touch = isTouchDevice();
+    let held: { type: string; at: number; timer: ReturnType<typeof setTimeout> | null } | null = null;
+    let unloadingAt = 0;
+    let lastKeyboardAt = 0;
+    /** Set on pagehide: some browsers report the page hidden only after that, and it must not be held then. */
+    let gone = false;
+    const unloading = () => Date.now() - unloadingAt < UNLOAD_GRACE_MS;
+    const quizKey = () => heldKey(String(cfgRef.current.quizId));
+    const dropHeld = () => {
+      if (held?.timer) clearTimeout(held.timer);
+      held = null;
+      try { sessionStorage.removeItem(quizKey()); } catch { /* storage blocked */ }
+    };
+    const commitHeld = () => {
+      if (!held) return;
+      const type = held.type;
+      dropHeld();
+      if (!s.autoSubmitDone && !s.isDelayActive) handleViolation(type);
+    };
+    /** At the end of a hold: count it, unless focus is back and it was the keyboard or the "Leave site?" box. */
+    const settleHeld = () => {
+      if (!held) return;
+      if (held.type === 'visibility-hidden') {
+        // The page outlived the hold, so this was a real switch (desktop tabs keep running while
+        // hidden). Phones freeze hidden pages; there it counts on return instead (see vis below).
+        commitHeld();
+        return;
+      }
+      const back = document.hasFocus() && !document.hidden;
+      const keyboard = touch && lastKeyboardAt >= held.at - KEYBOARD_NEAR_MS;
+      if (back && (keyboard || unloading())) { dropHeld(); return; }
+      commitHeld();
+    };
+    const hold = (type: string) => {
+      if (gone || s.autoSubmitDone || s.isDelayActive || cfgRef.current.violationAction === 'NONE') return;
+      if (held) {
+        // One event per leaving: a hidden page outranks the focus loss that came just before it
+        if (type !== 'visibility-hidden' || held.type === 'visibility-hidden') return;
+        if (held.timer) clearTimeout(held.timer);
+      }
+      const ms = type === 'focus-lost' && touch ? TOUCH_HOLD_MS : type === 'visibility-hidden' ? TOUCH_HOLD_MS : HOLD_MS;
+      held = { type, at: Date.now(), timer: setTimeout(settleHeld, ms) };
+      if (type === 'visibility-hidden') {
+        try { sessionStorage.setItem(quizKey(), type); } catch { /* storage blocked */ }
+      }
+    };
+
+    holdRef.current = hold;
+    add(() => { holdRef.current = () => {}; });
+
+    // Keyboard opening or closing: an answer box gains or loses focus, or the visible area resizes
+    const keyboardMoved = (e: Event) => { if (isTextField(e.target)) lastKeyboardAt = Date.now(); };
+    const viewportMoved = () => { lastKeyboardAt = Date.now(); };
+    document.addEventListener('focusin', keyboardMoved, true);
+    document.addEventListener('focusout', keyboardMoved, true);
+    window.visualViewport?.addEventListener('resize', viewportMoved);
+    add(() => {
+      document.removeEventListener('focusin', keyboardMoved, true);
+      document.removeEventListener('focusout', keyboardMoved, true);
+      window.visualViewport?.removeEventListener('resize', viewportMoved);
+    });
+
+    // The page is closing or reloading: what is held never counts
+    // A refresh or close is never "persisted"; one that is (page cache, which some phones use when
+    // the browser goes to the background) may come back, so what is held stays
+    const pageGone = (e: PageTransitionEvent) => { if (e.persisted) return; gone = true; dropHeld(); };
+    // Back from the browser's page cache (Back/Forward): the page is live again
+    const pageBack = () => { gone = false; };
+    window.addEventListener('pagehide', pageGone);
+    window.addEventListener('pageshow', pageBack);
+    add(() => {
+      window.removeEventListener('pagehide', pageGone);
+      window.removeEventListener('pageshow', pageBack);
+    });
+
     // ── Visibility change (tab switch) ──
     // This is the PRIMARY violation trigger — mirrors Angular's monitorPageVisibility
     const vis = () => {
       if (document.hidden) {
-        if (!s.autoSubmitDone && !s.isDelayActive) handleViolation('visibility-hidden');
+        hold('visibility-hidden');
         // Blur screen while hidden (like Angular's enableBlurOnHidden)
-        if (cfg.violationAction !== 'NONE') {
+        if (cfgRef.current.violationAction !== 'NONE') {
           document.body.style.filter = 'blur(20px)';
           document.body.style.transition = 'filter 0.3s ease';
         }
       } else {
+        // Back on the page, so it was a real switch, not a refresh: it counts now
+        gone = false;
+        if (held?.type === 'visibility-hidden') commitHeld();
         document.body.style.filter = '';
         window.focus();
         if (s.fsActive && !isFS() && !s.isDelayActive) setTimeout(enterFS, 300);
@@ -975,14 +1147,24 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
 
     // ── Window blur ──
     const blur = () => {
-      if (!s.autoSubmitDone && !s.isDelayActive) handleViolation('focus-lost');
+      hold('focus-lost');
       setTimeout(() => { window.focus(); if (s.fsActive && !isFS()) enterFS(); }, 100);
     };
     window.addEventListener('blur', blur);
     add(() => window.removeEventListener('blur', blur));
 
+    // ── Staff reset: from save replies, and checked every 10 s while locked out ──
+    add(onServerViolationState((quizId, state) => {
+      if (quizId === String(cfgRef.current.quizId)) applyServerState(state);
+    }));
+    const resetPoll = setInterval(() => {
+      if (s.isDelayActive || (s.autoSubmitDone && !s.asFired)) checkForReset();
+    }, 10_000);
+    add(() => clearInterval(resetPoll));
+
     // ── Before unload ──
     const unload = (e: BeforeUnloadEvent) => { 
+      unloadingAt = Date.now();   // a lost focus now is the "Leave site?" box
       if ((window as any).__allow_unload) return;
       e.preventDefault(); 
       e.returnValue = ''; 
@@ -1004,35 +1186,10 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
       document.removeEventListener('visibilitychange', hidden);
     });
 
-    // ── Fullscreen lock ──
-    if (cfg.enableFullscreenLock) {
-      enterFS();
-      const fsChange = () => {
-        if (!isFS() && s.fsActive && !s.autoSubmitDone && !s.isDelayActive) {
-          handleViolation('fullscreen-exit');
-          window.focus();
-          setTimeout(enterFS, 300);
-        }
-      };
-      ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'].forEach(ev => {
-        document.addEventListener(ev, fsChange);
-        add(() => document.removeEventListener(ev, fsChange));
-      });
-      fsIv.current = setInterval(() => { if (s.fsActive&&!isFS()&&!s.autoSubmitDone&&!s.isDelayActive) enterFS(); }, 2000);
-      // Browsers refuse fullscreen until the student taps, clicks or presses a key (a new exam window
-      // or a reload has had none yet), so (re)enter it on their next one, e.g. picking an answer
-      const gestureFS = () => { if (s.fsActive && !isFS() && !s.autoSubmitDone && !s.isDelayActive) enterFS(); };
-      ['click', 'keydown', 'touchend'].forEach(ev => {
-        document.addEventListener(ev, gestureFS, true);
-        add(() => document.removeEventListener(ev, gestureFS, true));
-      });
-      s.fsActive = true;
-    }
-
     // ── Mobile: prevent zoom & pinch ──
     const vp = document.querySelector('meta[name=viewport]') as HTMLMetaElement|null;
     const origVP = vp?.content ?? '';
-    if (vp) vp.content='width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover';
+    if (vp) vp.content='width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content';
     let lastTouch = 0;
     const dtap = (e: TouchEvent) => { const now=Date.now(); if(now-lastTouch<=300) e.preventDefault(); lastTouch=now; };
     const pinch = (e: TouchEvent) => { if(e.touches.length>1) e.preventDefault(); };
@@ -1080,4 +1237,112 @@ export function useQuizProtection(cfg: QuizProtectionConfig) {
       document.body.style.userSelect = '';
     };
   }, []); // intentionally empty — config read via cfgRef
+
+  // ══ THE LECTURER'S PROTECTION SWITCHES ════════════════════════════════════
+  // The hook first runs with placeholder settings while the quiz loads, so these are set up when the
+  // quiz's own settings arrive (and again if they change). They are kept apart from the listeners
+  // above, so setting them up never tears down a lock-out screen or the violation listeners.
+  const fullscreenLock     = !!cfg.enableFullscreenLock;
+  const screenshotBlocking = !!cfg.enableScreenshotBlocking;
+  const devToolsBlocking   = !!cfg.enableDevToolsBlocking;
+
+  useEffect(() => {
+    const s = st.current;
+    const off: Array<() => void> = [];
+
+    // ── Screenshot blocking ──
+    if (screenshotBlocking) {
+      const ssDown = (e: KeyboardEvent) => {
+        let blocked = false;
+        if (e.key === 'PrintScreen') blocked = true;
+        if (e.metaKey && e.shiftKey && ['3','4','5'].includes(e.key)) blocked = true;
+        if (e.metaKey && e.shiftKey && e.key.toLowerCase()==='s') blocked = true;
+        if (e.altKey && e.key === 'PrintScreen') blocked = true;
+        if (blocked) { e.preventDefault(); e.stopImmediatePropagation(); navigator.clipboard?.writeText('').catch(()=>{}); handleViolation('screenshot-attempt'); }
+      };
+      const ssUp = (e: KeyboardEvent) => { if (e.key==='PrintScreen') { navigator.clipboard?.writeText('').catch(()=>{}); handleViolation('screenshot-attempt'); } };
+      document.addEventListener('keydown', ssDown, true);
+      window.addEventListener('keyup', ssUp, true);
+      off.push(() => { document.removeEventListener('keydown', ssDown, true); window.removeEventListener('keyup', ssUp, true); });
+    }
+
+    // ── DevTools blocking ──
+    if (devToolsBlocking) {
+      const dt = (e: KeyboardEvent) => {
+        let blocked = false;
+        if (e.key==='F12') blocked=true;
+        if ((e.ctrlKey||e.metaKey)&&e.shiftKey&&['i','c','j'].includes(e.key.toLowerCase())) blocked=true;
+        if ((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='u') blocked=true;
+        if (e.metaKey&&e.altKey&&['i','j','c'].includes(e.key.toLowerCase())) blocked=true;
+        if (blocked) { e.preventDefault(); e.stopImmediatePropagation(); handleViolation('devtools-block'); }
+      };
+      document.addEventListener('keydown', dt, true);
+      off.push(() => document.removeEventListener('keydown', dt, true));
+    }
+
+    // ── Fullscreen lock ──
+    // iPhones have no full screen for web pages: there this does nothing and never counts a violation
+    if (fullscreenLock) {
+      enterFS();
+      const fsChange = () => {
+        if (!isFS() && s.fsActive && !s.autoSubmitDone && !s.isDelayActive) {
+          holdRef.current('fullscreen-exit');
+          window.focus();
+          setTimeout(enterFS, 300);
+        }
+      };
+      const fsEvents = ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'];
+      fsEvents.forEach(ev => document.addEventListener(ev, fsChange));
+      if (fsIv.current) clearInterval(fsIv.current);
+      fsIv.current = setInterval(() => { if (s.fsActive&&!isFS()&&!s.autoSubmitDone&&!s.isDelayActive) enterFS(); }, 2000);
+      // Browsers refuse fullscreen until the student taps, clicks or presses a key (a new exam window
+      // or a reload has had none yet), so (re)enter it on their next one, e.g. picking an answer
+      const gestureFS = () => { if (s.fsActive && !isFS() && !s.autoSubmitDone && !s.isDelayActive) enterFS(); };
+      const gestures = ['click', 'keydown', 'touchend'];
+      gestures.forEach(ev => document.addEventListener(ev, gestureFS, true));
+      s.fsActive = true;
+      off.push(() => {
+        fsEvents.forEach(ev => document.removeEventListener(ev, fsChange));
+        gestures.forEach(ev => document.removeEventListener(ev, gestureFS, true));
+        if (fsIv.current) { clearInterval(fsIv.current); fsIv.current = null; }
+        // Switched off (or the page is closing): leave full screen without it counting
+        s.fsActive = false;
+        if (isFS()) exitFS();
+      });
+    }
+
+    return () => off.forEach(fn => { try { fn(); } catch { /* keep cleaning up */ } });
+  }, [fullscreenLock, screenshotBlocking, devToolsBlocking, handleViolation]);
+
+  // ══ WATERMARK ═════════════════════════════════════════════════════════════
+  const watermark   = !!cfg.enableWatermark;
+  const wmUsername  = cfg.username ?? '';
+  const wmName      = cfg.studentName ?? '';
+
+  useEffect(() => {
+    if (!watermark || !wmUsername) return;
+    const date = new Date().toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+    const background = watermarkTile(wmUsername, [wmName.trim(), date].filter(Boolean).join(' · '));
+    // Put back at once if removed or restyled (e.g. from the browser's developer tools)
+    let expected = '';
+    const keep = new MutationObserver(() => {
+      const el = document.getElementById(WATERMARK_ID);
+      if (el && el.style.cssText === expected && !el.hidden && !el.className) return;
+      place();
+    });
+    const place = () => {
+      placeWatermark(background);
+      const el = document.getElementById(WATERMARK_ID)!;
+      el.hidden = false;
+      el.className = '';
+      expected = el.style.cssText;
+      keep.observe(el, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+    };
+    keep.observe(document.body, { childList: true, subtree: false });
+    place();
+    return () => {
+      keep.disconnect();
+      document.getElementById(WATERMARK_ID)?.remove();
+    };
+  }, [watermark, wmUsername, wmName]);
 }

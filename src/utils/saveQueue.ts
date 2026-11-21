@@ -45,6 +45,10 @@ let running: Promise<void> | null = null;
 const closedQuizzes = new Set<string>();
 const listeners = new Set<() => void>();
 
+/** What a clock checkpoint, violation or lock-out save says about the student's violations. */
+export interface ServerViolationState { count: number; resetNo: number }
+const violationStateListeners = new Set<(quizId: string, state: ServerViolationState) => void>();
+
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 const owner = (): string | null => {
@@ -137,9 +141,18 @@ const send = (head: Entry, batch: Entry[]): Promise<unknown> => {
     case 'answer':    return sendAnswers(batch);
     case 'theory':    return saveTheoryAnswers(head.quizId, batch.map(e => e.payload));
     case 'timer':     return saveQuizTimer(head.quizId, head.payload.remainingTime);
-    case 'delay':     return saveViolationDelay(head.quizId, delayLeft(head));
-    case 'violation': return recordProctoringEvent(head.quizId, head.payload.type, head.payload.violationNumber);
+    case 'delay':     return saveViolationDelay(head.quizId, delayLeft(head), head.payload.resetNo ?? 0);
+    case 'violation': return recordProctoringEvent(head.quizId, head.payload.type, head.payload.violationNumber, head.payload.resetNo ?? 0);
   }
+};
+
+/** Passes the server's violation count and reset number on to the exam page (it applies a staff reset). */
+const reportViolationState = (head: Entry, res: any) => {
+  if (head.kind !== 'timer' && head.kind !== 'violation' && head.kind !== 'delay') return;
+  const resetNo = Number(res?.violationResetNo);
+  if (!res || !Number.isFinite(resetNo)) return;
+  const state = { count: Number(res.totalViolationCount) || 0, resetNo };
+  violationStateListeners.forEach(fn => { try { fn(head.quizId, state); } catch { /* a listener must not stop the queue */ } });
 };
 
 const drain = async () => {
@@ -151,8 +164,9 @@ const drain = async () => {
     const batch = batchFor(head, q);
     const ids = new Set(batch.map(e => e.id));
     try {
-      await send(head, batch);
+      const res = await send(head, batch);
       write(read().filter(e => !ids.has(e.id)));  // entries queued meanwhile have new ids and stay
+      reportViolationState(head, res);
       nextAllowedAt = 0;
       setFailing(false);
     } catch (err: any) {
@@ -214,23 +228,35 @@ export const queueTheoryAnswer = (quizId: number | string, quesNo: string, given
 export const queueTimer = (quizId: number | string, remainingTime: number) =>
   enqueue('timer', quizId, `timer:${quizId}`, { remainingTime });
 
-/** A violation (or the auto-submit) for the proctoring report; a numbered one also stores the count. */
-export const queueViolation = (quizId: number | string, type: string, violationNumber?: number) =>
-  enqueue('violation', quizId, `violation:${quizId}:${Date.now()}:${Math.random()}`, { type, violationNumber });
+/**
+ * A violation (or the auto-submit) for the proctoring report; a numbered one also stores the count.
+ * resetNo is the staff-reset number the page knows: the server ignores the count from an older one.
+ */
+export const queueViolation = (quizId: number | string, type: string, violationNumber?: number, resetNo = 0) =>
+  enqueue('violation', quizId, `violation:${quizId}:${Date.now()}:${Math.random()}`, { type, violationNumber, resetNo });
 
 /**
  * A lock-out starting now (0 clears it); the server works out when it ends. A lock-out that pauses
  * while the student is away (paused) is also queued every few seconds with what is left.
  */
-export const queueViolationDelay = (quizId: number | string, seconds: number, paused = false) =>
-  enqueue('delay', quizId, `delay:${quizId}`, { seconds, paused });
+export const queueViolationDelay = (quizId: number | string, seconds: number, paused = false, resetNo = 0) =>
+  enqueue('delay', quizId, `delay:${quizId}`, { seconds, paused, resetNo });
 
-/** Violations queued on this device but not confirmed yet: the highest count and any lock-out still running. */
-export const pendingViolationState = (quizId: number | string) => {
-  const q = read().filter(e => e.quizId === String(quizId));
+/**
+ * Violations queued on this device but not confirmed yet: the highest count and any lock-out still
+ * running. Entries from before the server's latest staff reset (resetNo) are left out: they no longer count.
+ */
+export const pendingViolationState = (quizId: number | string, resetNo = 0) => {
+  const q = read().filter(e => e.quizId === String(quizId) && (Number(e.payload?.resetNo) || 0) >= resetNo);
   const count = q.filter(e => e.kind === 'violation').reduce((m, e) => Math.max(m, Number(e.payload.violationNumber) || 0), 0);
   const d = q.find(e => e.kind === 'delay');
   return { count, delay: d ? delayLeft(d) : null };
+};
+
+/** Called with the server's violation count and reset number after each clock, violation or lock-out save. */
+export const onServerViolationState = (fn: (quizId: string, state: ServerViolationState) => void) => {
+  violationStateListeners.add(fn);
+  return () => { violationStateListeners.delete(fn); };
 };
 
 /**

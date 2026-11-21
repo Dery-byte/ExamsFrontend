@@ -289,8 +289,12 @@ export const deleteQuizTimer = (quizId: number | string) =>
   client.delete(`/quiz-timer/deleteRemainingTime/${quizId}`).then(r => r.data);
 
 
-export const saveViolationDelay = (quizId: number | string, violationDelayTime: number) =>
-  client.post(`/quiz-timer/saveViolation-delay/${quizId}`, { violationDelayTime }).then(r => r.data);
+export const saveViolationDelay = (quizId: number | string, violationDelayTime: number, violationResetNo = 0) =>
+  client.post(`/quiz-timer/saveViolation-delay/${quizId}`, { violationDelayTime, violationResetNo }).then(r => r.data);
+
+/** The student's own violation count, reset number (raised when staff reset it) and lock-out left. */
+export const getViolationState = (quizId: number | string) =>
+  client.get(`/quiz-timer/violation-state/${quizId}`, { timeout: 8000 }).then(r => r.data);
 
 
 export const getViolationDelay = (quizId: number | string) =>
@@ -663,8 +667,11 @@ export const drawBankIntoQuiz = (quizId: number, data: { topic?: string; difficu
   client.post(`${apiRoot()}/question-bank/draw/quiz/${quizId}`, data).then(r => r.data);
 
 /** Fire-and-forget: log one proctoring event from the exam page. */
-export const recordProctoringEvent = (quizId: number | string, type: string, violationNumber?: number) =>
-  client.post(`${apiRoot()}/proctoring/events`, { quizId: Number(quizId), type, violationNumber }).then(r => r.data);
+export const recordProctoringEvent = (quizId: number | string, type: string, violationNumber?: number, resetNo = 0) =>
+  client.post(`${apiRoot()}/proctoring/events`, { quizId: Number(quizId), type, violationNumber, resetNo }).then(r => r.data);
+/** Staff: set a student's violation count back to 0, or down to `count`, while they sit the quiz (reason required). */
+export const resetStudentViolations = (quizId: number | string, studentId: number, reason: string, count = 0) =>
+  client.post(`${apiRoot()}/proctoring/quiz/${quizId}/student/${studentId}/reset-violations`, { reason, count }).then(r => r.data);
 export const getProctoringReport = (quizId: number | string) =>
   client.get(`${apiRoot()}/proctoring/quiz/${quizId}`).then(r => r.data);
 export const getProctoringTimeline = (quizId: number | string, studentId: number) =>

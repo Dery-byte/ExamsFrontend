@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { saGetSystemSettings, saUpdateSystemSettings, saGetPrograms, saToggleProgram } from '../../api/endpoints';
-import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks, FileCheck2, AlertTriangle, Hourglass } from 'lucide-react';
+import { Settings2, Loader2, Check, ShieldCheck, BookMarked, Power, PowerOff, RefreshCw, ClipboardList, PenLine, GraduationCap, Timer, Wallet, CreditCard, Layers, ArrowRight, ListChecks, FileCheck2, AlertTriangle, Hourglass, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -176,6 +176,22 @@ export default function SuperAdminConfiguration() {
     }
   };
 
+  /** Who may reset a student's violations from the proctoring report (the Super Admin always may). */
+  const handleToggleViolationReset = async (key: 'VIOLATION_RESET_ADMIN' | 'VIOLATION_RESET_LECTURER') => {
+    const next = !isSet(key, true);
+    setSavingKey(key);
+    try {
+      await saUpdateSystemSettings({ [key]: next.toString() });
+      setSettings(prev => ({ ...prev, [key]: next.toString() }));
+      const who = key === 'VIOLATION_RESET_ADMIN' ? tx('HODs') : tx('Lecturers');
+      toast.success(next ? `${who} can now reset a student's violations` : `${who} can no longer reset violations`);
+    } catch {
+      toast.error('Failed to update setting');
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
   const handleToggleVerifyLink = async () => {
     const key = 'LOGIN_VERIFY_LINK_VISIBLE';
     const next = !isOn(key);
@@ -252,6 +268,16 @@ export default function SuperAdminConfiguration() {
           sub={tx("Off: if a student closes the browser, loses power or drops offline during a lock-out, it pauses. When they return, the lock-out shows again and counts down the time that was left before they can go on with the quiz. On: the time away counts towards the lock-out, so it may already be over when they return. This is separate from the exam clock setting above.")}>
           <Switch on={isSet('EXAM_LOCKOUT_RUNS_WHILE_AWAY', false)} busy={savingKey === 'EXAM_LOCKOUT_RUNS_WHILE_AWAY'} disabled={locked}
             onClick={handleToggleLockout} label={tx("Violation lock-out keeps counting down while a student is away")} />
+        </SettingRow>
+        <SettingRow icon={<RotateCcw size={22} />} color="#a78bfa" title={tx("HODs can reset a student's violations")}
+          sub={tx("On: an HOD can set a student's violation count back to 0 from a quiz's proctoring report while the student is still writing it, with a reason. Any lock-out ends at once. You can always reset violations yourself; every reset is recorded in the audit log.")}>
+          <Switch on={isSet('VIOLATION_RESET_ADMIN', true)} busy={savingKey === 'VIOLATION_RESET_ADMIN'} disabled={locked}
+            onClick={() => handleToggleViolationReset('VIOLATION_RESET_ADMIN')} label={tx("HODs can reset a student's violations")} />
+        </SettingRow>
+        <SettingRow icon={<RotateCcw size={22} />} color="#22d3ee" title={tx("Lecturers can reset a student's violations")}
+          sub={tx("On: the lecturer of the course can reset a student's violation count for their own quizzes in the same way, with a reason.")}>
+          <Switch on={isSet('VIOLATION_RESET_LECTURER', true)} busy={savingKey === 'VIOLATION_RESET_LECTURER'} disabled={locked}
+            onClick={() => handleToggleViolationReset('VIOLATION_RESET_LECTURER')} label={tx("Lecturers can reset a student's violations")} />
         </SettingRow>
       </section>
 

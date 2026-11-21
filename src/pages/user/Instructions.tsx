@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getQuiz, getNumberOfTheoryToAnswer, getMyAttemptStatus, unlockQuiz } from '../../api/endpoints';
 import { decodeParam, startQuizPath } from '../../utils/quizLink';
 import Swal from 'sweetalert2';
+import { addPasswordEye } from '../../utils/passwordEye';
 import PageHeader from '../../components/PageHeader';
 import { 
   ShieldCheck, 
@@ -273,6 +274,9 @@ export default function Instructions() {
       text: 'Please enter the access code provided by your instructor.',
       input: 'password',
       inputPlaceholder: 'Enter access code...',
+      inputAttributes: { autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false' },
+      // Eye button to see the code being typed
+      didOpen: () => addPasswordEye(Swal.getInput(), 'access code'),
       showCancelButton: true,
       confirmButtonText: 'Unlock & Begin',
       cancelButtonText: 'Cancel',

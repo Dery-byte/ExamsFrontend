@@ -1,16 +1,20 @@
 import { Fragment, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ShieldCheck, ShieldAlert, AlertTriangle, ChevronDown, ChevronRight, Loader2, Info } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, ShieldCheck, ShieldAlert, AlertTriangle, ChevronDown, ChevronRight, Loader2, Info, RotateCcw } from 'lucide-react';
+import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
-import { getProctoringReport, getProctoringTimeline } from '../../api/endpoints';
+import { getProctoringReport, getProctoringTimeline, resetStudentViolations } from '../../api/endpoints';
 import { tx } from '../../utils/terms';
 
 const TYPE_LABEL: Record<string, string> = {
   'visibility-hidden': 'Switched tab / minimised', 'focus-lost': 'Left the exam window', 'fullscreen-exit': 'Exited full screen',
   'screenshot-attempt': 'Screenshot attempt', 'devtools-block': 'Blocked shortcut / dev tools', 'new-tab-block': 'Tried to open a new tab',
-  'auto-submit': 'Auto-submitted',
+  'auto-submit': 'Auto-submitted', 'violations-reset': 'Violations reset',
 };
+/** Shortest reason the server accepts for a reset. */
+const MIN_REASON = 5;
+const fmtTime = (iso?: string) => iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
 const label = (t: string) => TYPE_LABEL[t] ?? t.replace(/-/g, ' ');
 
 const FLAG: Record<string, { text: string; bg: string; fg: string; Icon: any }> = {
@@ -24,17 +28,22 @@ export default function ProctoringReport() {
   const { qId } = useParams();
   const navigate = useNavigate();
   const [open, setOpen] = useState<number | null>(null);
+  const [resetting, setResetting] = useState<any | null>(null);
+  const qc = useQueryClient();
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['proctoring', qId],
     queryFn: () => getProctoringReport(qId!),
     enabled: !!qId,
+    // Staff watch this during the exam: new violations (and resets by others) show without reloading
+    refetchInterval: 30_000,
   });
 
   if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}><Loader2 size={26} color="var(--brand-text)" className="pr-spin" /><style>{`.pr-spin{animation:pr-spin 1s linear infinite}@keyframes pr-spin{to{transform:rotate(360deg)}}`}</style></div>;
   if (isError || !data) return <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>{(error as any)?.response?.data?.message ?? 'Could not load the proctoring report.'}</div>;
 
   const rows: any[] = data.students ?? [];
+  const canReset = data.canResetViolations === true;
   const counts = { CLEAN: 0, WATCH: 0, SERIOUS: 0 } as Record<string, number>;
   rows.forEach(r => { counts[r.flag] = (counts[r.flag] ?? 0) + 1; });
 
@@ -60,25 +69,33 @@ export default function ProctoringReport() {
         <div style={{ overflowX: 'auto' }}>
           <table className="pr-table">
             <thead>
-              <tr><th style={{ width: 28 }} /><th>{tx("Student")}</th><th className="r">Violations</th><th>Most common</th><th>Status</th><th>Submitted</th></tr>
+              <tr><th style={{ width: 28 }} /><th>{tx("Student")}</th><th className="r">Violations</th><th>Most common</th><th>Status</th><th>Submitted</th>{canReset && <th />}</tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No attempts yet.</td></tr>
+                <tr><td colSpan={canReset ? 7 : 6} style={{ textAlign: 'center', padding: 40, color: '#94a3b8' }}>No attempts yet.</td></tr>
               ) : rows.map(r => {
                 const f = FLAG[r.flag] ?? FLAG.CLEAN;
                 const top = Object.entries(r.byType as Record<string, number>).filter(([t]) => t !== 'auto-submit').sort((a, b) => b[1] - a[1])[0];
                 const expanded = open === r.studentId;
+                // Older servers send no hasEvents: a row with violations has events
+                const hasEvents = r.hasEvents ?? r.violations > 0;
                 return (
                   <Fragment key={r.studentId}>
-                    <tr className={r.violations ? 'pr-click' : ''} onClick={() => r.violations && setOpen(expanded ? null : r.studentId)}>
-                      <td>{r.violations > 0 && (expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />)}</td>
+                    <tr className={hasEvents ? 'pr-click' : ''} onClick={() => hasEvents && setOpen(expanded ? null : r.studentId)}>
+                      <td>{hasEvents && (expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />)}</td>
                       <td>
                         <div style={{ fontWeight: 700, color: '#1e293b' }}>{r.name}</div>
                         <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.username}</div>
                       </td>
                       <td className="r" style={{ fontWeight: 800, color: '#1e293b' }}>
                         {r.violations}{data.maxViolations ? <span style={{ color: '#94a3b8', fontWeight: 500 }}> / {data.maxViolations}</span> : null}
+                        {r.lastResetAt && (
+                          <div className="pr-reset-note" title={r.lastResetReason ? `Reason: ${r.lastResetReason}` : undefined}>
+                            {r.lastResetTo > 0 ? `Set to ${r.lastResetTo}` : 'Reset'} by {r.lastResetBy ?? 'staff'}, {fmtTime(r.lastResetAt)}
+                            {r.violationsBeforeReset > 0 && <> · {r.violationsBeforeReset} before</>}
+                          </div>
+                        )}
                       </td>
                       <td style={{ color: '#475569' }}>{top ? `${label(top[0])} (${top[1]})` : '—'}</td>
                       <td>
@@ -86,9 +103,18 @@ export default function ProctoringReport() {
                         {r.autoSubmitted && <span className="pr-flag" style={{ background: '#f1f5f9', color: '#334155', marginLeft: 4 }}>Auto-submitted</span>}
                       </td>
                       <td style={{ color: r.submitted ? '#0b7a0b' : '#94a3b8', fontWeight: 600 }}>{r.submitted ? 'Yes' : 'No'}</td>
+                      {canReset && (
+                        <td className="r">
+                          {r.inProgress && r.violations > 0 && (
+                            <button type="button" className="pr-reset-btn" onClick={ev => { ev.stopPropagation(); setResetting(r); }}>
+                              <RotateCcw size={13} /> Reset violations
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                     {expanded && (
-                      <tr><td colSpan={6} style={{ background: '#fafbff', padding: '4px 16px 14px 44px' }}>
+                      <tr><td colSpan={canReset ? 7 : 6} style={{ background: '#fafbff', padding: '4px 16px 14px 44px' }}>
                         <Timeline quizId={qId!} studentId={r.studentId} />
                       </td></tr>
                     )}
@@ -100,7 +126,37 @@ export default function ProctoringReport() {
         </div>
       </div>
 
+      {resetting && (
+        <ResetDialog
+          quizId={qId!}
+          student={resetting}
+          maxViolations={data.maxViolations}
+          violationAction={data.violationAction}
+          delaySeconds={data.delaySeconds}
+          delayMultiplier={data.delayMultiplier}
+          onClose={() => setResetting(null)}
+          onDone={() => {
+            setResetting(null);
+            qc.invalidateQueries({ queryKey: ['proctoring', qId] });
+          }}
+        />
+      )}
+
       <style>{`
+        .pr-reset-note { font-size: 11px; font-weight: 500; color: #64748b; margin-top: 2px; white-space: nowrap; }
+        .pr-reset-btn { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 7px; border: 1.5px solid #e2e8f0; background: #fff; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+        .pr-reset-btn:hover { border-color: var(--brand); color: var(--brand-text); }
+        .pr-modal-bg { position: fixed; inset: 0; z-index: 1000; background: rgba(15, 23, 42, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .pr-modal { background: #fff; border-radius: 14px; width: 100%; max-width: 440px; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); box-sizing: border-box; }
+        .pr-modal h3 { margin: 0 0 6px; font-size: 17px; color: #1e293b; }
+        .pr-modal p { margin: 0 0 12px; font-size: 13px; color: #475569; line-height: 1.55; }
+        .pr-modal textarea { width: 100%; box-sizing: border-box; min-height: 84px; padding: 10px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; font: inherit; font-size: 14px; resize: vertical; outline: none; }
+        .pr-modal textarea:focus, .pr-modal .pr-count:focus { border-color: var(--brand); }
+        .pr-modal .pr-count { width: 100%; box-sizing: border-box; height: 40px; padding: 0 10px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; font: inherit; font-size: 14px; outline: none; }
+        .pr-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+        .pr-modal-actions button { height: 36px; padding: 0 14px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; }
+        .pr-modal-actions .pr-primary { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
+        .pr-modal-actions button:disabled { opacity: 0.55; cursor: not-allowed; }
         .pr-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #475569; font-weight: 600; font-size: 13px; cursor: pointer; }
         .pr-summary { display: grid; grid-template-columns: 2fr repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
         .pr-tile { background: #fff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; min-width: 0; }
@@ -132,14 +188,128 @@ function Timeline({ quizId, studentId }: { quizId: string; studentId: number }) 
   const events: any[] = data ?? [];
   return (
     <ol style={{ margin: '6px 0 0', padding: 0, listStyle: 'none' }}>
-      {events.map(e => (
-        <li key={e.id} style={{ display: 'flex', gap: 12, padding: '5px 0', fontSize: 12.5, borderBottom: '1px dashed #eef0f4' }}>
+      {events.map(e => e.type === 'violations-reset' ? (
+        <li key={e.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '7px 10px', margin: '4px 0', fontSize: 12.5, background: '#eef6ff', borderRadius: 6 }}>
+          <span style={{ color: '#64748b', fontVariantNumeric: 'tabular-nums', minWidth: 150 }}>{new Date(e.occurredAt).toLocaleString()}</span>
+          <span style={{ color: '#1e3a8a', fontWeight: 700 }}><RotateCcw size={12} style={{ verticalAlign: -1 }} /> Violation count set to {e.violationNumber ?? 0}{e.actorName ? ` by ${e.actorName}` : ''}</span>
+          {e.note && <span style={{ color: '#334155', flexBasis: '100%' }}>Reason: {e.note}</span>}
+        </li>
+      ) : (
+        <li key={e.id} style={{ display: 'flex', gap: 12, padding: '5px 0', fontSize: 12.5, borderBottom: '1px dashed #eef0f4', opacity: e.beforeReset ? 0.6 : 1 }}>
           <span style={{ color: '#64748b', fontVariantNumeric: 'tabular-nums', minWidth: 150 }}>{new Date(e.occurredAt).toLocaleString()}</span>
           <span style={{ color: '#1e293b', fontWeight: 600 }}>{label(e.type)}</span>
           {e.violationNumber != null && <span style={{ color: '#94a3b8' }}>violation #{e.violationNumber}</span>}
+          {e.beforeReset && <span style={{ color: '#94a3b8' }} title="Sent from the student's page before it heard of the reset">not counted (before the reset)</span>}
           {e.ipAddress && <span style={{ color: '#94a3b8', marginLeft: 'auto' }}>IP {e.ipAddress}</span>}
         </li>
       ))}
     </ol>
+  );
+}
+
+/** "90 s (1 min 30 s)": seconds first, with minutes once it is a minute or more. */
+const fmtSeconds = (sec: number) => {
+  if (sec < 60) return `${sec} s`;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return `${sec} s (${m} min${s ? ` ${s} s` : ''})`;
+};
+
+/**
+ * Lock-out the student gets at their next violation once the count is set to `count`. Same rule as
+ * the exam page (useQuizProtection calcDelay): violation n locks for delay × multiplier^(n-1).
+ */
+const nextLockOut = (count: number, delaySeconds?: number, delayMultiplier?: number) => {
+  const d = Number(delaySeconds ?? 30);
+  const m = Number(delayMultiplier ?? 1.5);
+  const next = count + 1;
+  return next > 1 ? Math.round(d * Math.pow(m, next - 1)) : d;
+};
+
+/** What the student's next violation does after the count is set to `count`, for the choice's label. */
+const nextEffect = (count: number, action: string | undefined, max: number | undefined, delay?: number, mult?: number) => {
+  const next = count + 1;
+  const autoSubmits = (action === 'AUTOSUBMIT_ONLY' || action === 'DELAY_AND_AUTOSUBMIT') && !!max && next >= max;
+  if (autoSubmits) return 'next violation auto-submits';
+  if (action === 'DELAY_ONLY' || action === 'DELAY_AND_AUTOSUBMIT') return `next lock-out ${fmtSeconds(nextLockOut(count, delay, mult))}`;
+  return '';
+};
+
+/** Asks for the new count (0, or lower than now) and the reason, then changes the student's violation count. */
+function ResetDialog({ quizId, student, maxViolations, violationAction, delaySeconds, delayMultiplier, onClose, onDone }: {
+  quizId: string; student: any; maxViolations?: number; violationAction?: string;
+  delaySeconds?: number; delayMultiplier?: number; onClose: () => void; onDone: () => void;
+}) {
+  const current = Number(student.violations) || 0;
+  const highest = Math.max(0, current - 1);
+  const [reason, setReason] = useState('');
+  const [countText, setCountText] = useState('0');
+  const [busy, setBusy] = useState(false);
+  const count = Number(countText);
+  const countOk = countText.trim() !== '' && Number.isInteger(count) && count >= 0 && count <= highest;
+  const usesLockOuts = violationAction === 'DELAY_ONLY' || violationAction === 'DELAY_AND_AUTOSUBMIT';
+  const reasonOk = reason.trim().length >= MIN_REASON;
+  const ok = countOk && reasonOk;
+
+  const submit = async () => {
+    if (!ok || busy) return;
+    setBusy(true);
+    try {
+      await resetStudentViolations(quizId, student.studentId, reason.trim(), count);
+      toast.success(count > 0
+        ? `${student.name}'s violation count is now ${count}. Their exam page updates within a minute.`
+        : `${student.name}'s violations were reset. Their exam page updates within a minute.`);
+      onDone();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? 'Could not reset the violations.');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="pr-modal-bg" role="dialog" aria-modal="true" aria-labelledby="pr-reset-title" onClick={() => !busy && onClose()}>
+      <div className="pr-modal" onClick={e => e.stopPropagation()}>
+        <h3 id="pr-reset-title">Reset {student.name}'s violations?</h3>
+        <p>
+          Their count is now {current}{maxViolations ? ` / ${maxViolations}` : ''}. Enter the number it should be (0 clears it); any lock-out ends.
+          The next violation counts from that number. The earlier ones stay in the timeline, and the change is recorded with your name.
+        </p>
+        <label htmlFor="pr-reset-count" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+          New violation count{usesLockOuts ? ' (next lock-out in seconds)' : ''}
+        </label>
+        <select
+          id="pr-reset-count"
+          value={countText}
+          onChange={e => setCountText(e.target.value)}
+          className="pr-count"
+        >
+          {Array.from({ length: highest + 1 }, (_, n) => {
+            const effect = nextEffect(n, violationAction, maxViolations, delaySeconds, delayMultiplier);
+            return <option key={n} value={String(n)}>{n}{effect ? ` · ${effect}` : ''}</option>;
+          })}
+        </select>
+        <div style={{ fontSize: 11.5, color: '#64748b', margin: '4px 0 12px', lineHeight: 1.5 }}>
+          {highest === 0 ? 'It can only go back to 0.' : `0 to ${highest}: it can only go down.`}
+          {usesLockOuts && countOk && <> If they break a rule again, that is violation {count + 1} and locks them out for {fmtSeconds(nextLockOut(count, delaySeconds, delayMultiplier))}.</>}
+        </div>
+        <label htmlFor="pr-reset-reason" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+          Reason (required)
+        </label>
+        <textarea
+          id="pr-reset-reason"
+          autoFocus
+          maxLength={500}
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          placeholder="e.g. The phone keyboard set off violations while typing"
+        />
+        {!reasonOk && reason.length > 0 && <div style={{ fontSize: 11.5, color: '#9f1f1f', marginTop: 4 }}>At least {MIN_REASON} characters.</div>}
+        <div className="pr-modal-actions">
+          <button type="button" onClick={onClose} disabled={busy}>Cancel</button>
+          <button type="button" className="pr-primary" onClick={submit} disabled={!ok || busy}>
+            {busy ? 'Saving…' : count > 0 && countOk ? `Set to ${count}` : 'Reset to 0'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

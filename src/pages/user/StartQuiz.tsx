@@ -5,7 +5,7 @@ import {
   getQuizTimer, getQuizAnswersByQuiz,
   loadTheoryAnswers,
   evalQuiz, evalTheory, addSectionBMarks,
-  getViolationDelay, getViolationCount,
+  getViolationDelay, getViolationCount, getViolationState,
   beginQuizAttempt, finishQuizAttempt, getExamSession
 } from '../../api/endpoints';
 import {
@@ -15,6 +15,8 @@ import {
 import { decodeParam } from '../../utils/quizLink';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuizProtection } from '../../hooks/useQuizProtection';
+import { useKeyboardSafeInputs } from '../../hooks/useKeyboardSafeInputs';
+import { STICKY_COVER_ATTR, scrollBelowSticky } from '../../utils/stickyScroll';
 import { useFeature } from '../../hooks/useFeatureFlags';
 import QuestionImage from '../../components/ui/QuestionImage';
 import { theoryGroupKey, compareTheoryGroups } from '../../utils/theoryGroups';
@@ -243,12 +245,18 @@ export default function StartQuiz() {
     enableScreenshotBlocking: quizConfig.enableScreenshotBlocking ?? false,
     enableDevToolsBlocking: quizConfig.enableDevToolsBlocking ?? false,
     username: user?.username ?? '',
+    studentName: [user?.firstname, user?.lastname].filter(Boolean).join(' '),
     onAutoSubmit: () => submitAllRef.current(true),
     _pendingViolationDelay: quizConfig._pendingViolationDelay ?? 0,
     _savedViolationCount: quizConfig._savedViolationCount ?? 0,
     _delayPausesWhileAway: quizConfig._delayPausesWhileAway ?? true,
     soundEnabled: examSounds,
     allowAnswerMenu: quizConfig.allowPaste === true,
+    _violationResetNo: quizConfig._violationResetNo ?? 0,
+    // During a lock-out and before an auto-submit: have staff reset the violations meanwhile?
+    checkViolationState: () => getViolationState(realId).then((r: any) => r ? {
+      count: Number(r.totalViolationCount) || 0, resetNo: Number(r.violationResetNo) || 0,
+    } : null),
   } : {
     quizId: realId, violationAction: 'NONE' as const,
     maxViolations: 0, delaySeconds: 0, delayMultiplier: 3,
@@ -259,6 +267,9 @@ export default function StartQuiz() {
     _pendingViolationDelay: 0,
     _savedViolationCount: 0,
   });
+
+  // Phones: the answer box being typed in stays between the sticky header and the keyboard
+  useKeyboardSafeInputs();
 
   // Lecturer's "Allow Paste" setting. Off (the default, and until the quiz loads): answer boxes are
   // typing only — no paste, no drop, no keyboard suggestions. Question text is never copyable.
@@ -378,13 +389,25 @@ export default function StartQuiz() {
     setSection('A');
     setJumpTick(t => t + 1);
   };
+  // Page and section buttons always start at the top, even when pressed for the page already showing
+  const goToPage = (p: number) => { jumpRef.current = null; setPage(p); setJumpTick(t => t + 1); };
+  const goToSection = (s: Section) => { jumpRef.current = null; setSection(s); setJumpTick(t => t + 1); };
 
   useEffect(() => {
     const id = jumpRef.current;
     jumpRef.current = null;
+    // An open keyboard would pull the view back down to its box
+    const active = document.activeElement as HTMLElement | null;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) active.blur();
     const target = id != null ? document.getElementById(`quiz-q-${id}`) : null;
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    else mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    if (target) {
+      scrollBelowSticky(target, 'smooth');
+      return;
+    }
+    // Desktop scrolls the question panel; phones and narrow tablets scroll the whole page. Instant:
+    // a smooth scroll from the bottom of a long page is slow and can stop short on iPhones.
+    mainRef.current?.scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 });
   }, [page, section, jumpTick]);
 
   const loadAll = async () => {
@@ -438,13 +461,16 @@ export default function StartQuiz() {
       setQuiz(quizData);
       // Violation state lives on the server, so it carries over to any device. Anything still
       // unsent on this device (the flush above timed out) counts too.
-      const unsent = pendingViolationState(realId);
+      // Raised each time staff reset the violations: anything queued here from before a reset no longer counts
+      const serverResetNo = Number(savedViolationCount?.violationResetNo ?? (savedTime as any)?.violationResetNo) || 0;
+      const unsent = pendingViolationState(realId, serverResetNo);
       const serverCount = savedViolationCount?.totalViolationCount ?? savedViolationCount?.count ?? (savedTime as any)?.totalViolationCount ?? 0;
       setQuizConfig({
         ...quizData,
         _pendingViolationDelay: unsent.delay ?? savedDelay?.violationDelayTime ?? savedDelay?.delaySeconds ?? 0,
         _savedViolationCount: Math.max(Number(serverCount) || 0, unsent.count),
         _delayPausesWhileAway: savedDelay?.pausesWhileAway ?? true,
+        _violationResetNo: serverResetNo,
       });
       const qt: QuizType = ((quizData.quizType as string)?.toUpperCase().trim() as QuizType) || 'OBJ';
       setQuizType(qt);
@@ -845,7 +871,7 @@ export default function StartQuiz() {
         </div>
       )}
       {/* ── HEADER ── */}
-      <header className="mobile-sticky-header" style={{
+      <header className="mobile-sticky-header" {...{ [STICKY_COVER_ATTR]: '' }} style={{
         position: 'relative', zIndex: 100, background: theme.card, padding: '10px 30px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         borderBottom: `1px solid ${theme.border}`, boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
@@ -931,6 +957,7 @@ export default function StartQuiz() {
         {/* ── MAIN CONTENT ── */}
         <main
           ref={mainRef}
+          className="quiz-main"
           style={{ height: '100%', overflowY: 'auto', paddingRight: 15 }}
           onCopy={e => { if (!(allowPaste && isAnswerBox(e.target))) e.preventDefault(); }}
           onCut={e => { if (!(allowPaste && isAnswerBox(e.target))) e.preventDefault(); }}
@@ -943,14 +970,14 @@ export default function StartQuiz() {
           {quizType === 'BOTH' && (
             <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
               <button
-                onClick={() => setSection('A')}
+                onClick={() => goToSection('A')}
                 className={`btn-lexa quiz-opt${section === 'A' ? ' sel' : ''}`}
                 style={{ flex: 1 }}
               >
                 Section A: Objective
               </button>
               <button
-                onClick={() => setSection('B')}
+                onClick={() => goToSection('B')}
                 className={`btn-lexa quiz-opt${section === 'B' ? ' sel' : ''}`}
                 style={{ flex: 1 }}
               >
@@ -1043,7 +1070,7 @@ export default function StartQuiz() {
                             onChange={e => { if (!rejectsInsert(`typed-${q.quesId}`, q.givenAnswer?.[0] ?? '', e.target.value)) setTypedAnswer(q, e.target.value); }}
                             onBlur={e => saveTypedAnswer(q.quesId, e.target.value)}
                             placeholder={q.questionType === 'NUMERIC' ? 'e.g. 42.5' : 'Your answer'}
-                            style={{ width: '100%', maxWidth: 420, boxSizing: 'border-box', padding: '11px 14px', fontSize: 15, borderRadius: 6,
+                            style={{ width: '100%', maxWidth: 420, boxSizing: 'border-box', padding: '11px 14px', fontSize: 16, borderRadius: 6,
                               border: `1.5px solid ${(q.givenAnswer?.[0] ?? '') ? 'var(--brand)' : theme.border}`, background: theme.card, color: theme.title, outline: 'none' }}
                           />
                           {blockedMessage(`typed-${q.quesId}`)}
@@ -1069,11 +1096,11 @@ export default function StartQuiz() {
 
               {totalObjPgs > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 30 }}>
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} className="btn-lexa quiz-opt" disabled={page === 1}><ChevronLeft size={16} /></button>
+                  <button onClick={() => goToPage(Math.max(1, page - 1))} className="btn-lexa quiz-opt" disabled={page === 1}><ChevronLeft size={16} /></button>
                   {Array.from({ length: totalObjPgs }).map((_, i) => (
-                    <button key={i} onClick={() => setPage(i + 1)} className={`btn-lexa quiz-opt${page === i + 1 ? ' sel' : ''}`} style={{ width: 40, padding: 0 }}>{i + 1}</button>
+                    <button key={i} onClick={() => goToPage(i + 1)} className={`btn-lexa quiz-opt${page === i + 1 ? ' sel' : ''}`} style={{ width: 40, padding: 0 }}>{i + 1}</button>
                   ))}
-                  <button onClick={() => setPage(p => Math.min(totalObjPgs, p + 1))} className="btn-lexa quiz-opt" disabled={page === totalObjPgs}><ChevronRight size={16} /></button>
+                  <button onClick={() => goToPage(Math.min(totalObjPgs, page + 1))} className="btn-lexa quiz-opt" disabled={page === totalObjPgs}><ChevronRight size={16} /></button>
                 </div>
               )}
             </div>
@@ -1149,7 +1176,7 @@ export default function StartQuiz() {
 
         {/* ── RIGHT: STATUS ── */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 20, height: '100%', overflowY: 'auto', overflowX: 'hidden', paddingRight: 5 }}>
-          <div className="lexa-card mobile-sticky-progress" style={{ background: theme.card, textAlign: 'center' }}>
+          <div className="lexa-card mobile-sticky-progress" {...{ [STICKY_COVER_ATTR]: '' }} style={{ background: theme.card, textAlign: 'center' }}>
             <div className="lexa-card-header mobile-hide-progress" style={{ borderBottomColor: theme.border }}>
               <h6 className="lexa-card-title" style={{ margin: 0, color: theme.title }}>Progress</h6>
             </div>
@@ -1289,6 +1316,9 @@ export default function StartQuiz() {
           box-sizing: border-box;
         }
         .quiz-left-panel { display: flex; flex-direction: column; }
+        /* Phones: room the height of the on-screen keyboard while it is up, so even the last answer
+           box on a page can scroll above it (set by useKeyboardSafeInputs) */
+        .quiz-main { padding-bottom: var(--kb-inset, 0px); }
         /* Phones only (shown in the max-width: 900px block below); desktop has the clock in the header */
         .mobile-float-timer { display: none; }
 
@@ -1305,6 +1335,8 @@ export default function StartQuiz() {
             padding: 16px;
           }
           .quiz-left-panel { display: none !important; }
+          /* Under 16px, iPhones zoom in on a box when it is tapped and push it partly off screen */
+          .quiz-main textarea, .quiz-main input { font-size: 16px !important; }
           aside:last-of-type { display: contents !important; }
           .mobile-sticky-header {
             position: sticky !important;
