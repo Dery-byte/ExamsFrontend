@@ -19,6 +19,7 @@ import {
   ShieldEllipsis, ChevronRight, Tag, Hash, Info, Activity, BookOpen, Bot, ClipboardPaste
 } from 'lucide-react';
 import { tx } from '../../utils/terms';
+import AQ_CSS from './AddQuiz.css?raw';
 
 const VIOLATION_OPTIONS = [
   { v: 'NONE', l: 'No Restrictions' },
@@ -157,59 +158,56 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
   const Toggle = ({ label, k, icon: Icon, desc }: { label: string; k: string; icon: any; desc: string }) => {
     const on = (quiz as any)[k];
     return (
-      <div className={`aq-toggle ${on ? 'on' : ''}`} onClick={() => set(k, !on)}>
-        <div className="aq-toggle-icon"><Icon size={15} /></div>
-        <div className="aq-toggle-info">
+      <button type="button" role="switch" aria-checked={!!on} className={`aq-toggle ${on ? 'on' : ''}`} onClick={() => set(k, !on)}>
+        <span className="aq-toggle-icon"><Icon size={15} /></span>
+        <span className="aq-toggle-info">
           <span className="aq-toggle-label">{label}</span>
           <span className="aq-toggle-desc">{desc}</span>
-        </div>
-        <div className="aq-switch"><div className="aq-thumb" /></div>
-      </div>
+        </span>
+        <span className="aq-switch" aria-hidden><span className="aq-thumb" /></span>
+      </button>
     );
   };
+
 
   return (
     <div className="aq-page">
       <Toaster position="top-right" />
 
-      {/* Top Bar */}
-      <div className="aq-topbar">
-        <button className="aq-back-btn" onClick={() => navigate(backPath)}>
-          <ArrowLeft size={15} /><span>Back</span>
-        </button>
-        <div className="aq-breadcrumb">
-          <span>{roleName} Portal</span><ChevronRight size={12} /><span>Assessments</span><ChevronRight size={12} /><span className="active">New Quiz</span>
-        </div>
+      <div className="aq-head">
+        <button type="button" className="aq-back" onClick={() => navigate(backPath)}><ArrowLeft size={16} /> Quizzes</button>
+        <h2>New quiz</h2>
+        <p>{tx('Set up the quiz, who can take it and when. Questions are added after it is created.')}</p>
       </div>
 
       <div className="aq-layout">
-        {/* ── Main Form ── */}
-        <div className="aq-main">
-          <form id="aq-form" onSubmit={handleSubmit}>
+        {/* ── Main form ── */}
+        <form id="aq-form" className="aq-main" onSubmit={handleSubmit}>
 
-            {/* Section: Identity */}
-            <div className="aq-section aq-section-blue">
-              <div className="aq-section-head">
-                <div className="aq-section-icon blue"><BookOpen size={18} /></div>
-                <div>
-                  <h6 className="aq-section-title">Assessment Identity</h6>
-                  <p className="aq-section-sub">Basic information about the quiz</p>
-                </div>
+          {/* 1 · Details */}
+          <section className="aq-section">
+            <header className="aq-section-head">
+              <span className="aq-step">1</span>
+              <div>
+                <h3 className="aq-section-title">Quiz details</h3>
+                <p className="aq-section-sub">{tx('Name, course, and who is allowed to take it.')}</p>
               </div>
+            </header>
+            <div className="aq-body">
               <div className="aq-grid-2-1">
                 <div className="aq-field">
-                  <label className="aq-label">Quiz Title</label>
+                  <label className="aq-label" htmlFor="aq-title">Quiz title</label>
                   <div className="aq-iw">
                     <span className="aq-ii"><Tag size={15} /></span>
-                    <input className="aq-input" required value={quiz.title} onChange={e => set('title', e.target.value)} placeholder={tx("e.g. Mid-Semester Examination")} />
+                    <input id="aq-title" className="aq-input" required value={quiz.title} onChange={e => set('title', e.target.value)} placeholder={tx('e.g. Mid-Semester Examination')} />
                   </div>
                 </div>
                 <div className="aq-field">
-                  <label className="aq-label">{tx("Course Category")}</label>
+                  <label className="aq-label" htmlFor="aq-course">{tx('Course')}</label>
                   <div className="aq-iw">
                     <span className="aq-ii"><Layers size={15} /></span>
-                    <select className="aq-input" required value={quiz.category.cid} onChange={e => handleCategoryChange(e.target.value)}>
-                      <option value="">Select category...</option>
+                    <select id="aq-course" className="aq-input" required value={quiz.category.cid} onChange={e => handleCategoryChange(e.target.value)}>
+                      <option value="">{tx('Select a course…')}</option>
                       {(categories as any[]).map((c: any) => <option key={c.cid} value={c.cid}>{c.title}</option>)}
                     </select>
                   </div>
@@ -225,10 +223,11 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                   : (isSuperAdmin ? tx('No programs available.') : tx('No programs available for your department.'))}
               />
               {programsOptional && quiz.programIds.length === 0 && (
-                <div style={{ margin: '-6px 0 14px', padding: '10px 12px', borderRadius: 6, background: '#eff6ff', color: '#1e40af', fontSize: 12.5, fontWeight: 500 }}>
-                  {selectedCourse?.openToEveryone
+                <div className="aq-notice">
+                  <Info size={15} />
+                  <span>{selectedCourse?.openToEveryone
                     ? tx('No program selected: this quiz is for everyone. Its course is open to everyone, so every student can take it without registering.')
-                    : tx('No program selected: students of every program who registered for this global course can take it.')}
+                    : tx('No program selected: students of every program who registered for this global course can take it.')}</span>
                 </div>
               )}
               <IndexRangeField
@@ -236,145 +235,129 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 end={quiz.indexRangeEnd}
                 onChange={(s, e) => setQuiz(q => ({ ...q, indexRangeStart: s, indexRangeEnd: e }))}
               />
-              <div className="aq-field mt-4">
-                <label className="aq-label">Instructions & Guidelines</label>
-                <textarea className="aq-input aq-textarea" rows={3} value={quiz.description} onChange={e => set('description', e.target.value)} placeholder={tx("Provide student instructions and syllabus guidelines...")} />
+              <div className="aq-field">
+                <label className="aq-label" htmlFor="aq-desc">Instructions for students <span className="aq-opt">(optional)</span></label>
+                <textarea id="aq-desc" className="aq-input aq-textarea" rows={3} value={quiz.description} onChange={e => set('description', e.target.value)} placeholder={tx('What students should know before they start…')} />
               </div>
             </div>
+          </section>
 
-            {/* Section: Parameters */}
-            <div className="aq-section aq-section-green">
-              <div className="aq-section-head">
-                <div className="aq-section-icon green"><Activity size={18} /></div>
-                <div>
-                  <h6 className="aq-section-title">Assessment Parameters</h6>
-                  <p className="aq-section-sub">Quiz type, scoring, schedule and access</p>
-                </div>
+          {/* 2 · Scoring & schedule */}
+          <section className="aq-section">
+            <header className="aq-section-head">
+              <span className="aq-step">2</span>
+              <div>
+                <h3 className="aq-section-title">Scoring &amp; schedule</h3>
+                <p className="aq-section-sub">Quiz type, marks, time and access.</p>
               </div>
-
-              {/* Taxonomy */}
-              <div className="aq-field mb-4">
-                <label className="aq-label">Quiz Type</label>
-                <div className="aq-type-row">
+            </header>
+            <div className="aq-body">
+              <div className="aq-field">
+                <span className="aq-label">Quiz type</span>
+                <div className="aq-type-row" role="radiogroup" aria-label="Quiz type">
                   {[
-                    { id: 'OBJ', label: 'Objectives', icon: List },
-                    { id: 'THEORY', label: 'Theory', icon: FileText },
-                    { id: 'BOTH', label: 'Combined', icon: LayoutGrid }
+                    { id: 'OBJ', label: 'Objective', sub: 'Auto-marked', icon: List },
+                    { id: 'THEORY', label: 'Theory', sub: 'Written answers', icon: FileText },
+                    { id: 'BOTH', label: 'Combined', sub: 'Both sections', icon: LayoutGrid },
                   ].map(t => (
-                    <button key={t.id} type="button"
+                    <button key={t.id} type="button" role="radio" aria-checked={quiz.quizType === t.id}
                       className={`aq-type-btn ${quiz.quizType === t.id ? 'active' : ''}`}
                       onClick={() => set('quizType', t.id)}>
-                      <t.icon size={16} /><span>{t.label}</span>
+                      <t.icon size={17} />
+                      <span><b>{t.label}</b><small>{t.sub}</small></span>
                     </button>
                   ))}
                 </div>
                 {quiz.quizType === 'THEORY' && (
                   <div className="aq-notice">
-                    <Info size={14} />
-                    <span>{tx("Theory mode: marking is done By AI and subsequently reviewed by Lecturer before release of results")}</span>
-                    <span>When Adding question set the no. of questions to answer and duration.</span>
-
+                    <Info size={15} />
+                    <span>{tx('Theory answers are marked by AI and reviewed by the lecturer before results are released. When adding questions, set how many to answer and the duration.')}</span>
                   </div>
                 )}
               </div>
 
-              {/* LLM Provider Selection — visible for Theory & Combined quiz types */}
               {(quiz.quizType === 'THEORY' || quiz.quizType === 'BOTH') && (
                 <div className="aq-llm-card">
                   <div className="aq-llm-header">
                     <div className="aq-llm-icon"><Bot size={17} /></div>
                     <div>
-                      <p className="aq-llm-title">AI Evaluator</p>
-                      <p className="aq-llm-sub">Select the LLM model to grade subjective answers</p>
+                      <p className="aq-llm-title">AI marker</p>
+                      <p className="aq-llm-sub">The model that marks written answers</p>
                     </div>
                   </div>
                   <div className="aq-llm-grid">
                     {llmProviders.map((p: any) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        disabled={!p.available}
+                      <button key={p.id} type="button" disabled={!p.available} aria-pressed={quiz.llmProvider === p.id}
                         onClick={() => p.available && set('llmProvider', p.id)}
-                        className={`aq-llm-btn ${
-                          quiz.llmProvider === p.id ? 'aq-llm-btn--active' : ''
-                        } ${!p.available ? 'aq-llm-btn--disabled' : ''}`}
-                      >
+                        className={`aq-llm-btn ${quiz.llmProvider === p.id ? 'aq-llm-btn--active' : ''} ${!p.available ? 'aq-llm-btn--disabled' : ''}`}>
                         <span className="aq-llm-btn-name">{p.displayName}</span>
                         <span className="aq-llm-btn-desc">{p.description}</span>
                         {!p.available && <span className="aq-llm-badge">Key needed</span>}
-                        {quiz.llmProvider === p.id && p.available && (
-                          <span className="aq-llm-check">✓ Selected</span>
-                        )}
+                        {quiz.llmProvider === p.id && p.available && <span className="aq-llm-check">✓ Selected</span>}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Metrics — hidden for Theory-only quizzes */}
               {quiz.quizType !== 'THEORY' && (
-                <div className="aq-grid-3 mb-4">
+                <div className="aq-grid-3">
                   <div className="aq-field">
-                    <label className="aq-label">Max Marks</label>
+                    <label className="aq-label" htmlFor="aq-marks">Max marks</label>
                     <div className="aq-iw">
                       <span className="aq-ii"><Award size={15} /></span>
-                      <input className="aq-input text-center" type="number" required value={quiz.maxMarks} onChange={e => set('maxMarks', e.target.value)} placeholder="100" />
+                      <input id="aq-marks" className="aq-input" type="number" inputMode="numeric" required value={quiz.maxMarks} onChange={e => set('maxMarks', e.target.value)} placeholder="100" />
                     </div>
                   </div>
                   <div className="aq-field">
-                    <label className="aq-label">{quiz.questionPool ? tx('Questions per student') : 'No. of Questions'}</label>
+                    <label className="aq-label" htmlFor="aq-count">{quiz.questionPool ? tx('Questions per student') : 'Number of questions'}</label>
                     <div className="aq-iw">
                       <span className="aq-ii"><Hash size={15} /></span>
-                      <input className="aq-input text-center" type="number" min={1} required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder={quiz.questionPool ? '30' : '40'} />
+                      <input id="aq-count" className="aq-input" type="number" inputMode="numeric" min={1} required value={quiz.numberOfQuestions} onChange={e => set('numberOfQuestions', e.target.value)} placeholder={quiz.questionPool ? '30' : '40'} />
                     </div>
                   </div>
                   <div className="aq-field">
-                    <label className="aq-label">Duration (mins)</label>
+                    <label className="aq-label" htmlFor="aq-time">Duration (minutes)</label>
                     <div className="aq-iw">
                       <span className="aq-ii"><Timer size={15} /></span>
-                      <input className="aq-input text-center" type="number" required value={quiz.quizTime} onChange={e => set('quizTime', e.target.value)} placeholder="60" />
+                      <input id="aq-time" className="aq-input" type="number" inputMode="numeric" required value={quiz.quizTime} onChange={e => set('quizTime', e.target.value)} placeholder="60" />
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Schedule + Passkey */}
               <div className="aq-grid-3">
                 <div className="aq-field">
-                  <label className="aq-label">Date</label>
+                  <label className="aq-label" htmlFor="aq-date">Date</label>
                   <div className="aq-iw">
                     <span className="aq-ii"><Calendar size={15} /></span>
-                    <input className="aq-input" type="date" required value={quiz.quizDate} onChange={e => set('quizDate', e.target.value)} />
+                    <input id="aq-date" className="aq-input" type="date" required value={quiz.quizDate} onChange={e => set('quizDate', e.target.value)} />
                   </div>
                 </div>
                 <div className="aq-field">
-                  <label className="aq-label">Start Time</label>
+                  <label className="aq-label" htmlFor="aq-start">Start time</label>
                   <div className="aq-iw">
                     <span className="aq-ii"><Clock size={15} /></span>
-                    <input className="aq-input" type="time" required value={quiz.startTime} onChange={e => set('startTime', e.target.value)} />
+                    <input id="aq-start" className="aq-input" type="time" required value={quiz.startTime} onChange={e => set('startTime', e.target.value)} />
                   </div>
                 </div>
                 <div className="aq-field">
-                  <label className="aq-label">Passkey</label>
+                  <label className="aq-label" htmlFor="aq-key">Access code <span className="aq-opt">(optional)</span></label>
                   <div className="aq-iw">
                     <span className="aq-ii"><Key size={15} /></span>
-                    <input className="aq-input" style={{ paddingRight: '42px' }} type={hide ? 'password' : 'text'} value={quiz.quizpassword} onChange={e => set('quizpassword', e.target.value)} placeholder="TOKEN" />
-                    <button type="button" className="aq-eye" onClick={() => setHide(!hide)}>{hide ? <Eye size={15} /> : <EyeOff size={15} />}</button>
+                    <input id="aq-key" className="aq-input" style={{ paddingRight: '42px' }} type={hide ? 'password' : 'text'} value={quiz.quizpassword} onChange={e => set('quizpassword', e.target.value)} placeholder="Optional" autoComplete="off" />
+                    <button type="button" className="aq-eye" onClick={() => setHide(!hide)} aria-label={hide ? 'Show access code' : 'Hide access code'}>{hide ? <Eye size={15} /> : <EyeOff size={15} />}</button>
                   </div>
                 </div>
               </div>
               <div className="aq-grid-3">
                 <AttemptsField value={quiz.maxAttempts} onChange={n => set('maxAttempts', n)} />
               </div>
-              {quiz.quizType !== 'THEORY' && (
-                <div style={{ padding: '0 24px 24px' }}>
+              <div className="aq-options">
+                {quiz.quizType !== 'THEORY' && (
                   <QuestionPoolField checked={quiz.questionPool} onChange={toggleQuestionPool} perStudent={quiz.numberOfQuestions} isNew />
-                </div>
-              )}
-              <div style={{ padding: '0 24px 24px' }}>
+                )}
                 <AutoOpenField checked={quiz.autoOpen} onChange={toggleAutoOpen} quizDate={quiz.quizDate} startTime={quiz.startTime} />
-              </div>
-              <div style={{ padding: '0 24px 24px' }}>
                 <AutoCloseField
                   checked={quiz.autoClose}
                   onChange={on => set('autoClose', on)}
@@ -387,270 +370,106 @@ export default function AddQuiz({ lectMode = false }: { lectMode?: boolean }) {
                 />
               </div>
             </div>
+          </section>
 
-            {/* Footer Actions — desktop only; mobile uses sticky bar below */}
-            <div className="aq-footer aq-footer-inline">
-              <button type="button" className="aq-btn-ghost" onClick={() => navigate(backPath)}>Cancel</button>
-              <button type="submit" className="aq-btn-primary" disabled={loading}>
-                {loading ? <Loader2 className="aq-spin" size={17} /> : <ShieldEllipsis size={17} />}
-                <span>{loading ? 'Creating...' : 'Create Assessment'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
+        </form>
 
         {/* ── Sidebar ── */}
-        <div className="aq-sidebar">
-          {/* Deployment */}
-          <div className="aq-sidebar-card aq-card-deploy">
+        <aside className="aq-sidebar">
+          <div className="aq-sidebar-card">
             <div className="aq-sidebar-head">
-              <div className="aq-section-icon amber"><Zap size={16} /></div>
-              <h6 className="aq-sidebar-title">Deployment</h6>
+              <div className="aq-section-icon"><Zap size={16} /></div>
+              <h3 className="aq-sidebar-title">Publishing</h3>
             </div>
             {quiz.autoOpen && !quiz.active ? (
               <div className="aq-deploy-toggle scheduled">
                 <div className="aq-deploy-icon"><Clock size={20} /></div>
                 <div>
-                  <p className="aq-deploy-status">SCHEDULED</p>
+                  <p className="aq-deploy-status">Scheduled</p>
                   <p className="aq-deploy-hint">
-                    {quiz.quizDate && quiz.startTime
-                      ? `Auto-publishes ${quiz.quizDate} at ${quiz.startTime}`
-                      : 'Set a date & time below to auto-publish'}
+                    {quiz.quizDate && quiz.startTime ? `Opens ${quiz.quizDate} at ${quiz.startTime}` : 'Set a date and time to open it automatically'}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={toggleActive}>
-                <div className="aq-deploy-icon">
-                  {quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}
-                </div>
-                <div>
-                  <p className="aq-deploy-status">{quiz.active ? 'LIVE' : 'DRAFT'}</p>
-                  <p className="aq-deploy-hint">{quiz.active ? tx('Visible to students')
-                    : quiz.questionPool && quiz.quizType !== 'THEORY' ? 'Go live once the question pool is filled' : 'Private – not published'}</p>
-                </div>
-              </div>
+              <button type="button" role="switch" aria-checked={!!quiz.active} className={`aq-deploy-toggle ${quiz.active ? 'live' : 'draft'}`} onClick={toggleActive}>
+                <span className="aq-deploy-icon">{quiz.active ? <CheckCircle size={20} /> : <Save size={20} />}</span>
+                <span>
+                  <span className="aq-deploy-status">{quiz.active ? 'Published' : 'Draft'}</span>
+                  <span className="aq-deploy-hint">{quiz.active ? tx('Students can see it')
+                    : quiz.questionPool && quiz.quizType !== 'THEORY' ? 'Publish once the question pool is filled' : 'Only staff can see it'}</span>
+                </span>
+                <span className="aq-switch" aria-hidden><span className="aq-thumb" /></span>
+              </button>
             )}
           </div>
 
-          {/* Integrity Controls */}
-          <div className="aq-sidebar-card aq-card-security">
+          <div className="aq-sidebar-card">
             <div className="aq-sidebar-head">
-              <div className="aq-section-icon purple"><ShieldCheck size={16} /></div>
-              <h6 className="aq-sidebar-title">Integrity Controls</h6>
+              <div className="aq-section-icon"><ShieldCheck size={16} /></div>
+              <h3 className="aq-sidebar-title">Exam security</h3>
             </div>
-            <Toggle label="Focus Lock" k="enableFullscreenLock" icon={Monitor} desc="Restrict window switches" />
-            <Toggle label="Watermark" k="enableWatermark" icon={Layers} desc={tx("Visible student ID overlay")} />
-            <Toggle label="Media Shield" k="enableScreenshotBlocking" icon={Smartphone} desc="Block screen captures" />
-            <Toggle label="DevTools Block" k="enableDevToolsBlocking" icon={Terminal} desc="Disable browser console" />
-            <Toggle label="Allow Paste" k="allowPaste" icon={ClipboardPaste} desc="Paste & keyboard suggestions in answers" />
+            <Toggle label="Focus lock" k="enableFullscreenLock" icon={Monitor} desc="Counts switching away from the exam" />
+            <Toggle label="Watermark" k="enableWatermark" icon={Layers} desc={tx('Student ID shown over the questions')} />
+            <Toggle label="Screenshot shield" k="enableScreenshotBlocking" icon={Smartphone} desc="Blocks screen captures" />
+            <Toggle label="Developer tools block" k="enableDevToolsBlocking" icon={Terminal} desc="Stops the browser console" />
+            <Toggle label="Allow paste" k="allowPaste" icon={ClipboardPaste} desc="Paste and keyboard suggestions in answers" />
           </div>
 
-          {/* Breach Policy */}
-          <div className="aq-sidebar-card aq-card-danger">
+          <div className="aq-sidebar-card">
             <div className="aq-sidebar-head">
-              <div className="aq-section-icon red"><ShieldAlert size={16} /></div>
-              <h6 className="aq-sidebar-title" style={{ color: '#dc2626' }}>Breach Policy</h6>
+              <div className="aq-section-icon danger"><ShieldAlert size={16} /></div>
+              <h3 className="aq-sidebar-title">Violation rules</h3>
             </div>
-            <div className="aq-field mb-3">
-              <label className="aq-label">Auto Penalty</label>
-              <select className="aq-input aq-input-sm" value={quiz.violationAction} onChange={e => set('violationAction', e.target.value)}>
-                {VIOLATION_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
-              </select>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '12px' }}>
+            <div className="aq-side-fields">
               <div className="aq-field">
-                <label className="aq-label">Max Violations</label>
-                <input className="aq-input aq-input-sm text-center" type="number" min="1" value={quiz.maxViolations} onChange={e => set('maxViolations', Number(e.target.value))} />
+                <label className="aq-label" htmlFor="aq-va">When a student breaks the rules</label>
+                <select id="aq-va" className="aq-input aq-input-sm aq-noicon" value={quiz.violationAction} onChange={e => set('violationAction', e.target.value)}>
+                  {VIOLATION_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                </select>
               </div>
-              <div className="aq-field">
-                <label className="aq-label">Delay (s)</label>
-                <input className="aq-input aq-input-sm text-center" type="number" min="0" placeholder="e.g. 30" value={quiz.delaySeconds || ''} onChange={e => set('delaySeconds', Number(e.target.value))} />
+              <div className="aq-pair">
+                <div className="aq-field">
+                  <label className="aq-label" htmlFor="aq-mv">Max violations</label>
+                  <input id="aq-mv" className="aq-input aq-input-sm aq-noicon" type="number" inputMode="numeric" min="1" value={quiz.maxViolations} onChange={e => set('maxViolations', Number(e.target.value))} />
+                </div>
+                <div className="aq-field">
+                  <label className="aq-label" htmlFor="aq-ds">Lock time (s)</label>
+                  <input id="aq-ds" className="aq-input aq-input-sm aq-noicon" type="number" inputMode="numeric" min="0" placeholder="e.g. 30" value={quiz.delaySeconds || ''} onChange={e => set('delaySeconds', Number(e.target.value))} />
+                </div>
               </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <div className="aq-field">
-                <label className="aq-label">Multiplier</label>
-                <input className="aq-input aq-input-sm text-center" type="number" step="0.1" min="1" value={quiz.delayMultiplier} onChange={e => set('delayMultiplier', Number(e.target.value))} />
-              </div>
-              <div className="aq-field">
-                <label className="aq-label">Auto (s)</label>
-                <input className="aq-input aq-input-sm text-center" type="number" min="0" value={quiz.autoSubmitCountdownSeconds} onChange={e => set('autoSubmitCountdownSeconds', Number(e.target.value))} />
+              <div className="aq-pair">
+                <div className="aq-field">
+                  <label className="aq-label" htmlFor="aq-dm">Lock multiplier</label>
+                  <input id="aq-dm" className="aq-input aq-input-sm aq-noicon" type="number" step="0.1" min="1" value={quiz.delayMultiplier} onChange={e => set('delayMultiplier', Number(e.target.value))} />
+                </div>
+                <div className="aq-field">
+                  <label className="aq-label" htmlFor="aq-as">Auto-submit (s)</label>
+                  <input id="aq-as" className="aq-input aq-input-sm aq-noicon" type="number" inputMode="numeric" min="0" value={quiz.autoSubmitCountdownSeconds} onChange={e => set('autoSubmitCountdownSeconds', Number(e.target.value))} />
+                </div>
               </div>
             </div>
           </div>
+        </aside>
+
+        <div className="aq-footer aq-footer-inline">
+          <button type="button" className="aq-btn-ghost" onClick={() => navigate(backPath)}>Cancel</button>
+          <button type="submit" form="aq-form" className="aq-btn-primary" disabled={loading}>
+            {loading ? <Loader2 className="aq-spin" size={17} /> : <ShieldEllipsis size={17} />}
+            <span>{loading ? 'Creating…' : 'Create quiz'}</span>
+          </button>
         </div>
       </div>
 
-      {/* ── Mobile sticky footer bar (mirrors Edit Quiz modal pattern) ── */}
       <div className="aq-footer-sticky">
         <button type="button" className="aq-btn-ghost" onClick={() => navigate(backPath)}>Cancel</button>
         <button type="submit" form="aq-form" className="aq-btn-primary" disabled={loading}>
           {loading ? <Loader2 className="aq-spin" size={17} /> : <ShieldEllipsis size={17} />}
-          <span>{loading ? 'Creating...' : 'Create Assessment'}</span>
+          <span>{loading ? 'Creating…' : 'Create quiz'}</span>
         </button>
       </div>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        .aq-page { min-height:100vh; background:#f0f2f8; font-family:'Inter',sans-serif; display:flex; flex-direction:column; color:#1e293b; }
-
-        .aq-topbar { display:flex; align-items:center; justify-content:space-between; padding:13px 28px; background:#fff; border-bottom:1px solid #e8eaf0; position:sticky; top:0; z-index:50; }
-        .aq-back-btn { display:flex; align-items:center; gap:7px; background:none; border:1px solid #e2e8f0; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; color:#64748b; cursor:pointer; transition:.2s; }
-        .aq-back-btn:hover { background:#f8fafc; color:var(--brand-text); border-color:var(--brand); }
-        .aq-breadcrumb { display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8; font-weight:500; }
-        .aq-breadcrumb .active { color:var(--brand-text); font-weight:700; }
-
-        .aq-layout { display:grid; grid-template-columns:1fr 320px; gap:24px; padding:28px; flex:1; align-items:start; }
-
-        /* Sticky mobile footer bar — always at bottom on small screens */
-        .aq-footer-sticky { display:none; }
-
-        /* Sections */
-        .aq-section { background:#fff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 4px 20px -4px rgba(0,0,0,0.06); margin-bottom:20px; overflow:hidden; }
-        .aq-section-blue { border-left:4px solid var(--brand); }
-        .aq-section-green { border-left:4px solid #10b981; }
-        .aq-section-head { display:flex; align-items:center; gap:14px; padding:20px 24px; border-bottom:1px solid #f1f5f9; background:linear-gradient(135deg,#fafbff,#f8fafc); }
-        .aq-section-title { font-size:15px; font-weight:800; color:#1e293b; margin:0 0 2px 0; }
-        .aq-section-sub { font-size:12px; color:#94a3b8; margin:0; font-weight:500; }
-
-        .aq-section > div:not(.aq-section-head) { padding:24px; }
-        .aq-section > .aq-field { padding:24px; }
-
-        /* Section icons */
-        .aq-section-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .aq-section-icon.blue { background:var(--brand-soft); color:var(--brand-text); }
-        .aq-section-icon.green { background:#ecfdf5; color:#10b981; }
-        .aq-section-icon.amber { background:#fffbeb; color:#f59e0b; }
-        .aq-section-icon.purple { background:#f5f3ff; color:var(--accent-text); }
-        .aq-section-icon.red { background:#fef2f2; color:#dc2626; }
-
-        /* Sidebar */
-        .aq-sidebar { display:flex; flex-direction:column; gap:16px; }
-        .aq-sidebar-card { background:#fff; border-radius:16px; border:1px solid #e2e8f0; padding:20px; box-shadow:0 4px 20px -4px rgba(0,0,0,0.06); }
-        .aq-card-security { border-left:4px solid var(--accent); }
-        .aq-card-deploy { border-left:4px solid #f59e0b; }
-        .aq-card-danger { border-left:4px solid #dc2626; }
-        .aq-sidebar-head { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
-        .aq-sidebar-title { font-size:14px; font-weight:800; color:#1e293b; margin:0; }
-
-        /* Deployment toggle */
-        .aq-deploy-toggle { display:flex; align-items:center; gap:14px; padding:16px; border-radius:12px; border:2px dashed #e2e8f0; cursor:pointer; transition:.3s; }
-        .aq-deploy-toggle.live { border-style:solid; border-color:#10b981; background:#f0fdf4; }
-        .aq-deploy-toggle.scheduled { border-style:solid; border-color:#f59e0b; background:#fffbeb; cursor:default; }
-        .aq-deploy-icon { width:44px; height:44px; border-radius:12px; background:#f1f5f9; color:#94a3b8; display:flex; align-items:center; justify-content:center; transition:.3s; flex-shrink:0; }
-        .aq-deploy-toggle.live .aq-deploy-icon { background:#10b981; color:#fff; }
-        .aq-deploy-toggle.scheduled .aq-deploy-icon { background:#f59e0b; color:#fff; }
-        .aq-deploy-status { font-size:14px; font-weight:800; color:#1e293b; margin:0 0 2px 0; }
-        .aq-deploy-hint { font-size:11px; color:#94a3b8; margin:0; font-weight:500; }
-
-        /* Toggles */
-        .aq-toggle { display:flex; align-items:center; gap:12px; padding:10px; border-radius:10px; cursor:pointer; border:1px solid transparent; transition:.2s; margin-bottom:6px; }
-        .aq-toggle:hover { background:#f8fafc; }
-        .aq-toggle.on { background:rgba(var(--accent-rgb), 0.04); }
-        .aq-toggle-icon { width:32px; height:32px; border-radius:8px; background:#f1f5f9; color:#94a3b8; display:flex; align-items:center; justify-content:center; transition:.2s; flex-shrink:0; }
-        .aq-toggle.on .aq-toggle-icon { background:var(--accent); color:var(--accent-contrast); }
-        .aq-toggle-info { flex:1; }
-        .aq-toggle-label { display:block; font-size:13px; font-weight:700; color:#334155; }
-        .aq-toggle-desc { display:block; font-size:10px; color:#94a3b8; }
-        .aq-switch { width:34px; height:18px; border-radius:20px; background:#e2e8f0; position:relative; transition:.3s; flex-shrink:0; }
-        .aq-toggle.on .aq-switch { background:var(--accent); }
-        .aq-thumb { width:13px; height:13px; border-radius:50%; background:#fff; position:absolute; top:2.5px; left:2.5px; transition:.3s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
-        .aq-toggle.on .aq-thumb { left:18px; }
-
-        /* Form Elements */
-        .aq-field { display:flex; flex-direction:column; gap:7px; }
-        .aq-label { font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.06em; }
-        .aq-iw { position:relative; display:flex; align-items:center; }
-        .aq-ii { position:absolute; left:13px; color:#94a3b8; pointer-events:none; z-index:1; transition:.2s; }
-        .aq-input { width:100%; padding:11px 14px 11px 40px; font-size:14px; font-weight:500; color:#1e293b; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; transition:all .2s; outline:none; font-family:'Inter',sans-serif; }
-        .aq-input:hover { border-color:var(--brand-border); background:#f5f7ff; }
-        .aq-input:focus { border-color:var(--brand); background:#fff; box-shadow:0 0 0 4px rgba(var(--brand-rgb), .1); }
-        .aq-iw:focus-within .aq-ii { color:var(--brand-text); }
-        .aq-textarea { padding:12px 14px; resize:none; line-height:1.6; }
-        .aq-input-sm { padding:9px 10px 9px 36px; font-size:13px; border-radius:8px; }
-        .aq-eye { position:absolute; right:12px; background:none; border:none; color:#94a3b8; cursor:pointer; display:flex; align-items:center; }
-        .aq-eye:hover { color:var(--brand-text); }
-
-        .aq-type-row { display:flex; gap:10px; margin-bottom:12px; }
-        .aq-type-btn { flex:1; padding:11px 8px; border-radius:10px; border:1.5px solid #e2e8f0; background:#fff; display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; font-weight:700; color:#64748b; cursor:pointer; transition:.25s; }
-        .aq-type-btn.active { background:#1e293b; border-color:#1e293b; color:#fff; transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,0.12); }
-        .aq-type-btn:hover:not(.active) { background:#f5f7ff; border-color:var(--brand-border); color:var(--brand-text); }
-
-        /* Notice */
-        .aq-notice { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#eff6ff; border:1px solid #dbeafe; border-radius:9px; color:#1d4ed8; font-size:12px; font-weight:600; margin-top:8px; }
-
-        /* LLM Provider Card */
-        .aq-llm-card { background:linear-gradient(135deg,#f5f3ff,var(--accent-soft)); border:1.5px solid var(--accent-border); border-radius:14px; padding:18px; margin-top:8px; margin-bottom:16px; }
-        .aq-llm-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-        .aq-llm-icon { width:36px; height:36px; border-radius:10px; background:var(--accent); color:var(--accent-contrast); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .aq-llm-title { font-size:13px; font-weight:800; color:var(--accent-deep); margin:0 0 2px 0; }
-        .aq-llm-sub { font-size:11px; color:var(--accent-text); margin:0; font-weight:500; }
-        .aq-llm-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        .aq-llm-btn { background:#fff; border:2px solid #e2e8f0; border-radius:11px; padding:12px 14px; text-align:left; cursor:pointer; transition:all .2s; position:relative; display:flex; flex-direction:column; gap:4px; }
-        .aq-llm-btn:hover:not(.aq-llm-btn--disabled) { border-color:var(--accent); background:#faf5ff; transform:translateY(-1px); box-shadow:0 4px 12px rgba(var(--accent-rgb), .15); }
-        .aq-llm-btn--active { border-color:var(--accent) !important; background:linear-gradient(135deg,#faf5ff,var(--accent-soft)) !important; box-shadow:0 0 0 4px rgba(var(--accent-rgb), .15); }
-        .aq-llm-btn--disabled { opacity:.5; cursor:not-allowed; background:#f8fafc; }
-        .aq-llm-btn-name { font-size:13px; font-weight:700; color:#1e293b; }
-        .aq-llm-btn-desc { font-size:10.5px; color:#64748b; font-weight:500; line-height:1.4; }
-        .aq-llm-badge { margin-top:6px; font-size:9.5px; font-weight:700; color:#dc2626; background:#fef2f2; border:1px solid #fecaca; border-radius:20px; padding:2px 8px; display:inline-block; }
-        .aq-llm-check { margin-top:6px; font-size:9.5px; font-weight:700; color:var(--accent-text); background:#f5f3ff; border:1px solid var(--accent-border); border-radius:20px; padding:2px 8px; display:inline-block; }
-        @media (max-width:560px) { .aq-llm-grid { grid-template-columns:1fr; } }
-
-        /* Grids */
-        .aq-grid-2-1 { display:grid; grid-template-columns:2fr 1fr; gap:16px; padding:24px; }
-        .aq-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
-        .aq-section .aq-grid-3 { padding:0 24px 24px; }
-        .aq-grid-3:last-child:not(.aq-section .aq-grid-3) { padding:0; }
-        .mt-4 { margin-top:16px; }
-        .mb-4 { margin-bottom:16px; }
-        .mb-3 { margin-bottom:12px; }
-        .text-center { text-align:center; }
-
-        /* Footer */
-        .aq-footer { display:flex; justify-content:flex-end; gap:12px; padding:24px 0 12px; }
-        .aq-btn-primary { display:flex; align-items:center; gap:8px; background:linear-gradient(135deg,var(--brand),var(--accent)); color:var(--brand-contrast); border:none; padding:13px 28px; border-radius:11px; font-size:14px; font-weight:700; cursor:pointer; transition:.3s; box-shadow:0 6px 20px -4px rgba(var(--brand-rgb), .5); font-family:'Inter',sans-serif; }
-        .aq-btn-primary:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 10px 28px -4px rgba(var(--brand-rgb), .55); }
-        .aq-btn-primary:disabled { opacity:.6; cursor:not-allowed; }
-        .aq-btn-ghost { display:flex; align-items:center; gap:8px; background:#fff; border:1.5px solid #e2e8f0; color:#64748b; padding:13px 24px; border-radius:11px; font-size:14px; font-weight:700; cursor:pointer; transition:.2s; font-family:'Inter',sans-serif; }
-        .aq-btn-ghost:hover { background:#f8fafc; color:#1e293b; border-color:#cbd5e1; }
-        .aq-spin { animation:aqSpin 1s linear infinite; }
-        @keyframes aqSpin { to { transform:rotate(360deg); } }
-
-        /* Responsive */
-        @media (max-width:1100px) {
-          .aq-layout { grid-template-columns:1fr; }
-          .aq-sidebar { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-          .aq-card-danger { grid-column:span 2; }
-        }
-        @media (max-width:768px) {
-          .aq-layout { padding:16px; gap:16px; padding-bottom:90px; }
-          .aq-grid-2-1 { grid-template-columns:1fr; }
-          .aq-grid-3 { grid-template-columns:1fr 1fr; }
-          .aq-sidebar { grid-template-columns:1fr; }
-          .aq-card-danger { grid-column:span 1; }
-          .aq-type-row { flex-wrap:wrap; }
-          .aq-footer-inline { display:none; }
-          .aq-footer-sticky {
-            display:flex; justify-content:flex-end; gap:12px;
-            position:fixed; bottom:0; left:0; right:0;
-            background:#fff; border-top:1px solid #e8eaf0;
-            padding:14px 16px;
-            z-index:40;
-            box-shadow:0 -4px 16px rgba(0,0,0,0.08);
-          }
-          .aq-footer-sticky .aq-btn-primary,
-          .aq-footer-sticky .aq-btn-ghost { flex:1; justify-content:center; }
-          .aq-topbar { padding:10px 16px; }
-          .aq-breadcrumb { display:none; }
-        }
-        @media (max-width:480px) {
-          .aq-grid-3 { grid-template-columns:1fr; }
-          .aq-section-head { padding:16px; }
-          .aq-grid-2-1, .aq-section .aq-grid-3 { padding:16px; }
-          .aq-footer-sticky { flex-direction:column-reverse; gap:10px; }
-        }
-      `}</style>
+      {/* Page-scoped: the Quiz Settings dialog reuses some aq- class names */}
+      <style>{AQ_CSS}</style>
     </div>
   );
 }

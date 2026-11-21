@@ -343,7 +343,7 @@ export function RecordPaymentModal({ currency, onClose, onSaved, initial }: { cu
               <div className="fe-muted fe-small">{student.studentId} · {student.programName ?? tx('No programme')}{levelSuffix(student.level)}</div>
               <div className="fe-small" style={{ marginTop: 4 }}>
                 {student.balance == null
-                  ? <span style={{ color: '#fbbf24' }}>No fee or bill for this student yet</span>
+                  ? <span style={{ color: 'var(--sx-warn)' }}>No fee or bill for this student yet</span>
                   : <>Owes <span style={{ color: student.balance ? '#fbbf24' : '#34d399', fontWeight: 700 }}>{formatMoney(student.balance, currency)}</span> in all
                     {(student.credit ?? 0) > 0 && <> · {formatMoney(student.credit, currency)} in credit</>}</>}
               </div>
@@ -365,13 +365,13 @@ export function RecordPaymentModal({ currency, onClose, onSaved, initial }: { cu
                 ) : matches.map(s => (
                   <button type="button" key={s.id} className="fe-result" role="option" aria-selected={false} onClick={() => pick(s)}>
                     <span style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
-                      <UserRound size={16} style={{ color: 'var(--accent-light)', flexShrink: 0 }} />
+                      <UserRound size={16} style={{ color: 'var(--sx-accent-text)', flexShrink: 0 }} />
                       <span style={{ minWidth: 0 }}>
                         <span className="fe-strong" style={{ display: 'block' }}>{s.name}</span>
                         <span className="fe-muted fe-small">{s.studentId}{s.programName ? ` · ${s.programName}` : ''}{levelSuffix(s.level)}</span>
                       </span>
                     </span>
-                    <span className="fe-small" style={{ whiteSpace: 'nowrap', color: s.balance ? '#fbbf24' : 'rgba(255,255,255,0.45)' }}>
+                    <span className="fe-small" style={{ whiteSpace: 'nowrap', color: s.balance ? '#fbbf24' : 'var(--sx-muted)' }}>
                       {s.balance != null ? `Owes ${formatMoney(s.balance, currency)}` : 'No fee'}
                     </span>
                   </button>
@@ -424,7 +424,7 @@ export function RecordPaymentModal({ currency, onClose, onSaved, initial }: { cu
               disabled={!student || noFee || byItem} />
           </div>
           {byItem && <div className="fe-hint">Set by the items chosen above.</div>}
-          {!byItem && extra > 0 && <div className="fe-hint" style={{ color: '#fbbf24' }}>{formatMoney(extra, currency)} more than is owed: {tx('it is kept as credit for the next bill or semester.')}</div>}
+          {!byItem && extra > 0 && <div className="fe-hint" style={{ color: 'var(--sx-warn)' }}>{formatMoney(extra, currency)} more than is owed: {tx('it is kept as credit for the next bill or semester.')}</div>}
         </div>
         <div className="fe-field">
           <label className="fe-label" htmlFor="fe-method">Paid by</label>

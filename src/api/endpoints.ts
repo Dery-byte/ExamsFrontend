@@ -382,6 +382,15 @@ export const saDeleteQuizWithResults = (qid: number, reason: string): Promise<{ 
   saClient.post(`/quizzes/${qid}/delete-with-results`, { reason }).then(r => r.data);
 
 
+// ── Super Admin — Overview page ───────────────────────────────────────────
+export interface SaOverviewWeek { weekStart: string; submissions: number; checkIns: number; payments: number }
+export interface SaOverview {
+  counts: { departments: number; programs: number; hods: number; lecturers: number; students: number; courses: number };
+  /** The last ten weeks (Monday start), oldest first. */
+  weeks: SaOverviewWeek[];
+}
+export const saGetOverview = (): Promise<SaOverview> => saClient.get('/overview').then(r => r.data);
+
 // ── Super Admin — Students semester ───────────────────────────────────────
 export const saGetAllStudents     = () => saClient.get('/students').then(r => r.data);
 export const saSetStudentSemester = (id: number, data: { currentSemester?: number; currentLevel?: number }) =>

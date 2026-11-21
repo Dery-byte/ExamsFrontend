@@ -31,7 +31,7 @@ export default function CashBookPage() {
   return (
     <div className="fe">
       <style>{FEE_ADMIN_CSS + BILL_CSS + '@media print { .fe-actions, .cb-noprint { display: none !important; } }'}</style>
-      <AccountsHead icon={<BookOpen size={24} color="#fff" />} title="Cash book" sub="Money in and out for the day, and cash handed in."
+      <AccountsHead icon={<BookOpen size={24} color="var(--brand-contrast)" />} title="Cash book" sub="Money in and out for the day, and cash handed in."
         actions={<>
           <input type="date" className="fe-input" value={date} max={today()} onChange={e => e.target.value && setDate(e.target.value)} aria-label="Day" style={{ width: 170 }} />
           <button type="button" className="fe-ghost" onClick={() => window.print()}><Printer size={15} /> Print</button>
@@ -118,7 +118,7 @@ function HandIn({ mine, currency, onOpen }: { mine: CashUpMine; currency: string
       <div style={{ minWidth: 0 }}>
         <div className="fe-strong"><HandCoins size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Your cash to hand in</div>
         <div className="fe-muted fe-small" style={{ marginTop: 4 }}>
-          {has ? <><b style={{ color: '#fbbf24' }}>{formatMoney(mine.expectedCash, currency)}</b> cash from {mine.payments} payment(s){mine.nonCash > 0 ? `, plus ${formatMoney(mine.nonCash, currency)} by bank/other (nothing to hand over)` : ''}{mine.refunds ? `, less ${mine.refunds} cash refund(s)` : ''}.</>
+          {has ? <><b style={{ color: 'var(--sx-warn)' }}>{formatMoney(mine.expectedCash, currency)}</b> cash from {mine.payments} payment(s){mine.nonCash > 0 ? `, plus ${formatMoney(mine.nonCash, currency)} by bank/other (nothing to hand over)` : ''}{mine.refunds ? `, less ${mine.refunds} cash refund(s)` : ''}.</>
             : 'Nothing since your last cash-up.'}
         </div>
       </div>

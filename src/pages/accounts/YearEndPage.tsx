@@ -65,7 +65,7 @@ export default function YearEndPage() {
   return (
     <div className="fe">
       <style>{FEE_ADMIN_CSS + BILL_CSS}</style>
-      <AccountsHead icon={<CalendarRange size={24} color="#fff" />} title="Year end"
+      <AccountsHead icon={<CalendarRange size={24} color="var(--brand-contrast)" />} title="Year end"
         sub={tx('Carry unpaid fees into the next session as arrears, enter opening balances, and manage arrears.')} />
       {isLoading || !data ? <div className="fe-card" style={{ padding: 18 }}><div className="fe-skel" style={{ height: 160 }} /></div> : (
         <>
@@ -83,7 +83,7 @@ export default function YearEndPage() {
                     <div className="fe-strong" style={{ fontSize: 15 }}><Unlock size={15} style={{ verticalAlign: -2, marginRight: 6 }} />{data.preview.sessionName} fees are open</div>
                     <div className="fe-muted fe-small" style={{ marginTop: 4 }}>
                       {data.preview.hasFees
-                        ? <>Closing now carries <b style={{ color: '#fbbf24' }}>{formatMoney(data.preview.total, cur)}</b> owed by {data.preview.debtors} {tx('student')}(s), {tx('every semester counted')}.</>
+                        ? <>Closing now carries <b style={{ color: 'var(--sx-warn)' }}>{formatMoney(data.preview.total, cur)}</b> owed by {data.preview.debtors} {tx('student')}(s), {tx('every semester counted')}.</>
                         : 'No fees are set for this session yet.'}
                     </div>
                   </div>

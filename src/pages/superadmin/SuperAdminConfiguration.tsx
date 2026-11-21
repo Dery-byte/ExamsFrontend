@@ -11,7 +11,7 @@ import { isSchoolMode, tx } from '../../utils/terms';
 
 /** Per-role switches for the Marks Sheet navigation entry (default on when never set). */
 const MARKS_SHEET_TOGGLES = [
-  { key: 'MARKS_SHEET_VISIBLE_ADMIN',    label: tx('Admins (HODs)'), sub: 'Show "Marks Sheets" in the Admin navigation.',         icon: <ClipboardList size={20} />, color: 'var(--accent-light)' },
+  { key: 'MARKS_SHEET_VISIBLE_ADMIN',    label: tx('Admins (HODs)'), sub: 'Show "Marks Sheets" in the Admin navigation.',         icon: <ClipboardList size={20} />, color: 'var(--sx-accent-text)' },
   { key: 'MARKS_SHEET_VISIBLE_LECTURER', label: tx('Lecturers'),     sub: tx('Show "Marks Sheet" (marks entry) in the Lecturer navigation.'), icon: <PenLine size={20} />,       color: '#0ea5e9' },
   { key: 'MARKS_SHEET_VISIBLE_STUDENT',  label: tx('Students'),      sub: tx('Show "Report Cards" (published marks) in the Student navigation.'), icon: <GraduationCap size={20} />, color: '#10b981' },
 ];
@@ -21,7 +21,7 @@ const FEE_TOGGLES = [
   { key: 'FEES_VISIBLE_STUDENT', def: false, label: tx('Show fees to students'), sub: tx('Adds "School Fees" to the student navigation and a fee card to their dashboard, with the breakdown when you have set one.'), icon: <Wallet size={20} />, color: '#10b981' },
   { key: 'FEES_ONLINE_PAYMENT', def: true, label: 'Online payment (Paystack)', sub: 'Students pay by card or Mobile Money. When off, they pay at the accounts office and you record the payment.', icon: <CreditCard size={20} />, color: '#0ea5e9' },
   { key: 'FEES_PART_PAYMENT', def: true, label: 'Allow part payments', sub: 'Students can pay in instalments. When off, each payment must clear the full balance.', icon: <Layers size={20} />, color: '#f59e0b' },
-  { key: 'FEES_ITEM_PAYMENT', def: true, label: 'Pay by item', sub: 'Where a fee has a breakdown, students can pay for chosen items (e.g. Tuition, then SRC dues), even when part payments are off.', icon: <ListChecks size={20} />, color: 'var(--accent-light)' },
+  { key: 'FEES_ITEM_PAYMENT', def: true, label: 'Pay by item', sub: 'Where a fee has a breakdown, students can pay for chosen items (e.g. Tuition, then SRC dues), even when part payments are off.', icon: <ListChecks size={20} />, color: 'var(--sx-accent-text)' },
 ];
 
 interface Program { id: number; name: string; code: string; departmentName: string; enabled: boolean; }
@@ -245,7 +245,7 @@ export default function SuperAdminConfiguration() {
     <div className="sc">
       {/* Header */}
       <div className="sc-head">
-        <div className="sc-logo"><Settings2 size={24} color="#fff" /></div>
+        <div className="sc-logo"><Settings2 size={24} color="var(--brand-contrast)" /></div>
         <div style={{ minWidth: 0 }}>
           <h1 className="sc-h1">System Configuration</h1>
           <p className="sc-lead">Global platform settings and toggleable features</p>
@@ -275,7 +275,7 @@ export default function SuperAdminConfiguration() {
       {/* ── Exams ───────────────────────────────────────────────────────── */}
       <section className="sc-sec">
         <SectionHead title="Exams" />
-        <SettingRow icon={<Timer size={22} />} color="#38bdf8" title={tx("Exam clock keeps running while a student is away")}
+        <SettingRow icon={<Timer size={22} />} color="var(--sx-info)" title={tx("Exam clock keeps running while a student is away")}
           sub={tx("On: if a student closes the browser, loses power or drops offline, the time away still counts — they return to the time actually left (and the attempt is submitted if it has run out). Off: the clock resumes from their last save, up to 15 seconds before they left.")}>
           <Switch on={isOn('EXAM_CLOCK_RUNS_WHILE_AWAY')} busy={savingKey === 'EXAM_CLOCK_RUNS_WHILE_AWAY'} disabled={locked}
             onClick={handleToggleExamClock} label={tx("Exam clock keeps running while a student is away")} />
@@ -295,7 +295,7 @@ export default function SuperAdminConfiguration() {
           <Switch on={isSet('VIOLATION_RESET_LECTURER', true)} busy={savingKey === 'VIOLATION_RESET_LECTURER'} disabled={locked}
             onClick={() => handleToggleViolationReset('VIOLATION_RESET_LECTURER')} label={tx("Lecturers can reset a student's violations")} />
         </SettingRow>
-        <SettingRow icon={<EyeOff size={22} />} color="#f87171" title={tx("HODs can withhold a student's result")}
+        <SettingRow icon={<EyeOff size={22} />} color="var(--sx-bad)" title={tx("HODs can withhold a student's result")}
           sub={tx("On: an HOD can hold back one student's quiz result (for example after violations or an unusually long time taken) while other students' results are out, with a reason, from Quiz Review or the proctoring report. The student sees \"withheld, contact your lecturer\" instead of their marks until it is released. You can always do this yourself; every withhold and release is recorded in the audit log.")}>
           <Switch on={isSet('RESULT_WITHHOLD_ADMIN', true)} busy={savingKey === 'RESULT_WITHHOLD_ADMIN'} disabled={locked}
             onClick={() => handleToggleResultWithhold('RESULT_WITHHOLD_ADMIN')} label={tx("HODs can withhold a student's result")} />
@@ -317,7 +317,7 @@ export default function SuperAdminConfiguration() {
       {/* ── Sign-in Page ────────────────────────────────────────────────── */}
       <section className="sc-sec">
         <SectionHead title="Sign-in Page" />
-        <SettingRow icon={<FileCheck2 size={22} />} color="#34d399" title={tx("Show \"Verify a transcript or report card\" link")}
+        <SettingRow icon={<FileCheck2 size={22} />} color="var(--sx-ok)" title={tx("Show \"Verify a transcript or report card\" link")}
           sub={tx("Shows the link under the sign-in form. Hiding it does not switch verification off: codes printed on transcripts and report cards still open the verification page. The link is also hidden while document verification is switched off in Features.")}>
           <Switch on={isOn('LOGIN_VERIFY_LINK_VISIBLE')} busy={savingKey === 'LOGIN_VERIFY_LINK_VISIBLE'} disabled={locked}
             onClick={handleToggleVerifyLink} label={tx("Show the verification link on the sign-in page")} />
@@ -411,34 +411,34 @@ export default function SuperAdminConfiguration() {
 }
 
 const CONFIG_CSS = `
-.sc { color: #fff; padding-bottom: 32px; container: sc / inline-size; }
+.sc { color: var(--sx-ink); padding-bottom: 32px; container: sc / inline-size; }
 .sc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
 .sc-logo { width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0; background: linear-gradient(135deg,var(--accent),var(--brand)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.4); }
-.sc-h1 { margin: 0; font-size: 26px; font-weight: 800; background: linear-gradient(135deg,var(--accent-light),var(--brand-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.sc-lead { margin: 0; font-size: 13px; color: rgba(255,255,255,0.45); }
+.sc-h1 { margin: 0; font-size: 26px; font-weight: 800; background: var(--sx-title-fill); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.sc-lead { margin: 0; font-size: 13px; color: var(--sx-muted); }
 
-.sc-alert { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 14px; margin-bottom: 24px; border-radius: 12px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; font-size: 13px; }
+.sc-alert { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 14px; margin-bottom: 24px; border-radius: 12px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); color: var(--sx-warn); font-size: 13px; }
 .sc-alert > span { flex: 1 1 220px; }
 .sc-alert-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(251,191,36,0.4); background: rgba(251,191,36,0.12); color: #fde68a; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
 
 .sc-sec { margin-bottom: 36px; }
 .sc-sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; margin-bottom: 14px; }
-.sc-h2 { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.7); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
-.sc-sec-sub { margin: 4px 0 0; font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+.sc-h2 { font-size: 16px; font-weight: 700; color: var(--sx-ink-2); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+.sc-sec-sub { margin: 4px 0 0; font-size: 12px; color: var(--sx-muted); line-height: 1.5; }
 .sc-sec-aside { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.sc-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--accent-light); text-decoration: none; }
+.sc-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--sx-accent-text); text-decoration: none; }
 .sc-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .sc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
-.sc-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(var(--accent-rgb), 0.15); border-radius: 16px; }
+.sc-card { background: var(--sx-card); border: 1px solid var(--sx-card-line); border-radius: 16px; box-shadow: var(--sx-card-shadow); }
 .sc-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px 16px; padding: 18px 22px; height: 100%; box-sizing: border-box; }
 .sc-ico { width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .sc-text { min-width: 0; }
-.sc-title { font-weight: 600; font-size: 15px; color: #fff; margin-bottom: 4px; overflow-wrap: anywhere; }
-.sc-sub { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.45; }
+.sc-title { font-weight: 600; font-size: 15px; color: var(--sx-ink); margin-bottom: 4px; overflow-wrap: anywhere; }
+.sc-sub { font-size: 12px; color: var(--sx-muted); line-height: 1.45; }
 .sc-ctl { flex-shrink: 0; }
 
-.sc-switch { position: relative; width: 50px; height: 26px; padding: 0; border: none; border-radius: 20px; background: rgba(255,255,255,0.12); cursor: pointer; transition: background .25s; flex-shrink: 0; display: block; }
+.sc-switch { position: relative; width: 50px; height: 26px; padding: 0; border: none; border-radius: 20px; background: var(--sx-fill-3); cursor: pointer; transition: background .25s; flex-shrink: 0; display: block; }
 .sc-switch.on { background: #10b981; }
 .sc-switch::after { content: ''; position: absolute; inset: -9px -6px; }
 .sc-switch:disabled { cursor: not-allowed; opacity: .55; }
@@ -448,26 +448,26 @@ const CONFIG_CSS = `
 .sc-switch.on .sc-knob { transform: translateX(24px); }
 
 .sc-chip { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; white-space: nowrap; }
-.sc-chip.ok { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #34d399; }
-.sc-chip.off { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; }
-.sc-icon-btn { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.sc-icon-btn:hover:not(:disabled) { color: #fff; background: rgba(255,255,255,0.1); }
+.sc-chip.ok { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: var(--sx-ok); }
+.sc-chip.off { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: var(--sx-bad); }
+.sc-icon-btn { width: 32px; height: 32px; border-radius: 8px; background: var(--sx-fill); border: 1px solid var(--sx-line-2); color: var(--sx-ink-2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.sc-icon-btn:hover:not(:disabled) { color: var(--sx-ink); background: var(--sx-fill-2); }
 .sc-icon-btn:disabled { cursor: default; }
 
 .sc-prog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
-.sc-prog { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(var(--accent-rgb), 0.15); transition: border-color .2s, background .2s; }
+.sc-prog { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; background: var(--sx-card); border: 1px solid var(--sx-card-line); transition: border-color .2s, background .2s; box-shadow: var(--sx-card-shadow); }
 .sc-prog.off { background: rgba(239,68,68,0.04); border-color: rgba(239,68,68,0.25); }
-.sc-prog-ico { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(14,165,233,0.12); border: 1px solid rgba(14,165,233,0.25); color: #38bdf8; }
-.sc-prog.off .sc-prog-ico { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #f87171; }
+.sc-prog-ico { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(14,165,233,0.12); border: 1px solid rgba(14,165,233,0.25); color: var(--sx-info); }
+.sc-prog.off .sc-prog-ico { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: var(--sx-bad); }
 .sc-prog-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sc-prog-meta { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sc-prog-code { font-weight: 700; color: #38bdf8; }
-.sc-prog.off .sc-prog-code { color: #f87171; }
-.sc-badge { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
-.sc-badge.off { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #f87171; }
-.sc-empty { text-align: center; padding: 40px 20px; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed rgba(var(--accent-rgb), 0.2); }
-.sc-empty p { color: rgba(255,255,255,0.45); margin: 0; font-size: 13px; }
-.sc-skel { border-radius: 12px; background: rgba(255,255,255,0.04); animation: sc-pulse 1.5s infinite; }
+.sc-prog-meta { font-size: 11px; color: var(--sx-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-prog-code { font-weight: 700; color: var(--sx-info); }
+.sc-prog.off .sc-prog-code { color: var(--sx-bad); }
+.sc-badge { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: var(--sx-ok); }
+.sc-badge.off { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: var(--sx-bad); }
+.sc-empty { text-align: center; padding: 40px 20px; background: var(--sx-fill); border-radius: 14px; border: 1px dashed rgba(var(--accent-rgb), 0.2); }
+.sc-empty p { color: var(--sx-muted); margin: 0; font-size: 13px; }
+.sc-skel { border-radius: 12px; background: var(--sx-fill); animation: sc-pulse 1.5s infinite; }
 .sc-spin { animation: sc-spin 1s linear infinite; }
 @keyframes sc-spin { to { transform: rotate(360deg); } }
 @keyframes sc-pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }

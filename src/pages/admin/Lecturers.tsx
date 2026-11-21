@@ -13,6 +13,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { tx, isSchoolMode } from '../../utils/terms';
+import MoreMenu from '../../components/ui/MoreMenu';
+import AvatarPhoto from '../../components/common/AvatarPhoto';
+import { Building2 } from 'lucide-react';
+import '../../components/ui/registry.css';
 
 const emptyLecturer = { firstname:'', lastname:'', username:'', email:'', phone:'', password:'', departmentId:'', secondaryDepartmentIds: [] as number[] };
 
@@ -22,6 +26,8 @@ export default function Lecturers() {
   const [filtered, setFiltered]         = useState<any[]>([]);
   const [total, setTotal]               = useState(0);
   const [searchText, setSearchText]     = useState('');
+  const [show, setShow]                 = useState<'all' | 'active' | 'off'>('all');
+  const [menuFor, setMenuFor]           = useState<number | null>(null);
   const [editModal, setEditModal]       = useState(false);
   const [addModal, setAddModal]         = useState(false);
   const [lecturerEdit, setLecturerEdit] = useState<any>({});
@@ -118,19 +124,21 @@ export default function Lecturers() {
   };
 
   const doDelete = (id: number) => {
+    const who = lecturers.find(l => l.id === id);
     Swal.fire({
-      title: tx('Remove Faculty Member?'),
-      text: tx("Permanent termination of administrative privileges and course access."),
+      title: `Delete ${who?.fullName ?? 'this staff member'}?`,
+      text: tx('Their account is removed and they can no longer sign in. This can\'t be undone.'),
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#f43f5e',
-      confirmButtonText: 'Yes, Remove Member'
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel'
     }).then(r=>{
       if (!r.isConfirmed) return;
       deleteLecturer(id).then(()=>{ 
-        toast.success('Personnel purged from registry'); 
+        toast.success('Staff member deleted'); 
         fetchLecturers(); 
-      }).catch((e: any)=>toast.error(e?.response?.data?.message ?? 'Removal protocol failed', { duration: 6000 }));
+      }).catch((e: any)=>toast.error(e?.response?.data?.message ?? 'Could not delete the staff member.', { duration: 6000 }));
     });
   };
 
@@ -159,73 +167,86 @@ export default function Lecturers() {
   const setNSelect = (k: keyof typeof emptyLecturer) => (e: React.ChangeEvent<HTMLSelectElement>) =>
     setNewLect(l=>({...l,[k]:e.target.value}));
 
+  const inactive = lecturers.filter(l => l.enabled === false).length;
+  const shownStaff = filtered.filter((l: any) => show === 'all' ? true : show === 'off' ? l.enabled === false : l.enabled !== false);
+
   return (
-    <div className="admin-lecturers-page animate-fade-in" style={{ padding: '0 0 40px', fontFamily: '"Outfit", sans-serif' }}>
-      <PageHeader title={tx("Faculty Registry")} breadcrumbs={['Admin', 'Staffing']} />
-      
-      {/* COMPACT STATS & SEARCH */}
-      <div className="registry-compact-header">
-         <div className="compact-stats">
-            <div className="stat-node">
-               <span className="l">{tx("Faculty Personnel")}</span>
-               <span className="v">{total}</span>
-            </div>
-            <div className="stat-sep"></div>
-            <div className="stat-node">
-               <span className="l">Network Status</span>
-               <span className="v secure">Secure</span>
-            </div>
-         </div>
-         <div className="compact-actions">
-            <div className="mini-search">
-               <Search size={14} />
-               <input type="text" placeholder="Filter personnel..." value={searchText} onChange={e=>applyFilter(e.target.value)} />
-            </div>
-            <button className="add-p-btn" onClick={()=>setAddModal(true)}><Plus size={16} /> <span>Enroll Staff</span></button>
-         </div>
+    <div className="rg admin-lecturers-page animate-fade-in">
+      <PageHeader title={tx('Teaching Staff')} breadcrumbs={['Admin', tx('Staff')]} />
+
+      <div className="rg-head">
+        <div className="rg-heading">
+          <h2>{tx('Teaching Staff')}</h2>
+          <p>
+            <b>{total}</b> {total === 1 ? 'staff member' : 'staff members'}
+            {inactive > 0 && <> · <b>{inactive}</b> deactivated</>}
+          </p>
+        </div>
+        <button type="button" className="rg-add" onClick={() => setAddModal(true)}>
+          <Plus size={17} /> Enroll staff
+        </button>
       </div>
 
-      <div className="registry-list-compact">
+      <div className="rg-tools">
+        <div className="rg-chips" role="group" aria-label="Show">
+          {([['all', 'All', lecturers.length], ['active', 'Active', lecturers.length - inactive], ['off', 'Deactivated', inactive]] as const).map(([k, label, n]) => (
+            <button key={k} type="button" className={`rg-chip${show === k ? ' on' : ''}`} aria-pressed={show === k} onClick={() => setShow(k)}>
+              {label} <span className="n">{n}</span>
+            </button>
+          ))}
+        </div>
+        <label className="rg-search">
+          <Search size={16} />
+          <input type="search" placeholder="Search by name, username or email" value={searchText} onChange={e => applyFilter(e.target.value)} aria-label="Search staff" />
+        </label>
+      </div>
+
+      <div className="rg-grid">
         {loading ? (
-          <div className="reg-loader"><Loader2 className="spin-ico" size={32} /></div>
-        ) : filtered.length === 0 ? (
-          <div className="reg-empty-state">
-             <Users size={48} />
-             <h5>Registry Empty</h5>
-             <p>No faculty personnel found in the active directory.</p>
+          [0, 1, 2].map(i => <div key={i} className="rg-skel" aria-hidden />)
+        ) : shownStaff.length === 0 ? (
+          <div className="rg-empty">
+            <span className="rg-empty-ico"><Users size={26} /></span>
+            <h3>{lecturers.length === 0 ? 'No staff yet' : 'Nothing matches'}</h3>
+            <p>{lecturers.length === 0 ? tx('Enroll your first lecturer, then assign them courses.') : 'Try another search, or show all.'}</p>
+            {lecturers.length === 0
+              ? <button type="button" className="rg-add" onClick={() => setAddModal(true)}><Plus size={17} /> Enroll staff</button>
+              : <button type="button" className="rg-btn" onClick={() => { applyFilter(''); setShow('all'); }}>Clear filters</button>}
           </div>
-        ) : (
-          filtered.map((el: any) => (
-            <div key={el.id} className="reg-row-premium">
-              <div className="reg-col id-badge">
-                 <div className="s-avatar-gold">{el.firstname?.[0]}{el.lastname?.[0]}</div>
+        ) : shownStaff.map((el: any) => {
+          const off = el.enabled === false;
+          const name = el.fullName || [el.firstname, el.lastname].filter(Boolean).join(' ') || el.username;
+          return (
+            <article key={el.id} className={`rg-card${menuFor === el.id ? ' menu-open' : ''}`}>
+              <div className="rg-card-top">
+                <div className="rg-staff-head">
+                  <span className="rg-avatar">
+                    <AvatarPhoto src={el.profilePicture}>{`${el.firstname?.[0] ?? ''}${el.lastname?.[0] ?? ''}`.toUpperCase() || '?'}</AvatarPhoto>
+                  </span>
+                  <div className="rg-staff-name">
+                    <h3 title={name}>{name}</h3>
+                    <p title={el.username}>@{el.username}</p>
+                  </div>
+                </div>
+                <MoreMenu label={`More actions for ${name}`} onOpenChange={o => setMenuFor(o ? el.id : null)} items={[
+                  { icon: <Edit size={16} />, label: 'Edit details', onSelect: () => openEdit(el.id) },
+                  { icon: <Power size={16} />, label: off ? 'Reactivate account' : 'Deactivate account', onSelect: () => toggleAccount(el, name, fetchLecturers) },
+                  { icon: <Trash2 size={16} />, label: 'Delete staff member', danger: true, onSelect: () => doDelete(el.id) },
+                ]} />
               </div>
-              <div className="reg-col info">
-                 <h6 className="t">{el.fullName}</h6>
-                 <div className="sub">
-                    <Fingerprint size={12} /> <span>{el.username}</span>
-                    <span className="dot" />
-                    <Mail size={12} /> <span>{el.email}</span>
-                 </div>
+              <ul className="rg-contact">
+                <li className={el.email ? undefined : 'none'}><Mail size={15} /><span title={el.email}>{el.email || 'No email'}</span></li>
+                <li className={el.phone ? undefined : 'none'}><Phone size={15} /><span>{el.phone || 'No phone'}</span></li>
+                {el.department?.name && <li><Building2 size={15} /><span title={el.department.name}>{el.department.name}</span></li>}
+              </ul>
+              <div className="rg-foot">
+                <span className={`rg-status ${off ? 'off' : 'ok'}`} title={off ? el.deactivationReason ?? undefined : undefined}>{off ? 'Deactivated' : 'Active'}</span>
+                <button type="button" className="rg-btn" onClick={() => openEdit(el.id)}><Edit size={14} /> Edit</button>
               </div>
-              <div className="reg-col status">
-                 {el.enabled === false
-                   ? <span className="p-badge" style={{ background: '#fdeeee', color: '#9f1f1f' }} title={el.deactivationReason ?? undefined}>Deactivated</span>
-                   : <span className="p-badge"><Shield size={12} /> Personnel</span>}
-              </div>
-              <div className="reg-col acts">
-                 <button className="a-btn p" onClick={()=>openEdit(el.id)}><Edit size={14} /></button>
-                 <button className="a-btn p" onClick={()=>toggleAccount(el, el.fullName ?? el.username, fetchLecturers)}
-                   title={el.enabled === false ? 'Reactivate account' : 'Deactivate account'}
-                   aria-label={el.enabled === false ? 'Reactivate account' : 'Deactivate account'}
-                   style={{ color: el.enabled === false ? '#16a34a' : '#b45309' }}><Power size={14} /></button>
-                 <button className="a-btn d" onClick={()=>doDelete(el.id)}><Trash2 size={14} /></button>
-              </div>
-            </div>
-          ))
-        )}
+            </article>
+          );
+        })}
       </div>
-
 
       {/* ─── EDIT MODAL ─────────────────────────────────────────── */}
       {editModal && createPortal(
@@ -357,7 +378,7 @@ export default function Lecturers() {
             {/* Left accent panel */}
             <div className="lx-modal-aside lx-modal-aside-enroll">
               <div className="lx-modal-aside-icon-wrap">
-                <UserPlus size={28} color="#fff"/>
+                <UserPlus size={28} color="var(--brand-contrast)"/>
               </div>
               <h3 className="lx-modal-aside-title">Enroll Staff</h3>
               <p className="lx-modal-aside-sub">{tx('Register a new faculty member and assign them to departments.')}</p>
@@ -532,47 +553,48 @@ export default function Lecturers() {
         /* ── Left accent panel ─────────────────────────────────── */
         .lx-modal-aside {
           width:220px; flex-shrink:0;
-          background:linear-gradient(160deg,var(--brand-deep) 0%,var(--brand-deep) 45%,var(--brand-hover) 100%);
+          background:linear-gradient(160deg,var(--brand) 0%,var(--brand-hover) 100%); color:var(--brand-contrast);
           padding:36px 24px; display:flex; flex-direction:column; gap:16px;
           position:relative; overflow:hidden;
         }
         .lx-modal-aside::before {
           content:''; position:absolute; width:200px; height:200px;
-          background:rgba(255,255,255,0.04); border-radius:50%;
+          background:color-mix(in srgb, var(--brand-contrast) 6%, transparent); border-radius:50%;
           top:-60px; right:-60px;
         }
         .lx-modal-aside::after {
           content:''; position:absolute; width:150px; height:150px;
-          background:rgba(255,255,255,0.03); border-radius:50%;
+          background:color-mix(in srgb, var(--brand-contrast) 5%, transparent); border-radius:50%;
           bottom:-40px; left:-40px;
         }
-        .lx-modal-aside-enroll { background:linear-gradient(160deg,#064e3b 0%,#065f46 45%,#047857 100%); }
+        /* Enrol and edit share the developer's brand colour; text uses the brand's readable contrast colour */
+        .lx-modal-aside-enroll { background:linear-gradient(160deg,var(--brand) 0%,var(--brand-hover) 100%); }
         .lx-modal-aside-avatar {
           width:60px; height:60px; border-radius:16px;
-          background:rgba(255,255,255,0.15); backdrop-filter:blur(4px);
-          border:2px solid rgba(255,255,255,0.2);
+          background:color-mix(in srgb, var(--brand-contrast) 16%, transparent); backdrop-filter:blur(4px);
+          border:2px solid color-mix(in srgb, var(--brand-contrast) 25%, transparent);
           display:flex; align-items:center; justify-content:center;
-          font-size:20px; font-weight:900; color:#fff; letter-spacing:1px;
+          font-size:20px; font-weight:900; color:var(--brand-contrast); letter-spacing:1px;
           position:relative; z-index:1;
         }
         .lx-modal-aside-icon-wrap {
           width:60px; height:60px; border-radius:16px;
-          background:rgba(255,255,255,0.15); backdrop-filter:blur(4px);
-          border:2px solid rgba(255,255,255,0.2);
+          background:color-mix(in srgb, var(--brand-contrast) 16%, transparent); backdrop-filter:blur(4px);
+          border:2px solid color-mix(in srgb, var(--brand-contrast) 25%, transparent);
           display:flex; align-items:center; justify-content:center;
           position:relative; z-index:1;
         }
-        .lx-modal-aside-title { margin:0; font-size:18px; font-weight:800; color:#fff; position:relative; z-index:1; }
-        .lx-modal-aside-sub { margin:0; font-size:12px; color:rgba(255,255,255,0.65); line-height:1.6; position:relative; z-index:1; }
+        .lx-modal-aside-title { margin:0; font-size:18px; font-weight:800; color:var(--brand-contrast); position:relative; z-index:1; }
+        .lx-modal-aside-sub { margin:0; font-size:12px; color:color-mix(in srgb, var(--brand-contrast) 78%, transparent); line-height:1.6; position:relative; z-index:1; }
         .lx-modal-aside-steps { display:flex; flex-direction:column; gap:10px; margin-top:8px; position:relative; z-index:1; }
-        .lx-step { display:flex; align-items:center; gap:10px; font-size:11px; font-weight:600; color:rgba(255,255,255,0.55); }
-        .lx-step.active { color:rgba(255,255,255,0.9); }
-        .lx-step-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.3); flex-shrink:0; }
-        .lx-step.active .lx-step-dot { background:#fff; box-shadow:0 0 8px rgba(255,255,255,0.6); }
+        .lx-step { display:flex; align-items:center; gap:10px; font-size:11px; font-weight:600; color:color-mix(in srgb, var(--brand-contrast) 65%, transparent); }
+        .lx-step.active { color:var(--brand-contrast); }
+        .lx-step-dot { width:7px; height:7px; border-radius:50%; background:color-mix(in srgb, var(--brand-contrast) 35%, transparent); flex-shrink:0; }
+        .lx-step.active .lx-step-dot { background:var(--brand-contrast); box-shadow:0 0 0 3px color-mix(in srgb, var(--brand-contrast) 20%, transparent); }
         .lx-aside-notice {
           margin-top:auto; display:flex; align-items:flex-start; gap:8px;
-          background:rgba(0,0,0,0.2); border-radius:10px; padding:10px 12px;
-          font-size:11px; color:rgba(255,255,255,0.7); line-height:1.5;
+          background:color-mix(in srgb, var(--brand-contrast) 12%, transparent); border-radius:10px; padding:10px 12px;
+          font-size:11px; color:color-mix(in srgb, var(--brand-contrast) 85%, transparent); line-height:1.5;
           position:relative; z-index:1;
         }
         .lx-aside-notice svg { flex-shrink:0; margin-top:2px; }
@@ -585,7 +607,7 @@ export default function Lecturers() {
           padding:24px 28px 20px; border-bottom:1px solid #f1f5f9;
           flex-shrink:0;
         }
-        .lx-modal-label-tag { margin:0 0 2px; font-size:10px; font-weight:800; color:var(--brand-light); text-transform:uppercase; letter-spacing:0.1em; }
+        .lx-modal-label-tag { margin:0 0 2px; font-size:10px; font-weight:800; color:var(--brand-text); text-transform:uppercase; letter-spacing:0.1em; }
         .lx-modal-heading { margin:0; font-size:20px; font-weight:800; color:#0f172a; }
         .lx-close-btn {
           width:34px; height:34px; border-radius:10px; border:1.5px solid #e2e8f0;
@@ -679,8 +701,8 @@ export default function Lecturers() {
         }
         .lx-btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 20px rgba(var(--brand-rgb), 0.45); }
         .lx-btn-primary:disabled { opacity:0.6; cursor:not-allowed; }
-        .lx-btn-enroll { background:linear-gradient(135deg,#059669,#047857); box-shadow:0 4px 14px rgba(5,150,105,0.35); }
-        .lx-btn-enroll:hover:not(:disabled) { box-shadow:0 8px 20px rgba(5,150,105,0.45); }
+        .lx-btn-enroll { background:var(--brand); box-shadow:0 4px 14px rgba(var(--brand-rgb), 0.35); }
+        .lx-btn-enroll:hover:not(:disabled) { background:var(--brand-hover); box-shadow:0 8px 20px rgba(var(--brand-rgb), 0.45); }
 
         /* ── Animations ────────────────────────────────────────── */
         .animate-lx-in { animation:lxIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both; }

@@ -40,7 +40,7 @@ export default function FeeSettingsPage() {
       <style>{FEE_ADMIN_CSS + SET_CSS}</style>
       <div className="fe-head">
         <div className="fe-title">
-          <div className="fe-logo"><SlidersHorizontal size={24} color="#fff" /></div>
+          <div className="fe-logo"><SlidersHorizontal size={24} color="var(--brand-contrast)" /></div>
           <div style={{ minWidth: 0 }}>
             <h1 className="fe-h1">Fee settings</h1>
             <p className="fe-sub">How students see and pay their fees. Every change is recorded in the audit log.</p>
@@ -81,10 +81,10 @@ export default function FeeSettingsPage() {
 
 const SET_CSS = `
 .fs-list { list-style: none; margin: 0; padding: 6px 18px; }
-.fs-list li { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.fs-list li { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--sx-line); }
 .fs-list li:last-child { border-bottom: none; }
-.fs-ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: rgba(var(--accent-rgb), 0.14); color: var(--accent-light); }
-.fs-switch { position: relative; width: 46px; height: 26px; border-radius: 13px; border: none; background: rgba(255,255,255,0.16); cursor: pointer; flex-shrink: 0; transition: background .15s; }
+.fs-ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: rgba(var(--accent-rgb), 0.14); color: var(--sx-accent-text); }
+.fs-switch { position: relative; width: 46px; height: 26px; border-radius: 13px; border: none; background: var(--sx-fill-3); cursor: pointer; flex-shrink: 0; transition: background .15s; }
 .fs-switch span { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; display: grid; place-items: center; color: #334155; transition: transform .15s; }
 .fs-switch.on { background: #10b981; }
 .fs-switch.on span { transform: translateX(20px); }

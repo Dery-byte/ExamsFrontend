@@ -76,6 +76,7 @@ import HostelPage from './pages/shared/boarding/HostelPage';
 
 // Super Admin
 import SuperAdminWelcome from './pages/superadmin/SuperAdminWelcome';
+import SuperAdminProfile from './pages/superadmin/SuperAdminProfile';
 import SuperAdminConfiguration from './pages/superadmin/SuperAdminConfiguration';
 import Departments from './pages/superadmin/Departments';
 import Programs from './pages/superadmin/Programs';
@@ -145,6 +146,8 @@ export default function App() {
             background: '#1e293b',
             color: '#fff',
             borderRadius: '12px',
+            // Toasts render outside the layouts that set the app font
+            fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif",
             fontSize: '14px',
             fontWeight: '600',
             padding: '12px 20px',
@@ -216,7 +219,7 @@ export default function App() {
           <Route path="boarding/reports/:key" element={<BoardingGate><ReportView /></BoardingGate>} />
           <Route path="question-bank" element={<AssessmentsGate><QuestionBank /></AssessmentsGate>} />
           <Route path="remarks" element={<AssessmentsGate><RemarkRequests /></AssessmentsGate>} />
-          <Route path="profile" element={<Profile />} />
+          <Route path="profile" element={<SuperAdminProfile />} />
           <Route path="departments" element={<Departments />} />
           <Route path="programs" element={<Programs />} />
           <Route path="hods" element={<ManageHODs />} />

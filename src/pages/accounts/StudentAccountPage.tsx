@@ -87,7 +87,7 @@ export default function StudentAccountPage() {
   return (
     <div className="fe">
       <style>{FEE_ADMIN_CSS + BILL_CSS}</style>
-      <AccountsHead icon={<UserRound size={24} color="#fff" />} title={tx('Student accounts')}
+      <AccountsHead icon={<UserRound size={24} color="var(--brand-contrast)" />} title={tx('Student accounts')}
         sub={tx('Everything a student owes and has paid: earlier years, fees by semester, bills and credit.')}
         actions={data ? <>
           <button type="button" className="fe-ghost" onClick={() => setOpen('bill')}><Plus size={15} /> Bill</button>
@@ -113,7 +113,7 @@ export default function StudentAccountPage() {
                     <span className="fe-strong" style={{ display: 'block' }}>{s.name}</span>
                     <span className="fe-muted fe-small">{s.studentId}{s.programName ? ` · ${s.programName}` : ''}{levelSuffix(s.level)}</span>
                   </span>
-                  <span className="fe-small" style={{ whiteSpace: 'nowrap', color: s.balance ? '#fbbf24' : 'rgba(255,255,255,0.45)' }}>{s.balance != null ? `Owes ${formatMoney(s.balance, currency)}` : '—'}</span>
+                  <span className="fe-small" style={{ whiteSpace: 'nowrap', color: s.balance ? '#fbbf24' : 'var(--sx-muted)' }}>{s.balance != null ? `Owes ${formatMoney(s.balance, currency)}` : '—'}</span>
                 </button>
               ))}
           </div>
@@ -132,10 +132,10 @@ export default function StudentAccountPage() {
             <div className="fe-muted fe-small">{data.student.studentId}{data.student.programName ? ` · ${data.student.programName}` : ''}{levelSuffix(data.student.level)}
               {data.residency ? ` · ${data.residency === 'BOARDING' ? 'Boarder' : 'Day student'}` : ''} · {data.session.name}</div>
             <div className="bl-kpis" style={{ marginTop: 12, marginBottom: 0, gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
-              {(data.arrearsBalance ?? 0) > 0 && <div><span>Earlier years</span><b style={{ color: '#f87171' }}>{formatMoney(data.arrearsBalance ?? 0, currency)}</b></div>}
+              {(data.arrearsBalance ?? 0) > 0 && <div><span>Earlier years</span><b style={{ color: 'var(--sx-bad)' }}>{formatMoney(data.arrearsBalance ?? 0, currency)}</b></div>}
               <div><span>Fees owed</span><b>{formatMoney(data.totalBalance ?? 0, currency)}</b></div>
               <div><span>Bills owed</span><b>{formatMoney(data.billsBalance ?? 0, currency)}</b></div>
-              <div><span>Credit</span><b style={{ color: '#34d399' }}>{formatMoney(credit, currency)}</b></div>
+              <div><span>Credit</span><b style={{ color: 'var(--sx-ok)' }}>{formatMoney(credit, currency)}</b></div>
               <div><span>To pay</span><b style={{ color: (data.toPay ?? 0) > 0 ? '#fbbf24' : '#34d399' }}>{formatMoney(data.toPay ?? 0, currency)}</b></div>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function StudentAccountPage() {
                   <div className="fe-muted fe-small">{b.lines.length === 1 && b.lines[0].name === b.title && b.lines[0].quantity === 1 ? '' : `${b.lines.map(l => l.quantity > 1 ? `${l.name} × ${l.quantity}` : l.name).join(', ')} · `}{formatMoney(b.amount, currency)} · {formatDate(b.createdAt)}{b.statusNote ? ` · ${b.statusNote}` : ''}</div>
                   {b.status !== 'CANCELLED' && b.status !== 'DECLINED' && b.lines.filter(l => l.stocked && l.lineId).map(l => (
                     <div key={l.lineId} className="fe-small" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 6 }}>
-                      <span className={(l.issued ?? 0) >= l.quantity ? 'fe-muted' : ''} style={(l.issued ?? 0) < l.quantity ? { color: '#fbbf24' } : undefined}>
+                      <span className={(l.issued ?? 0) >= l.quantity ? 'fe-muted' : ''} style={(l.issued ?? 0) < l.quantity ? { color: 'var(--sx-warn)' } : undefined}>
                         <PackageCheck size={12} style={{ verticalAlign: -1 }} /> {l.name}: {l.issued ?? 0} of {l.quantity} handed over</span>
                       {(l.issued ?? 0) < l.quantity && <button type="button" className="fe-ghost sm" onClick={() => setHanding({ lineId: l.lineId!, name: l.name, quantity: l.quantity, issued: l.issued ?? 0, studentName: data.student.name })}>Hand over</button>}
                       {(l.issued ?? 0) > 0 && <button type="button" className="fe-ghost sm" onClick={() => ask(`Take back ${l.issued} ${l.name}?`, 'They go back into the store.', 'Take back', r => takeBackItems(l.lineId!, l.issued ?? 0, r), 'Back in the store')}>Take back</button>}
@@ -273,7 +273,7 @@ function WalletSection({ wallet, walletsPage, onReceipt, onPay, payHint }: {
   return (
     <Section title={`Wallet${wallet.enabled ? '' : ' (switched off)'}`} empty="Nothing paid into the wallet yet." count={recent.length + (pending ? 1 : 0) + (payHint ? 1 : 0)}
       action={<span className="fe-small" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <span><b style={{ color: '#34d399' }}>{formatMoney(wallet.balance, cur)}</b>
+        <span><b style={{ color: 'var(--sx-ok)' }}>{formatMoney(wallet.balance, cur)}</b>
           {wallet.held > 0 && <span className="fe-muted"> · {formatMoney(wallet.held, cur)} held</span>}</span>
         {onPay && <button type="button" className="fe-ghost sm" onClick={onPay}><PiggyBank size={13} /> Pay from wallet</button>}</span>}>
       {payHint && (
@@ -286,7 +286,7 @@ function WalletSection({ wallet, walletsPage, onReceipt, onPay, payHint }: {
         <li className="bl-row">
           <div className="bl-main"><div className="fe-strong">Withdrawal {pending.number}</div>
             <div className="fe-muted fe-small">{WD_TEXT[pending.status]} · asked {formatDate(pending.requestedAt)}</div></div>
-          <div className="bl-amt"><div className="fe-strong" style={{ color: '#fbbf24' }}>{formatMoney(pending.amount, cur)}</div>
+          <div className="bl-amt"><div className="fe-strong" style={{ color: 'var(--sx-warn)' }}>{formatMoney(pending.amount, cur)}</div>
             <Link to={walletsPage} className="fe-link fe-small">Open requests</Link></div>
         </li>
       )}
@@ -388,7 +388,7 @@ function WalletPayModal({ wallet, initial, onClose, onDone }: { wallet: MyWallet
           <div className="fe-money"><span>{cur}</span><input id="wp-amt" className="fe-input" inputMode="decimal" placeholder="0.00" autoFocus value={amount} onChange={e => setAmount(moneyInput(e.target.value))} /></div>
         </div>
       )}
-      {problem && <div className="fe-hint" style={{ color: '#f87171', marginTop: -6, marginBottom: 12 }}>{problem}</div>}
+      {problem && <div className="fe-hint" style={{ color: 'var(--sx-bad)', marginTop: -6, marginBottom: 12 }}>{problem}</div>}
       {mode === 'max' && !problem && !covers && <div className="fe-hint" style={{ marginTop: -6, marginBottom: 12 }}>{formatMoney(Math.round((pick.balance - most) * 100) / 100, cur)} will still be owed.</div>}
       <div className="fe-field" style={{ marginBottom: 0 }}>
         <label className="fe-label" htmlFor="wp-note">Reason <span className="fe-muted" style={{ fontWeight: 500 }}>(the student sees it)</span></label>
@@ -436,7 +436,7 @@ function WalletDepositModal({ wallet, onClose, onDone }: { wallet: MyWallet; onC
         <div className="fe-field">
           <label className="fe-label" htmlFor="wdp-amt">Amount</label>
           <div className="fe-money"><span>{cur}</span><input id="wdp-amt" className="fe-input" inputMode="decimal" placeholder="0.00" value={amount} onChange={e => setAmount(moneyInput(e.target.value))} /></div>
-          {tooMuch && <div className="fe-hint" style={{ color: '#f87171' }}>The wallet limit allows {formatMoney(room!, cur)} more.</div>}
+          {tooMuch && <div className="fe-hint" style={{ color: 'var(--sx-bad)' }}>The wallet limit allows {formatMoney(room!, cur)} more.</div>}
         </div>
         <div className="fe-field">
           <label className="fe-label" htmlFor="wdp-method">Paid by</label>
@@ -481,7 +481,7 @@ function RefundModal({ studentId, name, credit, currency, onClose, onDone }: { s
         <div className="fe-field">
           <label className="fe-label" htmlFor="rf-amt">Amount</label>
           <div className="fe-money"><span>{currency}</span><input id="rf-amt" className="fe-input" inputMode="decimal" value={amount} onChange={e => setAmount(moneyInput(e.target.value))} /></div>
-          {v > credit && <div className="fe-hint" style={{ color: '#f87171' }}>More than the credit.</div>}
+          {v > credit && <div className="fe-hint" style={{ color: 'var(--sx-bad)' }}>More than the credit.</div>}
         </div>
         <div className="fe-field">
           <label className="fe-label" htmlFor="rf-method">Paid back by</label>

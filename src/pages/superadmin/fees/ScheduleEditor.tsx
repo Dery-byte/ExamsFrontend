@@ -123,9 +123,9 @@ export default function ScheduleEditor({ program, row, session, currency, term, 
       busy={saving}
       footer={<>
         <div className="fe-muted" style={{ fontSize: 12.5 }}>
-          {varies ? <>Boarders <strong style={{ color: '#fff', fontSize: 15, margin: '0 8px 0 6px' }}>{formatMoney(boarderTotal, currency)}</strong>
-            Day <strong style={{ color: '#fff', fontSize: 15, marginLeft: 6 }}>{formatMoney(dayTotal, currency)}</strong></>
-            : <>Total <strong style={{ color: '#fff', fontSize: 15, marginLeft: 6 }}>{formatMoney(total, currency)}</strong></>}
+          {varies ? <>Boarders <strong style={{ color: 'var(--sx-ink)', fontSize: 15, margin: '0 8px 0 6px' }}>{formatMoney(boarderTotal, currency)}</strong>
+            Day <strong style={{ color: 'var(--sx-ink)', fontSize: 15, marginLeft: 6 }}>{formatMoney(dayTotal, currency)}</strong></>
+            : <>Total <strong style={{ color: 'var(--sx-ink)', fontSize: 15, marginLeft: 6 }}>{formatMoney(total, currency)}</strong></>}
           {also.length > 0 && <span> · also for {also.length} other level{also.length > 1 ? 's' : ''}</span>}
         </div>
         <div className="fe-foot-actions">

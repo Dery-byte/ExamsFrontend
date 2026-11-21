@@ -67,7 +67,7 @@ export default function FeesPage() {
 
       <div className="fe-head">
         <div className="fe-title">
-          <div className="fe-logo"><Wallet size={24} color="#fff" /></div>
+          <div className="fe-logo"><Wallet size={24} color="var(--brand-contrast)" /></div>
           <div style={{ minWidth: 0 }}>
             <h1 className="fe-h1">Fees &amp; Payments</h1>
             <p className="fe-sub">{rights.canEdit
@@ -95,7 +95,7 @@ export default function FeesPage() {
 
       {isLoading ? <LoadingState /> : isError || !data ? (
         <div className="fe-card"><div className="fe-empty">
-          <AlertCircle size={34} style={{ color: '#f87171' }} />
+          <AlertCircle size={34} style={{ color: 'var(--sx-bad)' }} />
           <h3>Couldn't load fees</h3>
           <p><button className="fe-link" onClick={() => refetch()}>Try again</button></p>
         </div></div>
@@ -161,18 +161,18 @@ function Kpis({ data, periodName }: { data: FeeOverview; periodName: string }) {
   const setRate = totals.levelsTotal ? (totals.levelsSet / totals.levelsTotal) * 100 : 0;
   return (
     <div className="fe-kpis">
-      <Kpi label={data.term ? `Expected for ${periodName.toLowerCase()}` : 'Expected this session'} icon={<Users size={18} />} color="var(--accent-light)"
+      <Kpi label={data.term ? `Expected for ${periodName.toLowerCase()}` : 'Expected this session'} icon={<Users size={18} />} color="var(--sx-accent-text)"
         value={totals.billed == null ? '—' : formatMoney(totals.billed, currency)}
         foot={totals.billed == null ? `Only worked out for the current session` : tx(`${(totals.students ?? 0).toLocaleString()} active students × their fee`)} />
-      <Kpi label="Collected" icon={<TrendingUp size={18} />} color="#34d399" value={formatMoney(totals.collected, currency)}
+      <Kpi label="Collected" icon={<TrendingUp size={18} />} color="var(--sx-ok)" value={formatMoney(totals.collected, currency)}
         foot={totals.billed ? <>
           <div className="fe-bar" style={{ marginBottom: 6 }}><span style={{ width: `${rate}%` }} /></div>
           {rate.toFixed(rate < 10 ? 1 : 0)}% of expected
         </> : `In ${session.name}`} />
-      <Kpi label="Outstanding" icon={<AlertCircle size={18} />} color="#fbbf24"
+      <Kpi label="Outstanding" icon={<AlertCircle size={18} />} color="var(--sx-warn)"
         value={totals.outstanding == null ? '—' : formatMoney(totals.outstanding, currency)}
         foot={totals.outstanding == null ? 'Only worked out for the current session' : 'Still to be paid'} />
-      <Kpi label="Fees set" icon={<CheckCircle2 size={18} />} color="#38bdf8" value={`${totals.levelsSet} / ${totals.levelsTotal}`}
+      <Kpi label="Fees set" icon={<CheckCircle2 size={18} />} color="var(--sx-info)" value={`${totals.levelsSet} / ${totals.levelsTotal}`}
         foot={<>
           <div className="fe-bar" style={{ marginBottom: 6 }}><span style={{ width: `${setRate}%`, background: 'linear-gradient(90deg,#0ea5e9,#38bdf8)' }} /></div>
           {tx('levels have a fee')}
@@ -232,7 +232,7 @@ function Schedules({ data, canEdit, programmesLink, term, periodName, onEdit, on
       <div className="fe-card"><div className="fe-empty">
         <BookMarked size={34} style={{ color: 'rgba(var(--accent-rgb), 0.45)' }} />
         <h3>{tx('No programmes yet')}</h3>
-        <p>{tx('Fees are set per programme and level.')} {programmesLink ? <><Link to={programmesLink} style={{ color: 'var(--accent-light)' }}>{tx('Create a programme')}</Link> first.</> : tx('Ask the Super Admin to create the programmes first.')}</p>
+        <p>{tx('Fees are set per programme and level.')} {programmesLink ? <><Link to={programmesLink} style={{ color: 'var(--sx-accent-text)' }}>{tx('Create a programme')}</Link> first.</> : tx('Ask the Super Admin to create the programmes first.')}</p>
       </div></div>
     );
   }
@@ -250,7 +250,7 @@ function Schedules({ data, canEdit, programmesLink, term, periodName, onEdit, on
       {programs.length === 0 ? (
         <div className="fe-card"><div className="fe-empty">
           {missingOnly && !q ? <>
-            <CheckCircle2 size={34} style={{ color: '#34d399' }} />
+            <CheckCircle2 size={34} style={{ color: 'var(--sx-ok)' }} />
             <h3>{tx('Every level has a fee')}</h3>
             <p>Nothing is missing for {session.name}.</p>
           </> : <>

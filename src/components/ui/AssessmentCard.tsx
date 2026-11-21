@@ -1,11 +1,11 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useStaffBase } from '../../hooks/useStaffBase';
-import { Settings, Trash2, List, Zap, Loader2, Layers, Trophy, Clock, CheckCircle2, Link2, ShieldAlert } from 'lucide-react';
+import { Settings, Trash2, Loader2, Link2, ShieldAlert, ArrowRight, Save, Lock } from 'lucide-react';
+import MoreMenu from './MoreMenu';
 import { copyQuizLink } from '../../utils/quizLink';
 import './AssessmentCard.css';
 import { tx } from '../../utils/terms';
-import { LOCKED_CLASS } from '../../utils/deleteLocks';
 
 interface AssessmentCardProps {
   qId: number;
@@ -20,9 +20,9 @@ interface AssessmentCardProps {
   quizTime: number;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
-  /** Students have results: the delete button looks disabled (the click still explains why). */
+  /** Students have results: delete is shown locked (choosing it still explains why). */
   deleteLocked?: boolean;
-  /** Hover text for the delete button. */
+  /** Explanation shown for delete. */
   deleteHint?: string;
   selectedStatus: string;
   onStatusChange: (id: number, newStatus: string) => void;
@@ -30,108 +30,87 @@ interface AssessmentCardProps {
   updating: boolean;
 }
 
+type Kind = 'OBJ' | 'THEORY' | 'BOTH';
+const kindOf = (t: string): Kind => {
+  const u = (t || '').toUpperCase();
+  return u === 'THEORY' ? 'THEORY' : u === 'BOTH' ? 'BOTH' : 'OBJ';   // 'OBJ' / 'OBJECTIVE' / unknown
+};
+const KIND_LABEL: Record<Kind, string> = { OBJ: 'Objective', THEORY: 'Theory', BOTH: 'Obj + Theory' };
+const KIND_FULL: Record<Kind, string> = { OBJ: 'Objective', THEORY: 'Theory', BOTH: 'Objective + Theory' };
+
+/**
+ * A quiz in the staff Quizzes list, laid out like a listing card: course and title, the key numbers in the brand colour, a status bar (pick Open / Closed, then Save), and a
+ * footer with the type pill, the way into the questions and a "more" menu for the other actions.
+ */
 export default function AssessmentCard({
-  qId,
-  title,
-  quizType,
-  status,
-  category,
-  numberOfQuestions,
-  questionPool,
-  maxMarks,
-  quizTime,
-  onEdit,
-  onDelete,
-  deleteLocked,
-  deleteHint,
-  selectedStatus,
-  onStatusChange,
-  onSync,
-  updating,
+  qId, title, quizType, status, category, numberOfQuestions, questionPool, maxMarks, quizTime,
+  onEdit, onDelete, deleteLocked, deleteHint, selectedStatus, onStatusChange, onSync, updating,
 }: AssessmentCardProps) {
   const staffBase = useStaffBase();
-  const isLive = status === 'OPEN' || status === 'Open';
-  const isTheory = quizType === 'THEORY';
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const kind = kindOf(quizType);
+  const current = (status || 'CLOSED').toUpperCase();
+  const chosen = (selectedStatus || current).toUpperCase();
+  const changed = chosen !== current;
+  const isOpen = current === 'OPEN';
+  const perStudent = questionPool && kind !== 'THEORY';
 
   return (
-    <div className="premium-card">
-      <div className="card-top">
-        <div className="card-top-left">
-          <span className={`type-tag ${isTheory ? 'theory' : 'objective'}`}>
-            {quizType}
-          </span>
-          <div className="status-indicator">
-            <span className={`status-dot ${isLive ? 'live' : 'draft'}`} />
-            <span className="status-text">{status}</span>
-          </div>
+    <article className={`qz-card${menuOpen ? ' menu-open' : ''}`}>
+      <header className="qz-head">
+        <div className="qz-head-text">
+          <p className="qz-course" title={category?.title}>{category?.title || 'No course'}</p>
+          <h3 className="qz-title" title={title}>{title}</h3>
         </div>
-        <div className="card-top-actions">
-          <button
-            className="icon-btn link"
-            onClick={() => copyQuizLink(qId, { title, courseTitle: category?.title })}
-            title={tx("Copy student link")}
-            aria-label={tx("Copy student link")}
-          >
-            <Link2 size={16} />
+      </header>
+
+      <p className="qz-meta">
+        {numberOfQuestions} {perStudent ? tx('per student') : numberOfQuestions === 1 ? 'question' : 'questions'}
+        <span className="qz-sep" aria-hidden>·</span>{maxMarks} marks
+        <span className="qz-sep" aria-hidden>·</span>{quizTime} mins
+      </p>
+
+      <div className={`qz-status${isOpen ? ' is-open' : ''}`}>
+        <span className="qz-state">
+          <span className="qz-dot" aria-hidden />
+          {isOpen ? 'Open to students' : 'Closed'}
+        </span>
+        <div className="qz-status-ctl" role="group" aria-label="Change status">
+          <div className="qz-seg">
+            {(['CLOSED', 'OPEN'] as const).map(v => (
+              <button key={v} type="button" className={`${v === 'OPEN' ? 'v-open' : 'v-closed'}${chosen === v ? ' on' : ''}`} aria-pressed={chosen === v}
+                onClick={() => onStatusChange(qId, v)} disabled={updating}>
+                {v === 'OPEN' ? 'Open' : 'Closed'}
+              </button>
+            ))}
+          </div>
+          <button type="button" className={`qz-save${changed ? ' ready' : ''}`} onClick={onSync} disabled={updating || !changed}
+            title={changed ? `Save: make the quiz ${chosen === 'OPEN' ? 'open' : 'closed'}` : 'Choose Open or Closed, then save'}
+            aria-label={changed ? `Save: make the quiz ${chosen === 'OPEN' ? 'open' : 'closed'}` : 'Save status (no change to save)'}>
+            {updating ? <Loader2 size={14} className="spin" /> : <Save size={14} />} Save
           </button>
-          {/* Straight to the violations report (and the Reset violations button) during the exam */}
-          <Link className="icon-btn" to={`${staffBase}/proctoring/${qId}`}
-            title="Proctoring report" aria-label="Proctoring report">
-            <ShieldAlert size={16} />
+        </div>
+      </div>
+
+      <footer className="qz-foot">
+        <span className="qz-pill" title={KIND_FULL[kind]}>{KIND_LABEL[kind]}</span>
+        <div className="qz-foot-right">
+          <Link to={`${staffBase}/view-questions/${qId}/${encodeURIComponent(title)}`} className="qz-bank">
+            Question bank <ArrowRight size={15} />
           </Link>
-          <div className="card-top-right">
-            <button className="icon-btn" onClick={() => onEdit(qId)} title="Settings">
-              <Settings size={16} />
-            </button>
-            <button className={`icon-btn delete ${deleteLocked ? LOCKED_CLASS : ''}`} onClick={() => onDelete(qId)}
-              title={deleteHint || 'Delete'} aria-label={deleteHint || 'Delete'} aria-disabled={deleteLocked}>
-              <Trash2 size={16} />
-            </button>
-          </div>
+          <MoreMenu
+            onOpenChange={setMenuOpen} label={`More actions for ${title}`}
+            items={[
+              { icon: <Link2 size={16} />, label: tx('Copy student link'), onSelect: () => copyQuizLink(qId, { title, courseTitle: category?.title }) },
+              { icon: <ShieldAlert size={16} />, label: 'Proctoring report', onSelect: () => navigate(`${staffBase}/proctoring/${qId}`) },
+              { icon: <Settings size={16} />, label: 'Quiz settings', onSelect: () => onEdit(qId) },
+              { icon: deleteLocked ? <Lock size={16} /> : <Trash2 size={16} />, label: 'Delete quiz', hint: deleteHint, danger: true, muted: deleteLocked, onSelect: () => onDelete(qId) },
+            ]}
+          />
         </div>
-      </div>
-
-      <div className="card-main">
-        <h3 className="premium-title">{title}</h3>
-        <p className="premium-category">
-          <Layers size={14} />
-          {category?.title || 'Uncategorized'}
-        </p>
-      </div>
-
-      <div className="metrics-row">
-        <div className="metric">
-          <span className="m-label">{questionPool && quizType !== 'THEORY' ? tx('PER STUDENT') : 'ITEMS'}</span>
-          <span className="m-val">{numberOfQuestions}</span>
-        </div>
-        <div className="metric">
-          <span className="m-label">SCORE</span>
-          <span className="m-val">{maxMarks}</span>
-        </div>
-        <div className="metric">
-          <span className="m-label">MINS</span>
-          <span className="m-val">{quizTime}</span>
-        </div>
-      </div>
-
-      <div className="card-bottom">
-        <Link to={`${staffBase}/view-questions/${qId}/${encodeURIComponent(title)}`} className="bank-btn">
-          <List size={16} /> Question Bank
-        </Link>
-        <div className="sync-section">
-          <select 
-            value={selectedStatus} 
-            onChange={(e) => onStatusChange(qId, e.target.value)}
-            className="premium-select"
-          >
-            <option value="CLOSED">Closed</option>
-            <option value="OPEN">Open</option>
-          </select>
-          <button className="sync-btn" onClick={onSync} disabled={updating}>
-            {updating ? <Loader2 size={16} className="spin" /> : <Zap size={16} />}
-          </button>
-        </div>
-      </div>
-    </div>
+      </footer>
+    </article>
   );
 }

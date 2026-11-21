@@ -40,7 +40,7 @@ export default function StoresPage() {
   return (
     <div className="fe">
       <style>{FEE_ADMIN_CSS + BILL_CSS}</style>
-      <AccountsHead icon={<Package size={24} color="#fff" />} title="Stores"
+      <AccountsHead icon={<Package size={24} color="var(--brand-contrast)" />} title="Stores"
         sub={tx('Uniform, books and other items the school keeps: what is in the store, deliveries, and what students are still to collect.')}
         actions={bursar ? <button type="button" className="fe-btn" onClick={() => setOpen({ kind: 'setup' })}><Plus size={15} /> Keep stock of an item</button> : undefined} />
       {stores.data && <Totals items={[
@@ -83,7 +83,7 @@ export default function StoresPage() {
                   <div className="bl-main"><div className="fe-strong"><Link to={`${base}?student=${l.studentId}`} className="fe-link" style={{ color: 'inherit' }}>{l.studentName}</Link>
                     <span className="fe-muted fe-small"> · {l.username}</span></div>
                     <div className="fe-muted fe-small">{l.name}: {l.issued} of {l.quantity} handed over · {l.billTitle} · {formatDate(l.billedAt)}
-                      {(l.billBalance ?? 0) > 0 && <span style={{ color: '#fbbf24' }}> · {formatMoney(l.billBalance, cur)} unpaid</span>}</div></div>
+                      {(l.billBalance ?? 0) > 0 && <span style={{ color: 'var(--sx-warn)' }}> · {formatMoney(l.billBalance, cur)} unpaid</span>}</div></div>
                   <button type="button" className="fe-ghost sm" onClick={() => setHanding(l)} disabled={!l.canHandOver} title={l.canHandOver ? undefined : 'Handed over once the bill is paid'}>
                     <PackageCheck size={13} /> Hand over</button>
                 </li>
@@ -226,7 +226,7 @@ export function HandOverModal({ line, onClose, onDone }: { line: HandOverLine | 
       <div className="fe-field" style={{ marginBottom: 0 }}>
         <label className="fe-label" htmlFor="ho-qty">How many now</label>
         <input id="ho-qty" className="fe-input" inputMode="numeric" style={{ width: '100%' }} value={qty} onChange={e => setQty(e.target.value.replace(/\D/g, '').slice(0, 5))} />
-        {n > left && <div className="fe-hint" style={{ color: '#f87171' }}>Only {left} left on this bill.</div>}
+        {n > left && <div className="fe-hint" style={{ color: 'var(--sx-bad)' }}>Only {left} left on this bill.</div>}
       </div>
     </FeeModal>
   );

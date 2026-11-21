@@ -18,7 +18,7 @@ export default function AccountsDashboard() {
       <style>{FEE_ADMIN_CSS + DASH_CSS}</style>
       <div className="fe-head">
         <div className="fe-title">
-          <div className="fe-logo"><Landmark size={24} color="#fff" /></div>
+          <div className="fe-logo"><Landmark size={24} color="var(--brand-contrast)" /></div>
           <div style={{ minWidth: 0 }}>
             <h1 className="fe-h1">Accounts office</h1>
             <p className="fe-sub">{d ? `${d.me.name} · ${d.me.duty === 'BURSAR' ? 'Bursar' : d.me.duty === 'SUPER_ADMIN' ? 'Super Admin' : 'Cashier'} · ${formatDate(new Date().toISOString())}` : '…'}</p>
@@ -30,7 +30,7 @@ export default function AccountsDashboard() {
       </div>
 
       {isLoading ? <div className="fe-card"><div className="fe-empty"><Loader2 size={26} className="fe-spin" /></div></div>
-        : isError || !d ? <div className="fe-card"><div className="fe-empty"><AlertCircle size={30} style={{ color: '#f87171' }} /><h3>Couldn't load the dashboard</h3>
+        : isError || !d ? <div className="fe-card"><div className="fe-empty"><AlertCircle size={30} style={{ color: 'var(--sx-bad)' }} /><h3>Couldn't load the dashboard</h3>
           <p><button className="fe-link" onClick={() => refetch()}>Try again</button></p></div></div>
         : (
           <>
@@ -41,25 +41,25 @@ export default function AccountsDashboard() {
             )}
 
             <div className="fe-kpis">
-              <Kpi label="Received today" value={formatMoney(d.today.total, d.currency)} icon={<Banknote size={18} />} color="#34d399"
+              <Kpi label="Received today" value={formatMoney(d.today.total, d.currency)} icon={<Banknote size={18} />} color="var(--sx-ok)"
                 foot={`${d.today.count} payment${d.today.count === 1 ? '' : 's'}${d.me.duty !== 'SUPER_ADMIN' ? ` · you took ${formatMoney(d.today.mine, d.currency)}` : ''}`} />
-              <Kpi label="This week" value={formatMoney(d.week.total, d.currency)} icon={<CalendarDays size={18} />} color="#38bdf8" foot="Since Monday" />
-              <Kpi label="This month" value={formatMoney(d.month.total, d.currency)} icon={<TrendingUp size={18} />} color="var(--accent-light)" foot="Since the 1st" />
-              <Kpi label={`Outstanding · ${d.session.name}`} value={formatMoney(d.session.outstanding, d.currency)} icon={<AlertCircle size={18} />} color="#fbbf24"
+              <Kpi label="This week" value={formatMoney(d.week.total, d.currency)} icon={<CalendarDays size={18} />} color="var(--sx-info)" foot="Since Monday" />
+              <Kpi label="This month" value={formatMoney(d.month.total, d.currency)} icon={<TrendingUp size={18} />} color="var(--sx-accent-text)" foot="Since the 1st" />
+              <Kpi label={`Outstanding · ${d.session.name}`} value={formatMoney(d.session.outstanding, d.currency)} icon={<AlertCircle size={18} />} color="var(--sx-warn)"
                 foot={<>
                   <div className="fe-bar" style={{ marginBottom: 6 }}><span style={{ width: `${d.session.owed ? Math.min(100, (d.session.paid / d.session.owed) * 100) : 0}%` }} /></div>
                   {d.session.debtors} of {d.session.students} {tx('students')} still owe
                 </>} />
             </div>
             <div className="fe-kpis">
-              {d.handIn && <Kpi label="Your cash to hand in" value={formatMoney(d.handIn.expectedCash, d.currency)} icon={<HandCoins size={18} />} color="#fbbf24"
+              {d.handIn && <Kpi label="Your cash to hand in" value={formatMoney(d.handIn.expectedCash, d.currency)} icon={<HandCoins size={18} />} color="var(--sx-warn)"
                 foot={<Link to="/accounts/cash-book" className="fe-link">{d.handIn.payments ? `${d.handIn.payments} payment(s) since your last cash-up · hand in` : 'All handed in · cash book'}</Link>} />}
-              <Kpi label="Earlier years (arrears)" value={formatMoney(d.session.arrears ?? 0, d.currency)} icon={<History size={18} />} color="#f87171"
+              <Kpi label="Earlier years (arrears)" value={formatMoney(d.session.arrears ?? 0, d.currency)} icon={<History size={18} />} color="var(--sx-bad)"
                 foot={<Link to="/accounts/year-end" className="fe-link">{d.session.withArrears ?? 0} {tx('students')} owe from before · year end</Link>} />
-              <Kpi label="Concessions this session" value={formatMoney(d.session.discounts ?? 0, d.currency)} icon={<Gift size={18} />} color="var(--accent-light)"
+              <Kpi label="Concessions this session" value={formatMoney(d.session.discounts ?? 0, d.currency)} icon={<Gift size={18} />} color="var(--sx-accent-text)"
                 foot={<Link to="/accounts/concessions" className="fe-link">Fees forgone · concessions</Link>} />
-              <Kpi label="Credit held" value={formatMoney(d.session.credit ?? 0, d.currency)} icon={<Wallet size={18} />} color="#34d399" foot={tx('Paid ahead; used on the next bill or semester')} />
-              {d.wallets && d.wallets.held > 0 && <Kpi label="Held in student wallets" value={formatMoney(d.wallets.held, d.currency)} icon={<PiggyBank size={18} />} color="#34d399"
+              <Kpi label="Credit held" value={formatMoney(d.session.credit ?? 0, d.currency)} icon={<Wallet size={18} />} color="var(--sx-ok)" foot={tx('Paid ahead; used on the next bill or semester')} />
+              {d.wallets && d.wallets.held > 0 && <Kpi label="Held in student wallets" value={formatMoney(d.wallets.held, d.currency)} icon={<PiggyBank size={18} />} color="var(--sx-ok)"
                 foot={<Link to="/accounts/wallets" className="fe-link">{d.wallets.students} {tx('students')} · used only when they choose</Link>} />}
             </div>
 
@@ -132,6 +132,6 @@ const DASH_CSS = `
 .fa-grid > .fe-card { margin-bottom: 0; }
 .fa-grid + .fe-card { margin-top: 16px; }
 .fa-list { list-style: none; margin: 0; padding: 4px 16px 12px; }
-.fa-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13px; }
+.fa-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--sx-line); font-size: 13px; }
 .fa-list li:last-child { border-bottom: none; }
 `;

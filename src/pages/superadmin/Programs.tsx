@@ -19,11 +19,8 @@ type After = 'auto' | 'leave' | number;
 /** Schools: year = the class's year in its section (Primary 4 → 4). */
 interface FormState { name: string; code: string; durationYears: number; departmentId: number | ''; semestersPerLevel: Record<number, number>; terms: number; after: After; year: number | ''; }
 
-const levelColors = ['var(--accent)','var(--brand)','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','var(--accent)','#06b6d4','#84cc16'];
-const levelChipStyle = (i: number): React.CSSProperties => {
-  const c = levelColors[i % levelColors.length];
-  return { background: `color-mix(in srgb, ${c} 13.3%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 26.7%, transparent)`, color: c };
-};
+/** Level / year chips: one brand tint for all (readable under any institution colours). */
+const levelChipStyle = (_i: number): React.CSSProperties => ({ background: 'var(--brand-soft)', border: '1px solid var(--brand-border)', color: 'var(--brand-text)' });
 
 const EMPTY: FormState = { name: '', code: '', durationYears: 4, departmentId: '', semestersPerLevel: {}, terms: 3, after: 'auto', year: '' };
 
@@ -149,7 +146,7 @@ export default function Programs() {
   };
 
   const handleDelete = async (p: Program) => {
-    const res = await Swal.fire({ title: `Delete "${p.name}"?`, text: school ? 'This removes the class. Students still in it must be moved first.' : tx('This will remove the program and all its level configurations.'), icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', background: '#1a1a35', color: '#fff' });
+    const res = await Swal.fire({ title: `Delete "${p.name}"?`, text: school ? 'This removes the class. Students still in it must be moved first.' : tx('This will remove the program and all its level configurations.'), icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', background: 'var(--sx-option)', color: 'var(--sx-ink)' });
     if (!res.isConfirmed) return;
     try { await saDeleteProgram(p.id); setPrograms(prev => prev.filter(x => x.id !== p.id)); toast.success('Deleted.'); if (school) refresh(); }
     catch (e: any) { toast.error(e?.response?.data?.message || 'Delete failed'); }
@@ -160,15 +157,15 @@ export default function Programs() {
     const res = await Swal.fire({
       title: `${p.enabled ? 'Disable' : 'Enable'} "${p.name}"?`,
       html: p.enabled
-        ? tx(`<div style="color:rgba(255,255,255,0.7);font-size:14px">This program will be <b style="color:#f87171">hidden system-wide</b>.<br/>Students, Lecturers, and Admins will no longer see it.</div>`)
-        : tx(`<div style="color:rgba(255,255,255,0.7);font-size:14px">This program will be <b style="color:#34d399">restored</b> and visible to all roles again.</div>`),
+        ? tx(`<div style="color:var(--sx-ink-2);font-size:14px">This program will be <b style="color:#f87171">hidden system-wide</b>.<br/>Students, Lecturers, and Admins will no longer see it.</div>`)
+        : tx(`<div style="color:var(--sx-ink-2);font-size:14px">This program will be <b style="color:#34d399">restored</b> and visible to all roles again.</div>`),
       icon: p.enabled ? 'warning' : 'question',
       showCancelButton: true,
       confirmButtonText: p.enabled ? tx('Disable Program') : tx('Enable Program'),
       confirmButtonColor: p.enabled ? '#ef4444' : '#10b981',
       cancelButtonColor: '#6b7280',
-      background: '#1a1a35',
-      color: '#fff',
+      background: 'var(--sx-option)',
+      color: 'var(--sx-ink)',
     });
     if (!res.isConfirmed) return;
     setTogglingId(p.id);
@@ -245,12 +242,12 @@ export default function Programs() {
       </div>
       {school && oneYear(p) ? (
         <div className="pg-dur">
-          <Calendar size={13} style={{ color: 'rgba(255,255,255,0.4)' }} />
+          <Calendar size={13} style={{ color: 'var(--sx-muted)' }} />
           <span>{[yearOf(p.sectionYear, p.sectionYears), `${p.semestersPerLevel?.[p.configuredLevels?.[0] ?? 1] || periodsPerLevel()} terms a year`].filter(Boolean).join(' · ')}</span>
         </div>
       ) : <>
         <div className="pg-dur">
-          <Calendar size={13} style={{ color: 'rgba(255,255,255,0.4)' }} />
+          <Calendar size={13} style={{ color: 'var(--sx-muted)' }} />
           <span>{p.durationYears} Year{p.durationYears > 1 ? 's' : ''} {tx("Programme")}</span>
         </div>
         <div className="pg-levels">
@@ -283,7 +280,7 @@ export default function Programs() {
       {/* Header */}
       <div className="pg-head">
         <div className="pg-title">
-          <div className="pg-logo"><BookMarked size={20} color="#fff" /></div>
+          <div className="pg-logo"><BookMarked size={20} color="var(--brand-contrast)" /></div>
           <div style={{ minWidth: 0 }}>
             <h1 className="pg-h1">{tx('Programs & Levels')}</h1>
             <p className="pg-sub">{school ? 'The classes in each section, in the order students move through them' : tx('Configure academic programs and their level structure')}</p>
@@ -307,7 +304,7 @@ export default function Programs() {
         {[
           { label: 'Total', count: programs.length, color: '#0ea5e9' },
           { label: 'Enabled', count: programs.filter(p => p.enabled).length, color: '#10b981' },
-          { label: 'Disabled', count: programs.filter(p => !p.enabled).length, color: '#f87171' },
+          { label: 'Disabled', count: programs.filter(p => !p.enabled).length, color: 'var(--sx-bad)' },
         ].map(s => (
           <div key={s.label} className="pg-stat" style={{ borderColor: `color-mix(in srgb, ${s.color} 18.8%, transparent)` }}>
             <span className="pg-stat-n" style={{ color: s.color }}>{s.count}</span>
@@ -421,7 +418,7 @@ export default function Programs() {
               </div>
             )}
 
-            <div className={classForm ? 'pg-row2' : 'pg-form'}>
+            <div className="pg-row2 tight">
               <div>
                 <label className="pg-label" htmlFor="pg-name">{tx("Program Name *")}</label>
                 <input id="pg-name" className="pg-input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder={school ? 'e.g. Primary 1' : 'e.g. Computer Science BS'} />
@@ -457,19 +454,18 @@ export default function Programs() {
             ) : <>
               <div>
                 <span className="pg-label">Duration (Years) *</span>
+                <div className="pg-dur-row">
                 <div className="pg-stepper">
                   <button type="button" onClick={() => setForm(p => ({ ...p, durationYears: Math.max(1, p.durationYears - 1) }))} disabled={form.durationYears <= 1} aria-label="Fewer years">−</button>
                   <span className="pg-stepper-n" aria-live="polite">{form.durationYears}</span>
                   <button type="button" onClick={() => setForm(p => ({ ...p, durationYears: Math.min(10, p.durationYears + 1) }))} disabled={form.durationYears >= 10} aria-label="More years">+</button>
                   <span className="pg-muted">year{form.durationYears > 1 ? 's' : ''}</span>
                 </div>
-                <div style={{ marginTop: 10 }}>
-                  <div className="pg-muted" style={{ fontSize: 11, marginBottom: 6 }}>{tx("Generated Levels:")}</div>
-                  <div className="pg-levels">
-                    {previewLevels.map((lv, i) => (
-                      <span key={lv} className="pg-level" style={levelChipStyle(i)}>{tx("Level ")}{lv}</span>
-                    ))}
-                  </div>
+                <div className="pg-levels" aria-label={tx('Generated Levels')}>
+                  {previewLevels.map((lv, i) => (
+                    <span key={lv} className="pg-level" style={levelChipStyle(i)}>{tx("Level ")}{lv}</span>
+                  ))}
+                </div>
                 </div>
               </div>
 

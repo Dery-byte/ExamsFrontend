@@ -25,8 +25,8 @@ interface Program {
 }
 
 const card = {
-  background: 'rgba(255,255,255,0.03)',
-  border: '1px solid rgba(var(--accent-rgb), 0.15)',
+  background: 'var(--sx-card)',
+  border: '1px solid var(--sx-card-line)',
   borderRadius: 14,
   padding: '20px',
   backdropFilter: 'blur(12px)',
@@ -93,16 +93,16 @@ export default function ManageStudentLevel() {
   });
 
   return (
-    <div style={{ color: '#fff' }}>
+    <div style={{ color: 'var(--sx-ink)' }}>
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,var(--accent),var(--brand))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <GraduationCap size={20} color="#fff" />
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <GraduationCap size={20} color="var(--brand-contrast)" />
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>{tx("Student Semester Management")}</h1>
-            <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>{school ? "Set each student's class and term" : 'Set current level & semester for each student'}</p>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--sx-muted)' }}>{school ? "Set each student's class and term" : 'Set current level & semester for each student'}</p>
           </div>
         </div>
       </div>
@@ -113,29 +113,29 @@ export default function ManageStudentLevel() {
         <input
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder={tx("Search by name, ID, email or program…")}
-          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 14 }}
+          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--sx-ink)', fontSize: 14 }}
         />
         <select value={programFilter} onChange={e => setProgramFilter(e.target.value)}
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(var(--accent-rgb), 0.3)', borderRadius: 8, padding: '6px 12px', color: '#fff', outline: 'none' }}>
-          <option value="" style={{ background: '#1a1a35' }}>{tx("All Programs")}</option>
-          {programs.map(p => <option key={p.id} value={p.id} style={{ background: '#1a1a35' }}>{p.name}</option>)}
+          style={{ background: 'var(--sx-fill)', border: '1px solid rgba(var(--accent-rgb), 0.3)', borderRadius: 8, padding: '6px 12px', color: 'var(--sx-ink)', outline: 'none' }}>
+          <option value="" style={{ background: 'var(--sx-option)' }}>{tx("All Programs")}</option>
+          {programs.map(p => <option key={p.id} value={p.id} style={{ background: 'var(--sx-option)' }}>{p.name}</option>)}
         </select>
-        <button onClick={loadData} style={{ background: 'rgba(var(--accent-rgb), 0.1)', border: '1px solid rgba(var(--accent-rgb), 0.25)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: 'var(--accent-light)' }}>
+        <button onClick={loadData} style={{ background: 'rgba(var(--accent-rgb), 0.1)', border: '1px solid rgba(var(--accent-rgb), 0.25)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: 'var(--sx-accent-text)' }}>
           <RefreshCw size={15} />
         </button>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{filtered.length} {tx("students")}</span>
+        <span style={{ fontSize: 12, color: 'var(--sx-muted)' }}>{filtered.length} {tx("students")}</span>
       </div>
 
       {/* Table */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: 'rgba(255,255,255,0.4)' }}>
-          <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: 12, color: 'var(--accent-light)' }} />
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--sx-muted)' }}>
+          <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: 12, color: 'var(--sx-accent-text)' }} />
           <p>{tx("Loading students…")}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ ...card, textAlign: 'center', padding: 60 }}>
           <Users size={40} style={{ color: 'rgba(var(--accent-rgb), 0.3)', marginBottom: 12 }} />
-          <p style={{ color: 'rgba(255,255,255,0.4)' }}>{tx("No students found.")}</p>
+          <p style={{ color: 'var(--sx-muted)' }}>{tx("No students found.")}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -153,66 +153,66 @@ export default function ManageStudentLevel() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
                     width: 38, height: 38, borderRadius: '50%',
-                    background: 'linear-gradient(135deg,var(--accent),var(--brand))',
+                    background: 'var(--brand)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 14, fontWeight: 700, color: 'var(--brand-contrast)', flexShrink: 0,
                   }}>{student.firstname?.[0]?.toUpperCase() || 'S'}</div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{student.firstname} {student.lastname}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>{student.username} · {student.program || tx('No Program')}</div>
+                    <div style={{ fontSize: 11, color: 'var(--sx-muted)' }}>{student.username} · {student.program || tx('No Program')}</div>
                   </div>
                 </div>
 
                 {/* Level selector (schools: the class) */}
                 {school ? (
                 <div>
-                  <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>{tx("PROGRAM")}</label>
+                  <label style={{ fontSize: 10, color: 'var(--sx-muted)', display: 'block', marginBottom: 4 }}>{tx("PROGRAM")}</label>
                   <select
                     value={edit.programId ?? ''}
                     onChange={e => setEdit(student.id, 'programId', Number(e.target.value))}
                     style={{
                       width: '100%', padding: '7px 10px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
-                      color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
+                      background: 'var(--sx-fill)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
+                      color: 'var(--sx-ink)', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
-                    {!edit.programId && <option value="" style={{ background: '#1a1a35' }}>Choose…</option>}
-                    {programs.map(p => <option key={p.id} value={p.id} style={{ background: '#1a1a35' }}>{p.name}</option>)}
+                    {!edit.programId && <option value="" style={{ background: 'var(--sx-option)' }}>Choose…</option>}
+                    {programs.map(p => <option key={p.id} value={p.id} style={{ background: 'var(--sx-option)' }}>{p.name}</option>)}
                   </select>
                 </div>
                 ) : (
                 <div>
-                  <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>{tx("LEVEL")}</label>
+                  <label style={{ fontSize: 10, color: 'var(--sx-muted)', display: 'block', marginBottom: 4 }}>{tx("LEVEL")}</label>
                   <select
                     value={edit.currentLevel}
                     onChange={e => setEdit(student.id, 'currentLevel', Number(e.target.value))}
                     style={{
                       width: '100%', padding: '7px 10px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
-                      color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
+                      background: 'var(--sx-fill)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
+                      color: 'var(--sx-ink)', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
-                    {levels.map(l => <option key={l} value={l} style={{ background: '#1a1a35' }}>{tx("Level ")}{l}</option>)}
+                    {levels.map(l => <option key={l} value={l} style={{ background: 'var(--sx-option)' }}>{tx("Level ")}{l}</option>)}
                   </select>
                 </div>
                 )}
 
                 {/* Semester selector */}
                 <div>
-                  <label style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: 4 }}>{tx("SEMESTER")}</label>
+                  <label style={{ fontSize: 10, color: 'var(--sx-muted)', display: 'block', marginBottom: 4 }}>{tx("SEMESTER")}</label>
                   <select
                     value={edit.currentSemester}
                     onChange={e => setEdit(student.id, 'currentSemester', Number(e.target.value))}
                     style={{
                       width: '100%', padding: '7px 10px', borderRadius: 8,
-                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
-                      color: '#fff', fontSize: 13, cursor: 'pointer', outline: 'none',
+                      background: 'var(--sx-fill)', border: '1px solid rgba(var(--accent-rgb), 0.25)',
+                      color: 'var(--sx-ink)', fontSize: 13, cursor: 'pointer', outline: 'none',
                     }}
                   >
                     {Array.from({ length: (school
                       ? Object.values(programs.find(p => p.id === (edit.programId ?? student.programId))?.semestersPerLevel ?? {})[0]
                       : programs.find(p => p.id === student.programId)?.semestersPerLevel?.[edit.currentLevel]) || periodsPerLevel() }, (_, i) => i + 1).map(sem => (
-                      <option key={sem} value={sem} style={{ background: '#1a1a35' }}>{tx("Semester ")}{sem}</option>
+                      <option key={sem} value={sem} style={{ background: 'var(--sx-option)' }}>{tx("Semester ")}{sem}</option>
                     ))}
                   </select>
                 </div>
@@ -225,8 +225,8 @@ export default function ManageStudentLevel() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     padding: '8px 14px', borderRadius: 8, cursor: isDirty ? 'pointer' : 'default',
                     border: 'none', fontSize: 13, fontWeight: 600,
-                    background: isDirty ? 'linear-gradient(135deg,var(--accent),var(--brand))' : 'rgba(255,255,255,0.05)',
-                    color: isDirty ? 'var(--brand-contrast)' : 'rgba(255,255,255,0.25)',
+                    background: isDirty ? 'var(--brand)' : 'var(--sx-fill)',
+                    color: isDirty ? 'var(--brand-contrast)' : 'var(--sx-faint)',
                     transition: 'all 0.2s',
                     opacity: saving === student.id ? 0.6 : 1,
                   }}

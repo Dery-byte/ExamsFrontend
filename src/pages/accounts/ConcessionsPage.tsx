@@ -36,7 +36,7 @@ export default function ConcessionsPage() {
   return (
     <div className="fe">
       <style>{FEE_ADMIN_CSS + BILL_CSS}</style>
-      <AccountsHead icon={<Gift size={24} color="#fff" />} title="Concessions"
+      <AccountsHead icon={<Gift size={24} color="var(--brand-contrast)" />} title="Concessions"
         sub={tx('Scholarships, bursaries, sibling and staff-child discounts and waivers on school fees.')}
         actions={bursar && data && !data.closed ? <button type="button" className="fe-btn" onClick={() => setAdding(true)}><Plus size={15} /> Grant concession</button> : undefined} />
       {data && <Totals items={[
@@ -64,7 +64,7 @@ export default function ConcessionsPage() {
                   <div className="fe-muted fe-small">{c.active ? c.note : `Revoked by ${c.revokedBy}: ${c.revokeReason}`} · {c.createdBy} · {formatDate(c.createdAt)}</div>
                 </div>
                 <div className="bl-amt">
-                  {c.studentSaves != null && <div className="fe-strong" style={{ color: '#fbbf24' }}>{formatMoney(c.studentSaves, cur)}</div>}
+                  {c.studentSaves != null && <div className="fe-strong" style={{ color: 'var(--sx-warn)' }}>{formatMoney(c.studentSaves, cur)}</div>}
                   <div className="fe-muted fe-small">{c.active ? (c.studentSaves != null ? 'saved this session' : '') : 'revoked'}</div>
                 </div>
                 {bursar && c.active && !data?.closed && <button type="button" className="fe-icon-btn danger" onClick={() => revoke(c)} aria-label={`Revoke ${c.title}`}><Ban size={14} /></button>}

@@ -47,7 +47,7 @@ export default function FinanceStaff() {
       <style>{FEE_ADMIN_CSS + STAFF_CSS}</style>
       <div className="fe-head">
         <div className="fe-title">
-          <div className="fe-logo"><Landmark size={24} color="#fff" /></div>
+          <div className="fe-logo"><Landmark size={24} color="var(--brand-contrast)" /></div>
           <div style={{ minWidth: 0 }}>
             <h1 className="fe-h1">Finance staff</h1>
             <p className="fe-sub">You (the Super Admin) create the accounts office's logins here. A bursar can do everything a cashier can, so a school with one accountant just makes them the bursar.</p>
@@ -183,14 +183,14 @@ function PasswordDialog({ staff, onClose }: { staff: Staff; onClose: () => void 
 
 const STAFF_CSS = `
 .fs-staff { list-style: none; margin: 0; padding: 4px 18px 10px; }
-.fs-staff li { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06); flex-wrap: wrap; }
+.fs-staff li { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--sx-line); flex-wrap: wrap; }
 .fs-staff li:last-child { border-bottom: none; }
 .fs-staff li.off { opacity: .6; }
 .fs-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--brand)); color: var(--brand-contrast); display: grid; place-items: center; font-weight: 800; flex-shrink: 0; }
 .fs-duty { display: inline-block; margin-left: 8px; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; vertical-align: 1px; }
-.fs-duty.BURSAR { background: rgba(251,191,36,0.15); color: #fbbf24; }
-.fs-duty.CASHIER { background: rgba(56,189,248,0.15); color: #38bdf8; }
-.fs-duty.off { background: rgba(248,113,113,0.15); color: #f87171; }
-.fs-pw { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 26px; font-weight: 800; letter-spacing: .08em; text-align: center; padding: 18px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); overflow-wrap: anywhere; }
+.fs-duty.BURSAR { background: rgba(251,191,36,0.15); color: var(--sx-warn); }
+.fs-duty.CASHIER { background: rgba(56,189,248,0.15); color: var(--sx-info); }
+.fs-duty.off { background: rgba(248,113,113,0.15); color: var(--sx-bad); }
+.fs-pw { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 26px; font-weight: 800; letter-spacing: .08em; text-align: center; padding: 18px; border-radius: 12px; background: var(--sx-fill); border: 1px dashed var(--sx-line-3); overflow-wrap: anywhere; }
 @media (max-width: 640px) { .fs-staff .fe-row-actions { width: 100%; justify-content: flex-start; padding-left: 50px; } }
 `;

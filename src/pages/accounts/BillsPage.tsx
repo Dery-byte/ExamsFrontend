@@ -48,7 +48,7 @@ export default function BillsPage() {
       <style>{FEE_ADMIN_CSS + BILL_CSS}</style>
       <div className="fe-head">
         <div className="fe-title">
-          <div className="fe-logo"><ShoppingBag size={24} color="#fff" /></div>
+          <div className="fe-logo"><ShoppingBag size={24} color="var(--brand-contrast)" /></div>
           <div style={{ minWidth: 0 }}>
             <h1 className="fe-h1">Bills</h1>
             <p className="fe-sub">{bursar ? 'Uniform, books, levies, trips and anything else students pay for apart from fees.'
@@ -176,15 +176,15 @@ function BatchModal({ id, bursar, onClose, onChanged }: { id: number; bursar: bo
   return (
     <FeeModal title={data?.title ?? 'Bill'} subtitle={data ? `${data.audience} · ${formatMoney(data.amountEach, data.currency)} each` : undefined} onClose={onClose} busy={busy}
       footer={<>
-        {bursar && data && data.open > 0 ? <button type="button" className="fe-ghost" style={{ color: '#f87171' }} onClick={cancelAll} disabled={busy}><Ban size={14} /> Cancel for everyone</button> : <span />}
+        {bursar && data && data.open > 0 ? <button type="button" className="fe-ghost" style={{ color: 'var(--sx-bad)' }} onClick={cancelAll} disabled={busy}><Ban size={14} /> Cancel for everyone</button> : <span />}
         <button type="button" className="fe-btn" onClick={onClose} disabled={busy}>Done</button>
       </>}>
       {isLoading || !data ? <Skel /> : (
         <>
           <div className="bl-kpis">
             <div><span>Billed</span><b>{formatMoney(data.billed, data.currency)}</b></div>
-            <div><span>Paid</span><b style={{ color: '#34d399' }}>{formatMoney(data.paid, data.currency)}</b></div>
-            <div><span>Outstanding</span><b style={{ color: '#fbbf24' }}>{formatMoney(data.outstanding, data.currency)}</b></div>
+            <div><span>Paid</span><b style={{ color: 'var(--sx-ok)' }}>{formatMoney(data.paid, data.currency)}</b></div>
+            <div><span>Outstanding</span><b style={{ color: 'var(--sx-warn)' }}>{formatMoney(data.outstanding, data.currency)}</b></div>
           </div>
           <ul className="bl-list bl-lines">
             {data.lines.map((l, i) => (
@@ -276,26 +276,26 @@ function PriceItemModal({ item, categories, currency, onClose, onSaved }: {
 
 const Skel = () => <div style={{ padding: 18, display: 'grid', gap: 10 }}>{[1, 2, 3].map(i => <div key={i} className="fe-skel" style={{ height: 52 }} />)}</div>;
 const Failed = ({ retry }: { retry: () => void }) => (
-  <div className="fe-empty"><AlertCircle size={34} style={{ color: '#f87171' }} /><h3>Couldn't load this</h3><p><button className="fe-link" onClick={retry}>Try again</button></p></div>
+  <div className="fe-empty"><AlertCircle size={34} style={{ color: 'var(--sx-bad)' }} /><h3>Couldn't load this</h3><p><button className="fe-link" onClick={retry}>Try again</button></p></div>
 );
 
 /** Rows shared by the bills, price list and student account pages. */
 export const BILL_CSS = `
-.bl-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.bl-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--sx-line); }
 .bl-list { list-style: none; margin: 0; padding: 0; }
-.bl-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; color: inherit; font: inherit; text-align: left; }
+.bl-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--sx-line); width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; color: inherit; font: inherit; text-align: left; }
 .bl-list > li:last-child > .bl-row, .bl-list > .bl-row:last-child { border-bottom: 0; }
 .bl-click { cursor: pointer; }
-.bl-click:hover { background: rgba(255,255,255,0.03); }
+.bl-click:hover { background: var(--sx-card); box-shadow: var(--sx-card-shadow); }
 .bl-main { flex: 1 1 auto; min-width: 0; }
 .bl-amt { text-align: right; flex: 0 0 auto; }
 .bl-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
-.bl-kpis > div { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 12px; min-width: 0; }
-.bl-kpis span { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: rgba(255,255,255,0.45); }
+.bl-kpis > div { background: var(--sx-fill); border: 1px solid var(--sx-line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.bl-kpis span { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--sx-muted); }
 .bl-kpis b { display: block; font-size: 15px; margin-top: 2px; white-space: nowrap; }
-.bl-lines { margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+.bl-lines { margin-bottom: 14px; border: 1px solid var(--sx-line); border-radius: 12px; }
 .bl-lines li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; font-size: 13.5px; }
-.bl-lines li + li { border-top: 1px solid rgba(255,255,255,0.06); }
+.bl-lines li + li { border-top: 1px solid var(--sx-line); }
 @media (max-width: 560px) {
   .bl-row { flex-wrap: wrap; padding: 12px 14px; }
   .bl-main { flex: 1 1 140px; }

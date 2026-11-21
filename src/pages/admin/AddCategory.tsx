@@ -1,42 +1,34 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { addCategory, getPrograms } from '../../api/endpoints';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../../components/PageHeader';
-import {
-  BookPlus, BookOpen, Layers, FileText, ArrowLeft,
-  ShieldCheck, Loader2, BadgeCheck, GraduationCap,
-  Info, CheckCircle2, Award, Cpu, Sparkles, Calendar, Globe
-} from 'lucide-react';
+import { ArrowLeft, Loader2, GraduationCap, Check, Globe, BookPlus, Circle, CheckCircle2, User } from 'lucide-react';
 import { isSchoolMode, periodsPerLevel, tx, defaultLevels, showLevelPicker } from '../../utils/terms';
+import './AddCategory.css';
 
-const LEVELS = [
-  { label: tx('Level 100'), sub: '1st Year', color: 'var(--brand-text)' },
-  { label: tx('Level 200'), sub: '2nd Year', color: '#2ab57d' },
-  { label: tx('Level 300'), sub: '3rd Year', color: '#f59e0b' },
-  { label: tx('Level 400'), sub: '4th Year', color: '#fd625e' },
-];
+const RECOMMENDED_DESC = 30;
 
-const INFO_ITEMS = [
-  { icon: <CheckCircle2 size={15} />, text: tx('Course is immediately available for faculty assignment after registration.') },
-  { icon: <Award size={15} />, text: tx('Course code must be unique within the academic registry.') },
-  { icon: <ShieldCheck size={15} />, text: 'All changes are logged and auditable by system administrators.' },
-  { icon: <Cpu size={15} />, text: tx('Assessments and quizzes can be linked to this course once registered.') },
-];
-
+/**
+ * New course (subject in a school). One form card in four short sections, a footer bar that stays in
+ * view with the progress and the actions, and on wide screens a live preview of the course card with a
+ * checklist of what is still missing. Validation and the request are unchanged.
+ */
 export default function AddCategory() {
   const navigate = useNavigate();
   const { isSuperAdmin } = useAuth();
   const isSuper = isSuperAdmin();
   const basePath = isSuper ? '/super-admin' : '/admin';
+  const school = isSchoolMode();
   // Global courses (no programs) are open to every student; only the Super Admin can create them.
   const [isGlobal, setIsGlobal] = useState(false);
   // A global course can also be opened to everyone: every student takes its quizzes without registering
   const [openToEveryone, setOpenToEveryone] = useState(false);
-  const [category, setCategory] = useState<{title: string, courseCode: string, level: string, description: string, semester: string, programIds: number[], creditUnits: string}>({ title: '', courseCode: '', level: '', description: '', semester: '', programIds: [], creditUnits: '3' });
+  const [category, setCategory] = useState<{ title: string; courseCode: string; level: string; description: string; semester: string; programIds: number[]; creditUnits: string }>(
+    { title: '', courseCode: '', level: '', description: '', semester: '', programIds: [], creditUnits: '3' });
   const [loading, setLoading] = useState(false);
-  const [focused, setFocused] = useState<string | null>(null);
+  const [tried, setTried] = useState(false);
   const [programs, setPrograms] = useState<{ id: number; name: string; configuredLevels: number[]; semestersPerLevel: Record<number, number> }[]>([]);
 
   useEffect(() => {
@@ -52,683 +44,244 @@ export default function AddCategory() {
   const pickLevel = showLevelPicker(availableLevels.length);
   useEffect(() => {
     if (!pickLevel && availableLevels[0] && category.level !== availableLevels[0]) setCategory(c => ({ ...c, level: availableLevels[0] }));
-  }, [pickLevel, availableLevels[0], category.level]);
+  }, [pickLevel, availableLevels[0], category.level]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A level that the newly chosen lead programme doesn't have is cleared
+  useEffect(() => {
+    if (pickLevel && category.level && !availableLevels.includes(category.level)) setCategory(c => ({ ...c, level: '' }));
+  }, [availableLevels.join(','), pickLevel]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  const semesterCount = leadProgram?.semestersPerLevel?.[Number(category.level)] || periodsPerLevel();
+  useEffect(() => {
+    if (category.semester && Number(category.semester) > semesterCount) setCategory(c => ({ ...c, semester: '' }));
+  }, [semesterCount, category.semester]);
+
+  const set = (k: 'title' | 'description' | 'creditUnits') => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setCategory(c => ({ ...c, [k]: e.target.value }));
+  const toggleProgram = (id: number) => setCategory(c => ({
+    ...c, programIds: c.programIds.includes(id) ? c.programIds.filter(x => x !== id) : [...c.programIds, id],
+  }));
+
+  // What's still missing (also drives the checklist and the footer count)
+  const checks = [
+    { key: 'title', label: tx('Course title'), ok: !!category.title.trim() },
+    { key: 'code', label: tx('Course code'), ok: !!category.courseCode.trim() },
+    { key: 'programs', label: isGlobal ? tx('Global course') : tx('At least one programme'), ok: isGlobal || category.programIds.length > 0 },
+    ...(pickLevel ? [{ key: 'level', label: tx('Level'), ok: !!category.level }] : []),
+    { key: 'semester', label: tx('Semester'), ok: !!category.semester },
+    { key: 'description', label: 'Description', ok: !!category.description.trim() },
+  ];
+  const done = checks.filter(c => c.ok).length;
+  const missing = (key: string) => tried && !checks.find(c => c.key === key)?.ok;
 
   const formSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category.level) { toast.error(tx('Please select an academic level')); return; }
-    if (!category.semester) { toast.error(tx('Please select a semester')); return; }
+    setTried(true);
+    if (!category.title.trim() || !category.courseCode.trim()) { toast.error(tx('Enter the course title and code')); return; }
     if (!isGlobal && category.programIds.length === 0) {
       toast.error(isSuper ? tx('Select at least one program, or mark the course as Global') : tx('Please select at least one program'));
       return;
     }
+    if (!category.level) { toast.error(tx('Please select an academic level')); return; }
+    if (!category.semester) { toast.error(tx('Please select a semester')); return; }
+    if (!category.description.trim()) { toast.error('Add a short description'); return; }
     const loadingToast = toast.loading(tx('Registering course...'));
     setLoading(true);
     try {
       await addCategory({
         ...category,
+        title: category.title.trim(),
+        courseCode: category.courseCode.trim(),
         programIds: isGlobal ? [] : category.programIds,
         openToEveryone: isSuper && isGlobal && openToEveryone,
         creditUnits: category.creditUnits === '' ? null : Number(category.creditUnits),
       });
       toast.success(tx('Course registered successfully'), { id: loadingToast });
-      setTimeout(() => navigate(`${basePath}/courses`), 1200);
+      setTimeout(() => navigate(`${basePath}/courses`), 900);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Registration failed', { id: loadingToast });
+      toast.error(err?.response?.data?.message ?? 'Could not create the course. Please try again.', { id: loadingToast });
     } finally {
       setLoading(false);
     }
   };
 
-  const completedFields = [
-    category.title,
-    category.courseCode,
-    category.level,
-    category.semester,
-    category.description,
-  ].filter(Boolean).length;
-
-  const progressPct = Math.round((completedFields / 5) * 100);
+  const selectedNames = useMemo(
+    () => programs.filter(p => category.programIds.includes(p.id)).map(p => p.name),
+    [programs, category.programIds]);
+  const progLine = isGlobal ? (openToEveryone ? tx('Open to everyone') : tx('All programmes')) : selectedNames.length ? selectedNames.join(', ') : tx('No programme chosen yet');
+  const allSelected = programs.length > 0 && category.programIds.length === programs.length;
 
   return (
-    <div className="acp-page">
-      <PageHeader title={tx("Course Registration")} breadcrumbs={['Admin', tx('Courses'), tx('New Course')]} />
+    <div className="ac">
+      <PageHeader title={tx('New Course')} breadcrumbs={['Admin', tx('Courses'), tx('New Course')]} />
 
-      <div className="acp-shell">
-
-        {/* ── LEFT PANEL: FORM ── */}
-        <div className="acp-form-panel">
-
-          {/* Card header */}
-          <div className="acp-card-hd">
-            <div className="acp-card-hd-left">
-              <div className="acp-card-hd-icon">
-                <GraduationCap size={22} />
-              </div>
-              <div>
-                <h4 className="acp-card-title">{tx("New Course Entry")}</h4>
-                <p className="acp-card-sub">{tx("Establish a new course in the academic registry")}</p>
-              </div>
-            </div>
-            <button className="acp-btn-back" onClick={() => navigate(`${basePath}/courses`)}>
-              <ArrowLeft size={15} />
-              <span>{tx("Course Catalog")}</span>
-            </button>
-          </div>
-
-          {/* Progress bar */}
-          <div className="acp-progress-wrap">
-            <div className="acp-progress-meta">
-              <span className="acp-progress-label">Form Completion</span>
-              <span className="acp-progress-pct">{progressPct}%</span>
-            </div>
-            <div className="acp-progress-track">
-              <div className="acp-progress-fill" style={{ width: `${progressPct}%` }} />
-            </div>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={formSubmit} className="acp-form">
-
-            {/* Row 1: Title + Code */}
-            <div className="acp-row">
-              <div className="acp-field acp-field--flex">
-                <label className="acp-label">
-                  <BookOpen size={13} />
-                  {tx("Official Course Title")}<span className="acp-required">*</span>
-                </label>
-                <div className={`acp-input-wrap ${focused === 'title' ? 'is-focused' : ''} ${category.title ? 'is-filled' : ''}`}>
-                  <input
-                    className="acp-input"
-                    required
-                    value={category.title}
-                    onChange={set('title')}
-                    onFocus={() => setFocused('title')}
-                    onBlur={() => setFocused(null)}
-                    placeholder="e.g. Software Engineering Fundamentals"
-                  />
-                  {category.title && <CheckCircle2 className="acp-input-check" size={16} />}
-                </div>
-                <span className="acp-hint">{tx("Use the full, official course title as listed in the curriculum")}</span>
-              </div>
-
-              <div className="acp-field acp-field--fixed">
-                <label className="acp-label">
-                  <BadgeCheck size={13} />
-                  {tx("Course Code")}<span className="acp-required">*</span>
-                </label>
-                <div className={`acp-input-wrap acp-code-wrap ${focused === 'courseCode' ? 'is-focused' : ''} ${category.courseCode ? 'is-filled' : ''}`}>
-                  <input
-                    className="acp-input acp-code-input"
-                    required
-                    value={category.courseCode}
-                    onChange={e => setCategory(c => ({ ...c, courseCode: e.target.value.toUpperCase() }))}
-                    onFocus={() => setFocused('courseCode')}
-                    onBlur={() => setFocused(null)}
-                    placeholder="e.g. CS301"
-                    maxLength={10}
-                  />
-                </div>
-                <span className="acp-hint">Unique identifier</span>
-              </div>
-              {!isSchoolMode() && <div className="acp-field" style={{ maxWidth: 140 }}>
-                <label className="acp-label" htmlFor="acp-cu">Credit Units</label>
-                <div className="acp-input-wrap is-filled">
-                  <input id="acp-cu" className="acp-input" type="number" min={0} max={30} value={category.creditUnits}
-                    onChange={e => setCategory(c => ({ ...c, creditUnits: e.target.value }))} />
-                </div>
-                <span className="acp-hint">Weight in GPA</span>
-              </div>}
-            </div>
-
-            {/* Row 2a: Global course toggle (Super Admin only) */}
-            {isSuper && (
-              <div className="acp-field">
-                <label style={{
-                  display: 'flex', alignItems: 'center', gap: '10px', padding: '12px',
-                  border: isGlobal ? '1px solid #16a34a' : '1px solid #e2e8f0',
-                  borderRadius: '6px', background: isGlobal ? '#f0fdf4' : '#fff', cursor: 'pointer'
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={isGlobal}
-                    onChange={e => setIsGlobal(e.target.checked)}
-                    style={{ width: '16px', height: '16px', accentColor: '#16a34a' }}
-                  />
-                  <Globe size={16} color="#16a34a" />
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
-                    {tx("Global course")}<span className="acp-hint" style={{ marginLeft: '8px', fontWeight: 400 }}>
-                      {tx("Open to every student regardless of program")}</span>
-                  </span>
-                </label>
-                {isGlobal && (
-                  <label style={{
-                    display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', marginTop: '8px',
-                    border: openToEveryone ? '1px solid #2563eb' : '1px solid #e2e8f0',
-                    borderRadius: '6px', background: openToEveryone ? '#eff6ff' : '#fff', cursor: 'pointer'
-                  }}>
-                    <input
-                      type="checkbox"
-                      checked={openToEveryone}
-                      onChange={e => setOpenToEveryone(e.target.checked)}
-                      style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
-                    />
-                    <Globe size={16} color="#2563eb" />
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
-                      {tx("Open to everyone")}<span className="acp-hint" style={{ marginLeft: '8px', fontWeight: 400 }}>
-                        {tx("Every student can take this course's quizzes without registering for it")}</span>
-                    </span>
-                  </label>
-                )}
-              </div>
-            )}
-
-            {/* Row 2: Programs (Multi-Select) */}
-            {!isGlobal && programs.length > 0 && (
-              <div className="acp-field">
-                <label className="acp-label">
-                  <GraduationCap size={13} /> {tx("Registered Programs")}<span className="acp-required">*</span>
-                  <span className="acp-hint" style={{ marginLeft: '8px' }}>(Select all that apply)</span>
-                </label>
-                <div className="acp-programs-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px' }}>
-                  {programs.map(p => {
-                    const isSelected = category.programIds.includes(p.id);
-                    return (
-                      <label key={p.id} style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px',
-                        border: isSelected ? '1px solid var(--brand)' : '1px solid #e2e8f0',
-                        borderRadius: '6px', background: isSelected ? '#5156be0a' : '#fff',
-                        cursor: 'pointer', transition: 'all 0.2s'
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            setCategory(c => {
-                              const newIds = e.target.checked 
-                                ? [...c.programIds, p.id] 
-                                : c.programIds.filter(id => id !== p.id);
-                              return { ...c, programIds: newIds };
-                            });
-                          }}
-                          style={{ width: '16px', height: '16px', accentColor: 'var(--brand)' }}
-                        />
-                        <span style={{ fontSize: '14px', fontWeight: isSelected ? 600 : 500, color: '#334155' }}>
-                          {p.name}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Row 3: Academic Level */}
-            {pickLevel && <div className="acp-field">
-              <label className="acp-label">
-                <Layers size={13} />
-                {tx("Academic Level")}<span className="acp-required">*</span>
-              </label>
-              <div className="acp-level-grid">
-                {availableLevels.map((lv, i) => {
-                  const colors = ['var(--brand)','#2ab57d','#f59e0b','#fd625e','#0ea5e9','var(--accent)','#ec4899','#06b6d4','#84cc16','#f43f5e'];
-                  const color = colors[i % colors.length];
-                  const yearSuffix = ['st','nd','rd'][i] || 'th';
-                  return (
-                    <button key={lv} type="button"
-                      onClick={() => setCategory(c => ({ ...c, level: lv }))}
-                      className={`acp-level-btn ${category.level === lv ? 'is-active' : ''}`}
-                      style={category.level === lv ? { '--lv-color': color, borderColor: color, background: `color-mix(in srgb, ${color} 7.1%, transparent)` } as any : { '--lv-color': color } as any}
-                    >
-                      <span className="acp-level-dot" style={{ background: color }} />
-                      <div className="acp-level-info">
-                        <span className="acp-level-name">{tx("Level ")}{lv}</span>
-                        <span className="acp-level-sub">{i + 1}{yearSuffix} Year</span>
-                      </div>
-                      {category.level === lv && <CheckCircle2 size={16} className="acp-level-check" style={{ color }} />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>}
-
-            {/* Row 4: Semester */}
-            <div className="acp-field">
-              <label className="acp-label">
-                <Calendar size={13} /> {tx("Semester ")}<span className="acp-required">*</span>
-              </label>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {Array.from({ length: (leadProgram?.semestersPerLevel?.[Number(category.level)] || periodsPerLevel()) }, (_, i) => {
-                  const val = String(i + 1);
-                  const label = tx(`Semester ${val}`);
-                  const sub = i === 0 ? 'First Half' : i === 1 ? 'Second Half' : `Part ${val}`;
-                  return (
-                    <button key={val} type="button"
-                      onClick={() => setCategory(c => ({ ...c, semester: val }))}
-                      className={`acp-level-btn ${category.semester === val ? 'is-active' : ''}`}
-                      style={category.semester === val ? { '--lv-color': 'var(--brand)', borderColor: 'var(--brand)', background: 'rgba(var(--brand-rgb), 0.08)', flex: 1, minWidth: 120 } as any : { '--lv-color': 'var(--brand)', flex: 1, minWidth: 120 } as any}
-                    >
-                      <span className="acp-level-dot" style={{ background: 'var(--brand)' }} />
-                      <div className="acp-level-info">
-                        <span className="acp-level-name">{label}</span>
-                        <span className="acp-level-sub">{sub}</span>
-                      </div>
-                      {category.semester === val && <CheckCircle2 size={16} className="acp-level-check" style={{ color: 'var(--brand-text)' }} />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Row 5: Description */}
-            <div className="acp-field">
-              <label className="acp-label">
-                <FileText size={13} />
-                Course Synopsis &amp; Objectives
-                <span className="acp-required">*</span>
-              </label>
-              <div className={`acp-input-wrap acp-area-wrap ${focused === 'description' ? 'is-focused' : ''} ${category.description ? 'is-filled' : ''}`}>
-                <textarea
-                  className="acp-input acp-area"
-                  required
-                  rows={5}
-                  value={category.description}
-                  onChange={set('description')}
-                  onFocus={() => setFocused('description')}
-                  onBlur={() => setFocused(null)}
-                  placeholder={tx("Summarize course content, prerequisites, and primary learning outcomes...")}
-                />
-                <span className="acp-area-count">{category.description.length} chars</span>
-              </div>
-              <span className="acp-hint">{tx("Minimum 30 characters recommended for a meaningful course description")}</span>
-            </div>
-
-            {/* Footer */}
-            <div className="acp-footer">
-              <button type="button" className="acp-btn-discard" onClick={() => navigate(`${basePath}/courses`)}>
-                Discard
-              </button>
-              <button type="submit" className="acp-btn-submit" disabled={loading}>
-                {loading
-                  ? <><Loader2 size={17} className="acp-spin" /> Registering…</>
-                  : <><BookPlus size={17} /> {tx("Register Course")}</>
-                }
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* ── RIGHT PANEL: SIDEBAR ── */}
-        <aside className="acp-sidebar">
-
-          {/* Decorative header */}
-          <div className="acp-sb-banner">
-            <div className="acp-sb-banner-pattern" />
-            <div className="acp-sb-banner-body">
-              <div className="acp-sb-icon"><Sparkles size={20} /></div>
-              <h5 className="acp-sb-title">Registry Guide</h5>
-              <p className="acp-sb-sub">{tx("Everything you need to know about course registration")}</p>
-            </div>
-          </div>
-
-          {/* Completion status */}
-          <div className="acp-sb-completion">
-            <div className="acp-sb-completion-ring" style={{ '--pct': progressPct } as any}>
-              <svg viewBox="0 0 56 56">
-                <circle cx="28" cy="28" r="24" className="ring-track" />
-                <circle cx="28" cy="28" r="24" className="ring-fill"
-                  strokeDasharray={`${(progressPct / 100) * 150.8} 150.8`} />
-              </svg>
-              <span className="acp-sb-pct">{progressPct}<em>%</em></span>
-            </div>
-            <div>
-              <p className="acp-sb-completion-label">Fields Complete</p>
-              <p className="acp-sb-completion-sub">{completedFields} of 4 required fields</p>
-            </div>
-          </div>
-
-          {/* Info items */}
-          <div className="acp-sb-info-list">
-            <p className="acp-sb-section-title"><Info size={12} /> What happens next?</p>
-            {INFO_ITEMS.map((item, i) => (
-              <div key={i} className="acp-sb-info-item">
-                <div className="acp-sb-info-ico">{item.icon}</div>
-                <p className="acp-sb-info-text">{item.text}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Level legend (universities: a school class is one year) */}
-          {!isSchoolMode() && <div className="acp-sb-level-legend">
-            <p className="acp-sb-section-title"><Layers size={12} /> {tx("Level Structure")}</p>
-            {LEVELS.map(lv => (
-              <div key={lv.label} className="acp-sb-level-row">
-                <span className="acp-sb-level-dot" style={{ background: lv.color }} />
-                <span className="acp-sb-level-name">{lv.label}</span>
-                <span className="acp-sb-level-sub">— {lv.sub}</span>
-              </div>
-            ))}
-          </div>}
-        </aside>
+      <div className="ac-head">
+        <Link to={`${basePath}/courses`} className="ac-back"><ArrowLeft size={16} /> {tx('Courses')}</Link>
+        <h2>{tx('New course')}</h2>
+        <p>{tx('Add a course, choose who takes it and when. You can give it a lecturer and quizzes afterwards.')}</p>
       </div>
 
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+      <div className="ac-shell">
+        <form className="ac-card" onSubmit={formSubmit} noValidate>
 
-        /* ═══════════════════════════════════════
-           PAGE WRAPPER
-        ═══════════════════════════════════════ */
-        .acp-page {
-          font-family: 'Inter', sans-serif;
-          color: #2a3142;
-          padding: 0 0 60px;
-          animation: acpFadeIn 0.4s ease-out;
-        }
-        @keyframes acpFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+          {/* 1 · Details */}
+          <section className="ac-sec">
+            <header className="ac-sec-head"><span className="ac-step">1</span><div><h3>{tx('Course details')}</h3><p>{tx('The name and code students and staff will see.')}</p></div></header>
+            <div className={`ac-grid ${school ? 'two' : 'three'}`}>
+              <div className={`ac-field span-title${missing('title') ? ' bad' : ''}`}>
+                <label htmlFor="ac-title">{tx('Course title')} <i>*</i></label>
+                <input id="ac-title" className="ac-input" value={category.title} onChange={set('title')} placeholder={school ? 'e.g. Integrated Science' : 'e.g. Software Engineering'} autoComplete="off" />
+              </div>
+              <div className={`ac-field${missing('code') ? ' bad' : ''}`}>
+                <label htmlFor="ac-code">{tx('Course code')} <i>*</i></label>
+                <input id="ac-code" className="ac-input ac-mono" value={category.courseCode} maxLength={10} autoCapitalize="characters" autoComplete="off"
+                  onChange={e => setCategory(c => ({ ...c, courseCode: e.target.value.toUpperCase() }))} placeholder={school ? 'e.g. SCI' : 'e.g. CSC201'} />
+              </div>
+              {!school && (
+                <div className="ac-field">
+                  <label htmlFor="ac-cu">Credit units</label>
+                  <input id="ac-cu" className="ac-input" type="number" inputMode="numeric" min={0} max={30} value={category.creditUnits} onChange={set('creditUnits')} />
+                </div>
+              )}
+            </div>
+            <p className="ac-help">{tx('Use the official title from the curriculum. The code must be unique.')}</p>
+          </section>
 
-        /* ═══════════════════════════════════════
-           SHELL (2-col grid on desktop)
-        ═══════════════════════════════════════ */
-        .acp-shell {
-          display: grid;
-          grid-template-columns: 1fr 320px;
-          gap: 24px;
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 0 24px;
-          align-items: start;
-        }
+          {/* 2 · Who takes it */}
+          <section className="ac-sec">
+            <header className="ac-sec-head"><span className="ac-step">2</span><div><h3>{tx('Who takes it')}</h3><p>{tx('Students in the programmes you pick can register for this course.')}</p></div></header>
 
-        /* ═══════════════════════════════════════
-           FORM PANEL CARD
-        ═══════════════════════════════════════ */
-        .acp-form-panel {
-          background: #fff;
-          border-radius: 20px;
-          border: 1px solid #eff0f2;
-          box-shadow: 0 4px 30px rgba(18,38,63,0.07);
-          overflow: hidden;
-          position: relative;
-        }
-        .acp-form-panel::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 4px;
-          background: linear-gradient(90deg, var(--brand) 0%, #2ab57d 50%, #f59e0b 100%);
-        }
+            {isSuper && (
+              <div className="ac-seg" role="radiogroup" aria-label="Who takes it">
+                <button type="button" role="radio" aria-checked={!isGlobal} className={!isGlobal ? 'on' : undefined} onClick={() => setIsGlobal(false)}>
+                  <GraduationCap size={16} /> <span><b>{tx('Selected programmes')}</b><small>{tx('Only the programmes you tick')}</small></span>
+                </button>
+                <button type="button" role="radio" aria-checked={isGlobal} className={isGlobal ? 'on' : undefined} onClick={() => setIsGlobal(true)}>
+                  <Globe size={16} /> <span><b>{tx('Global course')}</b><small>{tx('Every programme')}</small></span>
+                </button>
+              </div>
+            )}
 
-        /* Card header */
-        .acp-card-hd {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 24px 32px;
-          border-bottom: 1px solid #f1f5f9;
-          background: #fafbfc;
-          flex-wrap: wrap;
-          gap: 14px;
-        }
-        .acp-card-hd-left { display: flex; align-items: center; gap: 16px; }
-        .acp-card-hd-icon {
-          width: 48px; height: 48px; border-radius: 14px;
-          background: linear-gradient(135deg, var(--brand), var(--brand));
-          display: flex; align-items: center; justify-content: center;
-          color: var(--brand-contrast); flex-shrink: 0;
-          box-shadow: 0 4px 14px rgba(var(--brand-rgb), 0.3);
-        }
-        .acp-card-title { font-size: 17px; font-weight: 800; color: #2a3142; margin: 0 0 3px; letter-spacing: -0.3px; }
-        .acp-card-sub { font-size: 12px; color: #adb5bd; font-weight: 500; margin: 0; }
+            {isSuper && isGlobal && (
+              <label className="ac-switch-row">
+                <span className="ac-switch-text">
+                  <b>{tx('Open to everyone')}</b>
+                  <small>{tx("Every student can take this course's quizzes without registering for it.")}</small>
+                </span>
+                <input type="checkbox" className="ac-switch" checked={openToEveryone} onChange={e => setOpenToEveryone(e.target.checked)} />
+              </label>
+            )}
 
-        .acp-btn-back {
-          display: inline-flex; align-items: center; gap: 7px;
-          padding: 9px 16px; border-radius: 10px;
-          border: 1.5px solid #e2e8f0; background: #fff;
-          color: var(--brand-text); font-size: 12px; font-weight: 700;
-          cursor: pointer; transition: all 0.2s;
-          white-space: nowrap;
-        }
-        .acp-btn-back:hover { background: #f0f1ff; border-color: var(--brand-border); }
+            {!isGlobal && (
+              programs.length === 0 ? (
+                <p className="ac-empty">{tx('No programmes yet. Add programmes first, or make this a Global course.')}</p>
+              ) : (
+                <div className={`ac-progs-wrap${missing('programs') ? ' bad' : ''}`}>
+                  <div className="ac-progs-bar">
+                    <span>{tx('Programmes')} <i>*</i> <em>{category.programIds.length} of {programs.length} selected</em></span>
+                    <button type="button" className="ac-link" onClick={() => setCategory(c => ({ ...c, programIds: allSelected ? [] : programs.map(p => p.id) }))}>
+                      {allSelected ? 'Clear' : 'Select all'}
+                    </button>
+                  </div>
+                  <div className="ac-progs">
+                    {programs.map(p => {
+                      const on = category.programIds.includes(p.id);
+                      return (
+                        <button key={p.id} type="button" className={`ac-prog${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggleProgram(p.id)}>
+                          <span className="ac-prog-box">{on && <Check size={13} strokeWidth={3} />}</span>
+                          <span className="ac-prog-name">{p.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )
+            )}
+          </section>
 
-        /* Progress bar */
-        .acp-progress-wrap {
-          padding: 16px 32px;
-          background: #fafbfc;
-          border-bottom: 1px solid #f1f5f9;
-        }
-        .acp-progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .acp-progress-label { font-size: 10px; font-weight: 700; color: #adb5bd; text-transform: uppercase; letter-spacing: 0.8px; }
-        .acp-progress-pct { font-size: 12px; font-weight: 800; color: var(--brand-text); }
-        .acp-progress-track { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
-        .acp-progress-fill {
-          height: 100%; border-radius: 99px;
-          background: linear-gradient(90deg, var(--brand), #2ab57d);
-          transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
-        }
+          {/* 3 · When */}
+          <section className="ac-sec">
+            <header className="ac-sec-head"><span className="ac-step">3</span><div><h3>{tx('When it is taught')}</h3><p>{pickLevel ? tx('The level and semester students take it in.') : tx('The semester students take it in.')}</p></div></header>
+            {pickLevel && (
+              <div className={`ac-field${missing('level') ? ' bad' : ''}`}>
+                <span className="ac-label">{tx('Level')} <i>*</i></span>
+                <div className="ac-pills" role="radiogroup" aria-label={tx('Level')}>
+                  {availableLevels.map((lv, i) => (
+                    <button key={lv} type="button" role="radio" aria-checked={category.level === lv} className={category.level === lv ? 'on' : undefined}
+                      onClick={() => setCategory(c => ({ ...c, level: lv }))}>
+                      <b>{tx('Level ')}{lv}</b><small>{school ? '' : `Year ${i + 1}`}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className={`ac-field${missing('semester') ? ' bad' : ''}`}>
+              <span className="ac-label">{tx('Semester')} <i>*</i></span>
+              <div className="ac-pills" role="radiogroup" aria-label={tx('Semester')}>
+                {Array.from({ length: semesterCount }, (_, i) => String(i + 1)).map(val => (
+                  <button key={val} type="button" role="radio" aria-checked={category.semester === val} className={category.semester === val ? 'on' : undefined}
+                    onClick={() => setCategory(c => ({ ...c, semester: val }))}>
+                    <b>{tx(`Semester ${val}`)}</b>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
 
-        /* ═══════════════════════════════════════
-           FORM BODY
-        ═══════════════════════════════════════ */
-        .acp-form { display: flex; flex-direction: column; gap: 26px; padding: 32px; }
+          {/* 4 · Description */}
+          <section className="ac-sec">
+            <header className="ac-sec-head"><span className="ac-step">4</span><div><h3>Description</h3><p>{tx('What the course covers, so students know what to expect.')}</p></div></header>
+            <div className={`ac-field${missing('description') ? ' bad' : ''}`}>
+              <label htmlFor="ac-desc" className="ac-sr">Description</label>
+              <textarea id="ac-desc" className="ac-input ac-area" rows={4} value={category.description} onChange={set('description')}
+                placeholder={tx('Topics, prerequisites and what students will be able to do afterwards…')} />
+              <div className="ac-count">
+                <span>{category.description.trim().length < RECOMMENDED_DESC ? `At least ${RECOMMENDED_DESC} characters recommended` : 'Looks good'}</span>
+                <span>{category.description.length}</span>
+              </div>
+            </div>
+          </section>
 
-        .acp-row { display: flex; gap: 18px; }
-        .acp-field { display: flex; flex-direction: column; gap: 7px; }
-        .acp-field--flex { flex: 1; min-width: 0; }
-        .acp-field--fixed { width: 150px; flex-shrink: 0; }
+          {/* Footer: progress + actions, stays in view */}
+          <footer className="ac-foot">
+            <div className="ac-foot-progress" aria-live="polite">
+              <span className="ac-bar"><span style={{ width: `${(done / checks.length) * 100}%` }} /></span>
+              <span><b>{done}</b> of {checks.length} done</span>
+            </div>
+            <div className="ac-foot-actions">
+              <button type="button" className="ac-btn ghost" onClick={() => navigate(`${basePath}/courses`)} disabled={loading}>Cancel</button>
+              <button type="submit" className="ac-btn primary" disabled={loading}>
+                {loading ? <><Loader2 size={16} className="ac-spin" /> Creating…</> : <><BookPlus size={16} /> {tx('Create course')}</>}
+              </button>
+            </div>
+          </footer>
+        </form>
 
-        .acp-label {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 10px; font-weight: 800; color: #74788d;
-          text-transform: uppercase; letter-spacing: 0.9px;
-        }
-        .acp-required { color: #fd625e; margin-left: 1px; }
+        {/* Preview + checklist (wide screens) */}
+        <aside className="ac-aside" aria-label="Preview">
+          <p className="ac-aside-title">Preview</p>
+          <div className="ac-preview">
+            <div className="ac-pv-tags">
+              <span className="ac-pv-code">{category.courseCode || 'CODE'}</span>
+              {pickLevel && category.level && <span className="ac-pv-tag">{tx('Level ')}{category.level}</span>}
+              {!school && category.creditUnits !== '' && <span className="ac-pv-tag">{category.creditUnits} {Number(category.creditUnits) === 1 ? 'credit' : 'credits'}</span>}
+            </div>
+            <h4 className={category.title ? undefined : 'ph'}>{category.title || tx('Course title')}</h4>
+            <p className="ac-pv-progs"><GraduationCap size={14} /><span>{progLine}</span></p>
+            <p className={`ac-pv-desc${category.description ? '' : ' ph'}`}>{category.description || 'The description appears here.'}</p>
+            <div className="ac-pv-foot"><span className="ac-pv-av"><User size={14} /></span><span>{tx('No lecturer yet')}</span></div>
+          </div>
 
-        /* Input wrapper */
-        .acp-input-wrap {
-          display: flex; align-items: center;
-          border: 1.5px solid #e2e8f0; border-radius: 12px;
-          background: #f8f9ff;
-          transition: all 0.2s;
-          overflow: hidden;
-          position: relative;
-        }
-        .acp-input-wrap.is-focused { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.1); }
-        .acp-input-wrap.is-filled:not(.is-focused) { border-color: #c7f0e0; background: #fff; }
-
-        .acp-input {
-          flex: 1; border: none; outline: none; background: transparent;
-          padding: 13px 16px; font-size: 14px; font-weight: 600; color: #2a3142;
-          min-width: 0; width: 100%;
-        }
-        .acp-input::placeholder { color: #c5cad8; font-weight: 500; }
-
-        .acp-input-check {
-          color: #2ab57d; margin-right: 14px; flex-shrink: 0;
-          animation: checkPop 0.2s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @keyframes checkPop { from { transform: scale(0); } to { transform: scale(1); } }
-
-        /* Code input */
-        .acp-code-wrap { justify-content: center; }
-        .acp-code-input { text-align: center; font-weight: 900; font-size: 16px; color: var(--brand-text); letter-spacing: 0.05em; }
-
-        /* Textarea */
-        .acp-area-wrap { align-items: flex-start; flex-direction: column; padding-bottom: 6px; }
-        .acp-area { resize: vertical; min-height: 120px; line-height: 1.65; }
-        .acp-area-count {
-          align-self: flex-end; margin-right: 14px;
-          font-size: 10px; font-weight: 700; color: #c5cad8;
-        }
-
-        .acp-hint { font-size: 11px; color: #c5cad8; font-weight: 500; padding-left: 2px; }
-
-        /* ═══════════════════════════════════════
-           LEVEL SELECTOR
-        ═══════════════════════════════════════ */
-        .acp-level-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
-        }
-        .acp-level-btn {
-          display: flex; align-items: center; gap: 10px;
-          padding: 12px 14px; border-radius: 12px;
-          border: 1.5px solid #e2e8f0; background: #fff;
-          cursor: pointer; transition: all 0.2s;
-          text-align: left; position: relative;
-        }
-        .acp-level-btn:hover { background: #f8f9ff; border-color: var(--brand-border); transform: translateY(-1px); }
-        .acp-level-btn.is-active { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
-        .acp-level-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-        .acp-level-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-        .acp-level-name { font-size: 12px; font-weight: 800; color: #2a3142; white-space: nowrap; }
-        .acp-level-sub { font-size: 10px; font-weight: 600; color: #adb5bd; text-transform: uppercase; letter-spacing: 0.5px; }
-        .acp-level-check { flex-shrink: 0; animation: checkPop 0.2s cubic-bezier(0.34,1.56,0.64,1); }
-
-        /* ═══════════════════════════════════════
-           FOOTER ACTIONS
-        ═══════════════════════════════════════ */
-        .acp-footer {
-          display: flex; align-items: center; justify-content: flex-end;
-          gap: 12px; padding-top: 24px;
-          border-top: 1px solid #f1f5f9;
-        }
-        .acp-btn-discard {
-          padding: 11px 22px; border-radius: 10px;
-          border: 1.5px solid #e2e8f0; background: #fff;
-          color: #74788d; font-size: 13px; font-weight: 700;
-          cursor: pointer; transition: all 0.2s;
-        }
-        .acp-btn-discard:hover { background: #f8f9fa; color: #2a3142; border-color: #d1d5db; }
-        .acp-btn-submit {
-          display: inline-flex; align-items: center; gap: 9px;
-          padding: 11px 28px; border-radius: 10px; border: none;
-          background: linear-gradient(135deg, var(--brand), var(--brand));
-          color: var(--brand-contrast); font-size: 13px; font-weight: 800;
-          cursor: pointer; transition: all 0.2s;
-          box-shadow: 0 4px 14px rgba(var(--brand-rgb), 0.35);
-        }
-        .acp-btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(var(--brand-rgb), 0.42); }
-        .acp-btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
-        .acp-spin { animation: acpSpin 1s linear infinite; }
-        @keyframes acpSpin { to { transform: rotate(360deg); } }
-
-        /* ═══════════════════════════════════════
-           SIDEBAR
-        ═══════════════════════════════════════ */
-        .acp-sidebar {
-          display: flex; flex-direction: column; gap: 16px;
-          position: sticky; top: 80px;
-        }
-
-        /* Banner */
-        .acp-sb-banner {
-          border-radius: 18px; overflow: hidden; position: relative;
-          background: linear-gradient(135deg, var(--brand-hover) 0%, var(--brand) 50%, var(--brand) 100%);
-        }
-        .acp-sb-banner-pattern {
-          position: absolute; inset: 0;
-          background: radial-gradient(ellipse at top right, rgba(255,255,255,0.15), transparent 60%),
-                      radial-gradient(ellipse at bottom left, rgba(0,0,0,0.1), transparent 60%);
-        }
-        .acp-sb-banner-body {
-          position: relative; z-index: 1; padding: 28px 24px;
-        }
-        .acp-sb-icon {
-          width: 42px; height: 42px; border-radius: 12px;
-          background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-          display: flex; align-items: center; justify-content: center;
-          color: #fff; margin-bottom: 14px;
-        }
-        .acp-sb-title { font-size: 16px; font-weight: 800; color: #fff; margin: 0 0 6px; }
-        .acp-sb-sub { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500; margin: 0; line-height: 1.5; }
-
-        /* Completion ring */
-        .acp-sb-completion {
-          background: #fff; border-radius: 16px;
-          border: 1px solid #eff0f2;
-          box-shadow: 0 2px 12px rgba(18,38,63,0.05);
-          padding: 20px 24px;
-          display: flex; align-items: center; gap: 18px;
-        }
-        .acp-sb-completion-ring { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
-        .acp-sb-completion-ring svg { width: 56px; height: 56px; transform: rotate(-90deg); }
-        .ring-track { fill: none; stroke: #f1f5f9; stroke-width: 4; }
-        .ring-fill { fill: none; stroke: var(--brand); stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray 0.4s cubic-bezier(0.4,0,0.2,1); }
-        .acp-sb-pct {
-          position: absolute; inset: 0;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 13px; font-weight: 800; color: #2a3142;
-        }
-        .acp-sb-pct em { font-size: 9px; font-weight: 700; color: #adb5bd; font-style: normal; }
-        .acp-sb-completion-label { font-size: 14px; font-weight: 800; color: #2a3142; margin: 0 0 3px; }
-        .acp-sb-completion-sub { font-size: 11px; color: #adb5bd; font-weight: 500; margin: 0; }
-
-        /* Info list */
-        .acp-sb-info-list {
-          background: #fff; border-radius: 16px;
-          border: 1px solid #eff0f2;
-          box-shadow: 0 2px 12px rgba(18,38,63,0.05);
-          padding: 20px 24px;
-          display: flex; flex-direction: column; gap: 14px;
-        }
-        .acp-sb-section-title {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 10px; font-weight: 800; color: #adb5bd;
-          text-transform: uppercase; letter-spacing: 0.9px;
-          margin: 0 0 4px;
-        }
-        .acp-sb-info-item { display: flex; align-items: flex-start; gap: 10px; }
-        .acp-sb-info-ico {
-          width: 28px; height: 28px; border-radius: 8px;
-          background: rgba(var(--brand-rgb), 0.08); color: var(--brand-text);
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-        .acp-sb-info-text { font-size: 12px; color: #74788d; font-weight: 500; line-height: 1.55; margin: 4px 0 0; }
-
-        /* Level legend */
-        .acp-sb-level-legend {
-          background: #fff; border-radius: 16px;
-          border: 1px solid #eff0f2;
-          box-shadow: 0 2px 12px rgba(18,38,63,0.05);
-          padding: 20px 24px;
-          display: flex; flex-direction: column; gap: 10px;
-        }
-        .acp-sb-level-row { display: flex; align-items: center; gap: 10px; }
-        .acp-sb-level-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-        .acp-sb-level-name { font-size: 12px; font-weight: 800; color: #2a3142; }
-        .acp-sb-level-sub { font-size: 11px; color: #adb5bd; font-weight: 500; }
-
-        /* ═══════════════════════════════════════
-           RESPONSIVE
-        ═══════════════════════════════════════ */
-        @media (max-width: 1024px) {
-          .acp-shell { grid-template-columns: 1fr; }
-          .acp-sidebar { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
-          .acp-sb-banner { grid-column: 1 / -1; }
-        }
-        @media (max-width: 768px) {
-          .acp-shell { padding: 0 16px; }
-          .acp-card-hd { padding: 20px 20px; }
-          .acp-progress-wrap { padding: 14px 20px; }
-          .acp-form { padding: 20px; gap: 20px; }
-          .acp-row { flex-direction: column; }
-          .acp-field--fixed { width: 100%; }
-          .acp-level-grid { grid-template-columns: repeat(2, 1fr); }
-          .acp-footer { flex-direction: column-reverse; }
-          .acp-btn-discard, .acp-btn-submit { width: 100%; justify-content: center; text-align: center; }
-          .acp-sidebar { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 480px) {
-          .acp-level-grid { grid-template-columns: 1fr 1fr; }
-          .acp-card-hd { flex-direction: column; align-items: flex-start; }
-          .acp-btn-back { width: 100%; justify-content: center; }
-        }
-      `}</style>
+          <p className="ac-aside-title">Checklist</p>
+          <ul className="ac-checks">
+            {checks.map(c => (
+              <li key={c.key} className={c.ok ? 'ok' : undefined}>
+                {c.ok ? <CheckCircle2 size={16} /> : <Circle size={16} />}<span>{c.label}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="ac-aside-note">{tx('After creating it, give the course a lecturer from the Courses page; quizzes can then be added to it.')}</p>
+        </aside>
+      </div>
     </div>
   );
 }

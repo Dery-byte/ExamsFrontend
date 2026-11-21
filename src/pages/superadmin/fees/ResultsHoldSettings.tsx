@@ -78,9 +78,9 @@ export default function ResultsHoldSettings() {
   return (
     <div className="fe" style={{ paddingBottom: 0, marginBottom: 36 }}>
       <style>{FEE_ADMIN_CSS}</style>
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--sx-ink-2)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: 1 }}>
         Results Hold for Unpaid Fees</h2>
-      <p style={{ margin: '0 0 16px', fontSize: 12, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
+      <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--sx-faint)', lineHeight: 1.5 }}>
         {tx(`Choose, per programme, what students must pay of this session's fee before they can see and download their ${isSchoolMode() ? 'terminal reports' : 'report cards and transcript'}. HODs and the Super Admin can still open every student's record.`)}
       </p>
 
@@ -98,7 +98,7 @@ export default function ResultsHoldSettings() {
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 3 }}>Hold results until fees are paid</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+                <div style={{ fontSize: 12, color: 'var(--sx-muted)', lineHeight: 1.4 }}>
                   {data.enabled
                     ? `On: the rules below apply (${held} programme${held === 1 ? '' : 's'} with a hold).`
                     : 'Off: nobody is held. Your rules are kept, so you can switch this back on any time.'}
@@ -106,8 +106,8 @@ export default function ResultsHoldSettings() {
               </div>
             </div>
             <button onClick={toggle} disabled={switching} role="switch" aria-checked={data.enabled} aria-label="Hold results until fees are paid"
-              style={{ background: data.enabled ? '#10b981' : 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 20, width: 50, height: 26, position: 'relative', cursor: switching ? 'not-allowed' : 'pointer', transition: 'all 0.3s', flexShrink: 0 }}>
-              {switching && <Loader2 size={14} className="fe-spin" style={{ position: 'absolute', top: 6, left: 18, color: '#fff' }} />}
+              style={{ background: data.enabled ? '#10b981' : 'var(--sx-fill-2)', border: 'none', borderRadius: 20, width: 50, height: 26, position: 'relative', cursor: switching ? 'not-allowed' : 'pointer', transition: 'all 0.3s', flexShrink: 0 }}>
+              {switching && <Loader2 size={14} className="fe-spin" style={{ position: 'absolute', top: 6, left: 18, color: 'var(--sx-ink)' }} />}
               <div style={{ width: 20, height: 20, background: '#fff', borderRadius: '50%', position: 'absolute', top: 3, left: data.enabled ? 27 : 3, transition: 'all 0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {data.enabled && !switching && <Check size={12} color="#10b981" />}
               </div>
@@ -138,7 +138,7 @@ export default function ResultsHoldSettings() {
                           <td className="fe-c-title">
                             <div className="fe-strong">{p.name} {!p.enabled && <span className="fe-tag off" style={{ marginLeft: 6 }}>Off</span>}</div>
                             <div className="fe-muted fe-small"><span className="fe-code">{p.code}</span>{p.departmentName ? ` · ${p.departmentName}` : ''}
-                              {p.levelsWithFee === 0 && <> · <span style={{ color: '#fbbf24' }}>no fee set for {data.session.name}</span></>}</div>
+                              {p.levelsWithFee === 0 && <> · <span style={{ color: 'var(--sx-warn)' }}>no fee set for {data.session.name}</span></>}</div>
                           </td>
                           <td data-label="Students must pay">{d ? <span className="fe-strong">{d.what}</span> : <span className="fe-unset"><Unlock size={12} /> No hold</span>}</td>
                           <td className="fe-muted" data-label="Held">{d?.docs ?? '—'}</td>

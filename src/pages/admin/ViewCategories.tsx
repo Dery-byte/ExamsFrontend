@@ -12,6 +12,10 @@ import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Edit, Trash2, UserPlus, BookOpen, User, Info, X, Loader2, Search, Filter, Book, ChevronRight, GraduationCap, Layers, ShieldCheck, Target, Award, ArrowRight, CheckCircle2, MoreVertical, LayoutGrid, List, Database, Activity, BadgeCheck } from 'lucide-react';
 import { tx, isSchoolMode } from '../../utils/terms';
+import MoreMenu from '../../components/ui/MoreMenu';
+import AvatarPhoto from '../../components/common/AvatarPhoto';
+import { Lock } from 'lucide-react';
+import '../../components/ui/registry.css';
 import { lockMessage, LOCKED_CLASS, explainLocked, apiMessage } from '../../utils/deleteLocks';
 
 export default function ViewCategories() {
@@ -25,6 +29,8 @@ export default function ViewCategories() {
   const [lecturers, setLecturers] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [show, setShow] = useState<'all' | 'none'>('all');
+  const [menuFor, setMenuFor] = useState<number | null>(null);
   const [programs, setPrograms] = useState<any[]>([]);
 
   useEffect(() => {
@@ -42,10 +48,15 @@ export default function ViewCategories() {
     return () => { document.body.style.overflow = 'unset'; };
   }, [editModal, assignModal]);
 
-  const filteredCategories = categories.filter((c: any) => 
-    c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.courseCode.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const allCourses = categories as any[];
+  const unassigned = allCourses.filter(c => !c.user).length;
+  const q = searchTerm.trim().toLowerCase();
+  const filteredCategories = allCourses.filter((c: any) => !q
+    || (c.title ?? '').toLowerCase().includes(q)
+    || (c.courseCode ?? '').toLowerCase().includes(q)
+    || (c.programNames ?? []).some((n: string) => n.toLowerCase().includes(q))
+    || (c.user?.fullName ?? '').toLowerCase().includes(q));
+  const shown = show === 'none' ? filteredCategories.filter((c: any) => !c.user) : filteredCategories;
 
   const openEdit = async (cid: number) => {
     try { 
@@ -118,82 +129,108 @@ export default function ViewCategories() {
   const deleteCateg = (cid: number) => {
     if ((categories as any[]).find(c => c.cid === cid)?.hasResults) { explainLocked(lockMessage.course()); return; }
     Swal.fire({ 
-      title: 'Purge Category?',
-      text: "Permanent removal from registry.",
+      title: tx(`Delete "${(categories as any[]).find(c => c.cid === cid)?.title ?? 'this course'}"?`),
+      text: tx('The course is removed for good. This can\'t be undone.'),
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#f43f5e',
-      confirmButtonText: 'Yes, Purge'
+      confirmButtonColor: '#dc2626',
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel'
     }).then(res => {
       if (!res.isConfirmed) return;
       deleteCategory(cid).then(() => {
-        toast.success('Registry item purged');
+        toast.success(tx('Course deleted'));
         qc.invalidateQueries({ queryKey: ['categories'] });
-      }).catch(err => { toast.error(apiMessage(err, 'Purge failed')); qc.invalidateQueries({ queryKey: ['categories'] }); });
+      }).catch(err => { toast.error(apiMessage(err, tx('Could not delete the course.'))); qc.invalidateQueries({ queryKey: ['categories'] }); });
     });
   };
 
   const LEVELS = ['Level 100','Level 200','Level 300','Level 400'];
 
   return (
-    <div className="admin-categories-page animate-fade-in" style={{ padding: '0 0 40px', fontFamily: '"Outfit", sans-serif' }}>
-      <PageHeader title="Curriculum" breadcrumbs={['Admin', 'Registry']} />
-      
-      <div className="registry-compact-header">
-         <div className="compact-stats">
-            <div className="stat-node">
-               <span className="l">Total</span>
-               <span className="v">{categories.length}</span>
-            </div>
-            <div className="stat-sep"></div>
-            <div className="stat-node">
-               <span className="l">Status</span>
-               <span className="v ok">Live</span>
-            </div>
-         </div>
-         <div className="compact-actions">
-            <div className="mini-search">
-               <Search size={14} />
-               <input type="text" placeholder="Filter registry..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
-            </div>
-            <button className="mini-add-btn" onClick={()=>navigate(`${basePath}/add-course`)}>
-               <Plus size={16} /> <span>New</span>
-            </button>
-         </div>
+    <div className="rg admin-categories-page animate-fade-in">
+      <PageHeader title={tx('Courses')} breadcrumbs={['Admin', tx('Courses')]} />
+
+      <div className="rg-head">
+        <div className="rg-heading">
+          <h2>{tx('Courses')}</h2>
+          <p>
+            <b>{allCourses.length}</b> {allCourses.length === 1 ? tx('course') : tx('courses')}
+            {unassigned > 0 && <> · <b>{unassigned}</b> {tx('without a lecturer')}</>}
+          </p>
+        </div>
+        <button type="button" className="rg-add" onClick={() => navigate(`${basePath}/add-course`)}>
+          <Plus size={17} /> {tx('New course')}
+        </button>
       </div>
 
-      <div className="registry-list-compact">
+      <div className="rg-tools">
+        <div className="rg-chips" role="group" aria-label="Show">
+          <button type="button" className={`rg-chip${show === 'all' ? ' on' : ''}`} aria-pressed={show === 'all'} onClick={() => setShow('all')}>
+            All <span className="n">{allCourses.length}</span>
+          </button>
+          <button type="button" className={`rg-chip${show === 'none' ? ' on' : ''}`} aria-pressed={show === 'none'} onClick={() => setShow('none')}>
+            {tx('No lecturer')} <span className="n">{unassigned}</span>
+          </button>
+        </div>
+        <label className="rg-search">
+          <Search size={16} />
+          <input type="search" placeholder={tx('Search by title, code or programme')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} aria-label={tx('Search courses')} />
+        </label>
+      </div>
+
+      <div className="rg-grid">
         {isLoading ? (
-          <div className="reg-loader"><Loader2 className="spin-ico" size={32} /></div>
-        ) : (
-          filteredCategories.map((el: any) => (
-            <div key={el.cid} className="reg-row-premium">
-              <div className="reg-col code"><span className="c-badge">{el.courseCode}</span></div>
-              <div className="reg-col title">
-                 <h6 className="t">{el.title}</h6>
-                 <span className="m" style={{ color: '#64748b' }}>
-                    <span style={{ fontWeight: 700, color: '#3b82f6' }}>{el.programNames?.length ? el.programNames.join(', ') : el.openToEveryone ? tx('🌐 Global — open to everyone') : tx('🌐 Global (All Programs)')}</span>
-                    {!isSchoolMode() && <>{' • '}{el.level}</>}{' • '}{el.description?.substring(0, 60)}...
-                 </span>
+          [0, 1, 2, 3, 4, 5].map(i => <div key={i} className="rg-skel" aria-hidden />)
+        ) : shown.length === 0 ? (
+          <div className="rg-empty">
+            <span className="rg-empty-ico"><BookOpen size={26} /></span>
+            <h3>{allCourses.length === 0 ? tx('No courses yet') : 'Nothing matches'}</h3>
+            <p>{allCourses.length === 0 ? tx('Add the first course, then give it a lecturer and the programmes that take it.') : 'Try another search, or show all.'}</p>
+            {allCourses.length === 0
+              ? <button type="button" className="rg-add" onClick={() => navigate(`${basePath}/add-course`)}><Plus size={17} /> {tx('New course')}</button>
+              : <button type="button" className="rg-btn" onClick={() => { setSearchTerm(''); setShow('all'); }}>Clear filters</button>}
+          </div>
+        ) : shown.map((el: any) => {
+          const lecturer = el.user?.fullName as string | undefined;
+          const progs = el.programNames?.length ? el.programNames.join(', ') : el.openToEveryone ? tx('Open to everyone') : tx('All programmes');
+          return (
+            <article key={el.cid} className={`rg-card${menuFor === el.cid ? ' menu-open' : ''}`}>
+              <div className="rg-card-top">
+                <div className="rg-tags">
+                  <span className="rg-code">{el.courseCode}</span>
+                  {!isSchoolMode() && el.level && <span className="rg-tag">{el.level}</span>}
+                  {el.creditUnits != null && el.creditUnits !== '' && <span className="rg-tag">{el.creditUnits} {Number(el.creditUnits) === 1 ? 'credit' : 'credits'}</span>}
+                </div>
+                <MoreMenu label={`More actions for ${el.title}`} onOpenChange={o => setMenuFor(o ? el.cid : null)} items={[
+                  { icon: <Edit size={16} />, label: tx('Edit course'), onSelect: () => openEdit(el.cid) },
+                  { icon: <UserPlus size={16} />, label: lecturer ? tx('Change lecturer') : tx('Assign lecturer'), onSelect: () => openAssign(el.cid) },
+                  { icon: el.hasResults ? <Lock size={16} /> : <Trash2 size={16} />, label: tx('Delete course'), danger: true, muted: !!el.hasResults,
+                    hint: el.hasResults ? lockMessage.course() : undefined, onSelect: () => deleteCateg(el.cid) },
+                ]} />
               </div>
-              <div className="reg-col lead">
-                 {el.user ? (
-                   <div className="l-pill">
-                      <div className="a">{el.user.fullName?.[0]}</div>
-                      <span className="n">{el.user.fullName}</span>
-                   </div>
-                 ) : <span className="u">Unassigned</span>}
+              <h3 className="rg-title" title={el.title}>{el.title}</h3>
+              <p className="rg-progs" title={progs}><GraduationCap size={15} /><span>{progs}</span></p>
+              {el.description?.trim()
+                ? <p className="rg-desc">{el.description}</p>
+                : <p className="rg-desc none">No description yet.</p>}
+              <div className="rg-foot">
+                <div className={`rg-person${lecturer ? '' : ' none'}`}>
+                  <span className="rg-avatar">
+                    {lecturer ? <AvatarPhoto src={el.user?.profilePicture}>{lecturer.charAt(0).toUpperCase()}</AvatarPhoto> : <User size={15} />}
+                  </span>
+                  <span className="rg-person-text">
+                    <b title={lecturer}>{lecturer ?? tx('No lecturer yet')}</b>
+                    <small>{lecturer ? tx('Lecturer') : 'Not assigned'}</small>
+                  </span>
+                </div>
+                <button type="button" className={`rg-btn${lecturer ? '' : ' brand'}`} onClick={() => openAssign(el.cid)}>
+                  <UserPlus size={14} /> {lecturer ? 'Change' : 'Assign'}
+                </button>
               </div>
-              <div className="reg-col acts">
-                 <button className="a-btn s" onClick={()=>openAssign(el.cid)}><UserPlus size={14} /></button>
-                 <button className="a-btn p" onClick={()=>openEdit(el.cid)}><Edit size={14} /></button>
-                 <button className={`a-btn d ${el.hasResults ? LOCKED_CLASS : ''}`} onClick={()=>deleteCateg(el.cid)}
-                   title={el.hasResults ? lockMessage.course() : tx('Delete course')} aria-label={el.hasResults ? lockMessage.course() : tx('Delete course')}
-                   aria-disabled={!!el.hasResults}><Trash2 size={14} /></button>
-              </div>
-            </div>
-          ))
-        )}
+            </article>
+          );
+        })}
       </div>
 
       {/* PORTAL MODALS */}

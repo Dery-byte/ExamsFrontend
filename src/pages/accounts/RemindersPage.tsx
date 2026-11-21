@@ -65,7 +65,7 @@ export default function RemindersPage() {
   return (
     <div className="fe">
       <style>{FEE_ADMIN_CSS + BILL_CSS}</style>
-      <AccountsHead icon={<BellRing size={24} color="#fff" />} title="Fee reminders" sub={tx('Remind students who owe, in the portal, by email and by SMS.')} />
+      <AccountsHead icon={<BellRing size={24} color="var(--brand-contrast)" />} title="Fee reminders" sub={tx('Remind students who owe, in the portal, by email and by SMS.')} />
 
       {bursar && (
         <div className="fe-card" style={{ padding: 16, marginBottom: 14 }}>

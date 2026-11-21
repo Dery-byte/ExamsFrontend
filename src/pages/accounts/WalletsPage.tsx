@@ -88,7 +88,7 @@ export default function WalletsPage() {
   return (
     <div className="fe">
       <style>{FEE_ADMIN_CSS + BILL_CSS + WALLETS_CSS}</style>
-      <AccountsHead icon={<PiggyBank size={24} color="#fff" />} title="Student wallets"
+      <AccountsHead icon={<PiggyBank size={24} color="var(--brand-contrast)" />} title="Student wallets"
         sub="Money students paid in ahead, and their requests to take it back out."
         actions={data?.can.settings ? <button type="button" className="fe-ghost" onClick={() => setLimitOpen(true)}><SlidersHorizontal size={15} /> Wallet limit</button> : undefined} />
 
@@ -150,7 +150,7 @@ export default function WalletsPage() {
                     <div className="fe-small" style={{ marginTop: 2 }}>{w.number} · <b>{PAYOUT[w.payout]}</b>{w.payoutDetails ? `: ${w.payoutDetails}` : ''}</div>
                     <div className="fe-muted fe-small sw-wrap">“{w.reason}” · asked {formatDate(w.requestedAt)}</div>
                     <Trail w={w} />
-                    {short && <div className="fe-small" style={{ color: '#f87171', marginTop: 4 }}>The wallet now holds only {formatMoney(w.walletBalance!, cur)}.</div>}
+                    {short && <div className="fe-small" style={{ color: 'var(--sx-bad)', marginTop: 4 }}>The wallet now holds only {formatMoney(w.walletBalance!, cur)}.</div>}
                   </div>
                   <div className="bl-amt">
                     <div className="fe-strong" style={{ fontSize: 16 }}>{formatMoney(w.amount, cur)}</div>
@@ -266,9 +266,9 @@ const WALLETS_CSS = `
 .sw-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #f59e0b; color: #1f2433; font-size: 11px; font-weight: 800; display: inline-grid; place-items: center; }
 .sw-row { align-items: flex-start; flex-wrap: wrap; }
 .sw-wrap { overflow-wrap: anywhere; }
-.sw-trail { list-style: none; margin: 6px 0 0; padding: 0 0 0 10px; border-left: 2px solid rgba(var(--accent-rgb), 0.35); display: grid; gap: 2px; font-size: 12px; color: rgba(255,255,255,0.55); overflow-wrap: anywhere; }
+.sw-trail { list-style: none; margin: 6px 0 0; padding: 0 0 0 10px; border-left: 2px solid rgba(var(--accent-rgb), 0.35); display: grid; gap: 2px; font-size: 12px; color: var(--sx-muted); overflow-wrap: anywhere; }
 .sw-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; flex: 1 0 100%; }
-.fe-ghost.danger { color: #f87171; }
+.fe-ghost.danger { color: var(--sx-bad); }
 @media (min-width: 900px) { .sw-acts { flex: 0 0 auto; align-self: center; } .sw-row { flex-wrap: nowrap; } }
 @media (max-width: 560px) {
   .sw-long { display: none; }

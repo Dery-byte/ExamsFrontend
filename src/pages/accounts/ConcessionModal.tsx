@@ -81,7 +81,7 @@ export default function ConcessionModal({ student, currency, terms, onClose, onS
           <label className="fe-label" htmlFor="cn-value">{mode === 'PERCENT' ? 'Percent' : 'Amount'}</label>
           <div className="fe-money"><span>{mode === 'PERCENT' ? '%' : currency}</span>
             <input id="cn-value" className="fe-input" inputMode="decimal" placeholder={mode === 'PERCENT' ? '50' : '0.00'} value={value} onChange={e => setValue(moneyInput(e.target.value))} /></div>
-          {mode === 'PERCENT' && v > 100 && <div className="fe-hint" style={{ color: '#f87171' }}>100% at most.</div>}
+          {mode === 'PERCENT' && v > 100 && <div className="fe-hint" style={{ color: 'var(--sx-bad)' }}>100% at most.</div>}
         </div>
       </div>
       {itemChoices.length > 0 && (

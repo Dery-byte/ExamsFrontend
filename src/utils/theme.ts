@@ -157,6 +157,35 @@ export function themeVars(t: ThemeSettings): Record<string, string> {
   };
 }
 
+/** Hue (0–360) of a hex colour; greys come back as -1. */
+function hueOf(hex: string): number {
+  const [h, s] = rgbToHsl(hexToRgb(hex));
+  return s < 0.15 ? -1 : h;
+}
+
+/** Saturated colours that read white text well; supporting tiles and chart lines pick from these. */
+const SUPPORT_PALETTE = ['#0a7bbd', '#0f8a5f', '#c2410c', '#7c3aed', '#be185d', '#0e7490', '#b45309', '#a21caf'];
+
+/**
+ * `n` supporting colours that stay clearly apart from the institution's own brand and accent (and
+ * from each other), so a green brand never gets a green tile beside it. Order is stable per theme.
+ */
+export function supportColors(avoid: string[], n: number): string[] {
+  const taken = avoid.filter(isHex).map(hueOf).filter(h => h >= 0);
+  const far = (h: number, min: number) => taken.every(t => Math.min(Math.abs(h - t), 360 - Math.abs(h - t)) >= min);
+  const out: string[] = [];
+  for (const min of [60, 40, 20, 0]) {
+    for (const c of SUPPORT_PALETTE) {
+      if (out.length >= n) break;
+      if (out.includes(c)) continue;
+      const h = hueOf(c);
+      if (far(h, min)) { out.push(c); taken.push(h); }
+    }
+    if (out.length >= n) break;
+  }
+  return out;
+}
+
 /** rgba() from a hex colour, for chart and canvas code that can't use CSS variables. */
 export const hexAlpha = (hex: string, a: number) => `rgba(${rgbList(hex)}, ${a})`;
 

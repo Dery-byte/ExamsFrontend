@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap');
 
 /* Universal box-sizing reset — prevents padding from causing overflow */
 *,
@@ -83,6 +83,90 @@ body {
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
+
+  /* Shell surface tokens (--sx-*). Pages shared between areas use these instead of fixed
+     white-on-dark colours. These defaults are the dark staff shells (HOD, Accounts office);
+     body.shell-light (set by the Super Admin layout) swaps in the light values below.
+     Portals render on <body>, so dialogs follow the area they were opened from. */
+  --sx-ink: #ffffff;
+  --sx-ink-2: rgba(255, 255, 255, 0.78);
+  --sx-muted: rgba(255, 255, 255, 0.5);
+  --sx-faint: rgba(255, 255, 255, 0.32);
+  --sx-card: rgba(255, 255, 255, 0.03);
+  --sx-card-line: rgba(var(--accent-rgb), 0.15);
+  --sx-card-shadow: none;
+  --sx-fill: rgba(255, 255, 255, 0.04);
+  --sx-fill-2: rgba(255, 255, 255, 0.08);
+  --sx-fill-3: rgba(255, 255, 255, 0.12);
+  --sx-line: rgba(255, 255, 255, 0.07);
+  --sx-line-2: rgba(255, 255, 255, 0.13);
+  --sx-line-3: rgba(255, 255, 255, 0.22);
+  --sx-input: rgba(255, 255, 255, 0.05);
+  --sx-option: #1a1a35;
+  --sx-scheme: dark;
+  --sx-modal: linear-gradient(180deg, #191934, #131329);
+  --sx-modal-line: rgba(var(--accent-rgb), 0.28);
+  --sx-backdrop: rgba(5, 5, 15, 0.72);
+  --sx-brand-text: var(--brand-light);
+  --sx-accent-text: var(--accent-light);
+  --sx-tab-active: linear-gradient(135deg, rgba(var(--accent-rgb), 0.35), rgba(var(--brand-rgb), 0.25));
+  --sx-tab-active-ink: #ffffff;
+  --sx-tab-active-ring: rgba(var(--accent-rgb), 0.4);
+  /* Big page titles: a gradient on dark shells, plain ink on light ones (background-clip: text) */
+  --sx-title-fill: linear-gradient(135deg, var(--accent-light), var(--brand-light));
+  --sx-ok: #34d399;
+  --sx-ok-bg: rgba(16, 185, 129, 0.1);
+  --sx-ok-line: rgba(16, 185, 129, 0.3);
+  --sx-warn: #fbbf24;
+  --sx-warn-bg: rgba(251, 191, 36, 0.1);
+  --sx-warn-line: rgba(251, 191, 36, 0.3);
+  --sx-bad: #f87171;
+  --sx-bad-bg: rgba(239, 68, 68, 0.1);
+  --sx-bad-line: rgba(239, 68, 68, 0.3);
+  --sx-info: #38bdf8;
+  --sx-info-bg: rgba(14, 165, 233, 0.12);
+  --sx-info-line: rgba(14, 165, 233, 0.25);
+}
+
+/* Light staff shell (Super Admin). Same names, light values. */
+body.shell-light {
+  --sx-ink: #1d2032;
+  --sx-ink-2: #464b5f;
+  --sx-muted: #767b91;
+  --sx-faint: #a2a7b8;
+  --sx-card: #ffffff;
+  --sx-card-line: #edeef4;
+  --sx-card-shadow: 0 6px 24px rgba(28, 32, 72, 0.06);
+  --sx-fill: #f6f7fb;
+  --sx-fill-2: #eef0f6;
+  --sx-fill-3: #e4e7f0;
+  --sx-line: #eef0f5;
+  --sx-line-2: #e1e4ed;
+  --sx-line-3: #cdd1de;
+  --sx-input: #ffffff;
+  --sx-option: #ffffff;
+  --sx-scheme: light;
+  --sx-modal: #ffffff;
+  --sx-modal-line: #e9ebf2;
+  --sx-backdrop: rgba(17, 20, 45, 0.45);
+  --sx-brand-text: var(--brand-text);
+  --sx-accent-text: var(--accent-text);
+  --sx-tab-active: var(--brand);
+  --sx-tab-active-ink: var(--brand-contrast);
+  --sx-tab-active-ring: transparent;
+  --sx-title-fill: linear-gradient(var(--sx-ink), var(--sx-ink));
+  --sx-ok: #047857;
+  --sx-ok-bg: #ecfdf5;
+  --sx-ok-line: #a7f3d0;
+  --sx-warn: #b45309;
+  --sx-warn-bg: #fffbeb;
+  --sx-warn-line: #fde68a;
+  --sx-bad: #dc2626;
+  --sx-bad-bg: #fef2f2;
+  --sx-bad-line: #fecaca;
+  --sx-info: #0369a1;
+  --sx-info-bg: #f0f9ff;
+  --sx-info-line: #bae6fd;
 }
 
 /* ── Lexa Components ────────────────────────────────────────────────────── */

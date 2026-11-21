@@ -82,7 +82,7 @@ export default function Departments() {
       toast.error(tx(`Move or delete the ${n} program${n === 1 ? '' : 's'} in ${d.name} first.`));
       return;
     }
-    const res = await Swal.fire({ title: `Delete "${d.name}"?`, text: 'This action cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', background: '#1a1a35', color: '#fff' });
+    const res = await Swal.fire({ title: `Delete "${d.name}"?`, text: 'This action cannot be undone.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', background: 'var(--sx-option)', color: 'var(--sx-ink)' });
     if (!res.isConfirmed) return;
     try { await saDeleteDepartment(d.id); setDepartments(prev => prev.filter(x => x.id !== d.id)); toast.success('Deleted.'); }
     catch (e: any) { toast.error(e?.response?.data?.message || 'Delete failed'); }
@@ -105,7 +105,7 @@ export default function Departments() {
       {/* Header */}
       <div className="pg-head">
         <div className="pg-title">
-          <div className="pg-logo brand"><Building2 size={20} color="#fff" /></div>
+          <div className="pg-logo brand"><Building2 size={20} color="var(--brand-contrast)" /></div>
           <div style={{ minWidth: 0 }}>
             <h1 className="pg-h1">{tx('Departments')}</h1>
             <p className="pg-sub">{departments.length} {tx(departments.length !== 1 ? 'departments' : 'department')} configured</p>
@@ -208,6 +208,7 @@ export default function Departments() {
                 <p className="pg-help">Pick one, or type any name your school uses (e.g. Creche, Basic School).</p>
               </div>
             )}
+            <div className="pg-row2 tight">
             <div>
               <label className="pg-label" htmlFor="dp-name">{tx('Department Name *')}</label>
               <input id="dp-name" className="pg-input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder={school ? 'e.g. Primary School' : 'e.g. School of Computing'} />
@@ -216,6 +217,7 @@ export default function Departments() {
               <label className="pg-label" htmlFor="dp-code">{tx('Department Code *')}</label>
               <input id="dp-code" className="pg-input" value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value.toUpperCase() }))} placeholder={school ? 'e.g. PRI' : 'e.g. SOC'} maxLength={10} autoCapitalize="characters" />
             </div>
+            </div>
             {school && (
               <div>
                 <span className="pg-label">Years</span>
@@ -223,14 +225,14 @@ export default function Departments() {
                   <button type="button" onClick={() => setForm(p => ({ ...p, years: Math.max(1, p.years - 1) }))} disabled={form.years <= 1} aria-label="Fewer years">−</button>
                   <span className="pg-stepper-n" aria-live="polite">{form.years}</span>
                   <button type="button" onClick={() => setForm(p => ({ ...p, years: Math.min(12, p.years + 1) }))} disabled={form.years >= 12} aria-label="More years">+</button>
-                  <span className="pg-muted">year{form.years > 1 ? 's' : ''}</span>
+                  <span className="pg-muted">year{form.years > 1 ? 's' : ''} · classes sit in years 1{form.years > 1 ? `–${form.years}` : ''}</span>
                 </div>
-                <p className="pg-help">How long students spend in this section, e.g. Primary School 6 (Primary 1 to 6), Junior High School 3. Its classes sit in years 1 to {form.years}.</p>
+                <p className="pg-help">How long students spend here, e.g. Primary School 6, Junior High School 3.</p>
               </div>
             )}
             <div>
               <label className="pg-label" htmlFor="dp-desc">Description</label>
-              <textarea id="dp-desc" className="pg-input" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder={tx('Brief description of this department…')} />
+              <textarea id="dp-desc" className="pg-input" rows={2} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder={tx('Brief description of this department…')} />
             </div>
           </div>
         </StructureModal>

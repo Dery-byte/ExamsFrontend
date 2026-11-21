@@ -1,247 +1,96 @@
-/* Premium Assessment Card CSS - Vercel/Linear Inspired */
-.premium-card {
-  background: #ffffff;
-  border: 1px solid #eaeaea;
-  border-radius: 12px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-  position: relative;
-  overflow: hidden;
+/* Quiz card (staff Quizzes list). Colours come from the institution theme only. */
+.qz-card {
+  --qz-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --qz-ink: #1d2032; --qz-ink-2: #4a4f63; --qz-muted: #7c8197; --qz-line: #eceef4; --qz-fill: #f5f6fa;
+  position: relative; display: flex; flex-direction: column; min-width: 0;
+  background: #fff; border-radius: 20px; padding: 22px 22px 18px;
+  box-shadow: 0 2px 0 #e6e8ef, 0 10px 28px rgba(28, 32, 72, 0.06);
+  font-family: var(--qz-font); color: var(--qz-ink);
+  container: qzcard / inline-size;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.qz-card:hover { transform: translateY(-2px); box-shadow: 0 2px 0 #e1e3ec, 0 16px 36px rgba(28, 32, 72, 0.1); }
+.qz-card.menu-open { z-index: 5; transform: none; }
+
+/* Header: course + title, type tile */
+.qz-head { display: block; }
+.qz-head-text { flex: 1; min-width: 0; }
+.qz-course { margin: 0; font-size: 12.5px; font-weight: 500; letter-spacing: .01em; color: var(--qz-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qz-title {
+  margin: 4px 0 0; font-size: 17px; font-weight: 600; line-height: 1.35; letter-spacing: -.012em; color: var(--qz-ink); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
-.premium-card:hover {
-  transform: translateY(-4px);
-  border-color: #d1d5db;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
-}
+/* Key numbers in the brand colour */
+.qz-meta { margin: 12px 0 0; font-size: 13.5px; font-weight: 600; color: var(--brand-text); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; }
+.qz-sep { color: var(--brand-border); font-weight: 700; }
 
-.card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Status bar: current state on the left, the switch and Save on the right.
+   A coloured left edge shows the saved state at a glance: green = open, grey = closed. */
+.qz-status {
+  margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px 10px; flex-wrap: wrap;
+  padding: 6px 6px 6px 12px; border-radius: 12px; background: var(--qz-fill);
+  border-left: 4px solid #b8bdcc; transition: background .2s, border-color .2s;
 }
+.qz-status.is-open { background: #f0faf5; border-left-color: #10b981; }
+.qz-state { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--qz-ink-2); white-space: nowrap; }
+.qz-dot { width: 8px; height: 8px; border-radius: 50%; background: #a2a7b8; flex-shrink: 0; }
+.qz-status.is-open .qz-state { color: #047857; }
+.qz-status.is-open .qz-dot { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, .18); animation: qz-live 2s infinite; }
+@keyframes qz-live { 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } }
+.qz-status-ctl { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.qz-seg { display: inline-flex; padding: 3px; border-radius: 10px; background: #e8eaf1; }
+.qz-seg button {
+  border: none; background: transparent; cursor: pointer; height: 28px; padding: 0 12px; border-radius: 8px;
+  font: 500 12.5px var(--qz-font); color: var(--qz-muted); transition: background .15s, color .15s, box-shadow .15s;
+}
+.qz-seg button:hover:not(.on):not(:disabled) { color: var(--qz-ink); background: rgba(255, 255, 255, .6); }
+/* The chosen value stands out in its own colour (white on green 4.6:1, on slate 7.6:1) */
+.qz-seg button.on { font-weight: 600; color: #fff; }
+.qz-seg button.on.v-open { background: #047857; box-shadow: 0 2px 8px -2px rgba(4, 120, 87, .55); }
+.qz-seg button.on.v-closed { background: #475569; box-shadow: 0 2px 8px -2px rgba(71, 85, 105, .5); }
+.qz-seg button:disabled { cursor: wait; }
+.qz-save {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 10px; cursor: pointer;
+  font: 600 12.5px var(--qz-font); white-space: nowrap; transition: background .15s, color .15s, box-shadow .15s, border-color .15s;
+  /* nothing to save: visible but quiet */
+  background: #fff; color: var(--qz-muted); border: 1px solid var(--qz-line);
+}
+.qz-save:disabled { cursor: default; }
+/* a different status is picked: the brand action */
+.qz-save.ready { background: var(--brand); color: var(--brand-contrast); border-color: transparent; box-shadow: 0 6px 14px -6px rgba(var(--brand-rgb), .6); }
+.qz-save.ready:hover:not(:disabled) { background: var(--brand-hover); }
+.qz-save.ready:disabled { opacity: .75; cursor: wait; }
 
-.card-top-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* Footer: type pill | question bank + more */
+.qz-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 18px; }
+.qz-pill { display: inline-block; line-height: 34px; min-width: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; height: 34px; padding: 0 14px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-text); font-size: 12px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+.qz-foot-right { display: flex; align-items: center; gap: 2px; flex-shrink: 0; margin-right: -6px; }
+.qz-bank { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 8px; border-radius: 10px; font-size: 13.5px; font-weight: 500; color: var(--qz-ink); text-decoration: none; white-space: nowrap; }
+.qz-bank:hover { color: var(--brand-text); background: var(--brand-soft); }
+.qz-bank svg { transition: transform .15s; }
+.qz-bank:hover svg { transform: translateX(2px); }
 
-.type-tag {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
-  letter-spacing: 0.03em;
-}
-.type-tag.theory { background: #eff6ff; color: #2563eb; }
-.type-tag.objective { background: #f3f4f6; color: #4b5563; }
+.qz-seg button:focus-visible, .qz-save:focus-visible, .qz-bank:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-.status-dot.live {
-  background: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-  animation: pulse-live 2s infinite;
-}
-.status-dot.draft {
-  background: #9ca3af;
-}
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes pulse-live {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+/* Narrow card (3 across, or a phone): status on its own line, then the switch across the width with Save */
+@container qzcard (max-width: 400px) {
+  .qz-status { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 10px 10px 12px; }
+  .qz-state { padding-left: 4px; }
+  .qz-status-ctl { margin-left: 0; }
+  .qz-seg { flex: 1; }
+  .qz-seg button { flex: 1; }
 }
-
-.status-text {
-  font-size: 11px;
-  font-weight: 500;
-  color: #6b7280;
-  text-transform: capitalize;
+@media (max-width: 480px) {
+  .qz-card { padding: 18px 16px 14px; border-radius: 18px; }
+  .qz-title { font-size: 16px; }
+  .qz-meta { font-size: 13.5px; margin-top: 12px; }
+  .qz-status { margin-top: 14px; }
+  .qz-pill { height: 32px; padding: 0 12px; font-size: 11.5px; }
+  .qz-bank { padding: 0 6px; font-size: 13px; }
 }
-
-.card-top-right {
-  display: flex;
-  gap: 6px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.premium-card:hover .card-top-right {
-  opacity: 1;
-}
-
-.icon-btn {
-  background: transparent;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-}
-.icon-btn:hover {
-  background: #f3f4f6;
-  color: #111827;
-}
-.icon-btn.delete:hover {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
-.card-main {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.premium-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-}
-.premium-category {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #6b7280;
-  margin: 0;
-}
-
-.metrics-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  padding: 16px 0;
-  border-top: 1px solid #f3f4f6;
-  border-bottom: 1px solid #f3f4f6;
-}
-.metric {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.m-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: #9ca3af;
-  letter-spacing: 0.05em;
-}
-.m-val {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.card-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: auto;
-}
-
-.bank-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #111827;
-  text-decoration: none;
-  background: #f9fafb;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #eaeaea;
-  transition: all 0.15s ease;
-}
-.bank-btn:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-}
-
-.sync-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.premium-select {
-  font-size: 12px;
-  font-weight: 500;
-  color: #4b5563;
-  background: #fff;
-  border: 1px solid #eaeaea;
-  border-radius: 6px;
-  padding: 6px 24px 6px 10px;
-  appearance: none;
-  cursor: pointer;
-  outline: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 14px;
-}
-.premium-select:focus {
-  border-color: #000;
-}
-
-.sync-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #111827;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.sync-btn:hover:not(:disabled) {
-  background: #374151;
-}
-.sync-btn:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Copy-link button: always visible (the settings/delete group above only appears on hover) */
-.card-top-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.icon-btn.link {
-  color: var(--brand-text);
-  background: var(--brand-soft);
-}
-.icon-btn.link:hover {
-  background: var(--brand-border);
-  color: var(--brand-hover);
-}
-/* Touch screens have no hover, so keep the other actions visible there */
-@media (hover: none) {
-  .card-top-right { opacity: 1; }
-}
+@media (hover: none) { .qz-card:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .qz-card, .qz-status.is-open .qz-dot, .qz-save { transition: none; animation: none; } }

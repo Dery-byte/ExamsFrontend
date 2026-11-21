@@ -39,7 +39,8 @@ function timeAgo(iso: string) {
 }
 
 /** Header bell: unread badge (polled every minute) and a dropdown of recent notifications. */
-export default function NotificationBell({ dark = false }: { dark?: boolean }) {
+/** `round`: the white circular button of the light Super Admin top bar (brand-coloured badge). */
+export default function NotificationBell({ dark = false, round = false }: { dark?: boolean; round?: boolean }) {
   const { user } = useAuth() as any;
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -105,15 +106,20 @@ export default function NotificationBell({ dark = false }: { dark?: boolean }) {
         onClick={() => setOpen(o => !o)}
         aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
         aria-expanded={open}
-        style={{
+        className={round ? 'sa-round' : undefined}
+        style={round ? undefined : {
           position: 'relative', width: 38, height: 38, borderRadius: 10, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: c.btnBg, border: `1px solid ${c.btnBorder}`, color: c.icon,
         }}
       >
-        <Bell size={19} />
+        <Bell size={round ? 20 : 19} />
         {unread > 0 && (
-          <span style={{
+          <span style={round ? {
+            position: 'absolute', top: -4, right: -4, minWidth: 22, height: 22, padding: '0 5px', borderRadius: 11,
+            background: 'var(--brand)', color: 'var(--brand-contrast)', fontSize: 10.5, fontWeight: 700, lineHeight: '22px', textAlign: 'center',
+            boxShadow: '0 0 0 3px var(--sa-bg, #f4f5fa)',
+          } : {
             position: 'absolute', top: 3, right: 3, minWidth: 17, height: 17, padding: '0 4px', borderRadius: 9,
             background: '#e34948', color: '#fff', fontSize: 10, fontWeight: 800, lineHeight: '17px', textAlign: 'center',
           }}>{unread > 99 ? '99+' : unread}</span>
